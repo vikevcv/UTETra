@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### OS / System ###
+.DS_Store
+Thumbs.db
+
+### Documentation & Markdown (Chỉ giữ lại README.md) ###
+**/*.md
+!**/README.md
+!**/readme.md
+*.doc
+*.docx
+*.pdf
+[Dd]ocs/

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemesh>
+    <!-- Áp dụng decorator web.jsp cho toàn bộ giao diện phía khách hàng -->
+    <mapping path="/*" decorator="/WEB-INF/decorators/web.jsp"/>
+</sitemesh>
