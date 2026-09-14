@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sitemesh>
+    <mapping path="/css/*" exclude="true"/>
+    <mapping path="/js/*" exclude="true"/>
+    <mapping path="/images/*" exclude="true"/>
+    <mapping path="/favicon.ico" exclude="true"/>
     <!-- Áp dụng decorator web.jsp cho toàn bộ giao diện phía khách hàng -->
     <mapping path="/*" decorator="/WEB-INF/decorators/web.jsp"/>
 </sitemesh>
