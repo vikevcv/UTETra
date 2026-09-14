@@ -49,6 +49,7 @@ public class SecurityConfig {
                     "/",
                     "/auth/login",
                     "/auth/register",
+                    "/auth/verify-otp",
                     "/css/**", "/js/**", "/images/**", "/favicon.ico",
                     "/h2-console/**",
                     "/WEB-INF/**"

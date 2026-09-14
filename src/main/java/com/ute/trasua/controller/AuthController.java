@@ -55,31 +55,63 @@ public class AuthController {
         }
     }
 
-    // // REGISTER
-    // @GetMapping("/register")
-    // public String registerPage(Model model) {
-    //     model.addAttribute("registerRequest", new RegisterRequest());
-    //     return "auth/register";
-    // }
+    // REGISTER
+    @GetMapping("/register")
+    public String registerPage(Model model) {
+        model.addAttribute("registerRequest", new RegisterRequest());
+        return "auth/register";
+    }
 
-    // @PostMapping("/register")
-    // public String register(@Valid @ModelAttribute RegisterRequest request,
-    //                        BindingResult result,
-    //                        RedirectAttributes redirectAttributes) {
-    //     if (result.hasErrors()) {
-    //         return "auth/register";
-    //     }
+    @PostMapping("/register")
+    public String register(@Valid @ModelAttribute RegisterRequest request,
+                           BindingResult result,
+                           RedirectAttributes redirectAttributes) {
+        if (result.hasErrors()) {
+            return "auth/register";
+        }
 
-    //     try {
-    //         authService.register(request);
-    //         redirectAttributes.addFlashAttribute("successMessage",
-    //                 "Đăng ký thành công! Vui lòng đăng nhập.");
-    //         return "redirect:/auth/login";
-    //     } catch (RuntimeException e) {
-    //         redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-    //         return "redirect:/auth/register";
-    //     }
-    // }
+        try {
+            authService.initiateRegistration(request);
+            redirectAttributes.addFlashAttribute("email", request.getEmail());
+            redirectAttributes.addFlashAttribute("successMessage", "Mã OTP đã được gửi đến email của bạn.");
+            return "redirect:/auth/verify-otp";
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/auth/register";
+        }
+    }
+
+    // VERIFY OTP
+    @GetMapping("/verify-otp")
+    public String verifyOtpPage(Model model, @ModelAttribute("email") String email) {
+        if (email == null || email.isEmpty()) {
+            return "redirect:/auth/register";
+        }
+        OtpVerificationRequest otpRequest = new OtpVerificationRequest();
+        otpRequest.setEmail(email);
+        model.addAttribute("otpRequest", otpRequest);
+        return "auth/verify-otp";
+    }
+
+    @PostMapping("/verify-otp")
+    public String verifyOtp(@Valid @ModelAttribute("otpRequest") OtpVerificationRequest request,
+                            BindingResult result,
+                            RedirectAttributes redirectAttributes) {
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("email", request.getEmail());
+            return "auth/verify-otp";
+        }
+
+        try {
+            authService.verifyOtpAndRegister(request.getEmail(), request.getOtp());
+            redirectAttributes.addFlashAttribute("successMessage", "Đăng ký thành công! Vui lòng đăng nhập.");
+            return "redirect:/auth/login";
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("email", request.getEmail());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/auth/verify-otp";
+        }
+    }
 
     // LOGOUT
     @GetMapping("/logout")
