@@ -195,8 +195,15 @@ public class ConfigurableSiteMeshFilter implements Filter {
         // Get captured content
         String originalHtml = responseWrapper.getCapturedContent();
         if (originalHtml == null || originalHtml.trim().isEmpty()) {
+            System.err.println("[SiteMesh] WARN: Empty content for " + uri
+                + " — JSP may have failed to compile.");
+            resp.setContentType("text/html;charset=UTF-8");
+            resp.getWriter().write("<html><body><h1>SiteMesh: empty content for " + uri + "</h1></body></html>");
+            resp.getWriter().flush();
             return;
         }
+
+        System.out.println("[SiteMesh] OK: " + uri + " → " + originalHtml.length() + " chars");
 
         // If not HTML content, output directly
         String contentType = responseWrapper.getContentType();
@@ -234,7 +241,7 @@ public class ConfigurableSiteMeshFilter implements Filter {
         // Render decorator using include() to be 100% compliant with Tomcat 11
         RequestDispatcher dispatcher = req.getRequestDispatcher(matchedDecorator);
         if (dispatcher == null) {
-            // Decorator not found, write original content
+            System.err.println("[SiteMesh] WARN: Decorator not found: " + matchedDecorator);
             byte[] raw = originalHtml.getBytes(StandardCharsets.UTF_8);
             resp.setContentType("text/html;charset=UTF-8");
             resp.setContentLength(raw.length);
@@ -243,6 +250,7 @@ public class ConfigurableSiteMeshFilter implements Filter {
             return;
         }
 
+        System.out.println("[SiteMesh] Decorating with: " + matchedDecorator);
         CharResponseWrapper decoratorWrapper = new CharResponseWrapper(resp);
         try {
             dispatcher.include(req, decoratorWrapper);
@@ -258,6 +266,7 @@ public class ConfigurableSiteMeshFilter implements Filter {
 
         String decoratorHtml = decoratorWrapper.getCapturedContent();
         if (decoratorHtml == null || decoratorHtml.isEmpty()) {
+            System.err.println("[SiteMesh] WARN: Decorator returned empty for " + matchedDecorator);
             byte[] raw = originalHtml.getBytes(StandardCharsets.UTF_8);
             resp.setContentType("text/html;charset=UTF-8");
             resp.setContentLength(raw.length);
@@ -265,6 +274,8 @@ public class ConfigurableSiteMeshFilter implements Filter {
             resp.getOutputStream().flush();
             return;
         }
+
+        System.out.println("[SiteMesh] Decorator output: " + decoratorHtml.length() + " chars");
 
         // Substitute SiteMesh tags in decorator
         String finalHtml = WRITE_TITLE_PATTERN.matcher(decoratorHtml).replaceAll(Matcher.quoteReplacement(title));

@@ -6,8 +6,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Đăng ký SiteMesh 3 Filter tùy biến cho Spring Boot,
- * tương thích 100% với Tomcat 11 và Jakarta Servlet 6.0.
+ * SiteMesh 3 Filter — TẠM THỜI TẮT để debug white page.
+ * Sau khi fix xong, bỏ comment @Bean để bật lại.
  */
 @Configuration
 public class SiteMeshFilterConfig {
@@ -18,6 +18,7 @@ public class SiteMeshFilterConfig {
         filter.setFilter(new ConfigurableSiteMeshFilter());
         filter.addUrlPatterns("/*");
         filter.setOrder(1);
+        filter.setAsyncSupported(true);
         return filter;
     }
 }
