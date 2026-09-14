@@ -44,3 +44,8 @@ Thumbs.db
 *.docx
 *.pdf
 [Dd]ocs/
+
+### Environment Variables ###
+.env
+.env.local
+.env.production
