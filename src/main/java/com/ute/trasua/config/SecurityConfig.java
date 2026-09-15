@@ -47,9 +47,7 @@ public class SecurityConfig {
                 // 2. Cho phép các URL công khai và thư mục view nội bộ
                 .requestMatchers(
                     "/",
-                    "/auth/login",
-                    "/auth/register",
-                    "/auth/verify-otp",
+                    "/auth/**",
                     "/css/**", "/js/**", "/images/**", "/favicon.ico",
                     "/h2-console/**",
                     "/WEB-INF/**"

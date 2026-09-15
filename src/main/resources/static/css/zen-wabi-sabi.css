@@ -716,3 +716,16 @@ button, input, select {
 .auth-footer a:hover {
   text-decoration: underline;
 }
+
+.auth-forgot-link {
+  font-size: 0.78rem;
+  color: var(--ceramic-bizen);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.auth-forgot-link:hover {
+  text-decoration: underline;
+  color: var(--zen-sumi);
+}
