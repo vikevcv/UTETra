@@ -36,7 +36,10 @@
           <form:errors path="username" cssClass="auth-error"/>
         </div>
         <div class="auth-field">
-          <label for="password">Mật Khẩu</label>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label for="password">Mật Khẩu</label>
+            <a href="${pageContext.request.contextPath}/auth/forgot-password" class="auth-forgot-link">Quên mật khẩu?</a>
+          </div>
           <form:password path="password" id="password" cssClass="auth-input"
                          placeholder="Nhập mật khẩu"/>
           <form:errors path="password" cssClass="auth-error"/>

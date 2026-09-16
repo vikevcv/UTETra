@@ -42,12 +42,40 @@
         <button type="submit" class="btn-zen-primary auth-submit">Xác Nhận</button>
       </form:form>
 
+      <div style="margin-top:16px; text-align:center; font-size:0.85rem; color:var(--text-muted);">
+        Chưa nhận được mã?
+        <form id="resendForm" action="${pageContext.request.contextPath}/auth/resend-register-otp" method="post" style="display:inline;">
+          <input type="hidden" name="email" value="${email}" />
+          <button type="submit" id="btnResend" class="auth-forgot-link" style="background:none; border:none; padding:0; cursor:pointer; font-weight:600;" disabled>
+            Gửi lại OTP (<span id="countdown">60</span>s)
+          </button>
+        </form>
+      </div>
+
       <div class="auth-footer">
         <a href="${pageContext.request.contextPath}/auth/register">Quay lại đăng ký</a>
       </div>
     </div>
   </div>
 </section>
+
+<script>
+  let timeLeft = 60;
+  const countdownEl = document.getElementById("countdown");
+  const btnResend = document.getElementById("btnResend");
+  const timer = setInterval(() => {
+    timeLeft--;
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      btnResend.disabled = false;
+      btnResend.innerText = "Gửi lại mã OTP ngay";
+      btnResend.style.textDecoration = "underline";
+    } else {
+      countdownEl.innerText = timeLeft;
+    }
+  }, 1000);
+</script>
+
 
 </body>
 </html>
