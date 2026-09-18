@@ -49,3 +49,6 @@ Thumbs.db
 .env
 .env.local
 .env.production
+
+### Local Unit & Integration Tests (Chỉ lưu cục bộ, không đưa lên Git) ###
+src/test/java/com/ute/trasua/*/
