@@ -7,7 +7,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><sitemesh:write property='title'>UTETra — Modern Zen Wabi-Sabi & Haute Couture Tea Gallery</sitemesh:write></title>
+  <title><%="<sitemesh:write property='title'>UTETra — Modern Zen Wabi-Sabi & Haute Couture Tea Gallery</sitemesh:write>"%></title>
 
   <!-- Typography: Outfit & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,7 +20,7 @@
   <!-- Custom Zen Wabi-Sabi Design System -->
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/zen-wabi-sabi.css">
 
-  <sitemesh:write property='head'/>
+  <%="<sitemesh:write property='head'/>"%>
 </head>
 <body>
 
@@ -49,9 +49,19 @@
       </nav>
 
       <div class="zen-actions">
-        <button class="btn-zen-room" onclick="scrollToRooms()" id="currentRoomBtn" type="button">
-          🍵 <span id="currentRoomName">Phòng Trà SPKT</span>
-        </button>
+        <c:choose>
+          <c:when test="${pageContext.request.remoteUser != null}">
+            <span style="font-size:0.82rem; color:var(--text-muted); margin-right:8px;">
+              Xin chào, ${pageContext.request.remoteUser}
+            </span>
+            <a href="${pageContext.request.contextPath}/auth/logout"
+               class="btn-zen-outline" style="text-decoration:none;">Đăng Xuất</a>
+          </c:when>
+          <c:otherwise>
+            <a href="${pageContext.request.contextPath}/auth/login"
+               class="btn-zen-outline" style="text-decoration:none;">Đăng Nhập</a>
+          </c:otherwise>
+        </c:choose>
         <button class="btn-zen-tray" onclick="toggleZenDrawer()" type="button">
           Khay Trà <span class="tray-counter" id="trayCount">2</span>
         </button>
@@ -61,7 +71,7 @@
 
   <!-- Main Child Content Injected By SiteMesh -->
   <main id="main-content">
-    <sitemesh:write property='body'/>
+    <%="<sitemesh:write property='body'/>"%>
   </main>
 
   <!-- Footer -->

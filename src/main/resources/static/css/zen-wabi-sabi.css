@@ -590,3 +590,142 @@ button, input, select {
     display: none;
   }
 }
+
+/*
+   AUTH PAGES — Login & Register
+*/
+
+.auth-section {
+  min-height: calc(100vh - 180px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: var(--bg-cream);
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 440px;
+}
+
+.auth-card {
+  background: var(--bg-paper);
+  border: 1px solid var(--border-hairline);
+  border-radius: 16px;
+  padding: 40px 36px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.auth-header h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: var(--zen-sumi);
+  margin: 12px 0 4px;
+}
+
+.auth-header p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.auth-alert {
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.auth-alert-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.auth-alert-success {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-field label {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--zen-sumi);
+  letter-spacing: 0.02em;
+}
+
+.auth-input {
+  padding: 11px 14px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  background: var(--bg-cream);
+  transition: border-color 0.2s;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: var(--ceramic-bizen);
+  box-shadow: 0 0 0 3px rgba(140,109,83,0.1);
+}
+
+.auth-error {
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.auth-submit {
+  margin-top: 6px;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.auth-footer a {
+  color: var(--ceramic-bizen);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+.auth-forgot-link {
+  font-size: 0.78rem;
+  color: var(--ceramic-bizen);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.auth-forgot-link:hover {
+  text-decoration: underline;
+  color: var(--zen-sumi);
+}
