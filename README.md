@@ -98,7 +98,7 @@ DB_PASSWORD=mat_khau_mysql_cua_ban
 # 2. CẤU HÌNH BẢO MẬT JSON WEB TOKEN (JWT)
 # Khóa bí mật tối thiểu 32 ký tự (256-bit) phục vụ thuật toán ký HMAC-SHA256
 # ==============================================================================
-JWT_SECRET=utetra_zen_wabi_sabi_secret_key_2026_super_secure_random_key_value
+JWT_SECRET=your_jwt_secret_key_at_least_32_characters_long
 JWT_EXPIRATION_MS=86400000
 
 # ==============================================================================

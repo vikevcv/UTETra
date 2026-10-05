@@ -52,3 +52,8 @@ Thumbs.db
 
 ### Local Unit & Integration Tests (Chỉ lưu cục bộ, không đưa lên Git) ###
 src/test/java/com/ute/trasua/*/
+
+### Local Runtime (logs khi chạy thủ công, không đưa lên Git) ###
+*.log
+nohup.out
+/logs/
