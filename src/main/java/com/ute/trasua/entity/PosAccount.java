@@ -6,39 +6,39 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tai_khoan_quay",
+@Table(name = "pos_accounts",
        uniqueConstraints = {
-           @UniqueConstraint(columnNames = "ten_dang_nhap")
+           @UniqueConstraint(columnNames = "username")
        })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TaiKhoanQuay {
+public class PosAccount {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "ten_quay", nullable = false, length = 50)
-    private String tenQuay;
+    @Column(name = "counter_name", nullable = false, length = 50)
+    private String counterName;
 
-    @Column(name = "ten_dang_nhap", nullable = false, length = 50)
-    private String tenDangNhap;
+    @Column(name = "username", nullable = false, length = 50)
+    private String username;
 
-    @Column(name = "mat_khau", nullable = false, length = 255)
-    private String matKhau;
+    @Column(name = "password", nullable = false, length = 255)
+    private String password;
 
     @Column(name = "active", nullable = false)
     @Builder.Default
     private boolean active = true;
 
-    @Column(name = "ghi_chu", length = 255)
-    private String ghiChu;
+    @Column(name = "note", length = 255)
+    private String note;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chi_nhanh_id", nullable = false)
-    private ChiNhanh chiNhanh;
+    @JoinColumn(name = "branch_id", nullable = false)
+    private Branch branch;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

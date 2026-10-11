@@ -1,9 +1,9 @@
 package com.ute.trasua.controller.admin;
 
-import com.ute.trasua.dto.ChiNhanhRequest;
-import com.ute.trasua.dto.ChiNhanhResponse;
+import com.ute.trasua.dto.BranchRequest;
+import com.ute.trasua.dto.BranchResponse;
 import com.ute.trasua.dto.UserResponse;
-import com.ute.trasua.service.ChiNhanhService;
+import com.ute.trasua.service.BranchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -17,18 +17,18 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 
 /**
- * Controller phục vụ Chủ chuỗi quản lý mạng lưới Chi nhánh (Module 12 - UC21).
+ * Controller serving Chain Admin managing Branch network (Module 12 - UC21).
  */
 @Controller
 @RequestMapping("/admin/branches")
 @RequiredArgsConstructor
 @Slf4j
-public class ChiNhanhController {
+public class BranchController {
 
-    private final ChiNhanhService chiNhanhService;
+    private final BranchService branchService;
 
     /**
-     * Màn hình danh sách cơ sở chi nhánh toàn hệ thống kèm bản đồ mạng lưới (UC21).
+     * Display all branches network list and map overview (UC21).
      */
     @GetMapping
     public String listBranches(
@@ -38,18 +38,17 @@ public class ChiNhanhController {
             @RequestParam(value = "size", defaultValue = "9") int size,
             Model model
     ) {
-        Page<ChiNhanhResponse> branchesPage = chiNhanhService.searchBranches(
+        Page<BranchResponse> branchesPage = branchService.searchBranches(
                 keyword,
                 active,
                 PageRequest.of(page, size, Sort.by("id").descending())
         );
 
-        long totalBranches = chiNhanhService.countTotalBranches();
-        long activeBranches = chiNhanhService.countActiveBranches();
+        long totalBranches = branchService.countTotalBranches();
+        long activeBranches = branchService.countActiveBranches();
         long pausedBranches = totalBranches - activeBranches;
 
-        // Lấy tất cả chi nhánh để render các điểm pin trên bản đồ mạng lưới chuỗi
-        List<ChiNhanhResponse> allBranches = chiNhanhService.getAllBranches();
+        List<BranchResponse> allBranches = branchService.getAllBranches();
 
         model.addAttribute("branchesPage", branchesPage);
         model.addAttribute("keyword", keyword);
@@ -64,19 +63,19 @@ public class ChiNhanhController {
     }
 
     /**
-     * Form thêm mới chi nhánh tích hợp bản đồ chọn tọa độ GPS.
+     * Show create new branch form with interactive map picker.
      */
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        ChiNhanhRequest branch = ChiNhanhRequest.builder()
-                .gioMoCua("07:00")
-                .gioDongCua("22:30")
+        BranchRequest branch = BranchRequest.builder()
+                .openTime("07:00")
+                .closeTime("22:30")
                 .active(true)
-                .latitude(10.85072) // Tọa độ mặc định: ĐH SPKT TP.HCM (Thủ Đức)
+                .latitude(10.85072) // Default coordinates: HCMUTE Thu Duc
                 .longitude(106.77196)
                 .build();
 
-        List<UserResponse> managers = chiNhanhService.getEligibleManagers();
+        List<UserResponse> managers = branchService.getEligibleManagers();
 
         model.addAttribute("branch", branch);
         model.addAttribute("managers", managers);
@@ -87,60 +86,60 @@ public class ChiNhanhController {
     }
 
     /**
-     * Form chỉnh sửa thông tin chi nhánh và cập nhật GPS.
+     * Show edit branch form and GPS coordinates.
      */
     @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
-            ChiNhanhResponse resp = chiNhanhService.getBranchById(id);
+            BranchResponse resp = branchService.getBranchById(id);
 
-            ChiNhanhRequest branch = ChiNhanhRequest.builder()
+            BranchRequest branch = BranchRequest.builder()
                     .id(resp.getId())
-                    .maChiNhanh(resp.getMaChiNhanh())
-                    .tenChiNhanh(resp.getTenChiNhanh())
-                    .diaChi(resp.getDiaChi())
+                    .branchCode(resp.getBranchCode())
+                    .name(resp.getName())
+                    .address(resp.getAddress())
                     .latitude(resp.getLatitude() != null ? resp.getLatitude() : 10.85072)
                     .longitude(resp.getLongitude() != null ? resp.getLongitude() : 106.77196)
                     .hotline(resp.getHotline())
-                    .gioMoCua(resp.getGioMoCua())
-                    .gioDongCua(resp.getGioDongCua())
+                    .openTime(resp.getOpenTime())
+                    .closeTime(resp.getCloseTime())
                     .active(resp.isActive())
                     .managerId(resp.getManagerId())
                     .build();
 
-            List<UserResponse> managers = chiNhanhService.getEligibleManagers();
+            List<UserResponse> managers = branchService.getEligibleManagers();
 
             model.addAttribute("branch", branch);
             model.addAttribute("managers", managers);
             model.addAttribute("isEdit", true);
             model.addAttribute("branchId", id);
-            model.addAttribute("pageTitle", "Cập Nhật Chi Nhánh: " + resp.getTenChiNhanh() + " — UTETra");
+            model.addAttribute("pageTitle", "Cập Nhật Chi Nhánh: " + resp.getName() + " — UTETra");
 
             return "admin/branches/form";
         } catch (Exception e) {
-            log.error("Lỗi khi mở form sửa chi nhánh ID {}: {}", id, e.getMessage());
+            log.error("Error opening edit form for branch ID {}: {}", id, e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/admin/branches";
         }
     }
 
     /**
-     * Lưu thông tin chi nhánh (Tạo mới hoặc Cập nhật).
+     * Save branch information (Create or Update).
      */
     @PostMapping("/save")
     public String saveBranch(
-            @ModelAttribute ChiNhanhRequest request,
+            @ModelAttribute BranchRequest request,
             RedirectAttributes redirectAttributes
     ) {
         try {
             if (request.getId() == null) {
-                ChiNhanhResponse created = chiNhanhService.createBranch(request);
+                BranchResponse created = branchService.createBranch(request);
                 redirectAttributes.addFlashAttribute("successMessage",
-                        "Đã tạo thành công chi nhánh mới: [" + created.getMaChiNhanh() + "] " + created.getTenChiNhanh());
+                        "Đã tạo thành công chi nhánh mới: [" + created.getBranchCode() + "] " + created.getName());
             } else {
-                ChiNhanhResponse updated = chiNhanhService.updateBranch(request.getId(), request);
+                BranchResponse updated = branchService.updateBranch(request.getId(), request);
                 redirectAttributes.addFlashAttribute("successMessage",
-                        "Đã cập nhật thông tin chi nhánh: [" + updated.getMaChiNhanh() + "] " + updated.getTenChiNhanh());
+                        "Đã cập nhật thông tin chi nhánh: [" + updated.getBranchCode() + "] " + updated.getName());
             }
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -150,7 +149,7 @@ public class ChiNhanhController {
                 return "redirect:/admin/branches/new";
             }
         } catch (Exception e) {
-            log.error("Lỗi khi lưu chi nhánh: {}", e.getMessage(), e);
+            log.error("Error saving branch: {}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi: " + e.getMessage());
             return "redirect:/admin/branches";
         }
@@ -159,12 +158,12 @@ public class ChiNhanhController {
     }
 
     /**
-     * Bật / Tắt trạng thái hoạt động nhanh của chi nhánh.
+     * Fast toggle branch active/pause status.
      */
     @PostMapping("/{id}/toggle-status")
     public String toggleStatus(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            boolean newStatus = chiNhanhService.toggleBranchStatus(id);
+            boolean newStatus = branchService.toggleBranchStatus(id);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã chuyển trạng thái chi nhánh sang: " + (newStatus ? "ĐANG HOẠT ĐỘNG" : "TẠM DỪNG HOẠT ĐỘNG"));
         } catch (Exception e) {
@@ -174,12 +173,12 @@ public class ChiNhanhController {
     }
 
     /**
-     * Xóa chi nhánh (Nếu có nhân sự sẽ tự chuyển ngưng hoạt động).
+     * Delete / deactivate branch.
      */
     @PostMapping("/{id}/delete")
     public String deleteBranch(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            chiNhanhService.deleteBranch(id);
+            branchService.deleteBranch(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã xử lý xóa / ngưng chi nhánh thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());

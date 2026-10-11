@@ -121,7 +121,7 @@
               <label class="form-label">
                 Mã Chi Nhánh <span class="required">*</span>
               </label>
-              <input type="text" name="maChiNhanh" value="${branch.maChiNhanh}" required
+              <input type="text" name="branchCode" value="${branch.branchCode}" required
                      placeholder="Ví dụ: CN-TD01, CN-Q01..." 
                      class="zen-input" style="width: 100%; text-transform: uppercase; font-family: monospace; font-weight: 700;" />
             </div>
@@ -140,7 +140,7 @@
             <label class="form-label">
               Tên Chi Nhánh / Điểm Bán <span class="required">*</span>
             </label>
-            <input type="text" name="tenChiNhanh" value="${branch.tenChiNhanh}" required
+            <input type="text" name="name" value="${branch.name}" required
                    placeholder="Ví dụ: UTETea Cơ Sở Thủ Đức (Đại Học SPKT)..." 
                    class="zen-input" style="width: 100%;" />
           </div>
@@ -150,7 +150,7 @@
             <label class="form-label">
               Địa Chỉ Chi Tiết <span class="required">*</span>
             </label>
-            <input type="text" name="diaChi" id="diaChiInput" value="${branch.diaChi}" required
+            <input type="text" name="address" id="addressInput" value="${branch.address}" required
                    placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành..." 
                    class="zen-input" style="width: 100%;" />
           </div>
@@ -181,13 +181,13 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group">
               <label class="form-label">Giờ Mở Cửa</label>
-              <input type="time" name="gioMoCua" value="${branch.gioMoCua}"
+              <input type="time" name="openTime" value="${branch.openTime}"
                      class="zen-input" style="width: 100%;" />
             </div>
 
             <div class="form-group">
               <label class="form-label">Giờ Đóng Cửa</label>
-              <input type="time" name="gioDongCua" value="${branch.gioDongCua}"
+              <input type="time" name="closeTime" value="${branch.closeTime}"
                      class="zen-input" style="width: 100%;" />
             </div>
           </div>
@@ -333,7 +333,7 @@
 
     // Tìm kiếm vị trí qua OpenStreetMap Nominatim
     function searchLocationOnMap() {
-      const query = document.getElementById('mapSearchQuery').value || document.getElementById('diaChiInput').value;
+      const query = document.getElementById('mapSearchQuery').value || document.getElementById('addressInput').value;
       if (!query || query.trim() === '') {
         alert('Vui lòng nhập địa chỉ hoặc tên địa điểm để tìm kiếm!');
         return;
