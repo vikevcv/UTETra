@@ -66,7 +66,7 @@ public class DriverManagementController {
         model.addAttribute("driversPage", driversPage);
         model.addAttribute("stats", driverStats);
         model.addAttribute("keyword", keyword);
-        model.addAttribute("pageTitle", "Giám Sát Tài Xế Toàn Chuỗi — UTETra Admin (UC25)");
+        model.addAttribute("pageTitle", "Giám Sát Đội Ngũ Giao Hàng — UTETra Admin");
 
         return "admin/drivers/list";
     }

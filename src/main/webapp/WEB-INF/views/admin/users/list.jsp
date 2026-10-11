@@ -15,14 +15,14 @@
       <h2 class="fw-bold mb-1" style="font-family: 'Outfit', sans-serif; color: var(--admin-text-main);">
         <i class="fa-solid fa-users-gear text-success me-2"></i>Quản Lý Người Dùng Toàn Chuỗi
       </h2>
-      <p class="text-muted mb-0">Tra cứu, phân quyền vai trò và kiểm soát trạng thái khóa tài khoản hệ thống (UC20)</p>
+      <p class="text-muted mb-0">Tra cứu, phân quyền vai trò và quản lý trạng thái tài khoản người dùng</p>
     </div>
     <div class="d-flex gap-2">
       <a href="${pageContext.request.contextPath}/admin/users" class="btn btn-zen-light">
         <i class="fa-solid fa-arrows-rotate me-1"></i> Làm Mới
       </a>
       <a href="${pageContext.request.contextPath}/admin/drivers" class="btn btn-zen-primary">
-        <i class="fa-solid fa-motorcycle me-1"></i> Giám Sát Tài Xế (UC25)
+        <i class="fa-solid fa-motorcycle me-1"></i> Đội Ngũ Giao Hàng
       </a>
     </div>
   </div>

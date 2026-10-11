@@ -24,7 +24,7 @@
         <i class="fa-solid fa-arrows-rotate me-1"></i> Cập Nhật
       </a>
       <a href="${pageContext.request.contextPath}/admin/reports" class="btn btn-zen-primary">
-        <i class="fa-solid fa-file-excel me-1"></i> Báo Cáo Doanh Thu (BM1)
+        <i class="fa-solid fa-file-excel me-1"></i> Báo Cáo Doanh Thu
       </a>
     </div>
   </div>
@@ -104,19 +104,19 @@
       </div>
       <div class="col-12 col-md-10 d-flex flex-wrap gap-2">
         <a href="${pageContext.request.contextPath}/admin/users" class="btn btn-sm btn-zen-light">
-          <i class="fa-solid fa-user-plus text-primary me-1"></i> Quản Lý User (UC20)
+          <i class="fa-solid fa-user-plus text-primary me-1"></i> Quản Lý Người Dùng
         </a>
         <a href="${pageContext.request.contextPath}/admin/drivers" class="btn btn-sm btn-zen-light">
-          <i class="fa-solid fa-motorcycle text-success me-1"></i> Giám Sát Tài Xế (UC25)
+          <i class="fa-solid fa-motorcycle text-success me-1"></i> Đội Ngũ Giao Hàng
         </a>
         <a href="${pageContext.request.contextPath}/admin/branches" class="btn btn-sm btn-zen-light">
-          <i class="fa-solid fa-store text-info me-1"></i> Mạng Lưới Chi Nhánh (UC21)
+          <i class="fa-solid fa-store text-info me-1"></i> Hệ Thống Chi Nhánh
         </a>
         <a href="${pageContext.request.contextPath}/admin/products" class="btn btn-sm btn-zen-light">
-          <i class="fa-solid fa-mug-hot text-danger me-1"></i> Thực Đơn & Ảnh Cloudinary (UC22)
+          <i class="fa-solid fa-mug-hot text-danger me-1"></i> Quản Lý Thực Đơn
         </a>
         <a href="${pageContext.request.contextPath}/admin/reports" class="btn btn-sm btn-zen-light">
-          <i class="fa-solid fa-file-excel text-success me-1"></i> Báo Cáo Chuỗi BM1 (UC26)
+          <i class="fa-solid fa-file-excel text-success me-1"></i> Báo Cáo Doanh Thu
         </a>
       </div>
     </div>
@@ -209,38 +209,38 @@
         <ul class="list-group list-group-flush small">
           <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
             <div>
-              <strong>M11: SiteMesh & Quản Lý User</strong>
-              <div class="text-muted" style="font-size: 0.76rem;">Layout Admin + CRUD User + Tài xế</div>
+              <strong>Tài Khoản & Người Dùng</strong>
+              <div class="text-muted" style="font-size: 0.76rem;">Quản lý tài khoản, phân quyền và tài xế</div>
             </div>
             <span class="badge bg-success"><i class="fa-solid fa-check"></i> Hoàn thành</span>
           </li>
           <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
             <div>
-              <strong>M12: Mạng Lưới Chi Nhánh (GPS)</strong>
-              <div class="text-muted" style="font-size: 0.76rem;">Bản đồ Leaflet + Nhân sự ca trực</div>
+              <strong>Mạng Lưới Chi Nhánh & GPS</strong>
+              <div class="text-muted" style="font-size: 0.76rem;">Bản đồ định vị và nhân sự ca trực</div>
             </div>
-            <span class="badge bg-primary">Sẵn sàng (Phase 2)</span>
+            <span class="badge bg-success"><i class="fa-solid fa-check"></i> Hoàn thành</span>
           </li>
           <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
             <div>
-              <strong>M13: Thực Đơn & Cloudinary</strong>
-              <div class="text-muted" style="font-size: 0.76rem;">Món nước, ảnh mây, sync chi nhánh</div>
+              <strong>Thực Đơn & Món Nước</strong>
+              <div class="text-muted" style="font-size: 0.76rem;">Quản lý danh mục, món nước và hình ảnh</div>
             </div>
-            <span class="badge bg-light text-muted">Phase 3</span>
+            <span class="badge bg-light text-muted">Đang phát triển</span>
           </li>
           <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
             <div>
-              <strong>M14: Kho Vận & Nhập Kho BM2</strong>
-              <div class="text-muted" style="font-size: 0.76rem;">Master-Detail phiếu nhập + auto tồn</div>
+              <strong>Kho Hàng & Nhập Kho</strong>
+              <div class="text-muted" style="font-size: 0.76rem;">Quản lý nguyên liệu và lập phiếu nhập hàng</div>
             </div>
-            <span class="badge bg-light text-muted">Phase 4</span>
+            <span class="badge bg-light text-muted">Đang phát triển</span>
           </li>
           <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
             <div>
-              <strong>M15: Báo Cáo & Xuất Excel BM1</strong>
-              <div class="text-muted" style="font-size: 0.76rem;">Chart.js đa chi nhánh + Apache POI</div>
+              <strong>Báo Cáo & Thống Kê</strong>
+              <div class="text-muted" style="font-size: 0.76rem;">Biểu đồ doanh thu chuỗi và xuất dữ liệu Excel</div>
             </div>
-            <span class="badge bg-light text-muted">Phase 5</span>
+            <span class="badge bg-light text-muted">Đang phát triển</span>
           </li>
         </ul>
       </div>

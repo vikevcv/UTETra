@@ -5,7 +5,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Giám Sát Tài Xế Toàn Chuỗi — UTETra Admin (UC25)</title>
+  <title>Giám Sát Đội Ngũ Giao Hàng — UTETra Admin</title>
 </head>
 <body>
 
@@ -13,16 +13,16 @@
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
       <h2 class="fw-bold mb-1" style="font-family: 'Outfit', sans-serif; color: var(--admin-text-main);">
-        <i class="fa-solid fa-motorcycle text-success me-2"></i>Giám Sát Đội Ngũ Tài Xế Toàn Chuỗi
+        <i class="fa-solid fa-motorcycle text-success me-2"></i>Giám Sát Đội Ngũ Giao Hàng
       </h2>
-      <p class="text-muted mb-0">Theo dõi trạng thái giao hàng thời gian thực, đánh giá chất lượng và kiểm soát quyền nhận đơn (UC25)</p>
+      <p class="text-muted mb-0">Theo dõi trạng thái giao hàng theo thời gian thực, đánh giá chất lượng và quản lý quyền nhận đơn</p>
     </div>
     <div class="d-flex gap-2">
       <a href="${pageContext.request.contextPath}/admin/drivers" class="btn btn-zen-light">
-        <i class="fa-solid fa-arrows-rotate me-1"></i> Làm Mới Dữ Liệu
+        <i class="fa-solid fa-arrows-rotate me-1"></i> Làm Mới
       </a>
       <a href="${pageContext.request.contextPath}/admin/users" class="btn btn-zen-light">
-        <i class="fa-solid fa-users me-1"></i> Quản Lý User (UC20)
+        <i class="fa-solid fa-users me-1"></i> Quản Lý Người Dùng
       </a>
     </div>
   </div>

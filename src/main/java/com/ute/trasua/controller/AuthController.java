@@ -21,6 +21,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtTokenProvider tokenProvider;
+    private final com.ute.trasua.repository.UserRepository userRepository;
 
     @Value("${app.jwt.expiration-ms}")
     private long jwtExpirationMs;
@@ -48,11 +49,30 @@ public class AuthController {
         try {
             String token = authService.login(request);
             addJwtCookie(response, token);
-            return "redirect:/";
+
+            // Điều hướng tự động theo vai trò (Role-based redirect)
+            return redirectByRole(request.getUsername());
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/auth/login";
         }
+    }
+
+    private String redirectByRole(String username) {
+        return userRepository.findByUsername(username)
+                .map(user -> {
+                    if (user.getRoles() != null) {
+                        if (user.getRoles().contains("ROLE_ADMIN")) {
+                            return "redirect:/admin/dashboard";
+                        } else if (user.getRoles().contains("ROLE_MANAGER")) {
+                            return "redirect:/branch/employees";
+                        } else if (user.getRoles().contains("ROLE_DRIVER")) {
+                            return "redirect:/admin/drivers";
+                        }
+                    }
+                    return "redirect:/";
+                })
+                .orElse("redirect:/");
     }
 
     // REGISTER

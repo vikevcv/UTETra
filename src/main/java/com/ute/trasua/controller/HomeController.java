@@ -16,4 +16,30 @@ public class HomeController {
         model.addAttribute("siteTitle", "UTETra — Modern Zen Wabi-Sabi & Haute Couture Tea Gallery");
         return "home";
     }
+
+    /**
+     * Endpoint trung chuyển thông minh: tự động đưa người dùng về Portal tương ứng với quyền hiện tại.
+     */
+    @GetMapping("/portal")
+    public String portal(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/auth/login";
+        }
+        var authorities = authentication.getAuthorities();
+        if (authorities != null) {
+            boolean isAdmin = authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (isAdmin) {
+                return "redirect:/admin/dashboard";
+            }
+            boolean isManager = authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER"));
+            if (isManager) {
+                return "redirect:/branch/employees";
+            }
+            boolean isDriver = authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_DRIVER"));
+            if (isDriver) {
+                return "redirect:/admin/drivers";
+            }
+        }
+        return "redirect:/";
+    }
 }

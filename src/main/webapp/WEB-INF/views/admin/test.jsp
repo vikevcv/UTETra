@@ -128,7 +128,7 @@
           </tr>
           <tr>
             <td><strong>M14</strong></td>
-            <td>Kho Vận Chi Nhánh & Phiếu Nhập Kho BM2</td>
+            <td>Kho Hàng Chi Nhánh & Quản Lý Nhập Kho</td>
             <td>Quản Lý Chi Nhánh</td>
             <td><span class="zen-badge zen-badge-secondary">Chờ Phase 3</span></td>
             <td class="text-end">
@@ -137,7 +137,7 @@
           </tr>
           <tr>
             <td><strong>M15</strong></td>
-            <td>Báo Cáo Doanh Thu Chuỗi & Xuất Excel BM1</td>
+            <td>Báo Cáo Doanh Thu & Xuất Dữ Liệu Excel</td>
             <td>Chủ Chuỗi / QLCN</td>
             <td><span class="zen-badge zen-badge-secondary">Chờ Phase 4</span></td>
             <td class="text-end">
