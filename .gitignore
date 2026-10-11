@@ -57,3 +57,6 @@ src/test/java/com/ute/trasua/*/
 *.log
 nohup.out
 /logs/
+
+### CodeGraph Local Index ###
+.codegraph/
