@@ -26,13 +26,15 @@ jobs:
             set -e
             cd /home/ubuntu/apps/trasua-preprod
             
-            # Cập nhật mã nguồn nhánh develop bằng giao thức SSH Deploy Key
+            # Khởi tạo git nếu chưa có, an toàn khi thư mục đã có sẵn .env và docker-compose.yml
             if [ ! -d ".git" ]; then
-              git clone -b develop git@github.com:${{ github.repository }}.git .
-            else
-              git fetch origin develop
-              git reset --hard origin/develop
+              git init
+              git remote add origin git@github.com:${{ github.repository }}.git
             fi
+            
+            # Kéo mã nguồn mới nhất của nhánh develop
+            git fetch origin develop
+            git checkout -B develop origin/develop
             
             # Khởi động / Build lại app-preprod mà không làm gián đoạn MySQL
             docker compose build app-preprod
@@ -60,13 +62,15 @@ jobs:
             set -e
             cd /home/ubuntu/apps/trasua-prod
             
-            # Cập nhật mã nguồn nhánh main bằng giao thức SSH Deploy Key
+            # Khởi tạo git nếu chưa có, an toàn khi thư mục đã có sẵn .env và docker-compose.yml
             if [ ! -d ".git" ]; then
-              git clone -b main git@github.com:${{ github.repository }}.git .
-            else
-              git fetch origin main
-              git reset --hard origin/main
+              git init
+              git remote add origin git@github.com:${{ github.repository }}.git
             fi
+            
+            # Kéo mã nguồn mới nhất của nhánh main
+            git fetch origin main
+            git checkout -B main origin/main
             
             # Khởi động / Build lại app-prod mà không làm gián đoạn MySQL
             docker compose build app-prod
