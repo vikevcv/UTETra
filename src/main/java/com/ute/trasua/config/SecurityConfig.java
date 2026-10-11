@@ -50,9 +50,17 @@ public class SecurityConfig {
                     "/auth/**",
                     "/css/**", "/js/**", "/images/**", "/favicon.ico",
                     "/h2-console/**",
-                    "/WEB-INF/**"
+                    "/WEB-INF/**",
+                    "/admin/test",
+                    "/branch/test",
+                    "/admin/users/**",
+                    "/admin/drivers/**",
+                    "/admin",
+                    "/admin/",
+                    "/admin/dashboard"
                 ).permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/branch/**").hasAnyRole("ADMIN", "MANAGER")
                 .anyRequest().authenticated())
             .csrf(csrf -> csrf.disable())
             .headers(headers -> headers.frameOptions(fo -> fo.disable()))

@@ -4,6 +4,14 @@
     <mapping path="/js/*" exclude="true"/>
     <mapping path="/images/*" exclude="true"/>
     <mapping path="/favicon.ico" exclude="true"/>
+    <!-- Áp dụng decorator riêng cho Chủ Chuỗi (Admin Portal) -->
+    <mapping path="/admin/*" decorator="/WEB-INF/decorators/admin.jsp"/>
+    <mapping path="/admin/**" decorator="/WEB-INF/decorators/admin.jsp"/>
+
+    <!-- Áp dụng decorator riêng biệt cho Quản Lý Chi Nhánh (Branch Portal) -->
+    <mapping path="/branch/*" decorator="/WEB-INF/decorators/branch.jsp"/>
+    <mapping path="/branch/**" decorator="/WEB-INF/decorators/branch.jsp"/>
+
     <!-- Áp dụng decorator web.jsp cho toàn bộ giao diện phía khách hàng -->
     <mapping path="/*" decorator="/WEB-INF/decorators/web.jsp"/>
 </sitemesh>
