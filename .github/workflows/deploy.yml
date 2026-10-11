@@ -36,9 +36,9 @@ jobs:
             git fetch origin develop
             git checkout -B develop origin/develop
             
-            # Khởi động / Build lại app-preprod mà không làm gián đoạn MySQL
-            docker compose build app-preprod
-            docker compose up -d app-preprod mysql-preprod
+            # Khởi động / Build lại app-preprod mà không dùng cache cũ
+            docker compose build --no-cache app-preprod
+            docker compose up -d --force-recreate app-preprod mysql-preprod
             
             # Dọn dẹp cache docker cũ để giải phóng dung lượng VPS
             docker image prune -f
@@ -72,9 +72,9 @@ jobs:
             git fetch origin main
             git checkout -B main origin/main
             
-            # Khởi động / Build lại app-prod mà không làm gián đoạn MySQL
-            docker compose build app-prod
-            docker compose up -d app-prod mysql-prod
+            # Khởi động / Build lại app-prod mà không dùng cache cũ
+            docker compose build --no-cache app-prod
+            docker compose up -d --force-recreate app-prod mysql-prod
             
             # Dọn dẹp cache docker cũ để giải phóng dung lượng VPS
             docker image prune -f

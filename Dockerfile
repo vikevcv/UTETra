@@ -16,6 +16,6 @@ RUN ./mvnw clean package -DskipTests
 # Stage 2: Runtime image với Java 25
 FROM eclipse-temurin:25-jre-noble
 WORKDIR /app
-COPY --from=build /app/target/*.[jw]ar app.jar
+COPY --from=build /app/target/*.[jw]ar app.war
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.war"]
