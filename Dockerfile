@@ -18,6 +18,7 @@ COPY --from=build /app/target/*.war app.war
 ENV PORT=8080
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-Xmx300m", "-Xss512k", "-jar", "app.war"]
+ENTRYPOINT ["java", "-Djava.net.preferIPv4Stack=true", "-XX:+UseSerialGC", "-Xmx320m", "-Xss512k", "-jar", "app.war"]
+
 
 
