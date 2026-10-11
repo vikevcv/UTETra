@@ -46,14 +46,14 @@
     <div class="header-content">
       <h1 class="page-title">
         <i class="fa-solid ${isEdit ? 'fa-user-pen' : 'fa-user-plus'}" style="color: #f59e0b; margin-right: 8px;"></i>
-        ${isEdit ? 'Cập Nhật Hồ Sơ & Ca Trực' : 'Tiếp Nhận Nhân Viên Mới'}
+        ${isEdit ? 'Cập Nhật Hồ Sơ & Ca Trực Nhân Viên' : 'Tiếp Nhận Nhân Viên Mới (UC16)'}
       </h1>
       <p class="page-subtitle">
         ${isEdit ? 'Chỉnh sửa thông tin cá nhân, phân công ca làm việc hoặc điều chuyển chi nhánh.' : 'Khai báo hồ sơ nhân sự mới, phân bổ vị trí làm việc và xếp ca trực.'}
       </p>
     </div>
     <div class="header-actions">
-      <a href="${pageContext.request.contextPath}/branch/employees?branchId=${employee.chiNhanhId}" class="zen-btn zen-btn-secondary">
+      <a href="${pageContext.request.contextPath}/branch/employees?branchId=${employee.branchId}" class="zen-btn zen-btn-secondary">
         <i class="fa-solid fa-arrow-left"></i>
         <span>Quay Lại Danh Sách</span>
       </a>
@@ -88,10 +88,10 @@
             <label class="form-label">
               Chi Nhánh Làm Việc <span class="required">*</span>
             </label>
-            <select name="chiNhanhId" class="zen-select" required style="width: 100%;">
+            <select name="branchId" class="zen-select" required style="width: 100%;">
               <c:forEach var="b" items="${allBranches}">
-                <option value="${b.id}" ${b.id == employee.chiNhanhId ? 'selected' : ''}>
-                  ${b.tenChiNhanh} (${b.maChiNhanh})
+                <option value="${b.id}" ${b.id == employee.branchId ? 'selected' : ''}>
+                  ${b.name} (${b.branchCode})
                 </option>
               </c:forEach>
             </select>
@@ -103,7 +103,7 @@
               <label class="form-label">
                 Mã NV <span class="required">*</span>
               </label>
-              <input type="text" name="maNhanVien" value="${employee.maNhanVien}" required
+              <input type="text" name="employeeCode" value="${employee.employeeCode}" required
                      placeholder="Ví dụ: NV005" 
                      class="zen-input" style="width: 100%; text-transform: uppercase; font-family: monospace; font-weight: 700;" />
             </div>
@@ -112,7 +112,7 @@
               <label class="form-label">
                 Họ Và Tên <span class="required">*</span>
               </label>
-              <input type="text" name="hoTen" value="${employee.hoTen}" required
+              <input type="text" name="fullName" value="${employee.fullName}" required
                      placeholder="Ví dụ: Nguyễn Văn An" 
                      class="zen-input" style="width: 100%;" />
             </div>
@@ -124,14 +124,14 @@
               <label class="form-label">
                 Số Điện Thoại <span class="required">*</span>
               </label>
-              <input type="tel" name="soDienThoai" value="${employee.soDienThoai}" required
+              <input type="tel" name="phone" value="${employee.phone}" required
                      placeholder="Ví dụ: 0912345678" 
                      class="zen-input" style="width: 100%;" />
             </div>
 
             <div class="form-group">
               <label class="form-label">Căn Cước Công Dân (CCCD)</label>
-              <input type="text" name="cccd" value="${employee.cccd}"
+              <input type="text" name="citizenId" value="${employee.citizenId}"
                      placeholder="12 chữ số CCCD..." 
                      class="zen-input" style="width: 100%; font-family: monospace;" />
             </div>
@@ -161,12 +161,12 @@
               <label class="form-label">
                 Vị Trí Công Việc <span class="required">*</span>
               </label>
-              <select name="viTri" class="zen-select" required style="width: 100%;">
-                <option value="PHA_CHE" ${employee.viTri == 'PHA_CHE' ? 'selected' : ''}>Pha Chế</option>
-                <option value="THU_NGAN" ${employee.viTri == 'THU_NGAN' ? 'selected' : ''}>Thu Ngân</option>
-                <option value="PHUC_VU" ${employee.viTri == 'PHUC_VU' ? 'selected' : ''}>Phục Vụ</option>
-                <option value="QUAN_LY" ${employee.viTri == 'QUAN_LY' ? 'selected' : ''}>Quản Lý Ca</option>
-                <option value="BAO_VE" ${employee.viTri == 'BAO_VE' ? 'selected' : ''}>Bảo Vệ</option>
+              <select name="position" class="zen-select" required style="width: 100%;">
+                <option value="BARTENDER" ${employee.position == 'BARTENDER' ? 'selected' : ''}>Pha Chế</option>
+                <option value="CASHIER" ${employee.position == 'CASHIER' ? 'selected' : ''}>Thu Ngân</option>
+                <option value="SERVER" ${employee.position == 'SERVER' ? 'selected' : ''}>Phục Vụ</option>
+                <option value="SHIFT_MANAGER" ${employee.position == 'SHIFT_MANAGER' ? 'selected' : ''}>Quản Lý Ca</option>
+                <option value="SECURITY" ${employee.position == 'SECURITY' ? 'selected' : ''}>Bảo Vệ</option>
               </select>
             </div>
 
@@ -174,11 +174,11 @@
               <label class="form-label">
                 Ca Làm Việc <span class="required">*</span>
               </label>
-              <select name="caLamViec" class="zen-select" required style="width: 100%;">
-                <option value="CA_SANG" ${employee.caLamViec == 'CA_SANG' ? 'selected' : ''}>Ca Sáng (06:30 - 12:00)</option>
-                <option value="CA_CHIEU" ${employee.caLamViec == 'CA_CHIEU' ? 'selected' : ''}>Ca Chiều (12:00 - 17:30)</option>
-                <option value="CA_TOI" ${employee.caLamViec == 'CA_TOI' ? 'selected' : ''}>Ca Tối (17:30 - 23:00)</option>
-                <option value="FULL_TIME" ${employee.caLamViec == 'FULL_TIME' ? 'selected' : ''}>Full-time (Toàn thời gian)</option>
+              <select name="shift" class="zen-select" required style="width: 100%;">
+                <option value="MORNING" ${employee.shift == 'MORNING' ? 'selected' : ''}>Ca Sáng (06:30 - 12:00)</option>
+                <option value="AFTERNOON" ${employee.shift == 'AFTERNOON' ? 'selected' : ''}>Ca Chiều (12:00 - 17:30)</option>
+                <option value="EVENING" ${employee.shift == 'EVENING' ? 'selected' : ''}>Ca Tối (17:30 - 23:00)</option>
+                <option value="FULL_TIME" ${employee.shift == 'FULL_TIME' ? 'selected' : ''}>Full-time (Toàn thời gian)</option>
               </select>
             </div>
           </div>
@@ -187,14 +187,14 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group">
               <label class="form-label">Mức Lương / Thù Lao (VNĐ)</label>
-              <input type="number" name="mucLuong" value="${employee.mucLuong}" step="100000"
+              <input type="number" name="salary" value="${employee.salary}" step="100000"
                      placeholder="Ví dụ: 7500000" 
                      class="zen-input" style="width: 100%; font-weight: 600;" />
             </div>
 
             <div class="form-group">
               <label class="form-label">Ngày Vào Làm</label>
-              <input type="date" name="ngayVaoLam" value="${employee.ngayVaoLam}"
+              <input type="date" name="hireDate" value="${employee.hireDate}"
                      class="zen-input" style="width: 100%;" />
             </div>
           </div>
@@ -202,10 +202,10 @@
           <!-- Trạng thái nhân sự -->
           <div class="form-group">
             <label class="form-label">Trạng Thái Làm Việc</label>
-            <select name="trangThai" class="zen-select" style="width: 100%;">
-              <option value="DANG_LAM" ${employee.trangThai == 'DANG_LAM' ? 'selected' : ''}>Đang làm việc</option>
-              <option value="TAM_NGHI" ${employee.trangThai == 'TAM_NGHI' ? 'selected' : ''}>Tạm nghỉ phép</option>
-              <option value="NGHI_VIEC" ${employee.trangThai == 'NGHI_VIEC' ? 'selected' : ''}>Đã nghỉ việc</option>
+            <select name="status" class="zen-select" style="width: 100%;">
+              <option value="ACTIVE" ${employee.status == 'ACTIVE' ? 'selected' : ''}>Đang làm việc</option>
+              <option value="ON_LEAVE" ${employee.status == 'ON_LEAVE' ? 'selected' : ''}>Tạm nghỉ phép</option>
+              <option value="RESIGNED" ${employee.status == 'RESIGNED' ? 'selected' : ''}>Đã nghỉ việc</option>
             </select>
           </div>
         </div>
@@ -214,7 +214,7 @@
 
     <!-- Nút hành động cuối trang -->
     <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-      <a href="${pageContext.request.contextPath}/branch/employees?branchId=${employee.chiNhanhId}" class="zen-btn zen-btn-secondary" style="padding: 10px 24px;">
+      <a href="${pageContext.request.contextPath}/branch/employees?branchId=${employee.branchId}" class="zen-btn zen-btn-secondary" style="padding: 10px 24px;">
         <i class="fa-solid fa-xmark"></i> Hủy Bỏ
       </a>
       <button type="submit" class="zen-btn" style="background: #f59e0b; color: white; border: none; padding: 10px 28px; font-weight: 600;">

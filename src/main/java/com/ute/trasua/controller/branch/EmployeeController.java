@@ -1,8 +1,8 @@
 package com.ute.trasua.controller.branch;
 
 import com.ute.trasua.dto.*;
-import com.ute.trasua.service.ChiNhanhService;
-import com.ute.trasua.service.NhanVienService;
+import com.ute.trasua.service.BranchService;
+import com.ute.trasua.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -17,60 +17,57 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 
 /**
- * Controller phục vụ Quản lý chi nhánh (QLCN) quản lý hồ sơ nhân viên,
- * phân công ca làm việc và thiết lập tài khoản quầy POS (Module 12 - UC16).
+ * Controller serving Branch Manager managing employees,
+ * work shifts and POS accounts (Module 12 - UC16).
  */
 @Controller
 @RequestMapping("/branch/employees")
 @RequiredArgsConstructor
 @Slf4j
-public class NhanVienController {
+public class EmployeeController {
 
-    private final NhanVienService nhanVienService;
-    private final ChiNhanhService chiNhanhService;
+    private final EmployeeService employeeService;
+    private final BranchService branchService;
 
     /**
-     * Màn hình danh sách nhân sự chi nhánh theo ca trực & Quản lý quầy POS (UC16).
+     * Display employees list and shift management + POS accounts (UC16).
      */
     @GetMapping
     public String listEmployees(
             @RequestParam(value = "branchId", required = false) Long branchId,
             @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "viTri", required = false) String viTri,
-            @RequestParam(value = "caLamViec", required = false) String caLamViec,
-            @RequestParam(value = "trangThai", required = false) String trangThai,
+            @RequestParam(value = "position", required = false) String position,
+            @RequestParam(value = "shift", required = false) String shift,
+            @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             Authentication authentication,
             Model model
     ) {
-        // Xác định chi nhánh làm việc hiện tại
-        ChiNhanhResponse currentBranch = resolveCurrentBranch(branchId, authentication);
+        BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
         Long targetBranchId = (currentBranch != null) ? currentBranch.getId() : null;
 
-        Page<NhanVienResponse> employeesPage = nhanVienService.searchNhanVien(
+        Page<EmployeeResponse> employeesPage = employeeService.searchEmployees(
                 targetBranchId,
                 keyword,
-                viTri,
-                caLamViec,
-                trangThai,
+                position,
+                shift,
+                status,
                 PageRequest.of(page, size, Sort.by("id").descending())
         );
 
-        // Danh sách tài khoản quầy POS (UC16)
-        List<TaiKhoanQuayResponse> posAccounts = List.of();
+        List<PosAccountResponse> posAccounts = List.of();
         if (targetBranchId != null) {
-            posAccounts = nhanVienService.getTaiKhoanQuayByChiNhanh(targetBranchId);
+            posAccounts = employeeService.getPosAccountsByBranch(targetBranchId);
         }
 
-        // Thống kê nhân sự
-        long totalEmp = (targetBranchId != null) ? nhanVienService.countByChiNhanh(targetBranchId) : 0;
-        long activeEmp = (targetBranchId != null) ? nhanVienService.countActiveByChiNhanh(targetBranchId) : 0;
+        long totalEmp = (targetBranchId != null) ? employeeService.countByBranch(targetBranchId) : 0;
+        long activeEmp = (targetBranchId != null) ? employeeService.countActiveByBranch(targetBranchId) : 0;
 
-        List<ChiNhanhResponse> allBranches = chiNhanhService.getAllBranches();
+        List<BranchResponse> allBranches = branchService.getAllBranches();
 
         model.addAttribute("currentBranch", currentBranch);
-        model.addAttribute("currentBranchName", currentBranch != null ? currentBranch.getTenChiNhanh() : "Toàn Chuỗi");
+        model.addAttribute("currentBranchName", currentBranch != null ? currentBranch.getName() : "Toàn Chuỗi");
         model.addAttribute("branchId", targetBranchId);
         model.addAttribute("employeesPage", employeesPage);
         model.addAttribute("posAccounts", posAccounts);
@@ -78,16 +75,16 @@ public class NhanVienController {
         model.addAttribute("activeEmp", activeEmp);
         model.addAttribute("allBranches", allBranches);
         model.addAttribute("keyword", keyword);
-        model.addAttribute("viTri", viTri);
-        model.addAttribute("caLamViec", caLamViec);
-        model.addAttribute("trangThai", trangThai);
-        model.addAttribute("pageTitle", "Quản Lý Nhân Sự & Ca Trực — UTETra");
+        model.addAttribute("position", position);
+        model.addAttribute("shift", shift);
+        model.addAttribute("status", status);
+        model.addAttribute("pageTitle", "Quản Lý Nhân Sự & Ca Trực (UC16) — UTETra");
 
         return "branch/employees/list";
     }
 
     /**
-     * Mở form tiếp nhận nhân viên mới.
+     * Show create new employee form.
      */
     @GetMapping("/new")
     public String showCreateForm(
@@ -95,22 +92,22 @@ public class NhanVienController {
             Authentication authentication,
             Model model
     ) {
-        ChiNhanhResponse currentBranch = resolveCurrentBranch(branchId, authentication);
+        BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
         Long defaultBranchId = (currentBranch != null) ? currentBranch.getId() : null;
 
-        NhanVienRequest employee = NhanVienRequest.builder()
-                .chiNhanhId(defaultBranchId)
-                .viTri("PHA_CHE")
-                .caLamViec("CA_SANG")
-                .trangThai("DANG_LAM")
-                .ngayVaoLam(java.time.LocalDate.now())
+        EmployeeRequest employee = EmployeeRequest.builder()
+                .branchId(defaultBranchId)
+                .position("BARTENDER")
+                .shift("MORNING")
+                .status("ACTIVE")
+                .hireDate(java.time.LocalDate.now())
                 .build();
 
-        List<ChiNhanhResponse> allBranches = chiNhanhService.getAllBranches();
+        List<BranchResponse> allBranches = branchService.getAllBranches();
 
         model.addAttribute("employee", employee);
         model.addAttribute("currentBranch", currentBranch);
-        model.addAttribute("currentBranchName", currentBranch != null ? currentBranch.getTenChiNhanh() : "Toàn Chuỗi");
+        model.addAttribute("currentBranchName", currentBranch != null ? currentBranch.getName() : "Toàn Chuỗi");
         model.addAttribute("allBranches", allBranches);
         model.addAttribute("isEdit", false);
         model.addAttribute("pageTitle", "Tiếp Nhận Nhân Viên Mới — UTETra");
@@ -119,7 +116,7 @@ public class NhanVienController {
     }
 
     /**
-     * Mở form cập nhật hồ sơ & ca làm việc của nhân viên.
+     * Show edit employee form.
      */
     @GetMapping("/edit/{id}")
     public String showEditForm(
@@ -129,91 +126,91 @@ public class NhanVienController {
             RedirectAttributes redirectAttributes
     ) {
         try {
-            NhanVienResponse resp = nhanVienService.getNhanVienById(id);
+            EmployeeResponse resp = employeeService.getEmployeeById(id);
 
-            NhanVienRequest employee = NhanVienRequest.builder()
+            EmployeeRequest employee = EmployeeRequest.builder()
                     .id(resp.getId())
-                    .maNhanVien(resp.getMaNhanVien())
-                    .hoTen(resp.getHoTen())
-                    .soDienThoai(resp.getSoDienThoai())
-                    .cccd(resp.getCccd())
+                    .employeeCode(resp.getEmployeeCode())
+                    .fullName(resp.getFullName())
+                    .phone(resp.getPhone())
+                    .citizenId(resp.getCitizenId())
                     .email(resp.getEmail())
-                    .viTri(resp.getViTri())
-                    .caLamViec(resp.getCaLamViec())
-                    .mucLuong(resp.getMucLuong())
-                    .trangThai(resp.getTrangThai())
-                    .ngayVaoLam(resp.getNgayVaoLam())
-                    .chiNhanhId(resp.getChiNhanhId())
+                    .position(resp.getPosition())
+                    .shift(resp.getShift())
+                    .salary(resp.getSalary())
+                    .status(resp.getStatus())
+                    .hireDate(resp.getHireDate())
+                    .branchId(resp.getBranchId())
                     .build();
 
-            ChiNhanhResponse currentBranch = null;
-            if (resp.getChiNhanhId() != null) {
-                currentBranch = chiNhanhService.getBranchById(resp.getChiNhanhId());
+            BranchResponse currentBranch = null;
+            if (resp.getBranchId() != null) {
+                currentBranch = branchService.getBranchById(resp.getBranchId());
             }
 
-            List<ChiNhanhResponse> allBranches = chiNhanhService.getAllBranches();
+            List<BranchResponse> allBranches = branchService.getAllBranches();
 
             model.addAttribute("employee", employee);
             model.addAttribute("currentBranch", currentBranch);
-            model.addAttribute("currentBranchName", currentBranch != null ? currentBranch.getTenChiNhanh() : "Toàn Chuỗi");
+            model.addAttribute("currentBranchName", currentBranch != null ? currentBranch.getName() : "Toàn Chuỗi");
             model.addAttribute("allBranches", allBranches);
             model.addAttribute("isEdit", true);
             model.addAttribute("employeeId", id);
-            model.addAttribute("pageTitle", "Cập Nhật Nhân Viên: " + resp.getHoTen() + " — UTETra");
+            model.addAttribute("pageTitle", "Cập Nhật Nhân Viên: " + resp.getFullName() + " — UTETra");
 
             return "branch/employees/form";
         } catch (Exception e) {
-            log.error("Lỗi khi mở form sửa nhân viên ID {}: {}", id, e.getMessage());
+            log.error("Error opening edit form for employee ID {}: {}", id, e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/branch/employees";
         }
     }
 
     /**
-     * Lưu thông tin nhân viên (Tạo mới hoặc Cập nhật).
+     * Save employee info (Create or Update).
      */
     @PostMapping("/save")
     public String saveEmployee(
-            @ModelAttribute NhanVienRequest request,
+            @ModelAttribute EmployeeRequest request,
             RedirectAttributes redirectAttributes
     ) {
         try {
             if (request.getId() == null) {
-                NhanVienResponse created = nhanVienService.createNhanVien(request);
+                EmployeeResponse created = employeeService.createEmployee(request);
                 redirectAttributes.addFlashAttribute("successMessage",
-                        "Đã tiếp nhận nhân viên mới: [" + created.getMaNhanVien() + "] " + created.getHoTen());
+                        "Đã tiếp nhận nhân viên mới: [" + created.getEmployeeCode() + "] " + created.getFullName());
             } else {
-                NhanVienResponse updated = nhanVienService.updateNhanVien(request.getId(), request);
+                EmployeeResponse updated = employeeService.updateEmployee(request.getId(), request);
                 redirectAttributes.addFlashAttribute("successMessage",
-                        "Đã cập nhật hồ sơ nhân viên: [" + updated.getMaNhanVien() + "] " + updated.getHoTen());
+                        "Đã cập nhật hồ sơ nhân viên: [" + updated.getEmployeeCode() + "] " + updated.getFullName());
             }
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             if (request.getId() != null) {
                 return "redirect:/branch/employees/edit/" + request.getId();
             } else {
-                return "redirect:/branch/employees/new?branchId=" + request.getChiNhanhId();
+                return "redirect:/branch/employees/new?branchId=" + request.getBranchId();
             }
         } catch (Exception e) {
-            log.error("Lỗi khi lưu nhân viên: {}", e.getMessage(), e);
+            log.error("Error saving employee: {}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi: " + e.getMessage());
         }
 
-        return "redirect:/branch/employees" + (request.getChiNhanhId() != null ? "?branchId=" + request.getChiNhanhId() : "");
+        return "redirect:/branch/employees" + (request.getBranchId() != null ? "?branchId=" + request.getBranchId() : "");
     }
 
     /**
-     * Thay đổi trạng thái làm việc (Đang làm / Tạm nghỉ / Đã nghỉ việc).
+     * Update employee work status.
      */
     @PostMapping("/{id}/update-status")
     public String updateStatus(
             @PathVariable Long id,
-            @RequestParam String trangThai,
+            @RequestParam String status,
             @RequestParam(required = false) Long branchId,
             RedirectAttributes redirectAttributes
     ) {
         try {
-            nhanVienService.updateTrangThai(id, trangThai);
+            employeeService.updateStatus(id, status);
             redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật trạng thái nhân sự thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -222,7 +219,7 @@ public class NhanVienController {
     }
 
     /**
-     * Xóa hồ sơ nhân viên.
+     * Delete employee profile.
      */
     @PostMapping("/{id}/delete")
     public String deleteEmployee(
@@ -231,7 +228,7 @@ public class NhanVienController {
             RedirectAttributes redirectAttributes
     ) {
         try {
-            nhanVienService.deleteNhanVien(id);
+            employeeService.deleteEmployee(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa hồ sơ nhân viên thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -240,22 +237,22 @@ public class NhanVienController {
     }
 
     // ==========================================
-    // THIẾT LẬP TÀI KHOẢN QUẦY POS (UC16)
+    // POS ACCOUNT ACTIONS (UC16)
     // ==========================================
 
     @PostMapping("/pos/create")
     public String createPosAccount(
-            @ModelAttribute TaiKhoanQuayRequest request,
+            @ModelAttribute PosAccountRequest request,
             RedirectAttributes redirectAttributes
     ) {
         try {
-            TaiKhoanQuayResponse created = nhanVienService.createTaiKhoanQuay(request);
+            PosAccountResponse created = employeeService.createPosAccount(request);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Đã thiết lập tài khoản quầy POS thành công: " + created.getTenDangNhap());
+                    "Đã thiết lập tài khoản quầy POS thành công: " + created.getUsername());
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-        return "redirect:/branch/employees" + (request.getChiNhanhId() != null ? "?branchId=" + request.getChiNhanhId() : "");
+        return "redirect:/branch/employees" + (request.getBranchId() != null ? "?branchId=" + request.getBranchId() : "");
     }
 
     @PostMapping("/pos/{id}/toggle")
@@ -265,7 +262,7 @@ public class NhanVienController {
             RedirectAttributes redirectAttributes
     ) {
         try {
-            boolean active = nhanVienService.toggleTaiKhoanQuay(id);
+            boolean active = employeeService.togglePosAccount(id);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã đổi trạng thái tài khoản quầy thành: " + (active ? "HOẠT ĐỘNG" : "TẠM KHÓA"));
         } catch (Exception e) {
@@ -281,7 +278,7 @@ public class NhanVienController {
             RedirectAttributes redirectAttributes
     ) {
         try {
-            nhanVienService.deleteTaiKhoanQuay(id);
+            employeeService.deletePosAccount(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa tài khoản quầy POS!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -289,26 +286,22 @@ public class NhanVienController {
         return "redirect:/branch/employees" + (branchId != null ? "?branchId=" + branchId : "");
     }
 
-    /**
-     * Hàm tiện ích xác định chi nhánh đang thao tác dựa trên đăng nhập hoặc param.
-     */
-    private ChiNhanhResponse resolveCurrentBranch(Long requestedBranchId, Authentication authentication) {
+    private BranchResponse resolveCurrentBranch(Long requestedBranchId, Authentication authentication) {
         if (requestedBranchId != null) {
             try {
-                return chiNhanhService.getBranchById(requestedBranchId);
+                return branchService.getBranchById(requestedBranchId);
             } catch (Exception ignored) {}
         }
 
         if (authentication != null && authentication.isAuthenticated()) {
             String username = authentication.getName();
-            var branchOpt = chiNhanhService.getBranchByManagerUsername(username);
+            var branchOpt = branchService.getBranchByManagerUsername(username);
             if (branchOpt.isPresent()) {
                 return branchOpt.get();
             }
         }
 
-        // Mặc định lấy chi nhánh đầu tiên nếu chưa gán cụ thể
-        List<ChiNhanhResponse> all = chiNhanhService.getAllBranches();
+        List<BranchResponse> all = branchService.getAllBranches();
         return all.isEmpty() ? null : all.get(0);
     }
 }

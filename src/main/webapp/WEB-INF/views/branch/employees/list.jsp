@@ -71,7 +71,7 @@
     <div class="header-content">
       <h1 class="page-title">
         <i class="fa-solid fa-id-badge" style="color: #f59e0b; margin-right: 8px;"></i>
-        Quản Lý Nhân Sự & Ca Trực
+        Quản Lý Nhân Sự & Ca Trực (UC16)
       </h1>
       <p class="page-subtitle">
         Phân công ca làm việc, quản lý hồ sơ nhân viên và thiết lập tài khoản quầy POS ca trực theo từng chi nhánh.
@@ -111,9 +111,9 @@
         Cơ Sở Đang Quản Lý:
       </span>
       <span class="branch-badge-pill">
-        <c:out value="${currentBranch != null ? currentBranch.tenChiNhanh : 'Toàn Hệ Thống'}"/>
+        <c:out value="${currentBranch != null ? currentBranch.name : 'Toàn Hệ Thống'}"/>
         <c:if test="${currentBranch != null}">
-          (${currentBranch.maChiNhanh})
+          (${currentBranch.branchCode})
         </c:if>
       </span>
     </div>
@@ -124,7 +124,7 @@
       <select name="branchId" class="zen-select" onchange="this.form.submit()" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 8px;">
         <c:forEach var="b" items="${allBranches}">
           <option value="${b.id}" ${b.id == branchId ? 'selected' : ''}>
-            ${b.tenChiNhanh} (${b.maChiNhanh})
+            ${b.name} (${b.branchCode})
           </option>
         </c:forEach>
       </select>
@@ -178,7 +178,7 @@
         <div>
           <span style="font-size: 0.85rem; color: var(--zen-text-muted); font-weight: 500;">GIỜ PHỤC VỤ</span>
           <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--zen-text-main); margin: 6px 0 0 0;">
-            <c:out value="${currentBranch != null ? currentBranch.gioMoCua : '07:00'}"/> - <c:out value="${currentBranch != null ? currentBranch.gioDongCua : '22:30'}"/>
+            <c:out value="${currentBranch != null ? currentBranch.openTime : '07:00'}"/> - <c:out value="${currentBranch != null ? currentBranch.closeTime : '22:30'}"/>
           </h2>
         </div>
         <div style="width: 48px; height: 48px; border-radius: 10px; background: rgba(139, 92, 246, 0.1); display: flex; align-items: center; justify-content: center; color: #7c3aed; font-size: 1.4rem;">
@@ -204,34 +204,34 @@
 
       <!-- Vị trí -->
       <div style="flex: 1; min-width: 150px;">
-        <select name="viTri" class="zen-select" style="width: 100%; border-radius: 8px;">
+        <select name="position" class="zen-select" style="width: 100%; border-radius: 8px;">
           <option value="">-- Tất cả vị trí --</option>
-          <option value="PHA_CHE" ${viTri == 'PHA_CHE' ? 'selected' : ''}>Pha Chế</option>
-          <option value="THU_NGAN" ${viTri == 'THU_NGAN' ? 'selected' : ''}>Thu Ngân</option>
-          <option value="PHUC_VU" ${viTri == 'PHUC_VU' ? 'selected' : ''}>Phục Vụ</option>
-          <option value="QUAN_LY" ${viTri == 'QUAN_LY' ? 'selected' : ''}>Quản Lý Ca</option>
-          <option value="BAO_VE" ${viTri == 'BAO_VE' ? 'selected' : ''}>Bảo Vệ</option>
+          <option value="BARTENDER" ${position == 'BARTENDER' ? 'selected' : ''}>Pha Chế</option>
+          <option value="CASHIER" ${position == 'CASHIER' ? 'selected' : ''}>Thu Ngân</option>
+          <option value="SERVER" ${position == 'SERVER' ? 'selected' : ''}>Phục Vụ</option>
+          <option value="SHIFT_MANAGER" ${position == 'SHIFT_MANAGER' ? 'selected' : ''}>Quản Lý Ca</option>
+          <option value="SECURITY" ${position == 'SECURITY' ? 'selected' : ''}>Bảo Vệ</option>
         </select>
       </div>
 
       <!-- Ca làm việc -->
       <div style="flex: 1; min-width: 150px;">
-        <select name="caLamViec" class="zen-select" style="width: 100%; border-radius: 8px;">
+        <select name="shift" class="zen-select" style="width: 100%; border-radius: 8px;">
           <option value="">-- Tất cả ca trực --</option>
-          <option value="CA_SANG" ${caLamViec == 'CA_SANG' ? 'selected' : ''}>Ca Sáng</option>
-          <option value="CA_CHIEU" ${caLamViec == 'CA_CHIEU' ? 'selected' : ''}>Ca Chiều</option>
-          <option value="CA_TOI" ${caLamViec == 'CA_TOI' ? 'selected' : ''}>Ca Tối</option>
-          <option value="FULL_TIME" ${caLamViec == 'FULL_TIME' ? 'selected' : ''}>Full-time</option>
+          <option value="MORNING" ${shift == 'MORNING' ? 'selected' : ''}>Ca Sáng</option>
+          <option value="AFTERNOON" ${shift == 'AFTERNOON' ? 'selected' : ''}>Ca Chiều</option>
+          <option value="EVENING" ${shift == 'EVENING' ? 'selected' : ''}>Ca Tối</option>
+          <option value="FULL_TIME" ${shift == 'FULL_TIME' ? 'selected' : ''}>Full-time</option>
         </select>
       </div>
 
       <!-- Trạng thái -->
       <div style="flex: 1; min-width: 140px;">
-        <select name="trangThai" class="zen-select" style="width: 100%; border-radius: 8px;">
+        <select name="status" class="zen-select" style="width: 100%; border-radius: 8px;">
           <option value="">-- Tất cả trạng thái --</option>
-          <option value="DANG_LAM" ${trangThai == 'DANG_LAM' ? 'selected' : ''}>Đang làm việc</option>
-          <option value="TAM_NGHI" ${trangThai == 'TAM_NGHI' ? 'selected' : ''}>Tạm nghỉ phép</option>
-          <option value="NGHI_VIEC" ${trangThai == 'NGHI_VIEC' ? 'selected' : ''}>Đã nghỉ việc</option>
+          <option value="ACTIVE" ${status == 'ACTIVE' ? 'selected' : ''}>Đang làm việc</option>
+          <option value="ON_LEAVE" ${status == 'ON_LEAVE' ? 'selected' : ''}>Tạm nghỉ phép</option>
+          <option value="RESIGNED" ${status == 'RESIGNED' ? 'selected' : ''}>Đã nghỉ việc</option>
         </select>
       </div>
 
@@ -275,36 +275,36 @@
                 <tr style="border-bottom: 1px solid var(--zen-border); font-size: 0.875rem;">
                   <!-- Mã NV -->
                   <td style="padding: 12px 16px; font-weight: 700; font-family: monospace; color: #d97706;">
-                    ${nv.maNhanVien}
+                    ${nv.employeeCode}
                   </td>
 
                   <!-- Họ tên & Avatar -->
                   <td style="padding: 12px 16px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                       <div class="employee-avatar-circle">
-                        ${fn:substring(nv.hoTen, 0, 1)}
+                        ${fn:substring(nv.fullName, 0, 1)}
                       </div>
                       <div>
-                        <div style="font-weight: 700; color: var(--zen-text-main);">${nv.hoTen}</div>
-                        <div style="font-size: 0.775rem; color: var(--zen-text-muted);">Vào làm: ${nv.formattedNgayVaoLam}</div>
+                        <div style="font-weight: 700; color: var(--zen-text-main);">${nv.fullName}</div>
+                        <div style="font-size: 0.775rem; color: var(--zen-text-muted);">Vào làm: ${nv.formattedHireDate}</div>
                       </div>
                     </div>
                   </td>
 
                   <!-- Liên hệ & CCCD -->
                   <td style="padding: 12px 16px;">
-                    <div><i class="fa-solid fa-phone" style="font-size: 0.75rem; color: var(--zen-primary); width: 14px;"></i> ${nv.soDienThoai}</div>
-                    <c:if test="${not empty nv.cccd}">
+                    <div><i class="fa-solid fa-phone" style="font-size: 0.75rem; color: var(--zen-primary); width: 14px;"></i> ${nv.phone}</div>
+                    <c:if test="${not empty nv.citizenId}">
                       <div style="font-size: 0.775rem; color: var(--zen-text-muted);">
-                        <i class="fa-solid fa-id-card" style="font-size: 0.75rem; width: 14px;"></i> ${nv.cccd}
+                        <i class="fa-solid fa-id-card" style="font-size: 0.75rem; width: 14px;"></i> ${nv.citizenId}
                       </div>
                     </c:if>
                   </td>
 
                   <!-- Vị trí -->
                   <td style="padding: 12px 16px;">
-                    <span class="zen-badge ${nv.viTriBadgeClass}">
-                      ${nv.viTriTitle}
+                    <span class="zen-badge ${nv.positionBadgeClass}">
+                      ${nv.positionTitle}
                     </span>
                   </td>
 
@@ -312,13 +312,13 @@
                   <td style="padding: 12px 16px;">
                     <span class="shift-tag">
                       <i class="fa-solid fa-clock" style="color: #f59e0b;"></i>
-                      ${nv.caLamViecTitle}
+                      ${nv.shiftTitle}
                     </span>
                   </td>
 
                   <!-- Mức lương -->
                   <td style="padding: 12px 16px; font-weight: 600; color: #0f172a;">
-                    ${nv.formattedLuong}
+                    ${nv.formattedSalary}
                   </td>
 
                   <!-- Trạng thái -->
@@ -339,11 +339,11 @@
                       <!-- Nút đổi trạng thái nhanh -->
                       <form action="${pageContext.request.contextPath}/branch/employees/${nv.id}/update-status" method="post" style="display: inline; margin: 0;">
                         <input type="hidden" name="branchId" value="${branchId}" />
-                        <input type="hidden" name="trangThai" value="${nv.trangThai == 'DANG_LAM' ? 'NGHI_VIEC' : 'DANG_LAM'}" />
-                        <button type="submit" class="zen-btn zen-btn-sm ${nv.trangThai == 'DANG_LAM' ? 'zen-btn-danger' : 'zen-btn-primary'}"
-                                title="${nv.trangThai == 'DANG_LAM' ? 'Đánh dấu nghỉ việc' : 'Kích hoạt đi làm lại'}"
-                                onclick="return confirm('Bạn có chắc muốn cập nhật trạng thái nhân viên ${nv.hoTen}?')">
-                          <i class="fa-solid ${nv.trangThai == 'DANG_LAM' ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                        <input type="hidden" name="status" value="${nv.status == 'ACTIVE' ? 'RESIGNED' : 'ACTIVE'}" />
+                        <button type="submit" class="zen-btn zen-btn-sm ${nv.status == 'ACTIVE' ? 'zen-btn-danger' : 'zen-btn-primary'}"
+                                title="${nv.status == 'ACTIVE' ? 'Đánh dấu nghỉ việc' : 'Kích hoạt đi làm lại'}"
+                                onclick="return confirm('Bạn có chắc muốn cập nhật trạng thái nhân viên ${nv.fullName}?')">
+                          <i class="fa-solid ${nv.status == 'ACTIVE' ? 'fa-user-slash' : 'fa-user-check'}"></i>
                         </button>
                       </form>
                     </div>
@@ -369,7 +369,7 @@
     <c:if test="${employeesPage.totalPages > 1}">
       <div style="padding: 16px; display: flex; justify-content: center; gap: 6px; border-top: 1px solid var(--zen-border);">
         <c:forEach begin="0" end="${employeesPage.totalPages - 1}" var="p">
-          <a href="${pageContext.request.contextPath}/branch/employees?branchId=${branchId}&keyword=${keyword}&viTri=${viTri}&caLamViec=${caLamViec}&trangThai=${trangThai}&page=${p}" 
+          <a href="${pageContext.request.contextPath}/branch/employees?branchId=${branchId}&keyword=${keyword}&position=${position}&shift=${shift}&status=${status}&page=${p}" 
              class="zen-btn zen-btn-sm ${employeesPage.number == p ? 'zen-btn-primary' : 'zen-btn-secondary'}" style="min-width: 34px; justify-content: center;">
             ${p + 1}
           </a>
@@ -384,7 +384,7 @@
       <div>
         <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--zen-text-main); margin: 0; display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-cash-register" style="color: #2563eb;"></i>
-          Tài Khoản Quầy Bán Lẻ & Thu Ngân POS
+          Thiết Lập Tài Khoản Quầy Thu Ngân / Bán Lẻ POS (UC16)
         </h3>
         <p style="font-size: 0.825rem; color: var(--zen-text-muted); margin: 4px 0 0 0;">
           Tài khoản dùng chung đăng nhập máy POS cảm ứng tại quầy thu ngân cho nhân viên trực ca thực hiện order và in hóa đơn.
@@ -403,13 +403,13 @@
               <div>
                 <div style="font-weight: 700; color: var(--zen-text-main); font-size: 0.95rem;">
                   <i class="fa-solid fa-desktop" style="color: #2563eb; margin-right: 6px;"></i>
-                  ${pos.tenQuay}
+                  ${pos.counterName}
                 </div>
                 <div style="font-family: monospace; font-size: 0.85rem; color: #475569; margin: 4px 0;">
-                  Username: <strong>${pos.tenDangNhap}</strong>
+                  Username: <strong>${pos.username}</strong>
                 </div>
-                <c:if test="${not empty pos.ghiChu}">
-                  <div style="font-size: 0.8rem; color: var(--zen-text-muted);">${pos.ghiChu}</div>
+                <c:if test="${not empty pos.note}">
+                  <div style="font-size: 0.8rem; color: var(--zen-text-muted);">${pos.note}</div>
                 </c:if>
                 <div style="margin-top: 6px;">
                   <span class="zen-badge ${pos.statusBadgeClass}">
@@ -462,26 +462,26 @@
       </div>
 
       <form action="${pageContext.request.contextPath}/branch/employees/pos/create" method="post">
-        <input type="hidden" name="chiNhanhId" value="${branchId}" />
+        <input type="hidden" name="branchId" value="${branchId}" />
 
         <div class="form-group" style="margin-bottom: 14px;">
           <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 4px;">Tên Quầy / Vị Trí *</label>
-          <input type="text" name="tenQuay" required placeholder="Ví dụ: Quầy Thu Ngân 01, Quầy Sảnh Trệt..." class="zen-input" style="width: 100%;" />
+          <input type="text" name="counterName" required placeholder="Ví dụ: Quầy Thu Ngân 01, Quầy Sảnh Trệt..." class="zen-input" style="width: 100%;" />
         </div>
 
         <div class="form-group" style="margin-bottom: 14px;">
           <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 4px;">Tên Đăng Nhập *</label>
-          <input type="text" name="tenDangNhap" required placeholder="Ví dụ: pos_td02..." class="zen-input" style="width: 100%; font-family: monospace;" />
+          <input type="text" name="username" required placeholder="Ví dụ: pos_td02..." class="zen-input" style="width: 100%; font-family: monospace;" />
         </div>
 
         <div class="form-group" style="margin-bottom: 14px;">
           <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 4px;">Mật Khẩu Mặc Định</label>
-          <input type="password" name="matKhau" placeholder="Mặc định: Pos@123" class="zen-input" style="width: 100%;" />
+          <input type="password" name="password" placeholder="Mặc định: Pos@123" class="zen-input" style="width: 100%;" />
         </div>
 
         <div class="form-group" style="margin-bottom: 20px;">
           <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 4px;">Ghi Chú Vị Trí Máy POS</label>
-          <input type="text" name="ghiChu" placeholder="Ví dụ: Máy cảm ứng quầy thu ngân trung tâm..." class="zen-input" style="width: 100%;" />
+          <input type="text" name="note" placeholder="Ví dụ: Máy cảm ứng quầy thu ngân trung tâm..." class="zen-input" style="width: 100%;" />
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 10px;">

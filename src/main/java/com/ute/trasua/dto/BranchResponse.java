@@ -1,6 +1,6 @@
 package com.ute.trasua.dto;
 
-import com.ute.trasua.entity.ChiNhanh;
+import com.ute.trasua.entity.Branch;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,17 +13,17 @@ import java.time.format.DateTimeFormatter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChiNhanhResponse {
+public class BranchResponse {
 
     private Long id;
-    private String maChiNhanh;
-    private String tenChiNhanh;
-    private String diaChi;
+    private String branchCode;
+    private String name;
+    private String address;
     private Double latitude;
     private Double longitude;
     private String hotline;
-    private String gioMoCua;
-    private String gioDongCua;
+    private String openTime;
+    private String closeTime;
     private boolean active;
 
     private Long managerId;
@@ -37,37 +37,37 @@ public class ChiNhanhResponse {
 
     private LocalDateTime createdAt;
 
-    public static ChiNhanhResponse fromEntity(ChiNhanh c) {
-        if (c == null) return null;
-        return fromEntity(c, 0, 0, 0);
+    public static BranchResponse fromEntity(Branch b) {
+        if (b == null) return null;
+        return fromEntity(b, 0, 0, 0);
     }
 
-    public static ChiNhanhResponse fromEntity(ChiNhanh c, long totalEmployees, long totalActiveEmployees, long totalPosAccounts) {
-        if (c == null) return null;
+    public static BranchResponse fromEntity(Branch b, long totalEmployees, long totalActiveEmployees, long totalPosAccounts) {
+        if (b == null) return null;
 
         Long mgrId = null;
         String mgrUsername = null;
         String mgrFullName = null;
         String mgrPhone = null;
 
-        if (c.getManager() != null) {
-            mgrId = c.getManager().getId();
-            mgrUsername = c.getManager().getUsername();
-            mgrFullName = c.getManager().getFullName();
-            mgrPhone = c.getManager().getPhone();
+        if (b.getManager() != null) {
+            mgrId = b.getManager().getId();
+            mgrUsername = b.getManager().getUsername();
+            mgrFullName = b.getManager().getFullName();
+            mgrPhone = b.getManager().getPhone();
         }
 
-        return ChiNhanhResponse.builder()
-                .id(c.getId())
-                .maChiNhanh(c.getMaChiNhanh())
-                .tenChiNhanh(c.getTenChiNhanh())
-                .diaChi(c.getDiaChi())
-                .latitude(c.getLatitude())
-                .longitude(c.getLongitude())
-                .hotline(c.getHotline())
-                .gioMoCua(c.getGioMoCua() != null ? c.getGioMoCua() : "07:00")
-                .gioDongCua(c.getGioDongCua() != null ? c.getGioDongCua() : "22:30")
-                .active(c.isActive())
+        return BranchResponse.builder()
+                .id(b.getId())
+                .branchCode(b.getBranchCode())
+                .name(b.getName())
+                .address(b.getAddress())
+                .latitude(b.getLatitude())
+                .longitude(b.getLongitude())
+                .hotline(b.getHotline())
+                .openTime(b.getOpenTime() != null ? b.getOpenTime() : "07:00")
+                .closeTime(b.getCloseTime() != null ? b.getCloseTime() : "22:30")
+                .active(b.isActive())
                 .managerId(mgrId)
                 .managerUsername(mgrUsername)
                 .managerFullName(mgrFullName != null ? mgrFullName : (mgrUsername != null ? mgrUsername : "Chưa chỉ định"))
@@ -75,7 +75,7 @@ public class ChiNhanhResponse {
                 .totalEmployees(totalEmployees)
                 .totalActiveEmployees(totalActiveEmployees)
                 .totalPosAccounts(totalPosAccounts)
-                .createdAt(c.getCreatedAt())
+                .createdAt(b.getCreatedAt())
                 .build();
     }
 
@@ -93,13 +93,13 @@ public class ChiNhanhResponse {
     }
 
     /**
-     * Tính khoảng cách từ toạ độ người dùng đến chi nhánh theo công thức Haversine (km)
+     * Calculate distance from user coordinate to branch using Haversine formula (km)
      */
     public Double calculateDistanceKm(Double userLat, Double userLng) {
         if (latitude == null || longitude == null || userLat == null || userLng == null) {
             return null;
         }
-        final int R = 6371; // Bán kính Trái Đất (km)
+        final int R = 6371; // Earth radius (km)
         double latDistance = Math.toRadians(latitude - userLat);
         double lonDistance = Math.toRadians(longitude - userLng);
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)

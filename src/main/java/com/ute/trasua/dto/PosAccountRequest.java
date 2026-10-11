@@ -9,20 +9,20 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TaiKhoanQuayRequest {
+public class PosAccountRequest {
 
     private Long id;
 
-    private String tenQuay;
+    private String counterName;
 
-    private String tenDangNhap;
+    private String username;
 
-    private String matKhau;
+    private String password;
 
     @Builder.Default
     private boolean active = true;
 
-    private String ghiChu;
+    private String note;
 
-    private Long chiNhanhId;
+    private Long branchId;
 }

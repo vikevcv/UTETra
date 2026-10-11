@@ -281,8 +281,8 @@
                   <div>
                     <div class="branch-card-header">
                       <div>
-                        <span class="branch-code-badge">${branch.maChiNhanh}</span>
-                        <h3 class="branch-name">${branch.tenChiNhanh}</h3>
+                        <span class="branch-code-badge">${branch.branchCode}</span>
+                        <h3 class="branch-name">${branch.name}</h3>
                       </div>
                       <span class="zen-badge ${branch.statusBadgeClass}" style="white-space: nowrap;">
                         ${branch.statusText}
@@ -292,7 +292,7 @@
                     <!-- Địa chỉ -->
                     <div class="branch-info-row">
                       <i class="fa-solid fa-location-dot"></i>
-                      <span>${branch.diaChi}</span>
+                      <span>${branch.address}</span>
                     </div>
 
                     <!-- Hotline & Giờ mở cửa -->
@@ -303,7 +303,7 @@
                       </div>
                       <div class="branch-info-row" style="margin-bottom: 0;">
                         <i class="fa-solid fa-clock"></i>
-                        <span>${branch.gioMoCua} - ${branch.gioDongCua}</span>
+                        <span>${branch.openTime} - ${branch.closeTime}</span>
                       </div>
                     </div>
 
@@ -394,14 +394,14 @@
           <c:forEach var="b" items="${allBranches}">
             <span class="branch-map-item"
                   data-id="${b.id}"
-                  data-code="${fn:escapeXml(b.maChiNhanh)}"
-                  data-name="${fn:escapeXml(b.tenChiNhanh)}"
-                  data-address="${fn:escapeXml(b.diaChi)}"
+                  data-code="${fn:escapeXml(b.branchCode)}"
+                  data-name="${fn:escapeXml(b.name)}"
+                  data-address="${fn:escapeXml(b.address)}"
                   data-lat="${b.latitude}"
                   data-lng="${b.longitude}"
                   data-hotline="${fn:escapeXml(b.hotline)}"
-                  data-open="${fn:escapeXml(b.gioMoCua)}"
-                  data-close="${fn:escapeXml(b.gioDongCua)}"
+                  data-open="${fn:escapeXml(b.openTime)}"
+                  data-close="${fn:escapeXml(b.closeTime)}"
                   data-active="${b.active}">
             </span>
           </c:forEach>
@@ -415,14 +415,14 @@
           const branchesData = Array.from(document.querySelectorAll('.branch-map-item')).map(function(el) {
             return {
               id: el.dataset.id ? parseInt(el.dataset.id, 10) : null,
-              maChiNhanh: el.dataset.code || '',
-              tenChiNhanh: el.dataset.name || '',
-              diaChi: el.dataset.address || '',
+              branchCode: el.dataset.code || '',
+              name: el.dataset.name || '',
+              address: el.dataset.address || '',
               latitude: el.dataset.lat ? parseFloat(el.dataset.lat) : null,
               longitude: el.dataset.lng ? parseFloat(el.dataset.lng) : null,
               hotline: el.dataset.hotline || '',
-              gioMoCua: el.dataset.open || '',
-              gioDongCua: el.dataset.close || '',
+              openTime: el.dataset.open || '',
+              closeTime: el.dataset.close || '',
               active: el.dataset.active === 'true'
             };
           });
@@ -471,11 +471,11 @@
 
                 const popupContent =
                   '<div style="font-family: inherit; min-width: 200px;">' +
-                    '<div style="font-size: 0.75rem; color: #10b981; font-weight: 700; margin-bottom: 2px;">' + (b.maChiNhanh || '') + '</div>' +
-                    '<strong style="font-size: 0.95rem; color: #0f172a;">' + (b.tenChiNhanh || '') + '</strong>' +
-                    '<div style="font-size: 0.8rem; color: #64748b; margin: 4px 0;">' + (b.diaChi || '') + '</div>' +
+                    '<div style="font-size: 0.75rem; color: #10b981; font-weight: 700; margin-bottom: 2px;">' + (b.branchCode || '') + '</div>' +
+                    '<strong style="font-size: 0.95rem; color: #0f172a;">' + (b.name || '') + '</strong>' +
+                    '<div style="font-size: 0.8rem; color: #64748b; margin: 4px 0;">' + (b.address || '') + '</div>' +
                     '<div style="font-size: 0.8rem; margin: 4px 0;">📞 Hotline: <strong>' + (b.hotline || 'Chưa cập nhật') + '</strong></div>' +
-                    '<div style="font-size: 0.8rem; margin: 4px 0;">⏰ Giờ mở: <strong>' + (b.gioMoCua || '') + ' - ' + (b.gioDongCua || '') + '</strong></div>' +
+                    '<div style="font-size: 0.8rem; margin: 4px 0;">⏰ Giờ mở: <strong>' + (b.openTime || '') + ' - ' + (b.closeTime || '') + '</strong></div>' +
                     '<div style="font-size: 0.8rem; margin-top: 6px;">' + statusBadge + '</div>' +
                   '</div>';
 

@@ -6,28 +6,28 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "chi_nhanh",
+@Table(name = "branches",
        uniqueConstraints = {
-           @UniqueConstraint(columnNames = "ma_chi_nhanh")
+           @UniqueConstraint(columnNames = "branch_code")
        })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChiNhanh {
+public class Branch {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "ma_chi_nhanh", nullable = false, length = 30)
-    private String maChiNhanh;
+    @Column(name = "branch_code", nullable = false, length = 30)
+    private String branchCode;
 
-    @Column(name = "ten_chi_nhanh", nullable = false, length = 150)
-    private String tenChiNhanh;
+    @Column(name = "name", nullable = false, length = 150)
+    private String name;
 
-    @Column(name = "dia_chi", nullable = false, length = 255)
-    private String diaChi;
+    @Column(name = "address", nullable = false, length = 255)
+    private String address;
 
     @Column(name = "latitude")
     private Double latitude;
@@ -38,21 +38,18 @@ public class ChiNhanh {
     @Column(name = "hotline", length = 20)
     private String hotline;
 
-    @Column(name = "gio_mo_cua", length = 10)
+    @Column(name = "open_time", length = 10)
     @Builder.Default
-    private String gioMoCua = "07:00";
+    private String openTime = "07:00";
 
-    @Column(name = "gio_dong_cua", length = 10)
+    @Column(name = "close_time", length = 10)
     @Builder.Default
-    private String gioDongCua = "22:30";
+    private String closeTime = "22:30";
 
     @Column(name = "active", nullable = false)
     @Builder.Default
     private boolean active = true;
 
-    /**
-     * Tài khoản người dùng đóng vai trò Quản lý chi nhánh (ROLE_MANAGER).
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manager_id")
     private User manager;
@@ -65,11 +62,11 @@ public class ChiNhanh {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
-        if (gioMoCua == null) {
-            gioMoCua = "07:00";
+        if (openTime == null) {
+            openTime = "07:00";
         }
-        if (gioDongCua == null) {
-            gioDongCua = "22:30";
+        if (closeTime == null) {
+            closeTime = "22:30";
         }
     }
 }

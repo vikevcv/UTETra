@@ -9,15 +9,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChiNhanhRequest {
+public class BranchRequest {
 
     private Long id;
 
-    private String maChiNhanh;
+    private String branchCode;
 
-    private String tenChiNhanh;
+    private String name;
 
-    private String diaChi;
+    private String address;
 
     private Double latitude;
 
@@ -26,10 +26,10 @@ public class ChiNhanhRequest {
     private String hotline;
 
     @Builder.Default
-    private String gioMoCua = "07:00";
+    private String openTime = "07:00";
 
     @Builder.Default
-    private String gioDongCua = "22:30";
+    private String closeTime = "22:30";
 
     @Builder.Default
     private boolean active = true;
