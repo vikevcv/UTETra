@@ -17,5 +17,6 @@ RUN ./mvnw clean package -DskipTests
 FROM eclipse-temurin:25-jre-noble
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/src/main/webapp ./src/main/webapp
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
