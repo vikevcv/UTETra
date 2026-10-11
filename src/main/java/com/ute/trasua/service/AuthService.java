@@ -313,7 +313,9 @@ public class AuthService {
     } catch (BadCredentialsException e) {
         throw new RuntimeException("Sai tài khoản hoặc mật khẩu");
     } catch (DisabledException e) {
-        throw new RuntimeException("Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt");
+        throw new RuntimeException("Tài khoản của bạn đã bị vô hiệu hóa hoặc chưa kích hoạt");
+    } catch (org.springframework.security.authentication.LockedException e) {
+        throw new RuntimeException("Tài khoản của bạn đã bị khóa bởi Quản trị viên hệ thống");
     } catch (AuthenticationException e) {
         throw new RuntimeException("Đăng nhập thất bại: " + e.getMessage());
     }
