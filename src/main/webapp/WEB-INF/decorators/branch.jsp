@@ -68,28 +68,28 @@
           </li>
         </ul>
 
-        <!-- Nhóm: Nghiệp Vụ Vận Hành Chi Nhánh (Module 12, 13, 14, 15) -->
+        <!-- Nhóm: Vận Hành Chi Nhánh -->
         <div class="sidebar-heading">VẬN HÀNH TẠI QUÁN</div>
         <ul class="sidebar-menu">
           <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/branch/employees" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/employees') ? 'active' : ''}">
               <i class="fa-solid fa-id-badge text-warning"></i>
-              <span>Nhân Sự Ca Trực (UC16)</span>
+              <span>Nhân Sự & Ca Trực</span>
             </a>
           </li>
           <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/branch/inventory" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/inventory') ? 'active' : ''}">
               <i class="fa-solid fa-boxes-stacked text-warning"></i>
-              <span>Kho Vận & Nhập BM2 (UC29)</span>
+              <span>Kho Hàng & Nhập Kho</span>
             </a>
           </li>
           <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/branch/reports" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/reports') ? 'active' : ''}">
               <i class="fa-solid fa-chart-line text-warning"></i>
-              <span>Doanh Thu Chi Nhánh (UC19)</span>
+              <span>Báo Cáo Doanh Thu</span>
             </a>
           </li>
         </ul>
@@ -97,6 +97,14 @@
         <!-- Lối tắt Khách Hàng -->
         <div class="sidebar-heading">LỐI TẮT</div>
         <ul class="sidebar-menu">
+          <c:if test="${pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN')}">
+            <li class="sidebar-item">
+              <a href="${pageContext.request.contextPath}/admin/dashboard" class="sidebar-link">
+                <i class="fa-solid fa-crown text-warning"></i>
+                <span>Về Bảng Điều Khiển Chuỗi</span>
+              </a>
+            </li>
+          </c:if>
           <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/" class="sidebar-link" target="_blank">
               <i class="fa-solid fa-arrow-up-right-from-square"></i>

@@ -57,7 +57,7 @@
           <i class="fa-solid fa-triangle-exclamation"></i>
         </div>
         <div>
-          <div class="kpi-label">Nguyên Liệu Cần Nhập (BM2)</div>
+          <div class="kpi-label">Nguyên Liệu Cần Nhập</div>
           <div class="kpi-value">2 <span style="font-size: 0.9rem; font-weight: normal; color: var(--accent-rose);">mặt hàng</span></div>
         </div>
       </div>
@@ -79,19 +79,19 @@
       <div class="row g-3">
         <div class="col-md-4">
           <div class="border rounded p-3 h-100 bg-light">
-            <h5 class="fw-bold text-dark"><i class="fa-solid fa-id-badge text-warning me-2"></i>Module 12: Nhân Sự (UC16)</h5>
+            <h5 class="fw-bold text-dark"><i class="fa-solid fa-id-badge text-warning me-2"></i>Nhân Sự & Ca Trực</h5>
             <p class="text-muted small mb-0">Quản lý hồ sơ nhân viên pha chế, thu ngân, phân chia ca trực sáng/tối trong phạm vi chi nhánh.</p>
           </div>
         </div>
         <div class="col-md-4">
           <div class="border rounded p-3 h-100 bg-light">
-            <h5 class="fw-bold text-dark"><i class="fa-solid fa-boxes-stacked text-warning me-2"></i>Module 14: Kho Vận (UC29)</h5>
-            <p class="text-muted small mb-0">Theo dõi định mức tồn kho, lập phiếu nhập kho chuẩn biểu mẫu BM2, tự động mở bán món nước khi nhập hàng.</p>
+            <h5 class="fw-bold text-dark"><i class="fa-solid fa-boxes-stacked text-warning me-2"></i>Kho Hàng & Nhập Kho</h5>
+            <p class="text-muted small mb-0">Theo dõi định mức tồn kho, lập phiếu nhập kho nguyên liệu, tự động mở bán món nước khi nhập hàng.</p>
           </div>
         </div>
         <div class="col-md-4">
           <div class="border rounded p-3 h-100 bg-light">
-            <h5 class="fw-bold text-dark"><i class="fa-solid fa-chart-line text-warning me-2"></i>Module 15: Doanh Thu (UC19)</h5>
+            <h5 class="fw-bold text-dark"><i class="fa-solid fa-chart-line text-warning me-2"></i>Báo Cáo Doanh Thu</h5>
             <p class="text-muted small mb-0">Xem báo cáo doanh thu riêng của chi nhánh theo ngày/tuần, danh sách hóa đơn tại quầy và xuất báo cáo.</p>
           </div>
         </div>

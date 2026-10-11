@@ -64,35 +64,42 @@
             <a href="${pageContext.request.contextPath}/admin/users" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/users') ? 'active' : ''}">
               <i class="fa-solid fa-users-gear"></i>
-              <span>Quản Lý User (UC20)</span>
+              <span>Quản Lý Người Dùng</span>
             </a>
           </li>
           <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/admin/drivers" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/drivers') ? 'active' : ''}">
               <i class="fa-solid fa-motorcycle"></i>
-              <span>Giám Sát Tài Xế (UC25)</span>
+              <span>Đội Ngũ Giao Hàng</span>
             </a>
           </li>
           <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/admin/branches" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/branches') ? 'active' : ''}">
               <i class="fa-solid fa-store"></i>
-              <span>Mạng Lưới Chi Nhánh (UC21)</span>
+              <span>Hệ Thống Chi Nhánh</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/branch/employees" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/employees') ? 'active' : ''}">
+              <i class="fa-solid fa-id-badge"></i>
+              <span>Nhân Sự & Ca Trực</span>
             </a>
           </li>
           <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/admin/products" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/products') || fn:contains(pageContext.request.requestURI, '/admin/categories') ? 'active' : ''}">
               <i class="fa-solid fa-mug-hot"></i>
-              <span>Thực Đơn Chuỗi (UC22)</span>
+              <span>Quản Lý Thực Đơn</span>
             </a>
           </li>
           <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/admin/reports" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/reports') ? 'active' : ''}">
               <i class="fa-solid fa-file-excel"></i>
-              <span>Báo Cáo Chuỗi & BM1 (UC26)</span>
+              <span>Báo Cáo Doanh Thu</span>
             </a>
           </li>
         </ul>

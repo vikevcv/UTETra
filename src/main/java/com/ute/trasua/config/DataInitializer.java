@@ -21,6 +21,9 @@ import java.util.Set;
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
+    private final com.ute.trasua.repository.ChiNhanhRepository chiNhanhRepository;
+    private final com.ute.trasua.repository.NhanVienRepository nhanVienRepository;
+    private final com.ute.trasua.repository.TaiKhoanQuayRepository taiKhoanQuayRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -133,6 +136,133 @@ public class DataInitializer implements CommandLineRunner {
                     .createdAt(LocalDateTime.now().minusDays(5))
                     .build();
             userRepository.save(lockedUser);
+        }
+
+        // Khởi tạo Chi Nhánh mẫu (UC21)
+        if (!chiNhanhRepository.existsByMaChiNhanh("CN-TD01")) {
+            User manager1 = userRepository.findByUsername("manager1").orElse(null);
+            com.ute.trasua.entity.ChiNhanh cnThuDuc = com.ute.trasua.entity.ChiNhanh.builder()
+                    .maChiNhanh("CN-TD01")
+                    .tenChiNhanh("UTETea Cơ Sở Thủ Đức (Đại Học SPKT)")
+                    .diaChi("Số 1 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức, TP. Hồ Chí Minh")
+                    .latitude(10.85072)
+                    .longitude(106.77196)
+                    .hotline("028.3896.8641")
+                    .gioMoCua("07:00")
+                    .gioDongCua("22:30")
+                    .active(true)
+                    .manager(manager1)
+                    .createdAt(LocalDateTime.now().minusDays(30))
+                    .build();
+            cnThuDuc = chiNhanhRepository.save(cnThuDuc);
+            log.info(">>> Đã khởi tạo Chi Nhánh CN-TD01: {}", cnThuDuc.getTenChiNhanh());
+
+            // Nhân sự mẫu cho CN-TD01 (UC16)
+            if (!nhanVienRepository.existsByMaNhanVien("NV001")) {
+                nhanVienRepository.save(com.ute.trasua.entity.NhanVien.builder()
+                        .maNhanVien("NV001")
+                        .hoTen("Nguyễn Thị Hồng")
+                        .soDienThoai("0911223344")
+                        .cccd("079198001234")
+                        .email("hong.nguyen@utetra.vn")
+                        .viTri("PHA_CHE")
+                        .caLamViec("CA_SANG")
+                        .mucLuong(7500000.0)
+                        .trangThai("DANG_LAM")
+                        .ngayVaoLam(java.time.LocalDate.now().minusMonths(6))
+                        .chiNhanh(cnThuDuc)
+                        .build());
+            }
+
+            if (!nhanVienRepository.existsByMaNhanVien("NV002")) {
+                nhanVienRepository.save(com.ute.trasua.entity.NhanVien.builder()
+                        .maNhanVien("NV002")
+                        .hoTen("Trần Minh Nhật")
+                        .soDienThoai("0922334455")
+                        .cccd("079200005678")
+                        .email("nhat.tran@utetra.vn")
+                        .viTri("THU_NGAN")
+                        .caLamViec("CA_CHIEU")
+                        .mucLuong(6800000.0)
+                        .trangThai("DANG_LAM")
+                        .ngayVaoLam(java.time.LocalDate.now().minusMonths(4))
+                        .chiNhanh(cnThuDuc)
+                        .build());
+            }
+
+            if (!nhanVienRepository.existsByMaNhanVien("NV003")) {
+                nhanVienRepository.save(com.ute.trasua.entity.NhanVien.builder()
+                        .maNhanVien("NV003")
+                        .hoTen("Lê Hoàng Nam")
+                        .soDienThoai("0933445566")
+                        .cccd("079201009988")
+                        .email("nam.le@utetra.vn")
+                        .viTri("PHUC_VU")
+                        .caLamViec("CA_TOI")
+                        .mucLuong(5500000.0)
+                        .trangThai("DANG_LAM")
+                        .ngayVaoLam(java.time.LocalDate.now().minusMonths(2))
+                        .chiNhanh(cnThuDuc)
+                        .build());
+            }
+
+            if (!nhanVienRepository.existsByMaNhanVien("NV004")) {
+                nhanVienRepository.save(com.ute.trasua.entity.NhanVien.builder()
+                        .maNhanVien("NV004")
+                        .hoTen("Võ Thị Bích Thảo")
+                        .soDienThoai("0944556677")
+                        .cccd("079199003322")
+                        .email("thao.vo@utetra.vn")
+                        .viTri("PHA_CHE")
+                        .caLamViec("FULL_TIME")
+                        .mucLuong(8500000.0)
+                        .trangThai("DANG_LAM")
+                        .ngayVaoLam(java.time.LocalDate.now().minusMonths(8))
+                        .chiNhanh(cnThuDuc)
+                        .build());
+            }
+
+            // Tài khoản quầy POS (UC16)
+            if (!taiKhoanQuayRepository.existsByTenDangNhap("pos_td01")) {
+                taiKhoanQuayRepository.save(com.ute.trasua.entity.TaiKhoanQuay.builder()
+                        .tenQuay("Quầy Thu Ngân 01 - Thủ Đức")
+                        .tenDangNhap("pos_td01")
+                        .matKhau(passwordEncoder.encode("Pos@123"))
+                        .active(true)
+                        .ghiChu("Máy POS quầy mặt tiền sảnh chính")
+                        .chiNhanh(cnThuDuc)
+                        .build());
+            }
+        }
+
+        if (!chiNhanhRepository.existsByMaChiNhanh("CN-Q01")) {
+            User admin = userRepository.findByUsername("admin").orElse(null);
+            com.ute.trasua.entity.ChiNhanh cnQuan1 = com.ute.trasua.entity.ChiNhanh.builder()
+                    .maChiNhanh("CN-Q01")
+                    .tenChiNhanh("UTETea Flagship Quận 1 (Phố Đi Bộ)")
+                    .diaChi("68 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh")
+                    .latitude(10.77431)
+                    .longitude(106.70322)
+                    .hotline("028.3822.9999")
+                    .gioMoCua("07:30")
+                    .gioDongCua("23:00")
+                    .active(true)
+                    .manager(admin)
+                    .createdAt(LocalDateTime.now().minusDays(25))
+                    .build();
+            cnQuan1 = chiNhanhRepository.save(cnQuan1);
+            log.info(">>> Đã khởi tạo Chi Nhánh CN-Q01: {}", cnQuan1.getTenChiNhanh());
+
+            if (!taiKhoanQuayRepository.existsByTenDangNhap("pos_q101")) {
+                taiKhoanQuayRepository.save(com.ute.trasua.entity.TaiKhoanQuay.builder()
+                        .tenQuay("Quầy Thu Ngân 01 - Quận 1")
+                        .tenDangNhap("pos_q101")
+                        .matKhau(passwordEncoder.encode("Pos@123"))
+                        .active(true)
+                        .ghiChu("Máy POS quầy sảnh tầng trệt")
+                        .chiNhanh(cnQuan1)
+                        .build());
+            }
         }
     }
 }
