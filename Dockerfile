@@ -11,11 +11,12 @@ RUN mvn clean package -DskipTests
 # Giai đoạn 2: Tạo runtime image nhẹ nhàng
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
-# Copy file build từ stage 1 (dự án build ra file .jar trong thư mục target)
-COPY --from=build /app/target/*.jar app.jar
+# Copy file build từ stage 1 (dự án build ra file .war trong thư mục target)
+COPY --from=build /app/target/*.war app.war
 
 # Render tự động cấp port qua biến môi trường PORT (mặc định Render gán cổng nội bộ 8080)
 ENV PORT=8080
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT} -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT} -jar app.war"]
+
