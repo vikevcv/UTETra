@@ -1,23 +1,22 @@
-# Giai đoạn 1: Build mã nguồn với Maven và JDK 25 (dự án yêu cầu Java 25 trong pom.xml)
-FROM maven:3-eclipse-temurin-25 AS build
+# Stage 1: Build source code với Java 25 sử dụng Maven Wrapper của dự án
+FROM eclipse-temurin:25-jdk-noble AS build
 WORKDIR /app
-COPY pom.xml .
-# Tải dependencies trước để tận dụng cache
-RUN mvn dependency:go-offline -B
+
+# Copy Maven Wrapper và pom.xml để tải dependencies
+COPY .mvn .mvn
+COPY mvnw pom.xml ./
+RUN chmod +x mvnw
+# Tải dependencies trước để tận dụng Docker cache
+RUN ./mvnw dependency:go-offline -B
+
+# Copy mã nguồn và tiến hành build package
 COPY src ./src
-# Build bỏ qua test lúc build container (test sẽ giao cho CI)
-RUN mvn clean package -DskipTests
+RUN ./mvnw clean package -DskipTests
 
-# Giai đoạn 2: Tạo runtime image nhẹ nhàng
-FROM eclipse-temurin:25-jre-alpine
+# Stage 2: Runtime image với Java 25
+FROM eclipse-temurin:25-jre-noble
 WORKDIR /app
-# Copy file build từ stage 1 (dự án build ra file .war trong thư mục target)
-COPY --from=build /app/target/*.war app.war
-
-# Render tự động cấp port qua biến môi trường PORT (mặc định Render gán cổng nội bộ 8080)
-ENV PORT=8080
+COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/src/main/webapp ./src/main/webapp
 EXPOSE 8080
-
-ENTRYPOINT ["java", "-Xmx300m", "-Xss512k", "-jar", "app.war"]
-
-
+ENTRYPOINT ["java", "-jar", "app.jar"]
