@@ -17,12 +17,22 @@
   <!-- Bootstrap 5.3 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
   <!-- Custom Zen Wabi-Sabi Design System -->
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/zen-wabi-sabi.css">
 
   <%="<sitemesh:write property='head'/>"%>
 </head>
 <body>
+
+  <!-- Thông báo từ chối truy cập do không đủ phân quyền -->
+  <c:if test="${param.accessDenied == 'true'}">
+    <div style="background: #fef2f2; border-bottom: 1px solid #fecaca; color: #991b1b; padding: 10px 16px; text-align: center; font-size: 0.88rem; font-weight: 600;">
+      <i class="fa-solid fa-triangle-exclamation me-1"></i> Bạn không có quyền truy cập vào khu vực yêu cầu. Hệ thống đã đưa bạn về trang chủ an toàn!
+    </div>
+  </c:if>
 
   <!-- Top Line Notice -->
   <div class="zen-top-notice">
@@ -51,8 +61,28 @@
       <div class="zen-actions">
         <c:choose>
           <c:when test="${pageContext.request.remoteUser != null}">
+            <!-- Nút lối tắt thông minh vào Portal dành riêng theo vai trò -->
+            <c:if test="${pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN')}">
+              <a href="${pageContext.request.contextPath}/admin/dashboard"
+                 class="btn-zen-outline" style="text-decoration:none; margin-right:8px; border-color: #f59e0b; color: #b45309; background: #fffbeb; font-weight: 600; font-size: 0.82rem; padding: 6px 14px;">
+                <i class="fa-solid fa-crown text-warning me-1"></i> Quản Trị Chuỗi
+              </a>
+            </c:if>
+            <c:if test="${(pageContext.request.isUserInRole('MANAGER') || pageContext.request.isUserInRole('ROLE_MANAGER')) && !(pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN'))}">
+              <a href="${pageContext.request.contextPath}/branch/employees"
+                 class="btn-zen-outline" style="text-decoration:none; margin-right:8px; border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; font-weight: 600; font-size: 0.82rem; padding: 6px 14px;">
+                <i class="fa-solid fa-store text-primary me-1"></i> Quản Lý Chi Nhánh
+              </a>
+            </c:if>
+            <c:if test="${pageContext.request.isUserInRole('DRIVER') || pageContext.request.isUserInRole('ROLE_DRIVER')}">
+              <a href="${pageContext.request.contextPath}/admin/drivers"
+                 class="btn-zen-outline" style="text-decoration:none; margin-right:8px; border-color: #10b981; color: #047857; background: #ecfdf5; font-weight: 600; font-size: 0.82rem; padding: 6px 14px;">
+                <i class="fa-solid fa-motorcycle text-success me-1"></i> Bàn Giao Hàng
+              </a>
+            </c:if>
+
             <span style="font-size:0.82rem; color:var(--text-muted); margin-right:8px;">
-              Xin chào, ${pageContext.request.remoteUser}
+              Xin chào, <strong>${pageContext.request.remoteUser}</strong>
             </span>
             <a href="${pageContext.request.contextPath}/auth/logout"
                class="btn-zen-outline" style="text-decoration:none;">Đăng Xuất</a>

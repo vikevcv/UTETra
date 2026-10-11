@@ -7,6 +7,10 @@ import com.ute.trasua.security.JwtTokenProvider;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +18,10 @@ import java.security.SecureRandom;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final EmailService emailService;
+    private final AuthenticationManager authenticationManager;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final long OTP_EXPIRATION_MS = 5 * 60 * 1000; // 5 phút
@@ -293,13 +302,22 @@ public class AuthService {
     // =========================================================================
 
     public String login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("Sai tài khoản hoặc mật khẩu"));
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Sai tài khoản hoặc mật khẩu");
-        }
-
-        return tokenProvider.generateToken(user.getUsername());
+    try {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getUsername(),
+                        request.getPassword()
+                )
+        );
+        return tokenProvider.generateToken(authentication.getName());
+    } catch (BadCredentialsException e) {
+        throw new RuntimeException("Sai tài khoản hoặc mật khẩu");
+    } catch (DisabledException e) {
+        throw new RuntimeException("Tài khoản của bạn đã bị vô hiệu hóa hoặc chưa kích hoạt");
+    } catch (org.springframework.security.authentication.LockedException e) {
+        throw new RuntimeException("Tài khoản của bạn đã bị khóa bởi Quản trị viên hệ thống");
+    } catch (AuthenticationException e) {
+        throw new RuntimeException("Đăng nhập thất bại: " + e.getMessage());
     }
+}
 }

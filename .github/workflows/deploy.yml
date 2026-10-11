@@ -1,0 +1,80 @@
+name: CI/CD Multi-Branch Pipeline to Oracle VPS
+
+on:
+  push:
+    branches:
+      - develop  # Kích hoạt deploy Pre-production
+      - main     # Kích hoạt deploy Production
+
+jobs:
+  # JOB 1: DEPLOY PRE-PRODUCTION (Nhánh develop -> Port 8081)
+  deploy-preprod:
+    name: Deploy to Pre-production (Port 8081)
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy Pre-prod via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/ubuntu/apps/trasua-preprod
+            
+            # Khởi tạo git nếu chưa có, an toàn khi thư mục đã có sẵn .env và docker-compose.yml
+            if [ ! -d ".git" ]; then
+              git init
+              git remote add origin git@github.com:${{ github.repository }}.git
+            fi
+            
+            # Kéo mã nguồn mới nhất của nhánh develop
+            git fetch origin develop
+            git checkout -B develop origin/develop
+            
+            # Khởi động / Build lại app-preprod mà không dùng cache cũ
+            docker compose build --no-cache app-preprod
+            docker compose up -d --force-recreate app-preprod mysql-preprod
+            
+            # Dọn dẹp cache docker cũ để giải phóng dung lượng VPS
+            docker image prune -f
+
+  # JOB 2: DEPLOY PRODUCTION (Nhánh main -> Port 80)
+  deploy-prod:
+    name: Deploy to Production (Port 80)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy Prod via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/ubuntu/apps/trasua-prod
+            
+            # Khởi tạo git nếu chưa có, an toàn khi thư mục đã có sẵn .env và docker-compose.yml
+            if [ ! -d ".git" ]; then
+              git init
+              git remote add origin git@github.com:${{ github.repository }}.git
+            fi
+            
+            # Kéo mã nguồn mới nhất của nhánh main
+            git fetch origin main
+            git checkout -B main origin/main
+            
+            # Khởi động / Build lại app-prod mà không dùng cache cũ
+            docker compose build --no-cache app-prod
+            docker compose up -d --force-recreate app-prod mysql-prod
+            
+            # Dọn dẹp cache docker cũ để giải phóng dung lượng VPS
+            docker image prune -f

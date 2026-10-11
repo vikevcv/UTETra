@@ -2,12 +2,18 @@ package com.ute.trasua;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
-// ponytail: default async executor (1 thread/mail), custom pool only if mail volume matters
 @EnableAsync
-public class TrasuaApplication {
+public class TrasuaApplication extends SpringBootServletInitializer {
+
+	@Override
+	protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+		return builder.sources(TrasuaApplication.class);
+	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(TrasuaApplication.class, args);
