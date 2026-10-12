@@ -25,6 +25,7 @@ public class DataInitializer implements CommandLineRunner {
     private final com.ute.trasua.repository.EmployeeRepository employeeRepository;
     private final com.ute.trasua.repository.PosAccountRepository posAccountRepository;
     private final com.ute.trasua.repository.ProductOptionRepository productOptionRepository;
+    private final com.ute.trasua.repository.DriverRepository driverRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -349,6 +350,61 @@ public class DataInitializer implements CommandLineRunner {
             );
             productOptionRepository.saveAll(initialOptions);
             log.info(">>> Đã khởi tạo {} tùy chọn mặc định (Size & Topping)", initialOptions.size());
+        }
+
+        // ==========================================
+        // UC17: Khởi tạo Hồ Sơ Tài Xế Giao Hàng Chi Nhánh (Bảng TaiXe)
+        // ==========================================
+        if (driverRepository.count() == 0) {
+            com.ute.trasua.entity.Branch defaultBranch = branchRepository.findAll().stream().findFirst().orElse(null);
+            if (defaultBranch != null) {
+                User d1 = userRepository.findByUsername("driver1").orElse(null);
+                User d2 = userRepository.findByUsername("driver2").orElse(null);
+                User d3 = userRepository.findByUsername("driver3").orElse(null);
+
+                if (d1 != null) {
+                    driverRepository.save(com.ute.trasua.entity.Driver.builder()
+                            .user(d1)
+                            .branch(defaultBranch)
+                            .licensePlate("59-X1 888.88")
+                            .vehicleType("XE_MAY")
+                            .shift("SANG")
+                            .workingStatus("ONLINE")
+                            .baseSalary(new java.math.BigDecimal("6000000"))
+                            .kpiScore(4.9)
+                            .completedOrders(185)
+                            .build());
+                }
+
+                if (d2 != null) {
+                    driverRepository.save(com.ute.trasua.entity.Driver.builder()
+                            .user(d2)
+                            .branch(defaultBranch)
+                            .licensePlate("59-S2 345.67")
+                            .vehicleType("XE_MAY")
+                            .shift("CHIEU")
+                            .workingStatus("DELIVERING")
+                            .baseSalary(new java.math.BigDecimal("6000000"))
+                            .kpiScore(4.8)
+                            .completedOrders(210)
+                            .build());
+                }
+
+                if (d3 != null) {
+                    driverRepository.save(com.ute.trasua.entity.Driver.builder()
+                            .user(d3)
+                            .branch(defaultBranch)
+                            .licensePlate("50-T1 999.12")
+                            .vehicleType("XE_DIEN")
+                            .shift("TOAN_THOI_GIAN")
+                            .workingStatus("OFFLINE")
+                            .baseSalary(new java.math.BigDecimal("5500000"))
+                            .kpiScore(4.2)
+                            .completedOrders(74)
+                            .build());
+                }
+                log.info(">>> Đã khởi tạo hồ sơ tài xế mẫu trực thuộc chi nhánh [{}]", defaultBranch.getName());
+            }
         }
     }
 }

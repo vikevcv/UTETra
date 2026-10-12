@@ -79,6 +79,13 @@
             </a>
           </li>
           <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/branch/drivers" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/drivers') ? 'active' : ''}">
+              <i class="fa-solid fa-motorcycle text-success"></i>
+              <span>Đội Ngũ Tài Xế</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/branch/inventory" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/inventory') ? 'active' : ''}">
               <i class="fa-solid fa-boxes-stacked text-warning"></i>
