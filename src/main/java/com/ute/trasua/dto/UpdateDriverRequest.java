@@ -32,7 +32,7 @@ public class UpdateDriverRequest {
     private String licensePlate;
 
     @Builder.Default
-    private String vehicleType = "XE_MAY";
+    private String vehicleType = "MOTORBIKE";
 
     @NotBlank(message = "Vui lòng chọn ca làm việc phân công")
     private String shift;

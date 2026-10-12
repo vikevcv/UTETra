@@ -15,20 +15,20 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SizeRequest {
+public class ProductSizeRequest {
 
     @NotBlank(message = "Mã kích cỡ không được để trống (VD: S, M, L)")
     @Size(min = 1, max = 10, message = "Mã kích cỡ từ 1 đến 10 ký tự")
-    private String maKichCo;
+    private String sizeCode;
 
     @NotBlank(message = "Tên hiển thị kích cỡ không được để trống")
     @Size(min = 2, max = 50, message = "Tên kích cỡ từ 2 đến 50 ký tự")
-    private String tenKichCo;
+    private String sizeName;
 
     @NotNull(message = "Giá phụ thu không được để trống")
     @DecimalMin(value = "0.0", message = "Giá phụ thu không được âm")
-    private BigDecimal giaPhuThu;
+    private BigDecimal additionalPrice;
 
     @Builder.Default
-    private String trangThai = "HoatDong";
+    private String status = "ACTIVE";
 }

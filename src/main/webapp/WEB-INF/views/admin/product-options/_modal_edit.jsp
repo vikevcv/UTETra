@@ -14,27 +14,27 @@
         <div class="modal-body py-3">
           <div class="mb-3">
             <label class="form-label fw-semibold">Mã Kích Cỡ</label>
-            <input type="text" id="editSizeCode" name="maKichCo" class="form-control bg-light font-monospace" readonly />
+            <input type="text" id="editSizeCode" name="sizeCode" class="form-control bg-light font-monospace" readonly />
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Tên Kích Cỡ <span class="text-danger">*</span></label>
-            <input type="text" id="editSizeName" name="tenKichCo" class="form-control" required maxlength="50" />
+            <input type="text" id="editSizeName" name="sizeName" class="form-control" required maxlength="50" />
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Giá Phụ Thu (VNĐ) <span class="text-danger">*</span></label>
             <div class="input-group">
-              <input type="number" id="editSizePrice" name="giaPhuThu" class="form-control" min="0" step="500" required />
+              <input type="number" id="editSizePrice" name="additionalPrice" class="form-control" min="0" step="500" required />
               <span class="input-group-text fw-semibold">đ</span>
             </div>
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Trạng Thái Kinh Doanh</label>
-            <select id="editSizeStatus" name="trangThai" class="form-select">
-              <option value="HoatDong">Đang kinh doanh (Hoạt động)</option>
-              <option value="TamNgung">Tạm ngưng bán</option>
+            <select id="editSizeStatus" name="status" class="form-select">
+              <option value="ACTIVE">Đang kinh doanh (Hoạt động)</option>
+              <option value="INACTIVE">Tạm ngưng bán</option>
             </select>
           </div>
         </div>
@@ -63,22 +63,22 @@
         <div class="modal-body py-3">
           <div class="mb-3">
             <label class="form-label fw-semibold">Tên Loại Topping <span class="text-danger">*</span></label>
-            <input type="text" id="editToppingName" name="tenTopping" class="form-control" required maxlength="100" />
+            <input type="text" id="editToppingName" name="toppingName" class="form-control" required maxlength="100" />
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Đơn Giá Bán (VNĐ) <span class="text-danger">*</span></label>
             <div class="input-group">
-              <input type="number" id="editToppingPrice" name="donGia" class="form-control" min="0" step="1000" required />
+              <input type="number" id="editToppingPrice" name="price" class="form-control" min="0" step="1000" required />
               <span class="input-group-text fw-semibold">đ</span>
             </div>
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Trạng Thái Kinh Doanh</label>
-            <select id="editToppingStatus" name="trangThai" class="form-select">
-              <option value="HoatDong">Đang kinh doanh (Hoạt động)</option>
-              <option value="TamNgung">Tạm ngưng bán</option>
+            <select id="editToppingStatus" name="status" class="form-select">
+              <option value="ACTIVE">Đang kinh doanh (Hoạt động)</option>
+              <option value="INACTIVE">Tạm ngưng bán</option>
             </select>
           </div>
         </div>

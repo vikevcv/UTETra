@@ -13,20 +13,20 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class ToppingDto {
-    private Long maTopping;
-    private String tenTopping;
-    private BigDecimal donGia;
-    private String trangThai;
-    private boolean hoatDong;
+    private Long id;
+    private String toppingName;
+    private BigDecimal price;
+    private String status;
+    private boolean active;
 
     public static ToppingDto fromEntity(Topping entity) {
         if (entity == null) return null;
         return ToppingDto.builder()
-                .maTopping(entity.getMaTopping())
-                .tenTopping(entity.getTenTopping())
-                .donGia(entity.getDonGia())
-                .trangThai(entity.getTrangThai())
-                .hoatDong(entity.isHoatDong())
+                .id(entity.getId())
+                .toppingName(entity.getToppingName())
+                .price(entity.getPrice())
+                .status(entity.getStatus())
+                .active(entity.isActive())
                 .build();
     }
 }

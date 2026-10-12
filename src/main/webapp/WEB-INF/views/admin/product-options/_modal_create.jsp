@@ -15,21 +15,21 @@
         <div class="modal-body py-3">
           <div class="mb-3">
             <label class="form-label fw-semibold">Mã Kích Cỡ <span class="text-danger">*</span></label>
-            <input type="text" name="maKichCo" class="form-control text-uppercase font-monospace"
+            <input type="text" name="sizeCode" class="form-control text-uppercase font-monospace"
                    placeholder="VD: S, M, L, XL" required maxlength="10" />
             <div class="form-text small text-muted">Mã chuẩn hóa (Khóa chính) dùng phân loại size.</div>
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Tên Kích Cỡ <span class="text-danger">*</span></label>
-            <input type="text" name="tenKichCo" class="form-control"
+            <input type="text" name="sizeName" class="form-control"
                    placeholder="VD: Size L - Cỡ Lớn (700ml)" required maxlength="50" />
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Giá Phụ Thu (VNĐ) <span class="text-danger">*</span></label>
             <div class="input-group">
-              <input type="number" name="giaPhuThu" class="form-control" placeholder="0" min="0" step="500" required />
+              <input type="number" name="additionalPrice" class="form-control" placeholder="0" min="0" step="500" required />
               <span class="input-group-text fw-semibold">đ</span>
             </div>
             <div class="form-text small text-muted">Nhập 0 nếu là cỡ ly tiêu chuẩn tính giá gốc.</div>
@@ -37,9 +37,9 @@
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Trạng Thái Kinh Doanh</label>
-            <select name="trangThai" class="form-select">
-              <option value="HoatDong" selected>Đang kinh doanh (Hoạt động)</option>
-              <option value="TamNgung">Tạm ngưng bán</option>
+            <select name="status" class="form-select">
+              <option value="ACTIVE" selected>Đang kinh doanh (Hoạt động)</option>
+              <option value="INACTIVE">Tạm ngưng bán</option>
             </select>
           </div>
         </div>
@@ -68,23 +68,23 @@
         <div class="modal-body py-3">
           <div class="mb-3">
             <label class="form-label fw-semibold">Tên Loại Topping <span class="text-danger">*</span></label>
-            <input type="text" name="tenTopping" class="form-control"
+            <input type="text" name="toppingName" class="form-control"
                    placeholder="VD: Trân Châu Trắng, Kem Cheese" required maxlength="100" />
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Đơn Giá Bán (VNĐ) <span class="text-danger">*</span></label>
             <div class="input-group">
-              <input type="number" name="donGia" class="form-control" placeholder="10000" min="0" step="1000" required />
+              <input type="number" name="price" class="form-control" placeholder="10000" min="0" step="1000" required />
               <span class="input-group-text fw-semibold">đ</span>
             </div>
           </div>
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Trạng Thái Kinh Doanh</label>
-            <select name="trangThai" class="form-select">
-              <option value="HoatDong" selected>Đang kinh doanh (Hoạt động)</option>
-              <option value="TamNgung">Tạm ngưng bán</option>
+            <select name="status" class="form-select">
+              <option value="ACTIVE" selected>Đang kinh doanh (Hoạt động)</option>
+              <option value="INACTIVE">Tạm ngưng bán</option>
             </select>
           </div>
         </div>

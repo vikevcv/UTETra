@@ -1,10 +1,14 @@
 package com.ute.trasua.service.impl;
 
-import com.ute.trasua.dto.*;
-import com.ute.trasua.entity.KichCo;
+import com.ute.trasua.dto.ProductOptionDto;
+import com.ute.trasua.dto.ProductSizeDto;
+import com.ute.trasua.dto.ProductSizeRequest;
+import com.ute.trasua.dto.ToppingDto;
+import com.ute.trasua.dto.ToppingRequest;
 import com.ute.trasua.entity.ProductOptionType;
+import com.ute.trasua.entity.ProductSize;
 import com.ute.trasua.entity.Topping;
-import com.ute.trasua.repository.KichCoRepository;
+import com.ute.trasua.repository.ProductSizeRepository;
 import com.ute.trasua.repository.ToppingRepository;
 import com.ute.trasua.service.ProductOptionService;
 import lombok.RequiredArgsConstructor;
@@ -21,87 +25,87 @@ import java.util.Map;
 @Slf4j
 public class ProductOptionServiceImpl implements ProductOptionService {
 
-    private final KichCoRepository kichCoRepository;
+    private final ProductSizeRepository productSizeRepository;
     private final ToppingRepository toppingRepository;
 
-    // ==================== KÍCH CỠ (SIZE) ====================
+    // ==================== PRODUCT SIZE ====================
 
     @Override
     @Transactional(readOnly = true)
-    public List<SizeDto> getAllSizes() {
-        return kichCoRepository.findAllOrderByGiaPhuThuAsc()
+    public List<ProductSizeDto> getAllSizes() {
+        return productSizeRepository.findAllOrderByAdditionalPriceAsc()
                 .stream()
-                .map(SizeDto::fromEntity)
+                .map(ProductSizeDto::fromEntity)
                 .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SizeDto getSizeByCode(String code) {
+    public ProductSizeDto getSizeByCode(String code) {
         if (code == null) return null;
-        KichCo size = kichCoRepository.findById(code.trim().toUpperCase())
+        ProductSize size = productSizeRepository.findById(code.trim().toUpperCase())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy kích cỡ với mã: " + code));
-        return SizeDto.fromEntity(size);
+        return ProductSizeDto.fromEntity(size);
     }
 
     @Override
     @Transactional
-    public SizeDto createSize(SizeRequest request) {
-        String cleanCode = request.getMaKichCo().trim().toUpperCase();
-        String cleanName = request.getTenKichCo().trim();
+    public ProductSizeDto createSize(ProductSizeRequest request) {
+        String cleanCode = request.getSizeCode().trim().toUpperCase();
+        String cleanName = request.getSizeName().trim();
 
-        if (kichCoRepository.existsByMaKichCo(cleanCode)) {
+        if (productSizeRepository.existsBySizeCode(cleanCode)) {
             throw new IllegalArgumentException("Mã kích cỡ '" + cleanCode + "' đã tồn tại trong hệ thống.");
         }
-        if (kichCoRepository.existsByTenKichCo(cleanName)) {
+        if (productSizeRepository.existsBySizeName(cleanName)) {
             throw new IllegalArgumentException("Tên kích cỡ '" + cleanName + "' đã được sử dụng.");
         }
 
-        KichCo size = KichCo.builder()
-                .maKichCo(cleanCode)
-                .tenKichCo(cleanName)
-                .giaPhuThu(request.getGiaPhuThu())
-                .trangThai(request.getTrangThai() != null ? request.getTrangThai() : "HoatDong")
+        ProductSize size = ProductSize.builder()
+                .sizeCode(cleanCode)
+                .sizeName(cleanName)
+                .additionalPrice(request.getAdditionalPrice())
+                .status(request.getStatus() != null ? request.getStatus() : "ACTIVE")
                 .build();
 
-        size = kichCoRepository.save(size);
-        log.info(">>> Đã thêm kích cỡ mới: [{} - {}], Phụ thu: {}", size.getMaKichCo(), size.getTenKichCo(), size.getGiaPhuThu());
-        return SizeDto.fromEntity(size);
+        size = productSizeRepository.save(size);
+        log.info(">>> Added product size: [{} - {}], Additional price: {}", size.getSizeCode(), size.getSizeName(), size.getAdditionalPrice());
+        return ProductSizeDto.fromEntity(size);
     }
 
     @Override
     @Transactional
-    public SizeDto updateSize(String code, SizeRequest request) {
+    public ProductSizeDto updateSize(String code, ProductSizeRequest request) {
         String cleanCode = code.trim().toUpperCase();
-        KichCo size = kichCoRepository.findById(cleanCode)
+        ProductSize size = productSizeRepository.findById(cleanCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy kích cỡ với mã: " + code));
 
-        String cleanName = request.getTenKichCo().trim();
-        if (kichCoRepository.existsByTenKichCoAndMaKichCoNot(cleanName, cleanCode)) {
+        String cleanName = request.getSizeName().trim();
+        if (productSizeRepository.existsBySizeNameAndSizeCodeNot(cleanName, cleanCode)) {
             throw new IllegalArgumentException("Tên kích cỡ '" + cleanName + "' đã trùng với kích cỡ khác.");
         }
 
-        size.setTenKichCo(cleanName);
-        size.setGiaPhuThu(request.getGiaPhuThu());
-        if (request.getTrangThai() != null) {
-            size.setTrangThai(request.getTrangThai());
+        size.setSizeName(cleanName);
+        size.setAdditionalPrice(request.getAdditionalPrice());
+        if (request.getStatus() != null) {
+            size.setStatus(request.getStatus());
         }
 
-        size = kichCoRepository.save(size);
-        log.info(">>> Đã cập nhật kích cỡ: [{} - {}], Phụ thu: {}", size.getMaKichCo(), size.getTenKichCo(), size.getGiaPhuThu());
-        return SizeDto.fromEntity(size);
+        size = productSizeRepository.save(size);
+        log.info(">>> Updated product size: [{} - {}], Additional price: {}", size.getSizeCode(), size.getSizeName(), size.getAdditionalPrice());
+        return ProductSizeDto.fromEntity(size);
     }
 
     @Override
     @Transactional
     public boolean toggleSizeStatus(String code) {
         String cleanCode = code.trim().toUpperCase();
-        KichCo size = kichCoRepository.findById(cleanCode)
+        ProductSize size = productSizeRepository.findById(cleanCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy kích cỡ với mã: " + code));
 
-        boolean willActive = !size.isHoatDong();
-        size.setTrangThai(willActive ? "HoatDong" : "TamNgung");
-        kichCoRepository.save(size);
+        boolean willActive = !size.isActive();
+        size.setStatus(willActive ? "ACTIVE" : "INACTIVE");
+        productSizeRepository.save(size);
         return willActive;
     }
 
@@ -109,10 +113,10 @@ public class ProductOptionServiceImpl implements ProductOptionService {
     @Transactional
     public void deleteSize(String code) {
         String cleanCode = code.trim().toUpperCase();
-        if (!kichCoRepository.existsById(cleanCode)) {
+        if (!productSizeRepository.existsById(cleanCode)) {
             throw new IllegalArgumentException("Không tìm thấy kích cỡ để xóa: " + code);
         }
-        kichCoRepository.deleteById(cleanCode);
+        productSizeRepository.deleteById(cleanCode);
     }
 
     // ==================== TOPPING ====================
@@ -120,7 +124,7 @@ public class ProductOptionServiceImpl implements ProductOptionService {
     @Override
     @Transactional(readOnly = true)
     public List<ToppingDto> getAllToppings() {
-        return toppingRepository.findAllOrderByDonGiaAsc()
+        return toppingRepository.findAllOrderByPriceAsc()
                 .stream()
                 .map(ToppingDto::fromEntity)
                 .toList();
@@ -137,19 +141,19 @@ public class ProductOptionServiceImpl implements ProductOptionService {
     @Override
     @Transactional
     public ToppingDto createTopping(ToppingRequest request) {
-        String cleanName = request.getTenTopping().trim();
-        if (toppingRepository.existsByTenTopping(cleanName)) {
+        String cleanName = request.getToppingName().trim();
+        if (toppingRepository.existsByToppingName(cleanName)) {
             throw new IllegalArgumentException("Tên topping '" + cleanName + "' đã tồn tại trong hệ thống.");
         }
 
         Topping topping = Topping.builder()
-                .tenTopping(cleanName)
-                .donGia(request.getDonGia())
-                .trangThai(request.getTrangThai() != null ? request.getTrangThai() : "HoatDong")
+                .toppingName(cleanName)
+                .price(request.getPrice())
+                .status(request.getStatus() != null ? request.getStatus() : "ACTIVE")
                 .build();
 
         topping = toppingRepository.save(topping);
-        log.info(">>> Đã thêm topping mới: [ID: {} - {}], Đơn giá: {}", topping.getMaTopping(), topping.getTenTopping(), topping.getDonGia());
+        log.info(">>> Added topping: [ID: {} - {}], Price: {}", topping.getId(), topping.getToppingName(), topping.getPrice());
         return ToppingDto.fromEntity(topping);
     }
 
@@ -159,19 +163,19 @@ public class ProductOptionServiceImpl implements ProductOptionService {
         Topping topping = toppingRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy topping với ID: " + id));
 
-        String cleanName = request.getTenTopping().trim();
-        if (toppingRepository.existsByTenToppingAndMaToppingNot(cleanName, id)) {
+        String cleanName = request.getToppingName().trim();
+        if (toppingRepository.existsByToppingNameAndIdNot(cleanName, id)) {
             throw new IllegalArgumentException("Tên topping '" + cleanName + "' đã trùng với loại topping khác.");
         }
 
-        topping.setTenTopping(cleanName);
-        topping.setDonGia(request.getDonGia());
-        if (request.getTrangThai() != null) {
-            topping.setTrangThai(request.getTrangThai());
+        topping.setToppingName(cleanName);
+        topping.setPrice(request.getPrice());
+        if (request.getStatus() != null) {
+            topping.setStatus(request.getStatus());
         }
 
         topping = toppingRepository.save(topping);
-        log.info(">>> Đã cập nhật topping: [ID: {} - {}], Đơn giá: {}", topping.getMaTopping(), topping.getTenTopping(), topping.getDonGia());
+        log.info(">>> Updated topping: [ID: {} - {}], Price: {}", topping.getId(), topping.getToppingName(), topping.getPrice());
         return ToppingDto.fromEntity(topping);
     }
 
@@ -181,8 +185,8 @@ public class ProductOptionServiceImpl implements ProductOptionService {
         Topping topping = toppingRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy topping với ID: " + id));
 
-        boolean willActive = !topping.isHoatDong();
-        topping.setTrangThai(willActive ? "HoatDong" : "TamNgung");
+        boolean willActive = !topping.isActive();
+        topping.setStatus(willActive ? "ACTIVE" : "INACTIVE");
         toppingRepository.save(topping);
         return willActive;
     }
@@ -196,18 +200,18 @@ public class ProductOptionServiceImpl implements ProductOptionService {
         toppingRepository.deleteById(id);
     }
 
-    // ==================== TỔNG HỢP & API ====================
+    // ==================== AGGREGATE & API ====================
 
     @Override
     @Transactional(readOnly = true)
     public List<ProductOptionDto> getActiveOptionsByType(ProductOptionType type) {
         if (type == ProductOptionType.SIZE) {
-            return kichCoRepository.findActiveOrderByGiaPhuThuAsc()
+            return productSizeRepository.findActiveOrderByAdditionalPriceAsc()
                     .stream()
-                    .map(ProductOptionDto::fromKichCo)
+                    .map(ProductOptionDto::fromProductSize)
                     .toList();
         } else if (type == ProductOptionType.TOPPING) {
-            return toppingRepository.findActiveOrderByDonGiaAsc()
+            return toppingRepository.findActiveOrderByPriceAsc()
                     .stream()
                     .map(ProductOptionDto::fromTopping)
                     .toList();
@@ -218,10 +222,10 @@ public class ProductOptionServiceImpl implements ProductOptionService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> getOptionStatistics() {
-        long totalSizes = kichCoRepository.count();
-        long activeSizes = kichCoRepository.findActiveOrderByGiaPhuThuAsc().size();
+        long totalSizes = productSizeRepository.count();
+        long activeSizes = productSizeRepository.findActiveOrderByAdditionalPriceAsc().size();
         long totalToppings = toppingRepository.count();
-        long activeToppings = toppingRepository.findActiveOrderByDonGiaAsc().size();
+        long activeToppings = toppingRepository.findActiveOrderByPriceAsc().size();
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalSizes", totalSizes);

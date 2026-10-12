@@ -10,13 +10,13 @@ import java.util.List;
 @Repository
 public interface ToppingRepository extends JpaRepository<Topping, Long> {
 
-    boolean existsByTenTopping(String tenTopping);
+    boolean existsByToppingName(String toppingName);
 
-    boolean existsByTenToppingAndMaToppingNot(String tenTopping, Long maTopping);
+    boolean existsByToppingNameAndIdNot(String toppingName, Long id);
 
-    @Query("SELECT t FROM Topping t ORDER BY t.donGia ASC")
-    List<Topping> findAllOrderByDonGiaAsc();
+    @Query("SELECT t FROM Topping t ORDER BY t.price ASC")
+    List<Topping> findAllOrderByPriceAsc();
 
-    @Query("SELECT t FROM Topping t WHERE t.trangThai = 'HoatDong' ORDER BY t.donGia ASC")
-    List<Topping> findActiveOrderByDonGiaAsc();
+    @Query("SELECT t FROM Topping t WHERE t.status = 'ACTIVE' OR t.status = 'HoatDong' ORDER BY t.price ASC")
+    List<Topping> findActiveOrderByPriceAsc();
 }

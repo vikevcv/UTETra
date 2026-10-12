@@ -1,25 +1,29 @@
 package com.ute.trasua.service;
 
-import com.ute.trasua.dto.*;
+import com.ute.trasua.dto.ProductOptionDto;
+import com.ute.trasua.dto.ProductSizeDto;
+import com.ute.trasua.dto.ProductSizeRequest;
+import com.ute.trasua.dto.ToppingDto;
+import com.ute.trasua.dto.ToppingRequest;
 import com.ute.trasua.entity.ProductOptionType;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Service quản lý danh mục Kích cỡ (Size) và Topping toàn chuỗi (Module 5 - UC23).
- * Phục vụ cả 2 bảng độc lập KichCo và Topping theo chuẩn ERD Báo Cáo SE.
+ * Service managing cup sizes and toppings chain-wide (Module 5 - UC23).
+ * Maps to tables 'kich_co' and 'topping' in the SE project ERD.
  */
 public interface ProductOptionService {
 
-    // ==================== KÍCH CỠ (SIZE) ====================
-    List<SizeDto> getAllSizes();
+    // ==================== PRODUCT SIZE ====================
+    List<ProductSizeDto> getAllSizes();
 
-    SizeDto getSizeByCode(String code);
+    ProductSizeDto getSizeByCode(String code);
 
-    SizeDto createSize(SizeRequest request);
+    ProductSizeDto createSize(ProductSizeRequest request);
 
-    SizeDto updateSize(String code, SizeRequest request);
+    ProductSizeDto updateSize(String code, ProductSizeRequest request);
 
     boolean toggleSizeStatus(String code);
 
@@ -38,7 +42,7 @@ public interface ProductOptionService {
 
     void deleteTopping(Long id);
 
-    // ==================== TỔNG HỢP & API ====================
+    // ==================== AGGREGATE & API ====================
     List<ProductOptionDto> getActiveOptionsByType(ProductOptionType type);
 
     Map<String, Object> getOptionStatistics();
