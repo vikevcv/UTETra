@@ -93,23 +93,6 @@
     </div>
   </div>
 
-  <!-- ==================== THÔNG BÁO ==================== -->
-  <c:if test="${not empty successMessage}">
-    <div class="alert alert-success alert-dismissible fade show shadow-sm d-flex align-items-center mb-3 py-2" role="alert">
-      <i class="fa-solid fa-circle-check fs-5 me-2"></i>
-      <div>${successMessage}</div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  </c:if>
-
-  <c:if test="${not empty errorMessage}">
-    <div class="alert alert-danger alert-dismissible fade show shadow-sm d-flex align-items-center mb-3 py-2" role="alert">
-      <i class="fa-solid fa-triangle-exclamation fs-5 me-2"></i>
-      <div>${errorMessage}</div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  </c:if>
-
   <!-- ==================== THỐNG KÊ ==================== -->
   <div class="row g-3 mb-3">
     <div class="col-6 col-lg-3">
