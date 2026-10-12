@@ -96,6 +96,13 @@
             </a>
           </li>
           <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/admin/product-options" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/product-options') ? 'active' : ''}">
+              <i class="fa-solid fa-cubes-stacked"></i>
+              <span>Tùy Chọn Size & Topping</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/admin/reports" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/reports') ? 'active' : ''}">
               <i class="fa-solid fa-file-excel"></i>

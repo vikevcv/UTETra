@@ -24,6 +24,7 @@ public class DataInitializer implements CommandLineRunner {
     private final com.ute.trasua.repository.BranchRepository branchRepository;
     private final com.ute.trasua.repository.EmployeeRepository employeeRepository;
     private final com.ute.trasua.repository.PosAccountRepository posAccountRepository;
+    private final com.ute.trasua.repository.ProductOptionRepository productOptionRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -263,6 +264,91 @@ public class DataInitializer implements CommandLineRunner {
                         .branch(cnQuan1)
                         .build());
             }
+        }
+
+        // ==========================================
+        // UC23: Khởi tạo Danh mục Tùy Chọn (Size & Topping)
+        // ==========================================
+        if (productOptionRepository.count() == 0) {
+            java.util.List<com.ute.trasua.entity.ProductOption> initialOptions = java.util.List.of(
+                    // Kích cỡ (SIZE)
+                    com.ute.trasua.entity.ProductOption.builder()
+                            .optionCode("SIZE_S")
+                            .name("Size Nhỏ (S - 350ml)")
+                            .type(com.ute.trasua.entity.ProductOptionType.SIZE)
+                            .additionalPrice(java.math.BigDecimal.ZERO)
+                            .description("Dung tích tiêu chuẩn ly nhỏ 350ml, giá gốc")
+                            .active(true)
+                            .createdAt(LocalDateTime.now())
+                            .build(),
+                    com.ute.trasua.entity.ProductOption.builder()
+                            .optionCode("SIZE_M")
+                            .name("Size Vừa (M - 500ml)")
+                            .type(com.ute.trasua.entity.ProductOptionType.SIZE)
+                            .additionalPrice(new java.math.BigDecimal("6000"))
+                            .description("Dung tích vừa phổ biến 500ml (+6.000đ)")
+                            .active(true)
+                            .createdAt(LocalDateTime.now())
+                            .build(),
+                    com.ute.trasua.entity.ProductOption.builder()
+                            .optionCode("SIZE_L")
+                            .name("Size Lớn (L - 700ml)")
+                            .type(com.ute.trasua.entity.ProductOptionType.SIZE)
+                            .additionalPrice(new java.math.BigDecimal("12000"))
+                            .description("Dung tích lớn đã khát 700ml (+12.000đ)")
+                            .active(true)
+                            .createdAt(LocalDateTime.now())
+                            .build(),
+
+                    // Topping thêm (TOPPING)
+                    com.ute.trasua.entity.ProductOption.builder()
+                            .optionCode("TOPPING_TRAN_CHAU_DEN")
+                            .name("Trân Châu Đen Dẻo")
+                            .type(com.ute.trasua.entity.ProductOptionType.TOPPING)
+                            .additionalPrice(new java.math.BigDecimal("8000"))
+                            .description("Trân châu đen nấu đường mật dẻo dai (+8.000đ)")
+                            .active(true)
+                            .createdAt(LocalDateTime.now())
+                            .build(),
+                    com.ute.trasua.entity.ProductOption.builder()
+                            .optionCode("TOPPING_TRAN_CHAU_HOANG_KIM")
+                            .name("Trân Châu Hoàng Kim")
+                            .type(com.ute.trasua.entity.ProductOptionType.TOPPING)
+                            .additionalPrice(new java.math.BigDecimal("10000"))
+                            .description("Trân châu giòn sần sật ngâm mật ong (+10.000đ)")
+                            .active(true)
+                            .createdAt(LocalDateTime.now())
+                            .build(),
+                    com.ute.trasua.entity.ProductOption.builder()
+                            .optionCode("TOPPING_THACH_CU_NANG")
+                            .name("Thạch Củ Năng Giòn")
+                            .type(com.ute.trasua.entity.ProductOptionType.TOPPING)
+                            .additionalPrice(new java.math.BigDecimal("10000"))
+                            .description("Củ năng tươi giòn tan bọc lớp bột năng dẻo (+10.000đ)")
+                            .active(true)
+                            .createdAt(LocalDateTime.now())
+                            .build(),
+                    com.ute.trasua.entity.ProductOption.builder()
+                            .optionCode("TOPPING_KEM_CHEESE_FOAM")
+                            .name("Kem Phô Mai Cheese Foam")
+                            .type(com.ute.trasua.entity.ProductOptionType.TOPPING)
+                            .additionalPrice(new java.math.BigDecimal("12000"))
+                            .description("Lớp kem mặn béo ngậy chuẩn vị Anchor (+12.000đ)")
+                            .active(true)
+                            .createdAt(LocalDateTime.now())
+                            .build(),
+                    com.ute.trasua.entity.ProductOption.builder()
+                            .optionCode("TOPPING_THACH_MATCHA")
+                            .name("Thạch Matcha Nhật Bản")
+                            .type(com.ute.trasua.entity.ProductOptionType.TOPPING)
+                            .additionalPrice(new java.math.BigDecimal("9000"))
+                            .description("Thạch trà xanh thơm mát thanh nhiệt (+9.000đ)")
+                            .active(true)
+                            .createdAt(LocalDateTime.now())
+                            .build()
+            );
+            productOptionRepository.saveAll(initialOptions);
+            log.info(">>> Đã khởi tạo {} tùy chọn mặc định (Size & Topping)", initialOptions.size());
         }
     }
 }

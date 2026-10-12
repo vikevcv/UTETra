@@ -52,6 +52,7 @@ public class SecurityConfig {
                     "/",
                     "/portal",
                     "/auth/**",
+                    "/api/v1/product-options/active",
                     "/css/**", "/js/**", "/images/**", "/favicon.ico",
                     "/h2-console/**",
                     "/WEB-INF/**"
