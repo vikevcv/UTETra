@@ -52,6 +52,9 @@ public class SecurityConfig {
                     "/",
                     "/portal",
                     "/auth/**",
+                    "/pos", "/pos/**",
+                    "/branch/pos", "/branch/pos/**",
+                    "/api/pos/**",
                     "/css/**", "/js/**", "/images/**", "/favicon.ico",
                     "/h2-console/**",
                     "/WEB-INF/**"
