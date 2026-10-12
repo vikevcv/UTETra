@@ -62,11 +62,34 @@
             </div>
           </div>
 
+          <!-- Bộ điều chỉnh lương thỏa thuận linh hoạt -->
           <div class="mb-3">
-            <label class="form-label fw-semibold">Lương Thỏa Thuận (VNĐ/Tháng)</label>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label fw-semibold mb-0">Lương Cứng Thỏa Thuận</label>
+              <span id="createSalaryFormatted" class="badge bg-success-subtle text-success border border-success-subtle fw-semibold">
+                5.000.000 VNĐ / tháng
+              </span>
+            </div>
             <div class="input-group">
-              <input type="number" name="baseSalary" class="form-control" placeholder="5000000" min="0" step="500000" />
-              <span class="input-group-text">đ</span>
+              <button class="btn btn-outline-secondary btn-step-salary" type="button" data-target="createBaseSalary" data-step="-500000" title="Giảm 500k">-500k</button>
+              <input type="number" id="createBaseSalary" name="baseSalary" class="form-control text-end fw-bold fs-6 salary-input"
+                     value="5000000" min="0" step="100000" placeholder="5000000" />
+              <span class="input-group-text fw-semibold">VNĐ</span>
+              <button class="btn btn-outline-secondary btn-step-salary" type="button" data-target="createBaseSalary" data-step="500000" title="Tăng 500k">+500k</button>
+              <button class="btn btn-outline-secondary btn-step-salary" type="button" data-target="createBaseSalary" data-step="1000000" title="Tăng 1 triệu">+1tr</button>
+            </div>
+            <!-- Quick preset chips -->
+            <div class="d-flex flex-wrap gap-1 mt-2">
+              <button type="button" class="btn btn-outline-secondary rounded-pill py-0 px-2 small btn-preset-salary" data-target="createBaseSalary" data-val="0">0đ (Theo đơn)</button>
+              <button type="button" class="btn btn-outline-secondary rounded-pill py-0 px-2 small btn-preset-salary" data-target="createBaseSalary" data-val="4500000">4.5 tr</button>
+              <button type="button" class="btn btn-outline-secondary rounded-pill py-0 px-2 small btn-preset-salary" data-target="createBaseSalary" data-val="5000000">5.0 tr</button>
+              <button type="button" class="btn btn-outline-secondary rounded-pill py-0 px-2 small btn-preset-salary" data-target="createBaseSalary" data-val="6000000">6.0 tr</button>
+              <button type="button" class="btn btn-outline-secondary rounded-pill py-0 px-2 small btn-preset-salary" data-target="createBaseSalary" data-val="7000000">7.0 tr</button>
+              <button type="button" class="btn btn-outline-secondary rounded-pill py-0 px-2 small btn-preset-salary" data-target="createBaseSalary" data-val="8000000">8.0 tr</button>
+              <button type="button" class="btn btn-outline-secondary rounded-pill py-0 px-2 small btn-preset-salary" data-target="createBaseSalary" data-val="10000000">10 tr</button>
+            </div>
+            <div id="createSalaryWordHelp" class="form-text small text-muted mt-1">
+              Nhập số tiền hoặc bấm các nút chọn nhanh ở trên.
             </div>
           </div>
         </div>

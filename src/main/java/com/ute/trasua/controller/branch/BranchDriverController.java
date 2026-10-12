@@ -3,6 +3,7 @@ package com.ute.trasua.controller.branch;
 import com.ute.trasua.dto.BranchResponse;
 import com.ute.trasua.dto.CreateDriverRequest;
 import com.ute.trasua.dto.DriverResponse;
+import com.ute.trasua.dto.UpdateDriverRequest;
 import com.ute.trasua.service.BranchService;
 import com.ute.trasua.service.DriverService;
 import jakarta.validation.Valid;
@@ -103,6 +104,35 @@ public class BranchDriverController {
         }
 
         return "redirect:/branch/drivers" + (currentBranchId != null ? "?branchId=" + currentBranchId : "");
+    }
+
+    /**
+     * Cập nhật thông tin và lương tài xế (Module 5 - UC17).
+     */
+    @PostMapping("/{id}/update")
+    public String updateDriver(
+            @PathVariable Long id,
+            @Valid @ModelAttribute UpdateDriverRequest request,
+            BindingResult bindingResult,
+            @RequestParam(value = "branchId", required = false) Long branchId,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            String errorMsg = bindingResult.getAllErrors().get(0).getDefaultMessage();
+            redirectAttributes.addFlashAttribute("errorMessage", errorMsg);
+            return "redirect:/branch/drivers" + (branchId != null ? "?branchId=" + branchId : "");
+        }
+
+        try {
+            DriverResponse updated = driverService.updateDriver(id, request);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Cập nhật thông tin và lương tài xế '" + updated.getFullName() + "' thành công!");
+        } catch (Exception e) {
+            log.error("Lỗi cập nhật tài xế [ID: {}]: {}", id, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/branch/drivers" + (branchId != null ? "?branchId=" + branchId : "");
     }
 
     /**

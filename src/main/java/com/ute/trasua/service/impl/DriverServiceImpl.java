@@ -2,6 +2,7 @@ package com.ute.trasua.service.impl;
 
 import com.ute.trasua.dto.CreateDriverRequest;
 import com.ute.trasua.dto.DriverResponse;
+import com.ute.trasua.dto.UpdateDriverRequest;
 import com.ute.trasua.entity.Branch;
 import com.ute.trasua.entity.Driver;
 import com.ute.trasua.entity.User;
@@ -131,6 +132,32 @@ public class DriverServiceImpl implements DriverService {
             log.warn("Không thể gửi email kích hoạt đến [{}]: {}", cleanEmail, e.getMessage());
         }
 
+        return DriverResponse.fromEntity(driver);
+    }
+
+    @Override
+    @Transactional
+    public DriverResponse updateDriver(Long driverId, UpdateDriverRequest request) {
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài xế với ID: " + driverId));
+
+        String cleanPlate = request.getLicensePlate().trim().toUpperCase();
+        if (driverRepository.existsByLicensePlateAndIdNot(cleanPlate, driverId)) {
+            throw new IllegalArgumentException("Biển số xe '" + cleanPlate + "' đã được đăng ký cho tài xế khác.");
+        }
+
+        User user = driver.getUser();
+        user.setFullName(request.getFullName().trim());
+        user.setPhone(request.getPhone().trim());
+        userRepository.save(user);
+
+        driver.setLicensePlate(cleanPlate);
+        driver.setVehicleType(request.getVehicleType() != null ? request.getVehicleType().trim() : "XE_MAY");
+        driver.setShift(request.getShift() != null ? request.getShift().trim() : "SANG");
+        driver.setBaseSalary(request.getBaseSalary() != null ? request.getBaseSalary() : BigDecimal.ZERO);
+        driver = driverRepository.save(driver);
+
+        log.info(">>> Đã cập nhật tài xế [ID: {} - {}], lương mới: {}", driverId, user.getFullName(), driver.getBaseSalary());
         return DriverResponse.fromEntity(driver);
     }
 

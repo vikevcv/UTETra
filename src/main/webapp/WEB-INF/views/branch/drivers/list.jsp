@@ -211,6 +211,7 @@
             <th>Tài Khoản</th>
             <th>Biển Số</th>
             <th>Ca Trực</th>
+            <th>Lương Cứng</th>
             <th class="text-center">Trạng Thái</th>
             <th>Hiệu Suất</th>
             <th class="text-end pe-4">Thao Tác</th>
@@ -247,6 +248,19 @@
                       <c:otherwise><span class="badge bg-primary-subtle text-primary border">Toàn Thời Gian</span></c:otherwise>
                     </c:choose>
                   </td>
+                  <td>
+                    <c:choose>
+                      <c:when test="${d.baseSalary != null && d.baseSalary > 0}">
+                        <div class="fw-semibold text-dark">
+                          <fmt:formatNumber value="${d.baseSalary}" pattern="#,###" /> đ
+                        </div>
+                        <small class="text-muted">/ tháng</small>
+                      </c:when>
+                      <c:otherwise>
+                        <span class="badge bg-light text-secondary border">Theo đơn (0đ)</span>
+                      </c:otherwise>
+                    </c:choose>
+                  </td>
                   <td class="text-center">
                     <c:choose>
                       <c:when test="${d.locked}">
@@ -268,6 +282,17 @@
                     <small class="text-muted">${d.totalOrders} đơn</small>
                   </td>
                   <td class="text-end pe-4">
+                    <button type="button" class="btn btn-sm btn-outline-primary me-1 btn-edit-driver"
+                            title="Chỉnh sửa thông tin & lương"
+                            data-id="${d.id}"
+                            data-fullname="${fn:escapeXml(d.fullName)}"
+                            data-phone="${fn:escapeXml(d.phone)}"
+                            data-licenseplate="${fn:escapeXml(d.licensePlate)}"
+                            data-vehicletype="${fn:escapeXml(d.vehicleType)}"
+                            data-shift="${fn:escapeXml(d.shift)}"
+                            data-salary="${d.baseSalary != null ? d.baseSalary : 0}">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
                     <form action="${pageContext.request.contextPath}/branch/drivers/${d.id}/resend-email" method="post" class="d-inline form-resend">
                       <input type="hidden" name="branchId" value="${currentBranch.id}" />
                       <button type="submit" class="btn btn-sm btn-outline-secondary me-1" title="Gửi lại mật khẩu qua Email" data-name="${fn:escapeXml(d.fullName)}">
@@ -290,7 +315,7 @@
             </c:when>
             <c:otherwise>
               <tr>
-                <td colspan="7" class="text-center py-5 text-muted">
+                <td colspan="8" class="text-center py-5 text-muted">
                   <i class="fa-solid fa-motorcycle fs-2 text-secondary opacity-50 mb-2 d-block"></i>
                   Chưa có tài xế nào tại chi nhánh này.
                 </td>
@@ -316,11 +341,121 @@
 
 </div>
 
-<!-- ==================== MODAL: THÊM TÀI XẾ ==================== -->
+<!-- ==================== MODAL: THÊM & SỬA TÀI XẾ ==================== -->
 <jsp:include page="_modal_create.jsp" />
+<jsp:include page="_modal_edit.jsp" />
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    function formatMoneyVN(amount) {
+      var num = Number(amount);
+      if (isNaN(num) || num <= 0) {
+        return "0 VNĐ (Theo đơn hàng)";
+      }
+      return num.toLocaleString('vi-VN') + " VNĐ / tháng";
+    }
+
+    function updateSalaryDisplay(inputId, badgeId, helpId) {
+      var input = document.getElementById(inputId);
+      var badge = document.getElementById(badgeId);
+      var help = document.getElementById(helpId);
+      if (!input || !badge) return;
+      var val = parseFloat(input.value) || 0;
+      badge.textContent = formatMoneyVN(val);
+      if (help) {
+        if (val === 0) {
+          help.textContent = "Chế độ thỏa thuận: không áp dụng lương cứng cố định, ăn chia theo đơn giao.";
+        } else {
+          help.textContent = "Lương thỏa thuận cố định: " + Number(val).toLocaleString('vi-VN') + " đồng mỗi tháng.";
+        }
+      }
+    }
+
+    // Xử lý nút tăng giảm nhanh lương (+-500k, +1tr)
+    document.querySelectorAll('.btn-step-salary').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var targetId = btn.getAttribute('data-target');
+        var step = parseInt(btn.getAttribute('data-step'), 10) || 0;
+        var input = document.getElementById(targetId);
+        if (input) {
+          var cur = parseInt(input.value, 10) || 0;
+          var next = Math.max(0, cur + step);
+          input.value = next;
+          input.dispatchEvent(new Event('input'));
+        }
+      });
+    });
+
+    // Xử lý nút chọn nhanh các mức lương phổ biến
+    document.querySelectorAll('.btn-preset-salary').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var targetId = btn.getAttribute('data-target');
+        var val = btn.getAttribute('data-val');
+        var input = document.getElementById(targetId);
+        if (input) {
+          input.value = val;
+          input.dispatchEvent(new Event('input'));
+        }
+      });
+    });
+
+    // Gắn sự kiện cập nhật hiển thị lương tức thì khi gõ
+    var createSal = document.getElementById('createBaseSalary');
+    if (createSal) {
+      createSal.addEventListener('input', function() {
+        updateSalaryDisplay('createBaseSalary', 'createSalaryFormatted', 'createSalaryWordHelp');
+      });
+      updateSalaryDisplay('createBaseSalary', 'createSalaryFormatted', 'createSalaryWordHelp');
+    }
+
+    var editSal = document.getElementById('editBaseSalary');
+    if (editSal) {
+      editSal.addEventListener('input', function() {
+        updateSalaryDisplay('editBaseSalary', 'editSalaryFormatted', 'editSalaryWordHelp');
+      });
+    }
+
+    // Xử lý nút Chỉnh sửa tài xế & lương
+    var editModalEl = document.getElementById('editDriverModal');
+    var editForm = document.getElementById('editDriverForm');
+
+    document.querySelectorAll('.btn-edit-driver').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var id = btn.getAttribute('data-id');
+        var fullName = btn.getAttribute('data-fullname');
+        var phone = btn.getAttribute('data-phone');
+        var plate = btn.getAttribute('data-licenseplate');
+        var vehicle = btn.getAttribute('data-vehicletype') || 'XE_MAY';
+        var shift = btn.getAttribute('data-shift') || 'SANG';
+        var salary = btn.getAttribute('data-salary') || '0';
+
+        if (editForm) {
+          var baseAction = editForm.getAttribute('data-base-action');
+          editForm.action = (baseAction ? baseAction : '') + '/' + id + '/update';
+        }
+        var nameInput = document.getElementById('editFullName');
+        if (nameInput) nameInput.value = fullName || '';
+        var phoneInput = document.getElementById('editPhone');
+        if (phoneInput) phoneInput.value = phone || '';
+        var plateInput = document.getElementById('editLicensePlate');
+        if (plateInput) plateInput.value = plate || '';
+        var vehicleSelect = document.getElementById('editVehicleType');
+        if (vehicleSelect) vehicleSelect.value = vehicle;
+        var shiftSelect = document.getElementById('editShift');
+        if (shiftSelect) shiftSelect.value = shift;
+        if (editSal) {
+          editSal.value = salary;
+          updateSalaryDisplay('editBaseSalary', 'editSalaryFormatted', 'editSalaryWordHelp');
+        }
+
+        if (window.bootstrap && editModalEl) {
+          var modal = bootstrap.Modal.getInstance(editModalEl) || new bootstrap.Modal(editModalEl);
+          modal.show();
+        }
+      });
+    });
+
+    // Xác nhận gửi lại email mật khẩu
     document.querySelectorAll('.form-resend').forEach(function(form) {
       form.addEventListener('submit', function(e) {
         var btn = form.querySelector('button');
@@ -331,6 +466,7 @@
       });
     });
 
+    // Xác nhận khóa / mở khóa tài xế
     document.querySelectorAll('.form-toggle').forEach(function(form) {
       form.addEventListener('submit', function(e) {
         var btn = form.querySelector('button');

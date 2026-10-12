@@ -13,6 +13,8 @@ public interface DriverService {
 
     DriverResponse createDriver(CreateDriverRequest request, Long branchId);
 
+    DriverResponse updateDriver(Long driverId, com.ute.trasua.dto.UpdateDriverRequest request);
+
     DriverResponse toggleDriverLock(Long driverId, boolean locked, String reason);
 
     DriverResponse updateWorkingStatus(Long driverId, String newStatus);
