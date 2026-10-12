@@ -59,6 +59,7 @@ public class SecurityConfig {
                 // 3. Phân quyền chặt chẽ theo vai trò
                 .requestMatchers("/admin", "/admin/**").hasRole("ADMIN")
                 .requestMatchers("/branch", "/branch/**").hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers("/shipper", "/shipper/**").hasAnyRole("DRIVER", "ADMIN")
                 .anyRequest().authenticated())
             .csrf(csrf -> csrf.disable())
             .headers(headers -> headers.frameOptions(fo -> fo.disable()))

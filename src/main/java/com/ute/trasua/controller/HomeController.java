@@ -37,7 +37,7 @@ public class HomeController {
             }
             boolean isDriver = authorities.stream().anyMatch(a -> a.getAuthority().equals("ROLE_DRIVER"));
             if (isDriver) {
-                return "redirect:/admin/drivers";
+                return "redirect:/shipper";
             }
         }
         return "redirect:/";

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -16,12 +17,13 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.mail.from:thoain.n2006@gmail.com}")
+    @Value("${app.mail.from}")
     private String mailFrom;
 
     @Value("${app.mail.from-name:UTETra Zen Gallery}")
     private String mailFromName;
 
+    @Async
     public void sendOtpEmail(String to, String otp) {
         String subject = "Mã xác nhận đăng ký tài khoản UTETra";
         String htmlContent = buildOtpEmailTemplate(
@@ -32,6 +34,7 @@ public class EmailService {
         sendMimeEmail(to, subject, htmlContent);
     }
 
+    @Async
     public void sendForgotPasswordOtpEmail(String to, String otp) {
         String subject = "[UTETra] Mã xác nhận đặt lại mật khẩu";
         String htmlContent = buildOtpEmailTemplate(
