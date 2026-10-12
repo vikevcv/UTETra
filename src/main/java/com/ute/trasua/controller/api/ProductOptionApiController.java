@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * REST API cung cấp dữ liệu tùy chọn cho Client (UC04) và thao tác nhanh qua AJAX.
+ * REST API cung cấp dữ liệu tùy chọn Kích cỡ & Topping (UC04) và thao tác nhanh qua AJAX (UC23).
  */
 @RestController
 @RequestMapping("/api/v1/product-options")
@@ -33,15 +33,28 @@ public class ProductOptionApiController {
     }
 
     /**
-     * API cập nhật nhanh trạng thái bật/tắt kinh doanh qua AJAX Switch trên giao diện Admin.
+     * API cập nhật nhanh trạng thái bật/tắt kích cỡ qua AJAX.
      */
-    @PatchMapping("/{id}/toggle-status")
-    public ResponseEntity<Map<String, Object>> toggleStatus(@PathVariable Long id) {
-        boolean newStatus = optionService.toggleActiveStatus(id);
+    @PatchMapping("/size/{code}/toggle-status")
+    public ResponseEntity<Map<String, Object>> toggleSizeStatus(@PathVariable String code) {
+        boolean newStatus = optionService.toggleSizeStatus(code);
+        Map<String, Object> res = new HashMap<>();
+        res.put("code", code);
+        res.put("active", newStatus);
+        res.put("message", newStatus ? "Đã chuyển kích cỡ sang trạng thái Đang bán" : "Đã chuyển kích cỡ sang trạng thái Ngừng bán");
+        return ResponseEntity.ok(res);
+    }
+
+    /**
+     * API cập nhật nhanh trạng thái bật/tắt topping qua AJAX.
+     */
+    @PatchMapping("/topping/{id}/toggle-status")
+    public ResponseEntity<Map<String, Object>> toggleToppingStatus(@PathVariable Long id) {
+        boolean newStatus = optionService.toggleToppingStatus(id);
         Map<String, Object> res = new HashMap<>();
         res.put("id", id);
         res.put("active", newStatus);
-        res.put("message", newStatus ? "Đã chuyển sang trạng thái Đang bán" : "Đã chuyển sang trạng thái Ngừng bán");
+        res.put("message", newStatus ? "Đã chuyển topping sang trạng thái Đang bán" : "Đã chuyển topping sang trạng thái Ngừng bán");
         return ResponseEntity.ok(res);
     }
 }

@@ -1,17 +1,22 @@
 package com.ute.trasua.dto;
 
-import com.ute.trasua.entity.ProductOption;
+import com.ute.trasua.entity.KichCo;
 import com.ute.trasua.entity.ProductOptionType;
+import com.ute.trasua.entity.Topping;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Data Transfer Object cho ProductOption (tránh để lộ Entity ra View/API).
+ * Data Transfer Object tương thích cho ProductOption API (UC23 & UC04).
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ProductOptionDto {
     private Long id;
@@ -24,20 +29,32 @@ public class ProductOptionDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static ProductOptionDto fromEntity(ProductOption entity) {
-        if (entity == null) {
-            return null;
-        }
+    public static ProductOptionDto fromKichCo(KichCo size) {
+        if (size == null) return null;
         return ProductOptionDto.builder()
-                .id(entity.getId())
-                .optionCode(entity.getOptionCode())
-                .name(entity.getName())
-                .type(entity.getType())
-                .additionalPrice(entity.getAdditionalPrice())
-                .description(entity.getDescription())
-                .active(entity.isActive())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
+                .optionCode(size.getMaKichCo())
+                .name(size.getTenKichCo())
+                .type(ProductOptionType.SIZE)
+                .additionalPrice(size.getGiaPhuThu())
+                .description("Phụ thu kích cỡ: " + size.getGiaPhuThu() + " đ")
+                .active(size.isHoatDong())
+                .createdAt(size.getCreatedAt())
+                .updatedAt(size.getUpdatedAt())
+                .build();
+    }
+
+    public static ProductOptionDto fromTopping(Topping topping) {
+        if (topping == null) return null;
+        return ProductOptionDto.builder()
+                .id(topping.getMaTopping())
+                .optionCode("TOPPING_" + topping.getMaTopping())
+                .name(topping.getTenTopping())
+                .type(ProductOptionType.TOPPING)
+                .additionalPrice(topping.getDonGia())
+                .description("Đơn giá: " + topping.getDonGia() + " đ")
+                .active(topping.isHoatDong())
+                .createdAt(topping.getCreatedAt())
+                .updatedAt(topping.getUpdatedAt())
                 .build();
     }
 }

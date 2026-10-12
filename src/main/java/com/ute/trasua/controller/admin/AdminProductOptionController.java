@@ -1,8 +1,9 @@
 package com.ute.trasua.controller.admin;
 
-import com.ute.trasua.dto.ProductOptionDto;
-import com.ute.trasua.dto.ProductOptionRequest;
-import com.ute.trasua.entity.ProductOptionType;
+import com.ute.trasua.dto.SizeDto;
+import com.ute.trasua.dto.SizeRequest;
+import com.ute.trasua.dto.ToppingDto;
+import com.ute.trasua.dto.ToppingRequest;
 import com.ute.trasua.service.ProductOptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Controller phục vụ Chủ Chuỗi (Admin) quản lý tùy chọn Kích cỡ (Size) và Topping toàn chuỗi (Module 5 - UC23).
+ * Controller phục vụ Chủ Chuỗi (Admin) quản lý Kích cỡ (Size) và Topping toàn chuỗi (Module 5 - UC23).
+ * Ánh xạ chuẩn theo 2 bảng KichCo và Topping trong sơ đồ ERD Báo Cáo SE.
  */
 @Controller
 @RequestMapping("/admin/product-options")
@@ -33,95 +35,164 @@ public class AdminProductOptionController {
     @GetMapping
     public String index(
             @RequestParam(value = "activeTab", defaultValue = "size") String activeTab,
-            @RequestParam(value = "keyword", required = false) String keyword,
             Model model
     ) {
-        List<ProductOptionDto> sizes = optionService.getAllOptions(ProductOptionType.SIZE, null, keyword);
-        List<ProductOptionDto> toppings = optionService.getAllOptions(ProductOptionType.TOPPING, null, keyword);
+        List<SizeDto> sizes = optionService.getAllSizes();
+        List<ToppingDto> toppings = optionService.getAllToppings();
         Map<String, Object> stats = optionService.getOptionStatistics();
 
         model.addAttribute("sizes", sizes);
         model.addAttribute("toppings", toppings);
         model.addAttribute("stats", stats);
         model.addAttribute("activeTab", activeTab);
-        model.addAttribute("keyword", keyword);
-        model.addAttribute("newOption", new ProductOptionRequest());
-        model.addAttribute("pageTitle", "Quản Lý Tùy Chọn Size & Topping — UTETra Executive Portal");
+        model.addAttribute("newSize", new SizeRequest());
+        model.addAttribute("newTopping", new ToppingRequest());
+        model.addAttribute("pageTitle", "Quản Lý Kích Cỡ & Topping");
 
         return "admin/product-options/index";
     }
 
-    /**
-     * Thêm mới tùy chọn (Size hoặc Topping).
-     */
-    @PostMapping("/create")
-    public String createOption(
-            @Valid @ModelAttribute("newOption") ProductOptionRequest request,
+    // ==================== KÍCH CỠ (SIZE) ====================
+
+    @PostMapping("/size/create")
+    public String createSize(
+            @Valid @ModelAttribute("newSize") SizeRequest request,
             BindingResult bindingResult,
             RedirectAttributes redirectAttributes
     ) {
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", 
-                    bindingResult.getAllErrors().get(0).getDefaultMessage());
-            return "redirect:/admin/product-options?activeTab=" + 
-                    (request.getType() == ProductOptionType.TOPPING ? "topping" : "size");
+            redirectAttributes.addFlashAttribute("errorMessage", bindingResult.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/admin/product-options?activeTab=size";
         }
 
         try {
-            optionService.createOption(request);
-            redirectAttributes.addFlashAttribute("successMessage", 
-                    "Thêm tùy chọn '" + request.getName() + "' thành công!");
-        } catch (IllegalArgumentException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        }
-
-        return "redirect:/admin/product-options?activeTab=" + 
-                (request.getType() == ProductOptionType.TOPPING ? "topping" : "size");
-    }
-
-    /**
-     * Cập nhật thông tin và điều chỉnh giá phụ thu tùy chọn.
-     */
-    @PostMapping("/update/{id}")
-    public String updateOption(
-            @PathVariable Long id,
-            @Valid @ModelAttribute ProductOptionRequest request,
-            BindingResult bindingResult,
-            RedirectAttributes redirectAttributes
-    ) {
-        if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", 
-                    bindingResult.getAllErrors().get(0).getDefaultMessage());
-            return "redirect:/admin/product-options";
-        }
-
-        try {
-            optionService.updateOption(id, request);
-            redirectAttributes.addFlashAttribute("successMessage", 
-                    "Cập nhật tùy chọn '" + request.getName() + "' thành công!");
-        } catch (IllegalArgumentException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        }
-
-        return "redirect:/admin/product-options?activeTab=" + 
-                (request.getType() == ProductOptionType.TOPPING ? "topping" : "size");
-    }
-
-    /**
-     * Xóa tùy chọn khỏi hệ thống.
-     */
-    @PostMapping("/delete/{id}")
-    public String deleteOption(
-            @PathVariable Long id,
-            @RequestParam(value = "activeTab", defaultValue = "size") String activeTab,
-            RedirectAttributes redirectAttributes
-    ) {
-        try {
-            optionService.deleteOption(id);
-            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa tùy chọn thành công!");
+            optionService.createSize(request);
+            redirectAttributes.addFlashAttribute("successMessage", "Thêm kích cỡ '" + request.getTenKichCo() + "' thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-        return "redirect:/admin/product-options?activeTab=" + activeTab;
+        return "redirect:/admin/product-options?activeTab=size";
+    }
+
+    @PostMapping("/size/update/{code}")
+    public String updateSize(
+            @PathVariable String code,
+            @Valid @ModelAttribute SizeRequest request,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", bindingResult.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/admin/product-options?activeTab=size";
+        }
+
+        try {
+            optionService.updateSize(code, request);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật kích cỡ '" + request.getTenKichCo() + "' thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/product-options?activeTab=size";
+    }
+
+    @PostMapping("/size/toggle/{code}")
+    public String toggleSize(
+            @PathVariable String code,
+            RedirectAttributes redirectAttributes
+    ) {
+        try {
+            boolean active = optionService.toggleSizeStatus(code);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    active ? "Đã mở bán kích cỡ '" + code + "'!" : "Đã tạm dừng kích cỡ '" + code + "'!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/product-options?activeTab=size";
+    }
+
+    @PostMapping("/size/delete/{code}")
+    public String deleteSize(
+            @PathVariable String code,
+            RedirectAttributes redirectAttributes
+    ) {
+        try {
+            optionService.deleteSize(code);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa kích cỡ '" + code + "'!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/product-options?activeTab=size";
+    }
+
+    // ==================== TOPPING ====================
+
+    @PostMapping("/topping/create")
+    public String createTopping(
+            @Valid @ModelAttribute("newTopping") ToppingRequest request,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", bindingResult.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/admin/product-options?activeTab=topping";
+        }
+
+        try {
+            optionService.createTopping(request);
+            redirectAttributes.addFlashAttribute("successMessage", "Thêm topping '" + request.getTenTopping() + "' thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/product-options?activeTab=topping";
+    }
+
+    @PostMapping("/topping/update/{id}")
+    public String updateTopping(
+            @PathVariable Long id,
+            @Valid @ModelAttribute ToppingRequest request,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", bindingResult.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/admin/product-options?activeTab=topping";
+        }
+
+        try {
+            optionService.updateTopping(id, request);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật topping '" + request.getTenTopping() + "' thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/product-options?activeTab=topping";
+    }
+
+    @PostMapping("/topping/toggle/{id}")
+    public String toggleTopping(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes
+    ) {
+        try {
+            boolean active = optionService.toggleToppingStatus(id);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    active ? "Đã mở bán topping!" : "Đã tạm dừng topping!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/product-options?activeTab=topping";
+    }
+
+    @PostMapping("/topping/delete/{id}")
+    public String deleteTopping(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes
+    ) {
+        try {
+            optionService.deleteTopping(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa topping thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/product-options?activeTab=topping";
     }
 }

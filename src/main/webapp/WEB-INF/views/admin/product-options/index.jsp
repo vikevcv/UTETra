@@ -73,8 +73,8 @@
 
     .badge-code {
       font-family: monospace;
-      font-size: 0.8rem;
-      font-weight: 600;
+      font-size: 0.85rem;
+      font-weight: 700;
       background: #f1f5f9;
       color: #0f172a;
       padding: 3px 8px;
@@ -99,19 +99,22 @@
 <body>
 <div class="container-fluid p-0">
 
-  <!-- ==================== HEADER (UC23: QUẢN LÝ TÙY CHỌN SIZE & TOPPING TOÀN CHUỖI) ==================== -->
+  <!-- ==================== HEADER (UC23: QUẢN LÝ KÍCH CỠ & TOPPING THEO ERD BÁO CÁO SE) ==================== -->
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
     <div>
       <h3 class="fw-bold mb-1 text-dark">
         <i class="fa-solid fa-cubes-stacked me-2 text-success"></i>Tùy Chọn Món
       </h3>
       <p class="text-muted mb-0 small">
-        Quản lý kích cỡ ly (Size) và topping áp dụng toàn chuỗi.
+        Quản lý kích cỡ ly và topping áp dụng toàn chuỗi.
       </p>
     </div>
-    <div>
-      <button class="btn btn-success px-3 py-2 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#createOptionModal" type="button">
-        <i class="fa-solid fa-plus me-1"></i> Thêm Tùy Chọn
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-success px-3 py-2 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#createSizeModal" type="button">
+        <i class="fa-solid fa-plus me-1"></i> Thêm Kích Cỡ
+      </button>
+      <button class="btn btn-warning text-dark px-3 py-2 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#createToppingModal" type="button">
+        <i class="fa-solid fa-plus me-1"></i> Thêm Topping
       </button>
     </div>
   </div>
@@ -133,26 +136,26 @@
     </div>
   </c:if>
 
-  <!-- ==================== THỐNG KÊ NHANH ==================== -->
+  <!-- ==================== THỐNG KÊ ==================== -->
   <div class="row g-3 mb-3">
     <div class="col-6 col-lg-3">
       <div class="option-card-stat">
-        <div class="stat-icon-wrapper bg-success-subtle text-success">
-          <i class="fa-solid fa-layer-group"></i>
+        <div class="stat-icon-wrapper bg-primary-subtle text-primary">
+          <i class="fa-solid fa-mug-saucer"></i>
         </div>
         <div>
-          <div class="stat-val">${stats.totalOptions}</div>
-          <div class="stat-label">Tổng Tùy Chọn</div>
+          <div class="stat-val">${stats.totalSizes != null ? stats.totalSizes : 0}</div>
+          <div class="stat-label">Tổng Kích Cỡ</div>
         </div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="option-card-stat">
-        <div class="stat-icon-wrapper bg-primary-subtle text-primary">
-          <i class="fa-solid fa-glass-water"></i>
+        <div class="stat-icon-wrapper bg-success-subtle text-success">
+          <i class="fa-solid fa-check"></i>
         </div>
         <div>
-          <div class="stat-val">${stats.activeSizes}</div>
+          <div class="stat-val text-success">${stats.activeSizes != null ? stats.activeSizes : 0}</div>
           <div class="stat-label">Size Đang Bán</div>
         </div>
       </div>
@@ -160,52 +163,24 @@
     <div class="col-6 col-lg-3">
       <div class="option-card-stat">
         <div class="stat-icon-wrapper bg-warning-subtle text-warning">
-          <i class="fa-solid fa-cookie-bite"></i>
+          <i class="fa-solid fa-cookie"></i>
         </div>
         <div>
-          <div class="stat-val">${stats.activeToppings}</div>
-          <div class="stat-label">Topping Đang Bán</div>
+          <div class="stat-val text-warning">${stats.totalToppings != null ? stats.totalToppings : 0}</div>
+          <div class="stat-label">Tổng Topping</div>
         </div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="option-card-stat">
         <div class="stat-icon-wrapper bg-secondary-subtle text-secondary">
-          <i class="fa-solid fa-ban"></i>
+          <i class="fa-solid fa-cookie-bite"></i>
         </div>
         <div>
-          <div class="stat-val">${stats.pausedOptions}</div>
-          <div class="stat-label">Tạm Ngưng</div>
+          <div class="stat-val">${stats.activeToppings != null ? stats.activeToppings : 0}</div>
+          <div class="stat-label">Topping Đang Bán</div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- ==================== TÌM KIẾM ==================== -->
-  <div class="card border-0 shadow-sm rounded-3 mb-3">
-    <div class="card-body p-2 p-md-3">
-      <form action="${pageContext.request.contextPath}/admin/product-options" method="get" class="row g-2 align-items-center">
-        <input type="hidden" name="activeTab" value="${activeTab}" id="searchTabInput" />
-        <div class="col-md-9 col-lg-10">
-          <div class="input-group">
-            <span class="input-group-text bg-white border-end-0 text-muted">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </span>
-            <input type="text" name="keyword" value="${keyword}" class="form-control border-start-0"
-                   placeholder="Tìm theo tên hoặc mã tùy chọn (SIZE_M, Trân châu...)" />
-          </div>
-        </div>
-        <div class="col-md-3 col-lg-2 d-flex gap-2">
-          <button type="submit" class="btn btn-primary w-100 fw-semibold">
-            <i class="fa-solid fa-filter me-1"></i> Lọc
-          </button>
-          <c:if test="${not empty keyword}">
-            <a href="${pageContext.request.contextPath}/admin/product-options?activeTab=${activeTab}" class="btn btn-outline-secondary" title="Đặt lại">
-              <i class="fa-solid fa-rotate-left"></i>
-            </a>
-          </c:if>
-        </div>
-      </form>
     </div>
   </div>
 
@@ -216,22 +191,21 @@
       <span class="badge rounded-pill bg-light text-dark ms-1 border">${fn:length(sizes)}</span>
     </button>
     <button class="zen-tab-btn ${activeTab == 'topping' ? 'active' : ''}" type="button" data-tab-target="topping">
-      <i class="fa-solid fa-cookie"></i> Topping Thêm
+      <i class="fa-solid fa-cookie"></i> Danh Mục Topping
       <span class="badge rounded-pill bg-light text-dark ms-1 border">${fn:length(toppings)}</span>
     </button>
   </div>
 
-  <!-- ==================== BẢNG SIZE ==================== -->
+  <!-- ==================== BẢNG KÍCH CỠ (BẢNG KichCo THEO ERD) ==================== -->
   <div id="tabContentSize" class="${activeTab == 'size' ? '' : 'd-none'}">
     <div class="table-container-zen">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light text-muted small text-uppercase">
             <tr>
-              <th class="ps-4" style="width: 130px;">Mã</th>
-              <th style="min-width: 170px;">Tên Size</th>
-              <th style="width: 140px;">Giá Thêm</th>
-              <th>Mô Tả</th>
+              <th class="ps-4" style="width: 120px;">Mã Size</th>
+              <th style="min-width: 220px;">Tên Hiển Thị Kích Cỡ</th>
+              <th style="width: 180px;">Giá Phụ Thu</th>
               <th style="width: 160px;" class="text-center">Trạng Thái</th>
               <th style="width: 110px;" class="text-end pe-4">Thao Tác</th>
             </tr>
@@ -240,55 +214,52 @@
             <c:choose>
               <c:when test="${not empty sizes}">
                 <c:forEach var="item" items="${sizes}">
-                  <tr id="optionRow-${item.id}">
+                  <tr>
                     <td class="ps-4">
-                      <span class="badge-code">${item.optionCode}</span>
+                      <span class="badge-code">${item.maKichCo}</span>
                     </td>
                     <td>
-                      <div class="fw-bold text-dark">${item.name}</div>
+                      <div class="fw-bold text-dark">${item.tenKichCo}</div>
                     </td>
                     <td>
-                      <span class="price-tag">
-                        +<fmt:formatNumber value="${item.additionalPrice}" pattern="#,###"/> đ
-                      </span>
-                    </td>
-                    <td>
-                      <span class="text-secondary small">
-                        ${not empty item.description ? item.description : '<span class="text-muted fst-italic">—</span>'}
-                      </span>
+                      <c:choose>
+                        <c:when test="${item.giaPhuThu > 0}">
+                          <span class="price-tag">
+                            +<fmt:formatNumber value="${item.giaPhuThu}" pattern="#,###"/> đ
+                          </span>
+                        </c:when>
+                        <c:otherwise>
+                          <span class="badge bg-light text-secondary border">0 đ (Giá gốc)</span>
+                        </c:otherwise>
+                      </c:choose>
                     </td>
                     <td class="text-center">
                       <div class="d-inline-flex align-items-center gap-2">
                         <div class="form-check form-switch mb-0">
-                          <input class="form-check-input switch-toggle" type="checkbox" role="switch"
-                                 id="switch-${item.id}"
-                                 data-id="${item.id}"
-                                 ${item.active ? 'checked' : ''} />
+                          <input class="form-check-input switch-toggle-size" type="checkbox" role="switch"
+                                 data-code="${item.maKichCo}"
+                                 ${item.hoatDong ? 'checked' : ''} />
                         </div>
-                        <span id="badge-status-${item.id}" class="badge ${item.active ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'}">
-                          ${item.active ? 'Đang bán' : 'Ngừng bán'}
+                        <span id="badge-size-${item.maKichCo}" class="badge ${item.hoatDong ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'}">
+                          ${item.hoatDong ? 'Đang bán' : 'Tạm ngưng'}
                         </span>
                       </div>
                     </td>
                     <td class="text-end pe-4">
-                      <button class="btn btn-sm btn-outline-primary me-1 btn-edit-option"
-                              title="Sửa"
+                      <button class="btn btn-sm btn-outline-primary me-1 btn-edit-size"
+                              title="Sửa kích cỡ"
                               type="button"
-                              data-id="${item.id}"
-                              data-code="${fn:escapeXml(item.optionCode)}"
-                              data-name="${fn:escapeXml(item.name)}"
-                              data-type="SIZE"
-                              data-price="${item.additionalPrice}"
-                              data-desc="${fn:escapeXml(item.description)}"
-                              data-active="${item.active}">
+                              data-code="${fn:escapeXml(item.maKichCo)}"
+                              data-name="${fn:escapeXml(item.tenKichCo)}"
+                              data-price="${item.giaPhuThu}"
+                              data-status="${item.trangThai}">
                         <i class="fa-solid fa-pen-to-square"></i>
                       </button>
-                      <button class="btn btn-sm btn-outline-danger btn-delete-option"
-                              title="Xóa"
+                      <button class="btn btn-sm btn-outline-danger btn-delete-size"
+                              title="Xóa kích cỡ"
                               type="button"
-                              data-id="${item.id}"
-                              data-name="${fn:escapeXml(item.name)}"
-                              data-tab="size">
+                              data-code="${fn:escapeXml(item.maKichCo)}"
+                              data-name="${fn:escapeXml(item.tenKichCo)}">
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </td>
@@ -297,9 +268,9 @@
               </c:when>
               <c:otherwise>
                 <tr>
-                  <td colspan="6" class="text-center py-5 text-muted">
+                  <td colspan="5" class="text-center py-5 text-muted">
                     <i class="fa-solid fa-mug-saucer fs-2 text-secondary opacity-50 mb-2 d-block"></i>
-                    Chưa có kích cỡ nào.
+                    Chưa có kích cỡ ly nào trong hệ thống.
                   </td>
                 </tr>
               </c:otherwise>
@@ -310,17 +281,16 @@
     </div>
   </div>
 
-  <!-- ==================== BẢNG TOPPING ==================== -->
+  <!-- ==================== BẢNG TOPPING (BẢNG Topping THEO ERD) ==================== -->
   <div id="tabContentTopping" class="${activeTab == 'topping' ? '' : 'd-none'}">
     <div class="table-container-zen">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light text-muted small text-uppercase">
             <tr>
-              <th class="ps-4" style="width: 130px;">Mã</th>
-              <th style="min-width: 170px;">Tên Topping</th>
-              <th style="width: 140px;">Giá Bán</th>
-              <th>Mô Tả</th>
+              <th class="ps-4" style="width: 100px;">Mã</th>
+              <th style="min-width: 220px;">Tên Loại Topping</th>
+              <th style="width: 180px;">Đơn Giá Bán</th>
               <th style="width: 160px;" class="text-center">Trạng Thái</th>
               <th style="width: 110px;" class="text-end pe-4">Thao Tác</th>
             </tr>
@@ -329,55 +299,45 @@
             <c:choose>
               <c:when test="${not empty toppings}">
                 <c:forEach var="item" items="${toppings}">
-                  <tr id="optionRow-${item.id}">
+                  <tr>
                     <td class="ps-4">
-                      <span class="badge-code">${item.optionCode}</span>
+                      <span class="badge-code">#${item.maTopping}</span>
                     </td>
                     <td>
-                      <div class="fw-bold text-dark">${item.name}</div>
+                      <div class="fw-bold text-dark">${item.tenTopping}</div>
                     </td>
                     <td>
                       <span class="price-tag">
-                        +<fmt:formatNumber value="${item.additionalPrice}" pattern="#,###"/> đ
-                      </span>
-                    </td>
-                    <td>
-                      <span class="text-secondary small">
-                        ${not empty item.description ? item.description : '<span class="text-muted fst-italic">—</span>'}
+                        +<fmt:formatNumber value="${item.donGia}" pattern="#,###"/> đ
                       </span>
                     </td>
                     <td class="text-center">
                       <div class="d-inline-flex align-items-center gap-2">
                         <div class="form-check form-switch mb-0">
-                          <input class="form-check-input switch-toggle" type="checkbox" role="switch"
-                                 id="switch-${item.id}"
-                                 data-id="${item.id}"
-                                 ${item.active ? 'checked' : ''} />
+                          <input class="form-check-input switch-toggle-topping" type="checkbox" role="switch"
+                                 data-id="${item.maTopping}"
+                                 ${item.hoatDong ? 'checked' : ''} />
                         </div>
-                        <span id="badge-status-${item.id}" class="badge ${item.active ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'}">
-                          ${item.active ? 'Đang bán' : 'Ngừng bán'}
+                        <span id="badge-topping-${item.maTopping}" class="badge ${item.hoatDong ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'}">
+                          ${item.hoatDong ? 'Đang bán' : 'Tạm ngưng'}
                         </span>
                       </div>
                     </td>
                     <td class="text-end pe-4">
-                      <button class="btn btn-sm btn-outline-primary me-1 btn-edit-option"
-                              title="Sửa"
+                      <button class="btn btn-sm btn-outline-warning text-dark me-1 btn-edit-topping"
+                              title="Sửa topping"
                               type="button"
-                              data-id="${item.id}"
-                              data-code="${fn:escapeXml(item.optionCode)}"
-                              data-name="${fn:escapeXml(item.name)}"
-                              data-type="TOPPING"
-                              data-price="${item.additionalPrice}"
-                              data-desc="${fn:escapeXml(item.description)}"
-                              data-active="${item.active}">
+                              data-id="${item.maTopping}"
+                              data-name="${fn:escapeXml(item.tenTopping)}"
+                              data-price="${item.donGia}"
+                              data-status="${item.trangThai}">
                         <i class="fa-solid fa-pen-to-square"></i>
                       </button>
-                      <button class="btn btn-sm btn-outline-danger btn-delete-option"
-                              title="Xóa"
+                      <button class="btn btn-sm btn-outline-danger btn-delete-topping"
+                              title="Xóa topping"
                               type="button"
-                              data-id="${item.id}"
-                              data-name="${fn:escapeXml(item.name)}"
-                              data-tab="topping">
+                              data-id="${item.maTopping}"
+                              data-name="${fn:escapeXml(item.tenTopping)}">
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </td>
@@ -386,9 +346,9 @@
               </c:when>
               <c:otherwise>
                 <tr>
-                  <td colspan="6" class="text-center py-5 text-muted">
+                  <td colspan="5" class="text-center py-5 text-muted">
                     <i class="fa-solid fa-cookie fs-2 text-secondary opacity-50 mb-2 d-block"></i>
-                    Chưa có topping nào.
+                    Chưa có loại topping nào trong hệ thống.
                   </td>
                 </tr>
               </c:otherwise>
@@ -401,20 +361,15 @@
 
 </div>
 
-<!-- ==================== MODALS (TÁCH RIÊNG FILE) ==================== -->
+<!-- ==================== MODALS ==================== -->
 <jsp:include page="_modal_create.jsp" />
 <jsp:include page="_modal_edit.jsp" />
 
-<!-- ==================== FORM ẨN ĐỂ XÓA ==================== -->
-<form id="deleteOptionForm" method="post" class="d-none">
-  <input type="hidden" name="activeTab" id="deleteActiveTab" value="size" />
-</form>
+<!-- ==================== FORM ẨN XÓA ==================== -->
+<form id="actionDeleteForm" method="post" class="d-none" data-base-action="${pageContext.request.contextPath}/admin/product-options"></form>
 
 <script>
   function switchTab(tabName) {
-    var searchInput = document.getElementById('searchTabInput');
-    if (searchInput) searchInput.value = tabName;
-
     var tabSize = document.getElementById('tabContentSize');
     var tabTopping = document.getElementById('tabContentTopping');
     var btns = document.querySelectorAll('.zen-tab-nav .zen-tab-btn');
@@ -437,7 +392,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function() {
-    // Chuyển tab
+    // Chuyển Tab
     document.querySelectorAll('.zen-tab-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var targetTab = this.getAttribute('data-tab-target');
@@ -445,68 +400,127 @@
       });
     });
 
-    // Mở modal sửa
-    document.querySelectorAll('.btn-edit-option').forEach(function(btn) {
+    // Mở modal sửa kích cỡ (Bảng KichCo)
+    var editSizeModalEl = document.getElementById('editSizeModal');
+    var editSizeForm = document.getElementById('editSizeForm');
+    document.querySelectorAll('.btn-edit-size').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        var id = this.getAttribute('data-id');
-        var form = document.getElementById('editOptionForm');
-        form.action = '${pageContext.request.contextPath}/admin/product-options/update/' + id;
-
-        document.getElementById('editOptionCode').value = this.getAttribute('data-code') || '';
-        document.getElementById('editName').value = this.getAttribute('data-name') || '';
-        document.getElementById('editType').value = this.getAttribute('data-type') || 'SIZE';
-        document.getElementById('editPrice').value = this.getAttribute('data-price') || '0';
-        document.getElementById('editDescription').value = this.getAttribute('data-desc') || '';
-        document.getElementById('editActive').checked = this.getAttribute('data-active') === 'true';
-
-        var modalEl = document.getElementById('editOptionModal');
-        var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-        modal.show();
-      });
-    });
-
-    // Xác nhận xóa
-    document.querySelectorAll('.btn-delete-option').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var id = this.getAttribute('data-id');
+        var code = this.getAttribute('data-code');
         var name = this.getAttribute('data-name');
-        var currentTab = this.getAttribute('data-tab');
+        var price = this.getAttribute('data-price');
+        var status = this.getAttribute('data-status') || 'HoatDong';
 
-        if (confirm("Xóa tùy chọn '" + name + "'?")) {
-          var form = document.getElementById('deleteOptionForm');
-          form.action = '${pageContext.request.contextPath}/admin/product-options/delete/' + id;
-          document.getElementById('deleteActiveTab').value = currentTab;
-          form.submit();
+        if (editSizeForm) {
+          var baseAction = editSizeForm.getAttribute('data-base-action');
+          editSizeForm.action = (baseAction ? baseAction : '') + '/' + code;
+        }
+        document.getElementById('editSizeCode').value = code || '';
+        document.getElementById('editSizeName').value = name || '';
+        document.getElementById('editSizePrice').value = price || '0';
+        document.getElementById('editSizeStatus').value = status;
+
+        if (window.bootstrap && editSizeModalEl) {
+          var modal = bootstrap.Modal.getInstance(editSizeModalEl) || new bootstrap.Modal(editSizeModalEl);
+          modal.show();
         }
       });
     });
 
-    // Bật / tắt trạng thái AJAX
-    document.querySelectorAll('.switch-toggle').forEach(function(switchEl) {
-      switchEl.addEventListener('change', function() {
+    // Mở modal sửa topping (Bảng Topping)
+    var editToppingModalEl = document.getElementById('editToppingModal');
+    var editToppingForm = document.getElementById('editToppingForm');
+    document.querySelectorAll('.btn-edit-topping').forEach(function(btn) {
+      btn.addEventListener('click', function() {
         var id = this.getAttribute('data-id');
-        var el = this;
-        var badgeEl = document.getElementById('badge-status-' + id);
+        var name = this.getAttribute('data-name');
+        var price = this.getAttribute('data-price');
+        var status = this.getAttribute('data-status') || 'HoatDong';
 
-        fetch('${pageContext.request.contextPath}/api/v1/product-options/' + id + '/toggle-status', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' }
+        if (editToppingForm) {
+          var baseAction = editToppingForm.getAttribute('data-base-action');
+          editToppingForm.action = (baseAction ? baseAction : '') + '/' + id;
+        }
+        document.getElementById('editToppingName').value = name || '';
+        document.getElementById('editToppingPrice').value = price || '0';
+        document.getElementById('editToppingStatus').value = status;
+
+        if (window.bootstrap && editToppingModalEl) {
+          var modal = bootstrap.Modal.getInstance(editToppingModalEl) || new bootstrap.Modal(editToppingModalEl);
+          modal.show();
+        }
+      });
+    });
+
+    // Xóa Size
+    var deleteForm = document.getElementById('actionDeleteForm');
+    document.querySelectorAll('.btn-delete-size').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var code = this.getAttribute('data-code');
+        var name = this.getAttribute('data-name');
+        if (confirm("Bạn có chắc chắn muốn xóa kích cỡ '" + name + "' (" + code + ")?")) {
+          if (deleteForm) {
+            var baseAction = deleteForm.getAttribute('data-base-action');
+            deleteForm.action = (baseAction ? baseAction : '') + '/size/delete/' + code;
+            deleteForm.submit();
+          }
+        }
+      });
+    });
+
+    // Xóa Topping
+    document.querySelectorAll('.btn-delete-topping').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var id = this.getAttribute('data-id');
+        var name = this.getAttribute('data-name');
+        if (confirm("Bạn có chắc chắn muốn xóa topping '" + name + "'?")) {
+          if (deleteForm) {
+            var baseAction = deleteForm.getAttribute('data-base-action');
+            deleteForm.action = (baseAction ? baseAction : '') + '/topping/delete/' + id;
+            deleteForm.submit();
+          }
+        }
+      });
+    });
+
+    // Bật / tắt trạng thái Kích cỡ qua AJAX
+    document.querySelectorAll('.switch-toggle-size').forEach(function(switchEl) {
+      switchEl.addEventListener('change', function() {
+        var code = this.getAttribute('data-code');
+        var el = this;
+        var badgeEl = document.getElementById('badge-size-' + code);
+        var baseAction = deleteForm ? deleteForm.getAttribute('data-base-action') : '';
+
+        fetch(baseAction + '/size/toggle/' + code, {
+          method: 'POST'
         })
         .then(function(res) {
           if (!res.ok) throw new Error();
-          return res.json();
-        })
-        .then(function(data) {
-          if (data.active) {
-            badgeEl.className = 'badge bg-success-subtle text-success border border-success-subtle';
-            badgeEl.innerText = 'Đang bán';
-          } else {
-            badgeEl.className = 'badge bg-secondary-subtle text-secondary border border-secondary-subtle';
-            badgeEl.innerText = 'Ngừng bán';
-          }
+          location.reload();
         })
         .catch(function() {
-          alert('Cập nhật thất bại. Vui lòng thử lại!');
+          alert('Cập nhật trạng thái kích cỡ thất bại.');
+          el.checked = !el.checked;
+        });
+      });
+    });
+
+    // Bật / tắt trạng thái Topping qua AJAX
+    document.querySelectorAll('.switch-toggle-topping').forEach(function(switchEl) {
+      switchEl.addEventListener('change', function() {
+        var id = this.getAttribute('data-id');
+        var el = this;
+        var badgeEl = document.getElementById('badge-topping-' + id);
+        var baseAction = deleteForm ? deleteForm.getAttribute('data-base-action') : '';
+
+        fetch(baseAction + '/topping/toggle/' + id, {
+          method: 'POST'
+        })
+        .then(function(res) {
+          if (!res.ok) throw new Error();
+          location.reload();
+        })
+        .catch(function() {
+          alert('Cập nhật trạng thái topping thất bại.');
           el.checked = !el.checked;
         });
       });

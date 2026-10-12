@@ -104,4 +104,34 @@ public class DriverResponse {
                 .branchName("UTETra Flagship")
                 .build();
     }
+
+    public String getStatusBadgeClass() {
+        if (locked) {
+            return "zen-badge-danger";
+        }
+        if (workingStatus == null) {
+            return "zen-badge-secondary";
+        }
+        return switch (workingStatus.toUpperCase()) {
+            case "ONLINE" -> "zen-badge-success";
+            case "DELIVERING" -> "zen-badge-warning";
+            case "SUSPENDED" -> "zen-badge-danger";
+            case "OFFLINE" -> "zen-badge-secondary";
+            default -> "zen-badge-info";
+        };
+    }
+
+    public String getOperatingArea() {
+        if (branchName != null && !branchName.isBlank()) {
+            return branchName;
+        }
+        return "Toàn TP. Hồ Chí Minh";
+    }
+
+    public String getFormattedCreatedAt() {
+        if (createdAt != null) {
+            return createdAt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        }
+        return "Mới tham gia";
+    }
 }

@@ -1,30 +1,45 @@
 package com.ute.trasua.service;
 
-import com.ute.trasua.dto.ProductOptionDto;
-import com.ute.trasua.dto.ProductOptionRequest;
+import com.ute.trasua.dto.*;
 import com.ute.trasua.entity.ProductOptionType;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Service interface quản lý tùy chọn Size và Topping toàn chuỗi (UC23).
+ * Service quản lý danh mục Kích cỡ (Size) và Topping toàn chuỗi (Module 5 - UC23).
+ * Phục vụ cả 2 bảng độc lập KichCo và Topping theo chuẩn ERD Báo Cáo SE.
  */
 public interface ProductOptionService {
 
-    List<ProductOptionDto> getAllOptions(ProductOptionType type, Boolean active, String keyword);
+    // ==================== KÍCH CỠ (SIZE) ====================
+    List<SizeDto> getAllSizes();
 
+    SizeDto getSizeByCode(String code);
+
+    SizeDto createSize(SizeRequest request);
+
+    SizeDto updateSize(String code, SizeRequest request);
+
+    boolean toggleSizeStatus(String code);
+
+    void deleteSize(String code);
+
+    // ==================== TOPPING ====================
+    List<ToppingDto> getAllToppings();
+
+    ToppingDto getToppingById(Long id);
+
+    ToppingDto createTopping(ToppingRequest request);
+
+    ToppingDto updateTopping(Long id, ToppingRequest request);
+
+    boolean toggleToppingStatus(Long id);
+
+    void deleteTopping(Long id);
+
+    // ==================== TỔNG HỢP & API ====================
     List<ProductOptionDto> getActiveOptionsByType(ProductOptionType type);
-
-    ProductOptionDto getOptionById(Long id);
-
-    ProductOptionDto createOption(ProductOptionRequest request);
-
-    ProductOptionDto updateOption(Long id, ProductOptionRequest request);
-
-    boolean toggleActiveStatus(Long id);
-
-    void deleteOption(Long id);
 
     Map<String, Object> getOptionStatistics();
 }
