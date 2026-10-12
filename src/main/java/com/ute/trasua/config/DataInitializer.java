@@ -27,7 +27,9 @@ public class DataInitializer implements CommandLineRunner {
     private final com.ute.trasua.repository.CategoryRepository categoryRepository;
     private final com.ute.trasua.repository.ProductRepository productRepository;
     private final com.ute.trasua.repository.SizeRepository sizeRepository;
+    private final com.ute.trasua.repository.ProductSizeRepository productSizeRepository;
     private final com.ute.trasua.repository.ToppingRepository toppingRepository;
+    private final com.ute.trasua.repository.DriverRepository driverRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -298,6 +300,121 @@ public class DataInitializer implements CommandLineRunner {
                         .note("Máy POS quầy sảnh tầng trệt")
                         .branch(cnQuan1)
                         .build());
+            }
+        }
+
+        // ==========================================
+        // UC23: Initialize Product Size (table kich_co) and Topping (table topping) per ERD
+        // ==========================================
+        if (productSizeRepository.count() == 0) {
+            java.util.List<com.ute.trasua.entity.ProductSize> initialSizes = java.util.List.of(
+                    com.ute.trasua.entity.ProductSize.builder()
+                            .sizeCode("S")
+                            .sizeName("Size S - Cỡ Nhỏ (350ml)")
+                            .additionalPrice(java.math.BigDecimal.ZERO)
+                            .status("ACTIVE")
+                            .build(),
+                    com.ute.trasua.entity.ProductSize.builder()
+                            .sizeCode("M")
+                            .sizeName("Size M - Cỡ Tiêu Chuẩn (500ml)")
+                            .additionalPrice(java.math.BigDecimal.ZERO)
+                            .status("ACTIVE")
+                            .build(),
+                    com.ute.trasua.entity.ProductSize.builder()
+                            .sizeCode("L")
+                            .sizeName("Size L - Cỡ Lớn (700ml)")
+                            .additionalPrice(new java.math.BigDecimal("6000"))
+                            .status("ACTIVE")
+                            .build()
+            );
+            productSizeRepository.saveAll(initialSizes);
+            log.info(">>> Initialized {} default product sizes (table kich_co)", initialSizes.size());
+        }
+
+        if (toppingRepository.count() == 0) {
+            java.util.List<com.ute.trasua.entity.Topping> initialToppings = java.util.List.of(
+                    com.ute.trasua.entity.Topping.builder()
+                            .toppingName("Trân Châu Đen Dẻo")
+                            .price(new java.math.BigDecimal("8000"))
+                            .status("ACTIVE")
+                            .build(),
+                    com.ute.trasua.entity.Topping.builder()
+                            .toppingName("Trân Châu Hoàng Kim")
+                            .price(new java.math.BigDecimal("10000"))
+                            .status("ACTIVE")
+                            .build(),
+                    com.ute.trasua.entity.Topping.builder()
+                            .toppingName("Thạch Củ Năng Giòn")
+                            .price(new java.math.BigDecimal("10000"))
+                            .status("ACTIVE")
+                            .build(),
+                    com.ute.trasua.entity.Topping.builder()
+                            .toppingName("Kem Phô Mai Cheese Foam")
+                            .price(new java.math.BigDecimal("12000"))
+                            .status("ACTIVE")
+                            .build(),
+                    com.ute.trasua.entity.Topping.builder()
+                            .toppingName("Thạch Matcha Nhật Bản")
+                            .price(new java.math.BigDecimal("9000"))
+                            .status("ACTIVE")
+                            .build()
+            );
+            toppingRepository.saveAll(initialToppings);
+            log.info(">>> Initialized {} default toppings (table topping)", initialToppings.size());
+        }
+
+        // ==========================================
+        // UC17: Khởi tạo Hồ Sơ Tài Xế Giao Hàng Chi Nhánh (Bảng TaiXe)
+        // ==========================================
+        if (driverRepository.count() == 0) {
+            com.ute.trasua.entity.Branch defaultBranch = branchRepository.findAll().stream().findFirst().orElse(null);
+            if (defaultBranch != null) {
+                User d1 = userRepository.findByUsername("driver1").orElse(null);
+                User d2 = userRepository.findByUsername("driver2").orElse(null);
+                User d3 = userRepository.findByUsername("driver3").orElse(null);
+
+                if (d1 != null) {
+                    driverRepository.save(com.ute.trasua.entity.Driver.builder()
+                            .user(d1)
+                            .branch(defaultBranch)
+                            .licensePlate("59-X1 888.88")
+                            .vehicleType("MOTORBIKE")
+                            .shift("MORNING")
+                            .workingStatus("ONLINE")
+                            .baseSalary(new java.math.BigDecimal("6000000"))
+                            .kpiScore(4.9)
+                            .completedOrders(185)
+                            .build());
+                }
+
+                if (d2 != null) {
+                    driverRepository.save(com.ute.trasua.entity.Driver.builder()
+                            .user(d2)
+                            .branch(defaultBranch)
+                            .licensePlate("59-S2 345.67")
+                            .vehicleType("MOTORBIKE")
+                            .shift("AFTERNOON")
+                            .workingStatus("DELIVERING")
+                            .baseSalary(new java.math.BigDecimal("6000000"))
+                            .kpiScore(4.8)
+                            .completedOrders(210)
+                            .build());
+                }
+
+                if (d3 != null) {
+                    driverRepository.save(com.ute.trasua.entity.Driver.builder()
+                            .user(d3)
+                            .branch(defaultBranch)
+                            .licensePlate("50-T1 999.12")
+                            .vehicleType("ELECTRIC_BIKE")
+                            .shift("FULL_TIME")
+                            .workingStatus("OFFLINE")
+                            .baseSalary(new java.math.BigDecimal("5500000"))
+                            .kpiScore(4.2)
+                            .completedOrders(74)
+                            .build());
+                }
+                log.info(">>> Đã khởi tạo hồ sơ tài xế mẫu trực thuộc chi nhánh [{}]", defaultBranch.getName());
             }
         }
 

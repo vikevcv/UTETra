@@ -1,7 +1,7 @@
 package com.ute.trasua.config;
 
 import com.ute.trasua.security.*;
-import jakarta.servlet.DispatcherType; // <-- THÊM IMPORT NÀY
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,6 +52,7 @@ public class SecurityConfig {
                     "/",
                     "/portal",
                     "/auth/**",
+                    "/api/v1/product-options/active",
                     "/pos", "/pos/**",
                     "/branch/pos", "/branch/pos/**",
                     "/api/pos/**",
