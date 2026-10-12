@@ -40,7 +40,12 @@ public class SecurityConfig {
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(entryPoint)
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    response.sendRedirect(request.getContextPath() + "/?accessDenied=true");
+                    org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                    if (auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_DRIVER") || a.getAuthority().equals("DRIVER"))) {
+                        response.sendRedirect(request.getContextPath() + "/shipper?accessDenied=true");
+                    } else {
+                        response.sendRedirect(request.getContextPath() + "/?accessDenied=true");
+                    }
                 }))
             .sessionManagement(sm -> sm
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -55,7 +60,13 @@ public class SecurityConfig {
                     "/api/v1/product-options/active",
                     "/pos", "/pos/**",
                     "/branch/pos", "/branch/pos/**",
+                    "/branch/kitchen", "/branch/kitchen/**",
+                    "/branch/menu-status", "/branch/menu-status/**",
                     "/api/pos/**",
+                    "/api/kitchen/**",
+                    "/api/branch-menu/**",
+                    "/ws-kds/**",
+                    "/ws-kds-native/**",
                     "/css/**", "/js/**", "/images/**", "/favicon.ico",
                     "/h2-console/**",
                     "/WEB-INF/**"

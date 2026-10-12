@@ -23,8 +23,6 @@ public class EmployeeResponse {
     private String phone;
     private String citizenId;
     private String email;
-    private String position;
-    private String shift;
     private Double salary;
     private String status;
     private LocalDate hireDate;
@@ -54,8 +52,6 @@ public class EmployeeResponse {
                 .phone(emp.getPhone())
                 .citizenId(emp.getCitizenId())
                 .email(emp.getEmail())
-                .position(emp.getPosition())
-                .shift(emp.getShift())
                 .salary(emp.getSalary())
                 .status(emp.getStatus())
                 .hireDate(emp.getHireDate())
@@ -64,40 +60,6 @@ public class EmployeeResponse {
                 .branchCode(bCode)
                 .branchName(bName)
                 .build();
-    }
-
-    public String getPositionTitle() {
-        if (position == null) return "Chưa xác định";
-        return switch (position) {
-            case "BARTENDER" -> "Pha Chế";
-            case "CASHIER" -> "Thu Ngân";
-            case "SERVER" -> "Phục Vụ";
-            case "SHIFT_MANAGER" -> "Quản Lý Ca";
-            case "SECURITY" -> "Bảo Vệ";
-            default -> position;
-        };
-    }
-
-    public String getPositionBadgeClass() {
-        if (position == null) return "zen-badge-secondary";
-        return switch (position) {
-            case "BARTENDER" -> "zen-badge-primary";
-            case "CASHIER" -> "zen-badge-info";
-            case "SERVER" -> "zen-badge-warning";
-            case "SHIFT_MANAGER" -> "zen-badge-danger";
-            default -> "zen-badge-secondary";
-        };
-    }
-
-    public String getShiftTitle() {
-        if (shift == null) return "Chưa xếp ca";
-        return switch (shift) {
-            case "MORNING" -> "Ca Sáng (06:30 - 12:00)";
-            case "AFTERNOON" -> "Ca Chiều (12:00 - 17:30)";
-            case "EVENING" -> "Ca Tối (17:30 - 23:00)";
-            case "FULL_TIME" -> "Toàn Thời Gian (Full-time)";
-            default -> shift;
-        };
     }
 
     public String getStatusTitle() {

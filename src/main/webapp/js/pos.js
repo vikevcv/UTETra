@@ -90,16 +90,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         filtered.forEach(p => {
             const card = document.createElement("div");
-            card.className = "pos-product-card";
+            card.className = "pos-product-card position-relative";
             const imgUrl = p.imageUrl || "https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500";
+            const isAvail = (p.isAvailable !== false);
+
+            if (!isAvail) {
+                card.classList.add("disabled", "out-of-stock");
+                card.style.opacity = "0.45";
+                card.style.filter = "grayscale(70%)";
+                card.style.cursor = "not-allowed";
+            }
+
             card.innerHTML = `
+                ${!isAvail ? '<span class="badge bg-danger position-absolute top-0 end-0 m-2 px-2 py-1 shadow-sm" style="font-size:0.7rem; z-index:2;">TẠM HẾT</span>' : ''}
                 <img src="${imgUrl}" alt="${p.name}" class="pos-product-img" onerror="this.src='https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500'">
                 <div class="pos-product-body">
                     <div class="pos-product-title">${p.name}</div>
                     <div class="pos-product-price">${formatCurrency(p.basePrice)}</div>
                 </div>
             `;
-            card.addEventListener("click", () => openCustomizer(p));
+            if (isAvail) {
+                card.addEventListener("click", () => openCustomizer(p));
+            } else {
+                card.addEventListener("click", () => alert("Món [" + p.name + "] hiện đang tạm hết tại cơ sở này!"));
+            }
             grid.appendChild(card);
         });
     }
@@ -119,21 +133,39 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("modalItemNote").value = "";
         document.getElementById("modalItemQty").textContent = "1";
 
-        // Render Sizes
+        // Render Sizes (kiểm tra tồn kho Ly theo Size)
         const sizeContainer = document.getElementById("modalSizeCapsules");
         sizeContainer.innerHTML = "";
-        (menuData.sizes || []).forEach((s, idx) => {
+        let firstAvailableSelected = false;
+
+        (menuData.sizes || []).forEach((s) => {
+            const isCupAvail = (s.isCupAvailable !== false && (s.cupStock === undefined || s.cupStock > 0));
             const cap = document.createElement("div");
-            cap.className = `pos-capsule ${idx === 0 ? "active" : ""}`;
-            cap.dataset.sizeId = s.id;
-            cap.dataset.extraPrice = s.extraPrice || 0;
+            
             const extra = s.extraPrice > 0 ? ` (+${formatCurrency(s.extraPrice)})` : "";
-            cap.textContent = `Size ${s.name} (${s.volumeMl}ml)${extra}`;
-            cap.addEventListener("click", () => {
-                sizeContainer.querySelectorAll(".pos-capsule").forEach(c => c.classList.remove("active"));
-                cap.classList.add("active");
-                calcCustomizerTotal();
-            });
+            
+            if (!isCupAvail) {
+                cap.className = "pos-capsule disabled";
+                cap.style.opacity = "0.45";
+                cap.style.textDecoration = "line-through";
+                cap.style.cursor = "not-allowed";
+                cap.style.pointerEvents = "none";
+                cap.title = `Hết Ly ${s.name} tại chi nhánh`;
+                cap.innerHTML = `<span>Size ${s.name} (${s.volumeMl}ml)${extra}</span> <span class="badge bg-danger ms-1" style="font-size: 0.65rem;">Hết ly</span>`;
+            } else {
+                const shouldActive = !firstAvailableSelected;
+                if (shouldActive) firstAvailableSelected = true;
+                cap.className = `pos-capsule ${shouldActive ? "active" : ""}`;
+                cap.dataset.sizeId = s.id;
+                cap.dataset.extraPrice = s.extraPrice || 0;
+                cap.dataset.sizeName = s.name;
+                cap.textContent = `Size ${s.name} (${s.volumeMl}ml)${extra}`;
+                cap.addEventListener("click", () => {
+                    sizeContainer.querySelectorAll(".pos-capsule").forEach(c => c.classList.remove("active"));
+                    cap.classList.add("active");
+                    calcCustomizerTotal();
+                });
+            }
             sizeContainer.appendChild(cap);
         });
 
@@ -153,11 +185,20 @@ document.addEventListener("DOMContentLoaded", () => {
             item.className = "pos-topping-item";
             item.dataset.toppingId = t.id;
             item.dataset.price = t.price;
-            item.innerHTML = `<span>${t.name}</span><span>+${formatCurrency(t.price)}</span>`;
-            item.addEventListener("click", () => {
-                item.classList.toggle("active");
-                calcCustomizerTotal();
-            });
+            const isAvail = (t.isAvailable !== false);
+
+            if (!isAvail) {
+                item.classList.add("disabled");
+                item.style.opacity = "0.45";
+                item.style.pointerEvents = "none";
+                item.innerHTML = `<span>${t.name}</span><span class="text-danger small fw-bold">Hết</span>`;
+            } else {
+                item.innerHTML = `<span>${t.name}</span><span>+${formatCurrency(t.price)}</span>`;
+                item.addEventListener("click", () => {
+                    item.classList.toggle("active");
+                    calcCustomizerTotal();
+                });
+            }
             toppingGrid.appendChild(item);
         });
 
@@ -866,16 +907,6 @@ document.addEventListener("DOMContentLoaded", () => {
             employees.forEach(emp => {
                 const isSelected = activeIds.includes(emp.id);
 
-                let roleBadgeClass = "shift-role-other";
-                let roleLabel = emp.position || "Nhân viên";
-                if (emp.position === "CASHIER") {
-                    roleBadgeClass = "shift-role-cashier";
-                    roleLabel = "Thu Ngân";
-                } else if (emp.position === "BARTENDER") {
-                    roleBadgeClass = "shift-role-bartender";
-                    roleLabel = "Pha Chế";
-                }
-
                 const item = document.createElement("div");
                 item.className = `shift-employee-item ${isSelected ? 'selected' : ''}`;
                 item.dataset.empId = emp.id;
@@ -885,10 +916,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         <input type="checkbox" class="shift-emp-check" value="${emp.id}" ${isSelected ? 'checked' : ''}>
                         <div>
                             <div class="fw-bold">${emp.fullName} <span class="text-muted small fw-normal">(${emp.employeeCode})</span></div>
-                            <div class="small text-muted d-flex align-items-center gap-2 mt-1">
-                                <span class="shift-pos-role ${roleBadgeClass}">${roleLabel}</span>
-                                <span>Ca: ${emp.shift || 'Toàn thời gian'}</span>
-                            </div>
                         </div>
                     </div>
                     <div class="text-muted small">${emp.phone || ''}</div>

@@ -78,7 +78,7 @@ public class PosController {
             return "redirect:/pos";
         }
 
-        model.addAttribute("error", "Sai tên tài khoản máy POS hoặc mật khẩu! Mặc định: pos_td01 / Pos@123");
+        model.addAttribute("error", "Sai tên tài khoản máy POS hoặc mật khẩu! (Gợi ý: thuduc / 123123 hoặc quan1 / 123123)");
         return "pos/login";
     }
 
@@ -100,6 +100,11 @@ public class PosController {
     public String posCounterView(@RequestParam(value = "branchId", required = false) Long branchId,
                                  HttpSession session,
                                  Model model) {
+        // Bảo vệ quầy POS: Bắt buộc đăng nhập tài khoản máy POS trước khi thao tác
+        if (session.getAttribute("POS_ACCOUNT") == null) {
+            return "redirect:/pos/login";
+        }
+
         List<Branch> branches = branchRepository.findAll();
         Branch currentBranch = null;
         if (branchId != null) {

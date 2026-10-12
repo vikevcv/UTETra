@@ -75,7 +75,7 @@
             <a href="${pageContext.request.contextPath}/branch/employees" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/employees') ? 'active' : ''}">
               <i class="fa-solid fa-id-badge text-warning"></i>
-              <span>Nhân Sự & Ca Trực</span>
+              <span>Quản Lý Nhân Sự</span>
             </a>
           </li>
           <li class="sidebar-item">

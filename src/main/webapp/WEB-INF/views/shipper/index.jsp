@@ -759,6 +759,13 @@
   <!-- KHUNG MOBILE CHUẨN THIẾT BỊ TÀI XẾ -->
   <div class="mobile-frame">
 
+    <c:if test="${param.accessDenied == 'true'}">
+      <div style="position: absolute; top: 44px; left: 16px; right: 16px; z-index: 9999; background: #FEF2F2; border: 1px solid #F87171; color: #991B1B; padding: 10px 14px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: space-between;">
+        <span><i class="fa-solid fa-triangle-exclamation me-1"></i> Tài xế chỉ có quyền thao tác trên ứng dụng giao hàng!</span>
+        <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #991B1B; cursor: pointer; font-size: 0.9rem;">✕</button>
+      </div>
+    </c:if>
+
     <!-- BẢN ĐỒ LEAFLET TRÀN VIỀN 100% -->
     <div id="mapView"></div>
 

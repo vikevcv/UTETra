@@ -44,6 +44,9 @@ public class PosMenuResponse {
         private String imageUrl;
         private String description;
         private String status;
+        @Builder.Default
+        private Boolean isAvailable = true;
+        private Integer stockEstimate;
     }
 
     @Data
@@ -55,6 +58,10 @@ public class PosMenuResponse {
         private String name;
         private Integer volumeMl;
         private BigDecimal extraPrice;
+        @Builder.Default
+        private Integer cupStock = 100;
+        @Builder.Default
+        private Boolean isCupAvailable = true;
     }
 
     @Data
@@ -66,5 +73,8 @@ public class PosMenuResponse {
         private String name;
         private BigDecimal price;
         private String status;
+        @Builder.Default
+        private Boolean isAvailable = true;
+        private Integer stockEstimate;
     }
 }

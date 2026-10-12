@@ -36,20 +36,6 @@ public class Employee {
     @Column(name = "email", length = 100)
     private String email;
 
-    /**
-     * Position: BARTENDER, CASHIER, SERVER, SHIFT_MANAGER, SECURITY
-     */
-    @Column(name = "position", length = 50)
-    @Builder.Default
-    private String position = "BARTENDER";
-
-    /**
-     * Work Shift: MORNING (06:30 - 12:00), AFTERNOON (12:00 - 17:30), EVENING (17:30 - 23:00), FULL_TIME
-     */
-    @Column(name = "shift", length = 50)
-    @Builder.Default
-    private String shift = "MORNING";
-
     @Column(name = "salary")
     private Double salary;
 
@@ -80,12 +66,6 @@ public class Employee {
         }
         if (status == null) {
             status = "ACTIVE";
-        }
-        if (position == null) {
-            position = "BARTENDER";
-        }
-        if (shift == null) {
-            shift = "MORNING";
         }
     }
 }

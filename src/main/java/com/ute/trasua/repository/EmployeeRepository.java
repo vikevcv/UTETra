@@ -22,10 +22,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     List<Employee> findByBranchId(Long branchId);
 
-    List<Employee> findByBranchIdAndPosition(Long branchId, String position);
-
-    List<Employee> findByBranchIdAndShift(Long branchId, String shift);
-
     List<Employee> findByBranchIdAndStatus(Long branchId, String status);
 
     long countByBranchId(Long branchId);
@@ -34,8 +30,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     @Query("SELECT e FROM Employee e JOIN FETCH e.branch b WHERE " +
            "(:branchId IS NULL OR b.id = :branchId) AND " +
-           "(:position IS NULL OR :position = '' OR e.position = :position) AND " +
-           "(:shift IS NULL OR :shift = '' OR e.shift = :shift) AND " +
            "(:status IS NULL OR :status = '' OR e.status = :status) AND " +
            "(:keyword IS NULL OR :keyword = '' OR " +
            " LOWER(e.employeeCode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -44,8 +38,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
            " LOWER(e.citizenId) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Employee> searchEmployees(@Param("branchId") Long branchId,
                                   @Param("keyword") String keyword,
-                                  @Param("position") String position,
-                                  @Param("shift") String shift,
                                   @Param("status") String status,
                                   Pageable pageable);
 }

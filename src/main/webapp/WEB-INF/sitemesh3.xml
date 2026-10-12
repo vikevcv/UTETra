@@ -9,13 +9,19 @@
     <mapping path="/shipper/*" exclude="true"/>
     <mapping path="/shipper/**" exclude="true"/>
 
-    <!-- Không bọc decorator cho giao diện Web POS bán lẻ cảm ứng toàn màn hình (Module 6) -->
+    <!-- Không bọc decorator cho giao diện Web POS bán lẻ cảm ứng toàn màn hình (Module 6 & Module 7 KDS) -->
     <mapping path="/pos" exclude="true"/>
     <mapping path="/pos/*" exclude="true"/>
     <mapping path="/pos/**" exclude="true"/>
     <mapping path="/branch/pos" exclude="true"/>
     <mapping path="/branch/pos/*" exclude="true"/>
     <mapping path="/branch/pos/**" exclude="true"/>
+    <mapping path="/branch/kitchen" exclude="true"/>
+    <mapping path="/branch/kitchen/*" exclude="true"/>
+    <mapping path="/branch/kitchen/**" exclude="true"/>
+    <mapping path="/branch/menu-status" exclude="true"/>
+    <mapping path="/branch/menu-status/*" exclude="true"/>
+    <mapping path="/branch/menu-status/**" exclude="true"/>
     <!-- Áp dụng decorator riêng cho Chủ Chuỗi (Admin Portal) -->
     <mapping path="/admin/*" decorator="/WEB-INF/decorators/admin.jsp"/>
     <mapping path="/admin/**" decorator="/WEB-INF/decorators/admin.jsp"/>

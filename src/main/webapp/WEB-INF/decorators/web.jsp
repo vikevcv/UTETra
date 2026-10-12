@@ -75,9 +75,9 @@
               </a>
             </c:if>
             <c:if test="${pageContext.request.isUserInRole('DRIVER') || pageContext.request.isUserInRole('ROLE_DRIVER')}">
-              <a href="${pageContext.request.contextPath}/admin/drivers"
+              <a href="${pageContext.request.contextPath}/shipper"
                  class="btn-zen-outline" style="text-decoration:none; margin-right:8px; border-color: #10b981; color: #047857; background: #ecfdf5; font-weight: 600; font-size: 0.82rem; padding: 6px 14px;">
-                <i class="fa-solid fa-motorcycle text-success me-1"></i> Bàn Giao Hàng
+                <i class="fa-solid fa-motorcycle text-success me-1"></i> Giao Hàng (Shipper)
               </a>
             </c:if>
 

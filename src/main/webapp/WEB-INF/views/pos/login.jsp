@@ -122,11 +122,11 @@
                 <!-- Gợi ý quầy nhanh -->
                 <div class="mb-3">
                     <small class="text-muted d-block mb-1" style="font-size: 0.75rem;">CHỌN NHANH QUẦY THU NGÂN:</small>
-                    <div class="account-chip" onclick="fillPos('pos_td01', 'Pos@123')">
-                        <i class="fa-solid fa-store me-1 text-warning"></i>Quầy 01 Thủ Đức (pos_td01)
+                    <div class="account-chip" onclick="fillPos('thuduc', '123123')">
+                        <i class="fa-solid fa-store me-1 text-warning"></i>Quầy Thủ Đức (thuduc / 123123)
                     </div>
-                    <div class="account-chip" onclick="fillPos('pos_q101', 'Pos@123')">
-                        <i class="fa-solid fa-store me-1 text-primary"></i>Quầy 01 Quận 1 (pos_q101)
+                    <div class="account-chip" onclick="fillPos('quan1', '123123')">
+                        <i class="fa-solid fa-store me-1 text-primary"></i>Quầy Quận 1 (quan1 / 123123)
                     </div>
                 </div>
 

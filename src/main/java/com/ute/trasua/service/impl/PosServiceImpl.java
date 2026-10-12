@@ -34,6 +34,9 @@ public class PosServiceImpl implements PosService {
     private final OrderDetailRepository orderDetailRepository;
     private final PaymentRepository paymentRepository;
     private final EmployeeRepository employeeRepository;
+    private final BranchMenuRepository branchMenuRepository;
+    private final com.ute.trasua.service.BranchMenuService branchMenuService;
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
 
     @org.springframework.beans.factory.annotation.Value("${app.vietqr.bank-bin:970422}")
     private String bankBin;
@@ -47,6 +50,13 @@ public class PosServiceImpl implements PosService {
     @Override
     @Transactional(readOnly = true)
     public PosMenuResponse getPosMenu(Long branchId) {
+        Long targetBranchId = (branchId != null) ? branchId : 1L;
+
+        // Lấy danh sách trạng thái tạm hết của chi nhánh
+        List<BranchMenu> branchMenus = branchMenuRepository.findByBranchId(targetBranchId);
+        java.util.Map<Long, Boolean> productAvailMap = branchMenus.stream()
+                .collect(Collectors.toMap(bm -> bm.getProduct().getId(), BranchMenu::getIsAvailable, (v1, v2) -> v1));
+
         List<PosMenuResponse.CategoryDto> categories = categoryRepository.findAllByActiveTrueOrderByDisplayOrderAsc()
                 .stream()
                 .map(c -> PosMenuResponse.CategoryDto.builder()
@@ -59,37 +69,57 @@ public class PosServiceImpl implements PosService {
 
         List<PosMenuResponse.ProductDto> products = productRepository.findByStatusOrderByNameAsc("ACTIVE")
                 .stream()
-                .map(p -> PosMenuResponse.ProductDto.builder()
-                        .id(p.getId())
-                        .productCode(p.getProductCode())
-                        .name(p.getName())
-                        .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
-                        .categoryName(p.getCategory() != null ? p.getCategory().getName() : "")
-                        .basePrice(p.getBasePrice())
-                        .imageUrl(p.getImageUrl())
-                        .description(p.getDescription())
-                        .status(p.getStatus())
-                        .build())
+                .map(p -> {
+                    boolean isAvail = productAvailMap.getOrDefault(p.getId(), true);
+                    int stock = isAvail ? (15 + (int)(p.getId() % 10) * 3) : 0;
+                    return PosMenuResponse.ProductDto.builder()
+                            .id(p.getId())
+                            .productCode(p.getProductCode())
+                            .name(p.getName())
+                            .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
+                            .categoryName(p.getCategory() != null ? p.getCategory().getName() : "")
+                            .basePrice(p.getBasePrice())
+                            .imageUrl(p.getImageUrl())
+                            .description(p.getDescription())
+                            .status(p.getStatus())
+                            .isAvailable(isAvail)
+                            .stockEstimate(stock)
+                            .build();
+                })
                 .collect(Collectors.toList());
+
+        java.util.Map<String, Integer> cupStocks = branchMenuService.getBranchCupStocks(targetBranchId);
 
         List<PosMenuResponse.SizeDto> sizes = sizeRepository.findAllByActiveTrueOrderByExtraPriceAsc()
                 .stream()
-                .map(s -> PosMenuResponse.SizeDto.builder()
-                        .id(s.getId())
-                        .name(s.getName())
-                        .volumeMl(s.getVolumeMl())
-                        .extraPrice(s.getExtraPrice())
-                        .build())
+                .map(s -> {
+                    String cleanName = s.getName() != null ? s.getName().trim().toUpperCase() : "M";
+                    int cStock = cupStocks.getOrDefault(cleanName, 50);
+                    return PosMenuResponse.SizeDto.builder()
+                            .id(s.getId())
+                            .name(s.getName())
+                            .volumeMl(s.getVolumeMl())
+                            .extraPrice(s.getExtraPrice())
+                            .cupStock(cStock)
+                            .isCupAvailable(cStock > 0)
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         List<PosMenuResponse.ToppingDto> toppings = toppingRepository.findByStatusOrderByNameAsc("ACTIVE")
                 .stream()
-                .map(t -> PosMenuResponse.ToppingDto.builder()
-                        .id(t.getId())
-                        .name(t.getName())
-                        .price(t.getPrice())
-                        .status(t.getStatus())
-                        .build())
+                .map(t -> {
+                    boolean isAvail = "ACTIVE".equalsIgnoreCase(t.getStatus());
+                    int stock = isAvail ? (25 + (int)(t.getId() % 5) * 5) : 0;
+                    return PosMenuResponse.ToppingDto.builder()
+                            .id(t.getId())
+                            .name(t.getName())
+                            .price(t.getPrice())
+                            .status(t.getStatus())
+                            .isAvailable(isAvail)
+                            .stockEstimate(stock)
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         return PosMenuResponse.builder()
@@ -251,6 +281,8 @@ public class PosServiceImpl implements PosService {
         Order savedOrder = orderRepository.save(order);
         String vietQrUrl = generateVietQrUrl(savedOrder.getOrderCode(), savedOrder.getFinalAmount());
 
+        broadcastNewOrder(savedOrder);
+
         log.info(">>> Đã xác nhận thanh toán POS thành công đơn {}: Phương thức {}, Số tiền: {}₫",
                 savedOrder.getOrderCode(), method, amountPaid);
 
@@ -267,7 +299,7 @@ public class PosServiceImpl implements PosService {
 
         order.setPaymentMethod("CASH");
         order.setPaymentStatus("PAID");
-        order.setStatus("PROCESSING");
+        order.setStatus("PAID");
 
         BigDecimal amountPaid = order.getFinalAmount();
         Payment payment = Payment.builder()
@@ -283,10 +315,29 @@ public class PosServiceImpl implements PosService {
         paymentRepository.save(payment);
 
         Order savedOrder = orderRepository.save(order);
+        broadcastNewOrder(savedOrder);
+
         log.info(">>> Đã thanh toán TIỀN MẶT thành công đơn {}: Khách đưa {}₫, Tiền thối {}₫",
                 savedOrder.getOrderCode(), cashTendered, changeAmount);
 
         return mapToOrderResponse(savedOrder, "");
+    }
+
+    private void broadcastNewOrder(Order order) {
+        if (order == null || order.getBranch() == null) return;
+        try {
+            messagingTemplate.convertAndSend("/topic/kitchen/" + order.getBranch().getId(),
+                    (Object) java.util.Map.of(
+                            "type", "NEW_ORDER_PAID",
+                            "branchId", order.getBranch().getId(),
+                            "orderId", order.getId(),
+                            "orderCode", order.getOrderCode(),
+                            "queueNumber", order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : 1,
+                            "timestamp", System.currentTimeMillis()
+                    ));
+        } catch (Exception e) {
+            log.warn("Không thể gửi WebSocket event NEW_ORDER_PAID: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -322,8 +373,6 @@ public class PosServiceImpl implements PosService {
                 employeeRepository.save(Employee.builder()
                         .employeeCode("NV005")
                         .fullName("Phạm Gia Hân")
-                        .position("CASHIER")
-                        .shift("MORNING")
                         .phone("0955667788")
                         .status("ACTIVE")
                         .branch(branch)
@@ -333,8 +382,6 @@ public class PosServiceImpl implements PosService {
                 employeeRepository.save(Employee.builder()
                         .employeeCode("NV006")
                         .fullName("Đỗ Hoàng Long")
-                        .position("BARTENDER")
-                        .shift("FULL_TIME")
                         .phone("0966778899")
                         .status("ACTIVE")
                         .branch(branch)
@@ -355,8 +402,6 @@ public class PosServiceImpl implements PosService {
                         .id(e.getId())
                         .employeeCode(e.getEmployeeCode())
                         .fullName(e.getFullName())
-                        .position(e.getPosition())
-                        .shift(e.getShift())
                         .phone(e.getPhone())
                         .activeOnShift(false)
                         .build())

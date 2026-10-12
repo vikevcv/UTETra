@@ -28,6 +28,17 @@
             <span>UTETRA POS</span>
             <span class="badge bg-secondary ms-2" style="font-size: 0.75rem; font-weight: normal;">Quầy Bán Lẻ</span>
         </div>
+        <div class="pos-nav-tabs d-none d-lg-flex">
+            <a href="<c:url value='/pos?branchId=${branchId}'/>" class="pos-nav-tab active">
+                <i class="fa-solid fa-cash-register me-1"></i>Bán Lẻ POS
+            </a>
+            <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab">
+                <i class="fa-solid fa-mug-hot me-1"></i>Pha Chế KDS
+            </a>
+            <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab">
+                <i class="fa-solid fa-list-check me-1"></i>Thực Đơn Chi Nhánh
+            </a>
+        </div>
         <div class="pos-header-info">
             <div class="pos-badge">
                 <i class="fa-solid fa-store text-warning"></i>
@@ -346,14 +357,14 @@
         <div class="pos-modal" style="max-width: 520px;">
             <div class="pos-modal-header">
                 <div>
-                    <div class="pos-modal-title">📋 Điểm Danh Ca Trực Quầy POS</div>
+                    <div class="pos-modal-title">📋 Điểm Danh Nhân Viên Trực Quầy POS</div>
                     <div class="text-muted small">Cơ sở: <strong id="shiftModalBranchName">${branchName}</strong></div>
                 </div>
                 <button class="pos-modal-close" id="closeShiftModal">&times;</button>
             </div>
             <div class="pos-modal-body">
                 <div class="alert alert-info py-2 px-3 small mb-3">
-                    <i class="fa-solid fa-circle-info me-1"></i>Chọn các nhân viên đang đứng ca thực tế (hỗ trợ 2-4 người). Nhân viên được chọn sẽ chịu trách nhiệm đơn hàng và in tên lên hóa đơn bán lẻ.
+                    <i class="fa-solid fa-circle-info me-1"></i>Chọn các nhân viên đang trực quầy thực tế (hỗ trợ 2-4 người). Nhân viên được chọn sẽ chịu trách nhiệm đơn hàng và in tên lên hóa đơn bán lẻ.
                 </div>
                 
                 <div class="d-flex justify-content-between align-items-center mb-2">

@@ -1,5 +1,6 @@
 package com.ute.trasua.config;
 
+import com.ute.trasua.entity.PosAccount;
 import com.ute.trasua.entity.User;
 import com.ute.trasua.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,37 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        // Cập nhật hoặc tạo tài khoản POS: tên chi nhánh viết liền (thuduc, quan1) - mật khẩu 123123
+        branchRepository.findAll().forEach(b -> {
+            String slug = java.text.Normalizer.normalize(b.getName(), java.text.Normalizer.Form.NFD)
+                    .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                    .toLowerCase();
+            String username = "thuduc";
+            if (slug.contains("quan 1") || b.getBranchCode().contains("Q01")) {
+                username = "quan1";
+            }
+            final String finalUser = username;
+            String shortName = "Quầy POS " + (finalUser.equals("thuduc") ? "Thủ Đức" : "Quận 1");
+            PosAccount pos = posAccountRepository.findByUsername(finalUser).orElse(null);
+            if (pos == null) {
+                pos = PosAccount.builder()
+                        .counterName(shortName)
+                        .username(finalUser)
+                        .password(passwordEncoder.encode("123123"))
+                        .active(true)
+                        .branch(b)
+                        .note("Tài khoản máy POS quầy theo chi nhánh")
+                        .build();
+            } else {
+                pos.setCounterName(shortName);
+                pos.setPassword(passwordEncoder.encode("123123"));
+                pos.setActive(true);
+                pos.setBranch(b);
+            }
+            posAccountRepository.save(pos);
+            log.info(">>> Đã cập nhật tài khoản POS chi nhánh {}: username={} / password=123123", b.getName(), finalUser);
+        });
+
         if (!userRepository.existsByUsername("admin")) {
             User admin = User.builder()
                     .username("admin")
@@ -163,6 +195,8 @@ public class DataInitializer implements CommandLineRunner {
             cnThuDuc = branchRepository.save(cnThuDuc);
             log.info(">>> Đã khởi tạo Chi Nhánh CN-TD01: {}", cnThuDuc.getName());
 
+
+
             // Nhân sự mẫu cho CN-TD01 (UC16)
             if (!employeeRepository.existsByEmployeeCode("NV001")) {
                 employeeRepository.save(com.ute.trasua.entity.Employee.builder()
@@ -171,8 +205,6 @@ public class DataInitializer implements CommandLineRunner {
                         .phone("0911223344")
                         .citizenId("079198001234")
                         .email("hong.nguyen@utetra.vn")
-                        .position("BARTENDER")
-                        .shift("MORNING")
                         .salary(7500000.0)
                         .status("ACTIVE")
                         .hireDate(java.time.LocalDate.now().minusMonths(6))
@@ -187,8 +219,6 @@ public class DataInitializer implements CommandLineRunner {
                         .phone("0922334455")
                         .citizenId("079200005678")
                         .email("nhat.tran@utetra.vn")
-                        .position("CASHIER")
-                        .shift("AFTERNOON")
                         .salary(6800000.0)
                         .status("ACTIVE")
                         .hireDate(java.time.LocalDate.now().minusMonths(4))
@@ -203,8 +233,6 @@ public class DataInitializer implements CommandLineRunner {
                         .phone("0933445566")
                         .citizenId("079201009988")
                         .email("nam.le@utetra.vn")
-                        .position("SERVER")
-                        .shift("EVENING")
                         .salary(5500000.0)
                         .status("ACTIVE")
                         .hireDate(java.time.LocalDate.now().minusMonths(2))
@@ -219,8 +247,6 @@ public class DataInitializer implements CommandLineRunner {
                         .phone("0944556677")
                         .citizenId("079199003322")
                         .email("thao.vo@utetra.vn")
-                        .position("BARTENDER")
-                        .shift("FULL_TIME")
                         .salary(8500000.0)
                         .status("ACTIVE")
                         .hireDate(java.time.LocalDate.now().minusMonths(8))
@@ -235,8 +261,6 @@ public class DataInitializer implements CommandLineRunner {
                         .phone("0955667788")
                         .citizenId("079203001122")
                         .email("han.pham@utetra.vn")
-                        .position("CASHIER")
-                        .shift("MORNING")
                         .salary(6900000.0)
                         .status("ACTIVE")
                         .hireDate(java.time.LocalDate.now().minusMonths(3))
@@ -251,8 +275,6 @@ public class DataInitializer implements CommandLineRunner {
                         .phone("0966778899")
                         .citizenId("079202004455")
                         .email("long.do@utetra.vn")
-                        .position("BARTENDER")
-                        .shift("FULL_TIME")
                         .salary(8200000.0)
                         .status("ACTIVE")
                         .hireDate(java.time.LocalDate.now().minusMonths(5))

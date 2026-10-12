@@ -46,10 +46,10 @@
     <div class="header-content">
       <h1 class="page-title">
         <i class="fa-solid ${isEdit ? 'fa-user-pen' : 'fa-user-plus'}" style="color: #f59e0b; margin-right: 8px;"></i>
-        ${isEdit ? 'Cập Nhật Hồ Sơ & Ca Trực Nhân Viên' : 'Tiếp Nhận Nhân Viên Mới (UC16)'}
+        ${isEdit ? 'Cập Nhật Hồ Sơ Nhân Viên' : 'Tiếp Nhận Nhân Viên Mới (UC16)'}
       </h1>
       <p class="page-subtitle">
-        ${isEdit ? 'Chỉnh sửa thông tin cá nhân, phân công ca làm việc hoặc điều chuyển chi nhánh.' : 'Khai báo hồ sơ nhân sự mới, phân bổ vị trí làm việc và xếp ca trực.'}
+        ${isEdit ? 'Chỉnh sửa thông tin cá nhân hoặc điều chuyển chi nhánh làm việc.' : 'Khai báo hồ sơ nhân sự mới và phân bổ chi nhánh làm việc.'}
       </p>
     </div>
     <div class="header-actions">
@@ -151,36 +151,8 @@
       <div>
         <div class="form-section-card">
           <div class="form-section-title">
-            <i class="fa-solid fa-briefcase" style="color: #2563eb;"></i>
-            Vị Trí Công Việc & Xếp Ca Trực
-          </div>
-
-          <!-- Vị trí & Ca trực -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="form-group">
-              <label class="form-label">
-                Vị Trí Công Việc <span class="required">*</span>
-              </label>
-              <select name="position" class="zen-select" required style="width: 100%;">
-                <option value="BARTENDER" ${employee.position == 'BARTENDER' ? 'selected' : ''}>Pha Chế</option>
-                <option value="CASHIER" ${employee.position == 'CASHIER' ? 'selected' : ''}>Thu Ngân</option>
-                <option value="SERVER" ${employee.position == 'SERVER' ? 'selected' : ''}>Phục Vụ</option>
-                <option value="SHIFT_MANAGER" ${employee.position == 'SHIFT_MANAGER' ? 'selected' : ''}>Quản Lý Ca</option>
-                <option value="SECURITY" ${employee.position == 'SECURITY' ? 'selected' : ''}>Bảo Vệ</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">
-                Ca Làm Việc <span class="required">*</span>
-              </label>
-              <select name="shift" class="zen-select" required style="width: 100%;">
-                <option value="MORNING" ${employee.shift == 'MORNING' ? 'selected' : ''}>Ca Sáng (06:30 - 12:00)</option>
-                <option value="AFTERNOON" ${employee.shift == 'AFTERNOON' ? 'selected' : ''}>Ca Chiều (12:00 - 17:30)</option>
-                <option value="EVENING" ${employee.shift == 'EVENING' ? 'selected' : ''}>Ca Tối (17:30 - 23:00)</option>
-                <option value="FULL_TIME" ${employee.shift == 'FULL_TIME' ? 'selected' : ''}>Full-time (Toàn thời gian)</option>
-              </select>
-            </div>
+            <i class="fa-solid fa-coins" style="color: #2563eb;"></i>
+            Thù Lao & Thời Gian Làm Việc
           </div>
 
           <!-- Mức lương & Ngày vào làm -->
