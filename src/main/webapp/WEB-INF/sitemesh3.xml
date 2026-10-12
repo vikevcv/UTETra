@@ -4,6 +4,10 @@
     <mapping path="/js/*" exclude="true"/>
     <mapping path="/images/*" exclude="true"/>
     <mapping path="/favicon.ico" exclude="true"/>
+    <!-- Không bọc decorator web.jsp cho giao diện Shipper di động toàn màn hình -->
+    <mapping path="/shipper" exclude="true"/>
+    <mapping path="/shipper/*" exclude="true"/>
+    <mapping path="/shipper/**" exclude="true"/>
     <!-- Áp dụng decorator riêng cho Chủ Chuỗi (Admin Portal) -->
     <mapping path="/admin/*" decorator="/WEB-INF/decorators/admin.jsp"/>
     <mapping path="/admin/**" decorator="/WEB-INF/decorators/admin.jsp"/>
