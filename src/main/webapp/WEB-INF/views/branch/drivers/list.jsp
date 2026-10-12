@@ -156,10 +156,10 @@
         <div class="col-md-3">
           <select name="shift" class="form-select">
             <option value="">Tất cả ca trực</option>
-            <option value="SANG" ${shift == 'SANG' ? 'selected' : ''}>Ca Sáng</option>
-            <option value="CHIEU" ${shift == 'CHIEU' ? 'selected' : ''}>Ca Chiều</option>
-            <option value="TOI" ${shift == 'TOI' ? 'selected' : ''}>Ca Tối</option>
-            <option value="TOAN_THOI_GIAN" ${shift == 'TOAN_THOI_GIAN' ? 'selected' : ''}>Toàn Thời Gian</option>
+            <option value="MORNING" ${shift == 'MORNING' || shift == 'SANG' ? 'selected' : ''}>Ca Sáng</option>
+            <option value="AFTERNOON" ${shift == 'AFTERNOON' || shift == 'CHIEU' ? 'selected' : ''}>Ca Chiều</option>
+            <option value="EVENING" ${shift == 'EVENING' || shift == 'TOI' ? 'selected' : ''}>Ca Tối</option>
+            <option value="FULL_TIME" ${shift == 'FULL_TIME' || shift == 'TOAN_THOI_GIAN' ? 'selected' : ''}>Toàn Thời Gian</option>
           </select>
         </div>
         <div class="col-md-2">
@@ -225,9 +225,9 @@
                   </td>
                   <td>
                     <c:choose>
-                      <c:when test="${d.shift == 'SANG'}"><span class="badge bg-info-subtle text-info border">Ca Sáng</span></c:when>
-                      <c:when test="${d.shift == 'CHIEU'}"><span class="badge bg-warning-subtle text-warning border">Ca Chiều</span></c:when>
-                      <c:when test="${d.shift == 'TOI'}"><span class="badge bg-dark-subtle text-dark border">Ca Tối</span></c:when>
+                      <c:when test="${d.shift == 'MORNING' || d.shift == 'SANG'}"><span class="badge bg-info-subtle text-info border">Ca Sáng</span></c:when>
+                      <c:when test="${d.shift == 'AFTERNOON' || d.shift == 'CHIEU'}"><span class="badge bg-warning-subtle text-warning border">Ca Chiều</span></c:when>
+                      <c:when test="${d.shift == 'EVENING' || d.shift == 'TOI'}"><span class="badge bg-dark-subtle text-dark border">Ca Tối</span></c:when>
                       <c:otherwise><span class="badge bg-primary-subtle text-primary border">Toàn Thời Gian</span></c:otherwise>
                     </c:choose>
                   </td>
@@ -408,8 +408,15 @@
         var fullName = btn.getAttribute('data-fullname');
         var phone = btn.getAttribute('data-phone');
         var plate = btn.getAttribute('data-licenseplate');
-        var vehicle = btn.getAttribute('data-vehicletype') || 'XE_MAY';
-        var shift = btn.getAttribute('data-shift') || 'SANG';
+        var vehicle = btn.getAttribute('data-vehicletype') || 'MOTORBIKE';
+        if (vehicle === 'XE_MAY') vehicle = 'MOTORBIKE';
+        else if (vehicle === 'XE_DIEN') vehicle = 'ELECTRIC_BIKE';
+
+        var shift = btn.getAttribute('data-shift') || 'MORNING';
+        if (shift === 'SANG') shift = 'MORNING';
+        else if (shift === 'CHIEU') shift = 'AFTERNOON';
+        else if (shift === 'TOI') shift = 'EVENING';
+        else if (shift === 'TOAN_THOI_GIAN') shift = 'FULL_TIME';
         var salary = btn.getAttribute('data-salary') || '0';
 
         if (editForm) {

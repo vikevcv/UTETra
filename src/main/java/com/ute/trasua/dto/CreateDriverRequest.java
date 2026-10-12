@@ -39,10 +39,10 @@ public class CreateDriverRequest {
     private String licensePlate;
 
     @Builder.Default
-    private String vehicleType = "XE_MAY";
+    private String vehicleType = "MOTORBIKE";
 
     /**
-     * Ca làm việc: SANG, CHIEU, TOI, TOAN_THOI_GIAN
+     * Work shift: MORNING, AFTERNOON, EVENING, FULL_TIME
      */
     @NotBlank(message = "Vui lòng chọn ca làm việc phân công")
     private String shift;

@@ -53,18 +53,18 @@ public class Driver {
     private String licensePlate;
 
     /**
-     * Loại xe di chuyển (LoaiXe trong ERD): XE_MAY, XE_DIEN...
+     * Vehicle type: MOTORBIKE, ELECTRIC_BIKE...
      */
     @Column(name = "vehicle_type", length = 30)
     @Builder.Default
-    private String vehicleType = "XE_MAY";
+    private String vehicleType = "MOTORBIKE";
 
     /**
-     * Ca làm việc phân công: SANG, CHIEU, TOI, TOAN_THOI_GIAN.
+     * Work shift: MORNING, AFTERNOON, EVENING, FULL_TIME.
      */
     @Column(name = "shift", length = 30)
     @Builder.Default
-    private String shift = "SANG";
+    private String shift = "MORNING";
 
     /**
      * Trạng thái hoạt động (TrangThaiHoatDong trong ERD):

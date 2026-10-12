@@ -107,8 +107,8 @@ public class DriverServiceImpl implements DriverService {
                 .user(user)
                 .branch(branch)
                 .licensePlate(cleanPlate)
-                .vehicleType(request.getVehicleType() != null ? request.getVehicleType().trim() : "XE_MAY")
-                .shift(request.getShift() != null ? request.getShift().trim() : "SANG")
+                .vehicleType(request.getVehicleType() != null ? request.getVehicleType().trim() : "MOTORBIKE")
+                .shift(request.getShift() != null ? request.getShift().trim() : "MORNING")
                 .workingStatus("ONLINE")
                 .baseSalary(request.getBaseSalary() != null ? request.getBaseSalary() : BigDecimal.ZERO)
                 .kpiScore(5.0)
@@ -152,8 +152,8 @@ public class DriverServiceImpl implements DriverService {
         userRepository.save(user);
 
         driver.setLicensePlate(cleanPlate);
-        driver.setVehicleType(request.getVehicleType() != null ? request.getVehicleType().trim() : "XE_MAY");
-        driver.setShift(request.getShift() != null ? request.getShift().trim() : "SANG");
+        driver.setVehicleType(request.getVehicleType() != null ? request.getVehicleType().trim() : "MOTORBIKE");
+        driver.setShift(request.getShift() != null ? request.getShift().trim() : "MORNING");
         driver.setBaseSalary(request.getBaseSalary() != null ? request.getBaseSalary() : BigDecimal.ZERO);
         driver = driverRepository.save(driver);
 

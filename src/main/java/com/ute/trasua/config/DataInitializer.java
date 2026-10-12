@@ -24,7 +24,7 @@ public class DataInitializer implements CommandLineRunner {
     private final com.ute.trasua.repository.BranchRepository branchRepository;
     private final com.ute.trasua.repository.EmployeeRepository employeeRepository;
     private final com.ute.trasua.repository.PosAccountRepository posAccountRepository;
-    private final com.ute.trasua.repository.KichCoRepository kichCoRepository;
+    private final com.ute.trasua.repository.ProductSizeRepository productSizeRepository;
     private final com.ute.trasua.repository.ToppingRepository toppingRepository;
     private final com.ute.trasua.repository.DriverRepository driverRepository;
     private final PasswordEncoder passwordEncoder;
@@ -269,63 +269,63 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // ==========================================
-        // UC23: Khởi tạo Kích cỡ ly (Bảng KichCo) và Topping (Bảng Topping) theo ERD Báo Cáo SE
+        // UC23: Initialize Product Size (table kich_co) and Topping (table topping) per ERD
         // ==========================================
-        if (kichCoRepository.count() == 0) {
-            java.util.List<com.ute.trasua.entity.KichCo> initialSizes = java.util.List.of(
-                    com.ute.trasua.entity.KichCo.builder()
-                            .maKichCo("S")
-                            .tenKichCo("Size S - Cỡ Nhỏ (350ml)")
-                            .giaPhuThu(java.math.BigDecimal.ZERO)
-                            .trangThai("HoatDong")
+        if (productSizeRepository.count() == 0) {
+            java.util.List<com.ute.trasua.entity.ProductSize> initialSizes = java.util.List.of(
+                    com.ute.trasua.entity.ProductSize.builder()
+                            .sizeCode("S")
+                            .sizeName("Size S - Cỡ Nhỏ (350ml)")
+                            .additionalPrice(java.math.BigDecimal.ZERO)
+                            .status("ACTIVE")
                             .build(),
-                    com.ute.trasua.entity.KichCo.builder()
-                            .maKichCo("M")
-                            .tenKichCo("Size M - Cỡ Tiêu Chuẩn (500ml)")
-                            .giaPhuThu(java.math.BigDecimal.ZERO)
-                            .trangThai("HoatDong")
+                    com.ute.trasua.entity.ProductSize.builder()
+                            .sizeCode("M")
+                            .sizeName("Size M - Cỡ Tiêu Chuẩn (500ml)")
+                            .additionalPrice(java.math.BigDecimal.ZERO)
+                            .status("ACTIVE")
                             .build(),
-                    com.ute.trasua.entity.KichCo.builder()
-                            .maKichCo("L")
-                            .tenKichCo("Size L - Cỡ Lớn (700ml)")
-                            .giaPhuThu(new java.math.BigDecimal("6000"))
-                            .trangThai("HoatDong")
+                    com.ute.trasua.entity.ProductSize.builder()
+                            .sizeCode("L")
+                            .sizeName("Size L - Cỡ Lớn (700ml)")
+                            .additionalPrice(new java.math.BigDecimal("6000"))
+                            .status("ACTIVE")
                             .build()
             );
-            kichCoRepository.saveAll(initialSizes);
-            log.info(">>> Đã khởi tạo {} kích cỡ mặc định (Bảng KichCo)", initialSizes.size());
+            productSizeRepository.saveAll(initialSizes);
+            log.info(">>> Initialized {} default product sizes (table kich_co)", initialSizes.size());
         }
 
         if (toppingRepository.count() == 0) {
             java.util.List<com.ute.trasua.entity.Topping> initialToppings = java.util.List.of(
                     com.ute.trasua.entity.Topping.builder()
-                            .tenTopping("Trân Châu Đen Dẻo")
-                            .donGia(new java.math.BigDecimal("8000"))
-                            .trangThai("HoatDong")
+                            .toppingName("Trân Châu Đen Dẻo")
+                            .price(new java.math.BigDecimal("8000"))
+                            .status("ACTIVE")
                             .build(),
                     com.ute.trasua.entity.Topping.builder()
-                            .tenTopping("Trân Châu Hoàng Kim")
-                            .donGia(new java.math.BigDecimal("10000"))
-                            .trangThai("HoatDong")
+                            .toppingName("Trân Châu Hoàng Kim")
+                            .price(new java.math.BigDecimal("10000"))
+                            .status("ACTIVE")
                             .build(),
                     com.ute.trasua.entity.Topping.builder()
-                            .tenTopping("Thạch Củ Năng Giòn")
-                            .donGia(new java.math.BigDecimal("10000"))
-                            .trangThai("HoatDong")
+                            .toppingName("Thạch Củ Năng Giòn")
+                            .price(new java.math.BigDecimal("10000"))
+                            .status("ACTIVE")
                             .build(),
                     com.ute.trasua.entity.Topping.builder()
-                            .tenTopping("Kem Phô Mai Cheese Foam")
-                            .donGia(new java.math.BigDecimal("12000"))
-                            .trangThai("HoatDong")
+                            .toppingName("Kem Phô Mai Cheese Foam")
+                            .price(new java.math.BigDecimal("12000"))
+                            .status("ACTIVE")
                             .build(),
                     com.ute.trasua.entity.Topping.builder()
-                            .tenTopping("Thạch Matcha Nhật Bản")
-                            .donGia(new java.math.BigDecimal("9000"))
-                            .trangThai("HoatDong")
+                            .toppingName("Thạch Matcha Nhật Bản")
+                            .price(new java.math.BigDecimal("9000"))
+                            .status("ACTIVE")
                             .build()
             );
             toppingRepository.saveAll(initialToppings);
-            log.info(">>> Đã khởi tạo {} loại topping mặc định (Bảng Topping)", initialToppings.size());
+            log.info(">>> Initialized {} default toppings (table topping)", initialToppings.size());
         }
 
         // ==========================================
@@ -343,8 +343,8 @@ public class DataInitializer implements CommandLineRunner {
                             .user(d1)
                             .branch(defaultBranch)
                             .licensePlate("59-X1 888.88")
-                            .vehicleType("XE_MAY")
-                            .shift("SANG")
+                            .vehicleType("MOTORBIKE")
+                            .shift("MORNING")
                             .workingStatus("ONLINE")
                             .baseSalary(new java.math.BigDecimal("6000000"))
                             .kpiScore(4.9)
@@ -357,8 +357,8 @@ public class DataInitializer implements CommandLineRunner {
                             .user(d2)
                             .branch(defaultBranch)
                             .licensePlate("59-S2 345.67")
-                            .vehicleType("XE_MAY")
-                            .shift("CHIEU")
+                            .vehicleType("MOTORBIKE")
+                            .shift("AFTERNOON")
                             .workingStatus("DELIVERING")
                             .baseSalary(new java.math.BigDecimal("6000000"))
                             .kpiScore(4.8)
@@ -371,8 +371,8 @@ public class DataInitializer implements CommandLineRunner {
                             .user(d3)
                             .branch(defaultBranch)
                             .licensePlate("50-T1 999.12")
-                            .vehicleType("XE_DIEN")
-                            .shift("TOAN_THOI_GIAN")
+                            .vehicleType("ELECTRIC_BIKE")
+                            .shift("FULL_TIME")
                             .workingStatus("OFFLINE")
                             .baseSalary(new java.math.BigDecimal("5500000"))
                             .kpiScore(4.2)

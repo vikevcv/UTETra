@@ -9,13 +9,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Thực thể Danh mục Topping thêm (Module 5 - UC23).
- * Ánh xạ bảng Topping (topping) theo chuẩn sơ đồ ERD Báo Cáo SE.
+ * Drink topping add-on entity (Module 5 - UC23).
+ * Represents drink toppings (e.g. Pearls, Jelly, Pudding) and their unit pricing.
  */
 @Entity
-@Table(name = "topping",
+@Table(name = "toppings",
        indexes = {
-           @Index(name = "idx_topping_trang_thai", columnList = "trang_thai")
+           @Index(name = "idx_topping_status", columnList = "status")
        })
 @Getter
 @Setter
@@ -25,35 +25,31 @@ import java.time.LocalDateTime;
 public class Topping {
 
     /**
-     * Mã định danh loại topping. Khóa chính tự tăng (Identity).
-     * Cột MaTopping trong ERD.
+     * Unique identifier for topping. Auto-increment identity.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ma_topping")
-    private Long maTopping;
+    @Column(name = "id")
+    private Long id;
 
     /**
-     * Tên loại topping thêm (VD: 'Trân Châu Hoàng Kim', 'Kem Phô Mai Cheese Foam').
-     * Cột TenTopping trong ERD.
+     * Display name of the topping (e.g. 'Golden Pearl', 'Cheese Foam').
      */
-    @Column(name = "ten_topping", length = 100, nullable = false, unique = true)
-    private String tenTopping;
+    @Column(name = "topping_name", length = 100, nullable = false, unique = true)
+    private String toppingName;
 
     /**
-     * Đơn giá một phần topping (VNĐ) áp dụng toàn chuỗi.
-     * Cột DonGia trong ERD / Báo Cáo SE.
+     * Unit price for this topping (VND).
      */
-    @Column(name = "don_gia", precision = 18, scale = 2, nullable = false)
-    private BigDecimal donGia;
+    @Column(name = "price", precision = 18, scale = 2, nullable = false)
+    private BigDecimal price;
 
     /**
-     * Trạng thái kinh doanh: 'HoatDong' (Đang bán) hoặc 'TamNgung' (Ngừng bán).
-     * Cột TrangThai trong ERD / Báo Cáo SE.
+     * Business status: 'ACTIVE' or 'INACTIVE'.
      */
-    @Column(name = "trang_thai", length = 20, nullable = false)
+    @Column(name = "status", length = 20, nullable = false)
     @Builder.Default
-    private String trangThai = "HoatDong";
+    private String status = "ACTIVE";
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -63,7 +59,7 @@ public class Topping {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public boolean isHoatDong() {
-        return "HoatDong".equalsIgnoreCase(this.trangThai);
+    public boolean isActive() {
+        return "ACTIVE".equalsIgnoreCase(this.status) || "HoatDong".equalsIgnoreCase(this.status);
     }
 }

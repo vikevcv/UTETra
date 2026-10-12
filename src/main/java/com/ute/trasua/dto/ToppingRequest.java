@@ -19,12 +19,12 @@ public class ToppingRequest {
 
     @NotBlank(message = "Tên loại topping không được để trống")
     @Size(min = 2, max = 100, message = "Tên loại topping từ 2 đến 100 ký tự")
-    private String tenTopping;
+    private String toppingName;
 
     @NotNull(message = "Đơn giá topping không được để trống")
     @DecimalMin(value = "0.0", message = "Đơn giá topping không được âm")
-    private BigDecimal donGia;
+    private BigDecimal price;
 
     @Builder.Default
-    private String trangThai = "HoatDong";
+    private String status = "ACTIVE";
 }

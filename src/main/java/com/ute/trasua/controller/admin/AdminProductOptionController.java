@@ -1,7 +1,7 @@
 package com.ute.trasua.controller.admin;
 
-import com.ute.trasua.dto.SizeDto;
-import com.ute.trasua.dto.SizeRequest;
+import com.ute.trasua.dto.ProductSizeDto;
+import com.ute.trasua.dto.ProductSizeRequest;
 import com.ute.trasua.dto.ToppingDto;
 import com.ute.trasua.dto.ToppingRequest;
 import com.ute.trasua.service.ProductOptionService;
@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Controller phục vụ Chủ Chuỗi (Admin) quản lý Kích cỡ (Size) và Topping toàn chuỗi (Module 5 - UC23).
- * Ánh xạ chuẩn theo 2 bảng KichCo và Topping trong sơ đồ ERD Báo Cáo SE.
+ * Controller for Admin to manage cup sizes and toppings chain-wide (Module 5 - UC23).
+ * Maps to tables 'kich_co' and 'topping' in the SE project ERD.
  */
 @Controller
 @RequestMapping("/admin/product-options")
@@ -30,14 +30,14 @@ public class AdminProductOptionController {
     private final ProductOptionService optionService;
 
     /**
-     * Màn hình danh sách tùy chọn phân loại theo 2 Tab: Kích cỡ ly & Topping.
+     * Display option list with 2 tabs: Cup Sizes & Toppings.
      */
     @GetMapping
     public String index(
             @RequestParam(value = "activeTab", defaultValue = "size") String activeTab,
             Model model
     ) {
-        List<SizeDto> sizes = optionService.getAllSizes();
+        List<ProductSizeDto> sizes = optionService.getAllSizes();
         List<ToppingDto> toppings = optionService.getAllToppings();
         Map<String, Object> stats = optionService.getOptionStatistics();
 
@@ -45,18 +45,18 @@ public class AdminProductOptionController {
         model.addAttribute("toppings", toppings);
         model.addAttribute("stats", stats);
         model.addAttribute("activeTab", activeTab);
-        model.addAttribute("newSize", new SizeRequest());
+        model.addAttribute("newSize", new ProductSizeRequest());
         model.addAttribute("newTopping", new ToppingRequest());
         model.addAttribute("pageTitle", "Quản Lý Kích Cỡ & Topping");
 
         return "admin/product-options/index";
     }
 
-    // ==================== KÍCH CỠ (SIZE) ====================
+    // ==================== PRODUCT SIZE ====================
 
     @PostMapping("/size/create")
     public String createSize(
-            @Valid @ModelAttribute("newSize") SizeRequest request,
+            @Valid @ModelAttribute("newSize") ProductSizeRequest request,
             BindingResult bindingResult,
             RedirectAttributes redirectAttributes
     ) {
@@ -67,7 +67,7 @@ public class AdminProductOptionController {
 
         try {
             optionService.createSize(request);
-            redirectAttributes.addFlashAttribute("successMessage", "Thêm kích cỡ '" + request.getTenKichCo() + "' thành công!");
+            redirectAttributes.addFlashAttribute("successMessage", "Thêm kích cỡ '" + request.getSizeName() + "' thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
@@ -77,7 +77,7 @@ public class AdminProductOptionController {
     @PostMapping("/size/update/{code}")
     public String updateSize(
             @PathVariable String code,
-            @Valid @ModelAttribute SizeRequest request,
+            @Valid @ModelAttribute ProductSizeRequest request,
             BindingResult bindingResult,
             RedirectAttributes redirectAttributes
     ) {
@@ -88,7 +88,7 @@ public class AdminProductOptionController {
 
         try {
             optionService.updateSize(code, request);
-            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật kích cỡ '" + request.getTenKichCo() + "' thành công!");
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật kích cỡ '" + request.getSizeName() + "' thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
@@ -139,7 +139,7 @@ public class AdminProductOptionController {
 
         try {
             optionService.createTopping(request);
-            redirectAttributes.addFlashAttribute("successMessage", "Thêm topping '" + request.getTenTopping() + "' thành công!");
+            redirectAttributes.addFlashAttribute("successMessage", "Thêm topping '" + request.getToppingName() + "' thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
@@ -160,7 +160,7 @@ public class AdminProductOptionController {
 
         try {
             optionService.updateTopping(id, request);
-            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật topping '" + request.getTenTopping() + "' thành công!");
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật topping '" + request.getToppingName() + "' thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }

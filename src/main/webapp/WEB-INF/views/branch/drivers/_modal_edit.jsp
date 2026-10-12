@@ -36,17 +36,17 @@
             <div class="col-6">
               <label class="form-label fw-semibold">Ca Làm Việc <span class="text-danger">*</span></label>
               <select id="editShift" name="shift" class="form-select" required>
-                <option value="SANG">Ca Sáng</option>
-                <option value="CHIEU">Ca Chiều</option>
-                <option value="TOI">Ca Tối</option>
-                <option value="TOAN_THOI_GIAN">Toàn Thời Gian</option>
+                <option value="MORNING">Ca Sáng</option>
+                <option value="AFTERNOON">Ca Chiều</option>
+                <option value="EVENING">Ca Tối</option>
+                <option value="FULL_TIME">Toàn Thời Gian</option>
               </select>
             </div>
             <div class="col-6">
               <label class="form-label fw-semibold">Phương Tiện</label>
               <select id="editVehicleType" name="vehicleType" class="form-select">
-                <option value="XE_MAY">Xe máy xăng</option>
-                <option value="XE_DIEN">Xe máy điện</option>
+                <option value="MOTORBIKE">Xe máy xăng</option>
+                <option value="ELECTRIC_BIKE">Xe máy điện</option>
               </select>
             </div>
           </div>

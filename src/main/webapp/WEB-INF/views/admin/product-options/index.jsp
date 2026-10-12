@@ -179,7 +179,7 @@
     </button>
   </div>
 
-  <!-- ==================== BẢNG KÍCH CỠ (BẢNG KichCo THEO ERD) ==================== -->
+  <!-- ==================== BẢNG KÍCH CỠ (BẢNG kich_co THEO ERD) ==================== -->
   <div id="tabContentSize" class="${activeTab == 'size' ? '' : 'd-none'}">
     <div class="table-container-zen">
       <div class="table-responsive">
@@ -199,16 +199,16 @@
                 <c:forEach var="item" items="${sizes}">
                   <tr>
                     <td class="ps-4">
-                      <span class="badge-code">${item.maKichCo}</span>
+                      <span class="badge-code">${item.sizeCode}</span>
                     </td>
                     <td>
-                      <div class="fw-bold text-dark">${item.tenKichCo}</div>
+                      <div class="fw-bold text-dark">${item.sizeName}</div>
                     </td>
                     <td>
                       <c:choose>
-                        <c:when test="${item.giaPhuThu > 0}">
+                        <c:when test="${item.additionalPrice > 0}">
                           <span class="price-tag">
-                            +<fmt:formatNumber value="${item.giaPhuThu}" pattern="#,###"/> đ
+                            +<fmt:formatNumber value="${item.additionalPrice}" pattern="#,###"/> đ
                           </span>
                         </c:when>
                         <c:otherwise>
@@ -220,11 +220,11 @@
                       <div class="d-inline-flex align-items-center gap-2">
                         <div class="form-check form-switch mb-0">
                           <input class="form-check-input switch-toggle-size" type="checkbox" role="switch"
-                                 data-code="${item.maKichCo}"
-                                 ${item.hoatDong ? 'checked' : ''} />
+                                 data-code="${item.sizeCode}"
+                                 ${item.active ? 'checked' : ''} />
                         </div>
-                        <span id="badge-size-${item.maKichCo}" class="badge ${item.hoatDong ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'}">
-                          ${item.hoatDong ? 'Đang bán' : 'Tạm ngưng'}
+                        <span id="badge-size-${item.sizeCode}" class="badge ${item.active ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'}">
+                          ${item.active ? 'Đang bán' : 'Tạm ngưng'}
                         </span>
                       </div>
                     </td>
@@ -232,17 +232,17 @@
                       <button class="btn btn-sm btn-outline-primary me-1 btn-edit-size"
                               title="Sửa kích cỡ"
                               type="button"
-                              data-code="${fn:escapeXml(item.maKichCo)}"
-                              data-name="${fn:escapeXml(item.tenKichCo)}"
-                              data-price="${item.giaPhuThu}"
-                              data-status="${item.trangThai}">
+                              data-code="${fn:escapeXml(item.sizeCode)}"
+                              data-name="${fn:escapeXml(item.sizeName)}"
+                              data-price="${item.additionalPrice}"
+                              data-status="${item.status}">
                         <i class="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button class="btn btn-sm btn-outline-danger btn-delete-size"
                               title="Xóa kích cỡ"
                               type="button"
-                              data-code="${fn:escapeXml(item.maKichCo)}"
-                              data-name="${fn:escapeXml(item.tenKichCo)}">
+                              data-code="${fn:escapeXml(item.sizeCode)}"
+                              data-name="${fn:escapeXml(item.sizeName)}">
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </td>
@@ -264,7 +264,7 @@
     </div>
   </div>
 
-  <!-- ==================== BẢNG TOPPING (BẢNG Topping THEO ERD) ==================== -->
+  <!-- ==================== BẢNG TOPPING (BẢNG topping THEO ERD) ==================== -->
   <div id="tabContentTopping" class="${activeTab == 'topping' ? '' : 'd-none'}">
     <div class="table-container-zen">
       <div class="table-responsive">
@@ -284,25 +284,25 @@
                 <c:forEach var="item" items="${toppings}">
                   <tr>
                     <td class="ps-4">
-                      <span class="badge-code">#${item.maTopping}</span>
+                      <span class="badge-code">#${item.id}</span>
                     </td>
                     <td>
-                      <div class="fw-bold text-dark">${item.tenTopping}</div>
+                      <div class="fw-bold text-dark">${item.toppingName}</div>
                     </td>
                     <td>
                       <span class="price-tag">
-                        +<fmt:formatNumber value="${item.donGia}" pattern="#,###"/> đ
+                        +<fmt:formatNumber value="${item.price}" pattern="#,###"/> đ
                       </span>
                     </td>
                     <td class="text-center">
                       <div class="d-inline-flex align-items-center gap-2">
                         <div class="form-check form-switch mb-0">
                           <input class="form-check-input switch-toggle-topping" type="checkbox" role="switch"
-                                 data-id="${item.maTopping}"
-                                 ${item.hoatDong ? 'checked' : ''} />
+                                 data-id="${item.id}"
+                                 ${item.active ? 'checked' : ''} />
                         </div>
-                        <span id="badge-topping-${item.maTopping}" class="badge ${item.hoatDong ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'}">
-                          ${item.hoatDong ? 'Đang bán' : 'Tạm ngưng'}
+                        <span id="badge-topping-${item.id}" class="badge ${item.active ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'}">
+                          ${item.active ? 'Đang bán' : 'Tạm ngưng'}
                         </span>
                       </div>
                     </td>
@@ -310,17 +310,17 @@
                       <button class="btn btn-sm btn-outline-warning text-dark me-1 btn-edit-topping"
                               title="Sửa topping"
                               type="button"
-                              data-id="${item.maTopping}"
-                              data-name="${fn:escapeXml(item.tenTopping)}"
-                              data-price="${item.donGia}"
-                              data-status="${item.trangThai}">
+                              data-id="${item.id}"
+                              data-name="${fn:escapeXml(item.toppingName)}"
+                              data-price="${item.price}"
+                              data-status="${item.status}">
                         <i class="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button class="btn btn-sm btn-outline-danger btn-delete-topping"
                               title="Xóa topping"
                               type="button"
-                              data-id="${item.maTopping}"
-                              data-name="${fn:escapeXml(item.tenTopping)}">
+                              data-id="${item.id}"
+                              data-name="${fn:escapeXml(item.toppingName)}">
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </td>
@@ -383,7 +383,7 @@
       });
     });
 
-    // Mở modal sửa kích cỡ (Bảng KichCo)
+    // Mở modal sửa kích cỡ (Bảng kich_co)
     var editSizeModalEl = document.getElementById('editSizeModal');
     var editSizeForm = document.getElementById('editSizeForm');
     document.querySelectorAll('.btn-edit-size').forEach(function(btn) {
@@ -391,7 +391,7 @@
         var code = this.getAttribute('data-code');
         var name = this.getAttribute('data-name');
         var price = this.getAttribute('data-price');
-        var status = this.getAttribute('data-status') || 'HoatDong';
+        var status = this.getAttribute('data-status') || 'ACTIVE';
 
         if (editSizeForm) {
           var baseAction = editSizeForm.getAttribute('data-base-action');
@@ -409,7 +409,7 @@
       });
     });
 
-    // Mở modal sửa topping (Bảng Topping)
+    // Mở modal sửa topping (Bảng topping)
     var editToppingModalEl = document.getElementById('editToppingModal');
     var editToppingForm = document.getElementById('editToppingForm');
     document.querySelectorAll('.btn-edit-topping').forEach(function(btn) {
@@ -417,7 +417,7 @@
         var id = this.getAttribute('data-id');
         var name = this.getAttribute('data-name');
         var price = this.getAttribute('data-price');
-        var status = this.getAttribute('data-status') || 'HoatDong';
+        var status = this.getAttribute('data-status') || 'ACTIVE';
 
         if (editToppingForm) {
           var baseAction = editToppingForm.getAttribute('data-base-action');
