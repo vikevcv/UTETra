@@ -1,7 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 
-<!-- MODAL: THÊM TÙY CHỌN -->
+<!-- MODAL: THÊM TÙY CHỌN (UC23: Quản lý tùy chọn Topping & Size ly) -->
 <div class="modal fade" id="createOptionModal" tabindex="-1" aria-labelledby="createOptionModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg rounded-3">

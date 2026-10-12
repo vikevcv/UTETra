@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 
-<!-- MODAL: SỬA TÙY CHỌN -->
+<!-- MODAL: SỬA TÙY CHỌN (UC23: Quản lý tùy chọn Topping & Size ly) -->
 <div class="modal fade" id="editOptionModal" tabindex="-1" aria-labelledby="editOptionModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg rounded-3">

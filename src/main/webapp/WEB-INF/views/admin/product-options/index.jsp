@@ -99,7 +99,7 @@
 <body>
 <div class="container-fluid p-0">
 
-  <!-- ==================== HEADER ==================== -->
+  <!-- ==================== HEADER (UC23: QUẢN LÝ TÙY CHỌN SIZE & TOPPING TOÀN CHUỖI) ==================== -->
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
     <div>
       <h3 class="fw-bold mb-1 text-dark">
