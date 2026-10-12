@@ -17,9 +17,9 @@
   <!-- Font Awesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- Leaflet Map CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Leaflet Map CSS & JS (CDNJS ổn định 100%) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700;800&display=swap');
@@ -88,15 +88,24 @@
     /* BẢN ĐỒ LEAFLET TRÀN VIỀN 100% */
     #mapView {
       position: absolute;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       width: 100%;
       height: 100%;
       z-index: 1;
       background: #EAE5D9;
     }
 
+    .leaflet-container {
+      width: 100% !important;
+      height: 100% !important;
+      background: #EAE5D9 !important;
+    }
+
     .leaflet-tile {
-      filter: sepia(18%) saturate(85%) contrast(96%);
+      filter: contrast(102%) brightness(98%);
     }
 
     /* STATUS BAR MOBILE */
@@ -439,17 +448,17 @@
       font-size: 0.95rem;
     }
 
-    .cod-zero-strip {
+    .cup-info-badge {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #F0FDF4;
-      border: 1px dashed #16A34A;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: #166534;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-earth);
+      border-radius: var(--radius-sm);
+      padding: 9px 13px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-charcoal);
     }
 
     .action-row-buttons {
@@ -566,17 +575,23 @@
       40%, 80% { transform: rotate(-14deg); }
     }
 
-    .cod-zero-badge {
-      background: #F0FDF4;
-      border: 1.5px dashed #16A34A;
-      color: #15803D;
-      padding: 10px 14px;
-      border-radius: var(--radius-sm);
+    .camera-preview-zone {
+      background: var(--bg-card-inner);
+      border: 2px dashed var(--border-earth);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      min-height: 150px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      font-weight: 700;
-      font-size: 0.82rem;
+      justify-content: center;
+      transition: all .2s ease;
+    }
+    .camera-preview-zone:active {
+      background: #EAE4D6;
     }
 
     /* MODAL BÁO CÁO SỰ CỐ / HỦY TIẾP NHẬN ĐƠN */
@@ -825,10 +840,10 @@
         </div>
       </div>
 
-      <!-- BANNER KHẲNG ĐỊNH: ĐÃ THANH TOÁN ONLINE 100% - COD 0 ĐỒNG -->
-      <div class="cod-zero-strip">
-        <span><i class="fa-solid fa-circle-check"></i> ĐÃ THANH TOÁN ONLINE 100%</span>
-        <span style="font-weight: 800; color: #15803D;">TIỀN MẶT CẦN THU: 0₫</span>
+      <!-- THÔNG TIN SỐ LƯỢNG LY NƯỚC (BỎ CHỮ 0Đ THEO YÊU CẦU) -->
+      <div class="cup-info-badge">
+        <span><i class="fa-solid fa-mug-hot" style="color: var(--matcha-deep);"></i> Số lượng ly:</span>
+        <strong style="color: var(--matcha-deep);">2 ly trà (Đã đóng seal nắp)</strong>
       </div>
 
       <div class="action-row-buttons">
@@ -836,7 +851,7 @@
           <i class="fa-solid fa-phone" style="color: var(--bizen-clay);"></i> Gọi
         </button>
         <button class="btn-action-main" id="progressDeliveryBtn" onclick="nextDeliveryStep()">
-          <i class="fa-solid fa-check"></i>
+          <i class="fa-solid fa-store" id="progressDeliveryBtnIcon"></i>
           <span id="progressDeliveryBtnText">Xác Nhận Đã Lấy Trà</span>
         </button>
       </div>
@@ -859,10 +874,10 @@
           </div>
         </div>
 
-        <!-- BANNER KHẲNG ĐỊNH COD 0 ĐỒNG -->
-        <div class="cod-zero-badge">
-          <span><i class="fa-solid fa-shield-halved"></i> ĐÃ THANH TOÁN 100% ONLINE</span>
-          <span style="font-weight: 800; color: #15803D;">TIỀN MẶT THU: 0₫</span>
+        <!-- THÔNG TIN SỐ LƯỢNG MÓN GIAO -->
+        <div class="cup-info-badge">
+          <span><i class="fa-solid fa-mug-hot" style="color: var(--matcha-deep);"></i> Số lượng nước cần giao:</span>
+          <strong style="color: var(--matcha-deep); font-size: 0.9rem;">2 ly trà (Đã dán tem niêm phong)</strong>
         </div>
 
         <div style="background: var(--bg-card-inner); border-radius: var(--radius-sm); padding: 14px; border: 1px solid var(--border-earth); display: flex; flex-direction: column; gap: 8px;">
@@ -926,6 +941,42 @@
           </button>
           <button onclick="submitIncidentReport()" style="background: var(--terracotta); color: white; border: none; padding: 13px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(186,93,63,0.35);">
             Xác Nhận Hủy Đơn
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL CHỤP HÌNH CHECK-IN HOÀN TẤT ĐƠN HÀNG (UC13) -->
+    <div class="overlay-backdrop" id="checkinModalBackdrop">
+      <div class="incident-modal-box" style="border-top-color: var(--matcha-deep);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--matcha-deep);">
+            <i class="fa-solid fa-camera"></i> Chụp Hình Check-in Đã Giao
+          </h3>
+          <button onclick="closeCheckinModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+        </div>
+
+        <p style="font-size: 0.8rem; color: var(--text-sepia); line-height: 1.4; margin: 0;">
+          Chụp ảnh 2 ly trà đã trao tận tay khách hàng hoặc đặt tại cửa để lưu bằng chứng đối soát hoàn tất giao hàng (UC13).
+        </p>
+
+        <!-- Khung ảnh camera preview -->
+        <div class="camera-preview-zone" onclick="triggerCameraCapture()">
+          <div id="cameraPlaceholder">
+            <i class="fa-solid fa-camera-retro" style="font-size: 2.2rem; color: var(--bizen-clay); margin-bottom: 8px;"></i>
+            <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-charcoal);">Bấm để chụp ảnh / tải ảnh</div>
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 3px;">Hệ thống tự động đồng bộ lên Cloudinary</div>
+          </div>
+          <img id="checkinPreviewImg" src="https://images.unsplash.com/photo-1558857563-b37fc9a1e095?auto=format&fit=crop&w=600&q=80" style="display: none; width: 100%; max-height: 170px; object-fit: cover; border-radius: 12px; border: 1.5px solid var(--matcha-deep);" alt="Check-in ly trà">
+          <input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoUpload(event)">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; margin-top: 4px;">
+          <button onclick="closeCheckinModal()" style="background: var(--bg-card-inner); border: 1px solid var(--border-earth); color: var(--text-charcoal); padding: 13px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;">
+            Đóng
+          </button>
+          <button onclick="confirmDeliveryCompleted()" style="background: var(--matcha-deep); color: white; border: none; padding: 13px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px var(--matcha-glow); display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-circle-check"></i> Xác Nhận Đã Giao
           </button>
         </div>
       </div>
@@ -1091,9 +1142,24 @@
       attributionControl: false
     }).setView(driverLatLng, 15);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19
+    // Tiles OpenStreetMap tiêu chuẩn - ổn định 100% không lo bị chặn mạng
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      subdomains: ['a', 'b', 'c']
     }).addTo(map);
+
+    // Đảm bảo map render đúng kích thước sau khi load giao diện
+    function triggerMapResize() {
+      if (map) {
+        map.invalidateSize(true);
+      }
+    }
+    window.addEventListener('load', triggerMapResize);
+    window.addEventListener('resize', triggerMapResize);
+    document.addEventListener('DOMContentLoaded', triggerMapResize);
+    setTimeout(triggerMapResize, 200);
+    setTimeout(triggerMapResize, 600);
+    setTimeout(triggerMapResize, 1500);
 
     const storeIcon = L.divIcon({
       className: 'custom-map-icon',
@@ -1178,6 +1244,7 @@
       document.getElementById('dispatchBackdrop').classList.remove('active');
       hasActiveOrder = true;
       currentStep = 1;
+      updateStepUI();
 
       document.getElementById('searchingPillDock').style.display = 'none';
       document.getElementById('activeOrderSheet').style.display = 'flex';
@@ -1235,31 +1302,101 @@
 
     /* ========================================================
        4. TIẾN TRÌNH GIAO HÀNG (UC13)
+       Chuẩn luồng:
+       Step 1: Đến quán lấy trà -> Xác nhận đã lấy trà
+       Step 2: Đang giao hàng -> Đến nơi ấn "Đã Tới Điểm Giao"
+       Step 3: Đã tới nơi -> MỚI HIỂN THỊ NÚT "Chụp Hình Check-in Giao Xong"
        ======================================================== */
-    function nextDeliveryStep() {
+    function updateStepUI() {
       const stepTag = document.getElementById('currentOrderStepTag');
       const actionBtnText = document.getElementById('progressDeliveryBtnText');
+      const actionBtn = document.getElementById('progressDeliveryBtn');
+      const btnIcon = document.getElementById('progressDeliveryBtnIcon');
 
       if (currentStep === 1) {
-        currentStep = 2;
-        stepTag.innerText = 'Đang Giao Hàng';
+        stepTag.innerText = 'Đến Quán Lấy Trà';
         stepTag.style.background = '#FEF3C7';
         stepTag.style.color = '#B45309';
-        actionBtnText.innerText = 'Chụp Ảnh Check-in Giao Xong';
-        alert('ĐÃ NHẬN TRÀ TẠI QUÁN!\nĐã đối chiếu tem niêm phong QLPC_BM1 nguyên vẹn. Bắt đầu di chuyển đến nhà khách.\n\nLƯU Ý: Khách đã trả trước 100%, TIỀN MẶT CẦN THU = 0₫!');
+        if (btnIcon) btnIcon.className = 'fa-solid fa-store';
+        actionBtnText.innerText = 'Xác Nhận Đã Lấy Trà';
+        actionBtn.style.background = 'var(--bizen-clay)';
       } else if (currentStep === 2) {
-        alert('MỞ CAMERA CHỤP CHECK-IN GIAO HÀNG THÀNH CÔNG!\n(Ảnh sẽ được upload lên Cloudinary lưu trữ vào đơn hàng theo UC13)\n\nĐÃ GIAO XONG! Chúc quý khách ngon miệng.');
-        
-        hasActiveOrder = false;
-        document.getElementById('activeOrderSheet').style.display = 'none';
-        if (isOnline) {
-          document.getElementById('searchingPillDock').style.display = 'flex';
-        }
-
-        if (customerMarker) { map.removeLayer(customerMarker); customerMarker = null; }
-        if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
-        recenterMap();
+        stepTag.innerText = 'Đang Giao Hàng';
+        stepTag.style.background = '#EFF6FF';
+        stepTag.style.color = '#1D4ED8';
+        if (btnIcon) btnIcon.className = 'fa-solid fa-location-dot';
+        actionBtnText.innerText = 'Đã Tới Điểm Giao';
+        actionBtn.style.background = 'var(--matcha-deep)';
+      } else if (currentStep === 3) {
+        stepTag.innerText = 'Đã Đến Nơi (Khách Chờ)';
+        stepTag.style.background = '#DCFCE7';
+        stepTag.style.color = '#15803D';
+        if (btnIcon) btnIcon.className = 'fa-solid fa-camera';
+        actionBtnText.innerText = 'Chụp Hình Check-in Giao Xong';
+        actionBtn.style.background = 'var(--matcha-deep)';
       }
+    }
+
+    function nextDeliveryStep() {
+      if (currentStep === 1) {
+        currentStep = 2;
+        updateStepUI();
+        alert('ĐÃ NHẬN TRÀ TẠI QUÁN!\nĐã kiểm tra tem niêm phong 2 ly trà. Đang di chuyển giao đến nhà khách hàng (15 Lê Văn Chí).');
+      } else if (currentStep === 2) {
+        currentStep = 3;
+        updateStepUI();
+        alert('ĐÃ ĐẾN ĐIỂM GIAO!\nBạn đã có mặt tại 15 Lê Văn Chí. Giờ bạn hãy bấm nút "Chụp Hình Check-in Giao Xong" để chụp ảnh bàn giao cho khách.');
+      } else if (currentStep === 3) {
+        openCheckinModal();
+      }
+    }
+
+    /* ========================================================
+       4B. MODAL CHỤP HÌNH CHECK-IN HOÀN TẤT ĐƠN HÀNG
+       ======================================================== */
+    function openCheckinModal() {
+      document.getElementById('checkinModalBackdrop').classList.add('active');
+    }
+
+    function closeCheckinModal() {
+      document.getElementById('checkinModalBackdrop').classList.remove('active');
+    }
+
+    function triggerCameraCapture() {
+      const fileInput = document.getElementById('cameraFileInput');
+      if (fileInput) {
+        fileInput.click();
+      }
+    }
+
+    function handlePhotoUpload(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const preview = document.getElementById('checkinPreviewImg');
+          preview.src = evt.target.result;
+          preview.style.display = 'block';
+          document.getElementById('cameraPlaceholder').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function confirmDeliveryCompleted() {
+      document.getElementById('checkinModalBackdrop').classList.remove('active');
+      alert('GIAO HÀNG THÀNH CÔNG!\nẢnh check-in đối soát đã được lưu trữ vào hệ thống (UC13).\nCộng +1 cuốc hoàn thành & điểm thi đua KPI ca trực!');
+
+      hasActiveOrder = false;
+      currentStep = 1;
+      document.getElementById('activeOrderSheet').style.display = 'none';
+      if (isOnline) {
+        document.getElementById('searchingPillDock').style.display = 'flex';
+      }
+
+      if (customerMarker) { map.removeLayer(customerMarker); customerMarker = null; }
+      if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
+      recenterMap();
     }
 
     /* ========================================================
