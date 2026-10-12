@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Drink topping add-on entity (Module 5 - UC23).
+ * Drink topping add-on entity (Module 5 - UC23 & Module POS).
  * Represents drink toppings (e.g. Pearls, Jelly, Pudding) and their unit pricing.
  */
 @Entity
@@ -61,5 +61,22 @@ public class Topping {
 
     public boolean isActive() {
         return "ACTIVE".equalsIgnoreCase(this.status) || "HoatDong".equalsIgnoreCase(this.status);
+    }
+
+    // Compatibility getter and setter for POS / legacy references
+    public String getName() {
+        return this.toppingName;
+    }
+
+    public void setName(String name) {
+        this.toppingName = name;
+    }
+
+    // Compatibility builder extension
+    public static class ToppingBuilder {
+        public ToppingBuilder name(String name) {
+            this.toppingName = name;
+            return this;
+        }
     }
 }

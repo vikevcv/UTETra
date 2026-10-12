@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface PosAccountRepository extends JpaRepository<PosAccount, Long> {
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"branch"})
     Optional<PosAccount> findByUsername(String username);
 
     boolean existsByUsername(String username);

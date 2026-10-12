@@ -24,6 +24,9 @@ public class DataInitializer implements CommandLineRunner {
     private final com.ute.trasua.repository.BranchRepository branchRepository;
     private final com.ute.trasua.repository.EmployeeRepository employeeRepository;
     private final com.ute.trasua.repository.PosAccountRepository posAccountRepository;
+    private final com.ute.trasua.repository.CategoryRepository categoryRepository;
+    private final com.ute.trasua.repository.ProductRepository productRepository;
+    private final com.ute.trasua.repository.SizeRepository sizeRepository;
     private final com.ute.trasua.repository.ProductSizeRepository productSizeRepository;
     private final com.ute.trasua.repository.ToppingRepository toppingRepository;
     private final com.ute.trasua.repository.DriverRepository driverRepository;
@@ -225,6 +228,38 @@ public class DataInitializer implements CommandLineRunner {
                         .build());
             }
 
+            if (!employeeRepository.existsByEmployeeCode("NV005")) {
+                employeeRepository.save(com.ute.trasua.entity.Employee.builder()
+                        .employeeCode("NV005")
+                        .fullName("Phạm Gia Hân")
+                        .phone("0955667788")
+                        .citizenId("079203001122")
+                        .email("han.pham@utetra.vn")
+                        .position("CASHIER")
+                        .shift("MORNING")
+                        .salary(6900000.0)
+                        .status("ACTIVE")
+                        .hireDate(java.time.LocalDate.now().minusMonths(3))
+                        .branch(cnThuDuc)
+                        .build());
+            }
+
+            if (!employeeRepository.existsByEmployeeCode("NV006")) {
+                employeeRepository.save(com.ute.trasua.entity.Employee.builder()
+                        .employeeCode("NV006")
+                        .fullName("Đỗ Hoàng Long")
+                        .phone("0966778899")
+                        .citizenId("079202004455")
+                        .email("long.do@utetra.vn")
+                        .position("BARTENDER")
+                        .shift("FULL_TIME")
+                        .salary(8200000.0)
+                        .status("ACTIVE")
+                        .hireDate(java.time.LocalDate.now().minusMonths(5))
+                        .branch(cnThuDuc)
+                        .build());
+            }
+
             // Tài khoản quầy POS (UC16)
             if (!posAccountRepository.existsByUsername("pos_td01")) {
                 posAccountRepository.save(com.ute.trasua.entity.PosAccount.builder()
@@ -382,5 +417,217 @@ public class DataInitializer implements CommandLineRunner {
                 log.info(">>> Đã khởi tạo hồ sơ tài xế mẫu trực thuộc chi nhánh [{}]", defaultBranch.getName());
             }
         }
+
+        initMenuData();
+    }
+
+    private void initMenuData() {
+        // 1. Khởi tạo Kích cỡ ly (Size)
+        if (sizeRepository.count() == 0) {
+            sizeRepository.save(com.ute.trasua.entity.Size.builder()
+                    .name("M")
+                    .volumeMl(500)
+                    .extraPrice(java.math.BigDecimal.ZERO)
+                    .active(true)
+                    .build());
+            sizeRepository.save(com.ute.trasua.entity.Size.builder()
+                    .name("L")
+                    .volumeMl(700)
+                    .extraPrice(new java.math.BigDecimal("8000"))
+                    .active(true)
+                    .build());
+            log.info(">>> Đã khởi tạo danh sách Kích Cỡ ly (M, L)");
+        }
+
+        // 2. Khởi tạo Topping
+        if (toppingRepository.count() == 0) {
+            toppingRepository.save(com.ute.trasua.entity.Topping.builder()
+                    .name("Trân Châu Đen Dẻo")
+                    .price(new java.math.BigDecimal("6000"))
+                    .status("ACTIVE")
+                    .build());
+            toppingRepository.save(com.ute.trasua.entity.Topping.builder()
+                    .name("Thạch Phô Mai Tươi")
+                    .price(new java.math.BigDecimal("8000"))
+                    .status("ACTIVE")
+                    .build());
+            toppingRepository.save(com.ute.trasua.entity.Topping.builder()
+                    .name("Pudding Trứng Béo Ngậy")
+                    .price(new java.math.BigDecimal("7000"))
+                    .status("ACTIVE")
+                    .build());
+            toppingRepository.save(com.ute.trasua.entity.Topping.builder()
+                    .name("Trân Châu Hoàng Kim")
+                    .price(new java.math.BigDecimal("8000"))
+                    .status("ACTIVE")
+                    .build());
+            log.info(">>> Đã khởi tạo 4 loại Topping quầy bán");
+        }
+
+        // 3. Khởi tạo Danh mục & Sản phẩm
+        if (categoryRepository.count() == 0) {
+            com.ute.trasua.entity.Category cat1 = categoryRepository.save(com.ute.trasua.entity.Category.builder()
+                    .name("Trà Sữa Truyền Thống")
+                    .description("Hương vị đậm đà nguyên bản từ lá trà tuyển chọn")
+                    .displayOrder(1)
+                    .active(true)
+                    .build());
+
+            com.ute.trasua.entity.Category cat2 = categoryRepository.save(com.ute.trasua.entity.Category.builder()
+                    .name("Trà Trái Cây Thanh Nhiệt")
+                    .description("Hòa quyện nước cốt trà thanh khiết cùng trái cây tươi mát")
+                    .displayOrder(2)
+                    .active(true)
+                    .build());
+
+            com.ute.trasua.entity.Category cat3 = categoryRepository.save(com.ute.trasua.entity.Category.builder()
+                    .name("Macchiato Kem Cheese")
+                    .description("Lớp bọt sữa cheese foam sánh mịn phủ trên cốt trà đậm đà")
+                    .displayOrder(3)
+                    .active(true)
+                    .build());
+
+            com.ute.trasua.entity.Category cat4 = categoryRepository.save(com.ute.trasua.entity.Category.builder()
+                    .name("Trà Thượng Hạng Cầu Đất")
+                    .description("Tuyển chọn búp trà đặc sản từ cao nguyên Cầu Đất")
+                    .displayOrder(4)
+                    .active(true)
+                    .build());
+
+            // Sản phẩm mẫu
+            productRepository.save(com.ute.trasua.entity.Product.builder()
+                    .productCode("SP-01")
+                    .name("Trà Sữa Trân Châu Đường Đen")
+                    .category(cat1)
+                    .basePrice(new java.math.BigDecimal("35000"))
+                    .imageUrl("https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500")
+                    .description("Cốt trà đen đậm đà hòa quyện sữa tươi thanh trùng và trân châu đường đen dẻo dai")
+                    .status("ACTIVE")
+                    .build());
+
+            productRepository.save(com.ute.trasua.entity.Product.builder()
+                    .productCode("SP-02")
+                    .name("Trà Sữa Oolong Nướng Cầu Đất")
+                    .category(cat1)
+                    .basePrice(new java.math.BigDecimal("38000"))
+                    .imageUrl("https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=500")
+                    .description("Vị trà Oolong sao lửa độc đáo hòa quyện lớp sữa béo ngậy thơm lừng")
+                    .status("ACTIVE")
+                    .build());
+
+            productRepository.save(com.ute.trasua.entity.Product.builder()
+                    .productCode("SP-03")
+                    .name("Lục Trà Hoa Nhài Chanh Vàng")
+                    .category(cat2)
+                    .basePrice(new java.math.BigDecimal("32000"))
+                    .imageUrl("https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500")
+                    .description("Hương hoa nhài ướp tự nhiên kết hợp vị chua ngọt sảng khoái của chanh vàng")
+                    .status("ACTIVE")
+                    .build());
+
+            productRepository.save(com.ute.trasua.entity.Product.builder()
+                    .productCode("SP-04")
+                    .name("Trà Đào Cam Sả Tươi Mát")
+                    .category(cat2)
+                    .basePrice(new java.math.BigDecimal("39000"))
+                    .imageUrl("https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500")
+                    .description("Miếng đào giòn tan kết hợp cam vàng mọng nước và hương sả tinh tế")
+                    .status("ACTIVE")
+                    .build());
+
+            productRepository.save(com.ute.trasua.entity.Product.builder()
+                    .productCode("SP-05")
+                    .name("Matcha Uji Macchiato Nhật Bản")
+                    .category(cat3)
+                    .basePrice(new java.math.BigDecimal("45000"))
+                    .imageUrl("https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500")
+                    .description("Bột trà xanh Uji Kyoto hảo hạng phủ lớp kem cheese béo mặn sánh mịn")
+                    .status("ACTIVE")
+                    .build());
+
+            productRepository.save(com.ute.trasua.entity.Product.builder()
+                    .productCode("SP-06")
+                    .name("Trà Đen Macchiato Cổ Thụ")
+                    .category(cat3)
+                    .basePrice(new java.math.BigDecimal("40000"))
+                    .imageUrl("https://images.unsplash.com/photo-1571934811356-5cc507423022?w=500")
+                    .description("Cốt trà đen ủ lạnh 12 tiếng hòa quyện lớp foam phô mai ngọt dịu")
+                    .status("ACTIVE")
+                    .build());
+
+            productRepository.save(com.ute.trasua.entity.Product.builder()
+                    .productCode("SP-07")
+                    .name("Trà Sen Vàng Long Nhãn")
+                    .category(cat4)
+                    .basePrice(new java.math.BigDecimal("42000"))
+                    .imageUrl("https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=500")
+                    .description("Hạt sen bùi thơm cùng long nhãn thanh ngọt trên nền trà Ô Long truyền thống")
+                    .status("ACTIVE")
+                    .build());
+
+            productRepository.save(com.ute.trasua.entity.Product.builder()
+                    .productCode("SP-08")
+                    .name("Trà Thiết Quan Âm Tuyết Sơn")
+                    .category(cat4)
+                    .basePrice(new java.math.BigDecimal("48000"))
+                    .imageUrl("https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500")
+                    .description("Dòng trà danh tiếng với hậu vị ngọt sâu lắng của vùng núi sương mù")
+                    .status("ACTIVE")
+                    .build());
+
+            log.info(">>> Đã khởi tạo 4 danh mục và 8 sản phẩm trà sữa mẫu!");
+        }
+
+        syncMenuWithStorefront();
+    }
+
+    private void syncMenuWithStorefront() {
+        // Đồng bộ danh mục sang phong cách Thiền Trà Wabi-Sabi
+        java.util.List<com.ute.trasua.entity.Category> cats = categoryRepository.findAllByOrderByDisplayOrderAsc();
+        if (cats.size() >= 3) {
+            cats.get(0).setName("Trà Shan Tuyết & Nham Trà Độc Bản");
+            cats.get(0).setDescription("Búp trà cổ thụ sương mù và nham trà khoáng chất");
+            cats.get(1).setName("Trà Ướp Hoa Truyền Thống");
+            cats.get(1).setDescription("Hòa quyện cốt trà thanh khiết cùng hoa tươi tự nhiên");
+            cats.get(2).setName("Trà Oolong & Thảo Mộc Tĩnh Tâm");
+            cats.get(2).setDescription("Hương vị an yên thư giãn tinh thần tuyệt đối");
+            categoryRepository.saveAll(cats);
+        }
+
+        // Đồng bộ 4 Topping khớp với zenToppings trên Storefront
+        java.util.List<com.ute.trasua.entity.Topping> toppings = toppingRepository.findAll();
+        if (toppings.size() >= 4) {
+            toppings.get(0).setName("Hạt sen Huế hầm đường phèn");
+            toppings.get(0).setPrice(new java.math.BigDecimal("12000"));
+            toppings.get(1).setName("Thạch sương sáo thảo mộc");
+            toppings.get(1).setPrice(new java.math.BigDecimal("8000"));
+            toppings.get(2).setName("Kem mây sữa mộc");
+            toppings.get(2).setPrice(new java.math.BigDecimal("10000"));
+            toppings.get(3).setName("Trân châu hoàng kim");
+            toppings.get(3).setPrice(new java.math.BigDecimal("10000"));
+            toppingRepository.saveAll(toppings);
+        }
+
+        // Đồng bộ 8 Món Trà khớp 100% với zenProducts trên Storefront
+        java.util.List<com.ute.trasua.entity.Product> prods = productRepository.findAll();
+        String[][] zenItems = {
+            {"Bạch Hạc Shan Tuyết", "65000", "Búp trà cổ thụ 300 năm tuổi trên đỉnh Tà Xùa, hương khói nhẹ và hậu ngọt sâu lắng."},
+            {"Thiết Quan Âm Ủ Lạnh", "58000", "Trà Thiết Quan Âm ủ lạnh 12h, lưu giữ trọn vẹn hương hoa lan thanh khiết."},
+            {"Đại Hồng Bào Nham Trà", "70000", "Nham trà Vũ Di Sơn đượm khoáng chất, vị đậm đà và bền hương qua nhiều tuần nước."},
+            {"Trà Sen Hồ Tây Thượng Hạng", "68000", "Trà xanh ướp trong bông sen Bách Diệp sớm mai tinh sương ngát hương thơm quý phái."},
+            {"Trà Oolong Sữa Mộc Vân", "55000", "Trà ô long Kim Tuyên béo ngậy tự nhiên từ giống trà vùng cao Cầu Đất."},
+            {"Lục Trà Hoa Nhài Cung Đình", "50000", "Hoa nhài hữu cơ thu hái lúc hoàng hôn hòa quyện lục trà thanh mảnh."},
+            {"Hồng Trà Quế Hoa Hoàng Cung", "54000", "Hồng trà cổ thụ điểm xuyết hoa mộc vàng thơm dịu dàng ấm áp."},
+            {"Trà Thảo Mộc Tĩnh Tâm", "52000", "Táo đỏ, kỷ tử, hoa cúc tuyết và cam thảo giúp thư giãn tinh thần tuyệt đối."}
+        };
+
+        for (int i = 0; i < Math.min(prods.size(), zenItems.length); i++) {
+            com.ute.trasua.entity.Product p = prods.get(i);
+            p.setName(zenItems[i][0]);
+            p.setBasePrice(new java.math.BigDecimal(zenItems[i][1]));
+            p.setDescription(zenItems[i][2]);
+            productRepository.save(p);
+        }
+        log.info(">>> Đã đồng bộ 100% tên món trà và topping khớp với giao diện Storefront HTML!");
     }
 }

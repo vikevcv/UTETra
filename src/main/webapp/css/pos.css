@@ -1,0 +1,670 @@
+/* ==========================================================================
+   UTETra POS Touchscreen Design System - Zen Wabi-Sabi Aesthetic
+   ========================================================================== */
+:root {
+    --zen-bg: #F7F5F0;
+    --zen-card: #FFFFFF;
+    --zen-dark: #0F1011;
+    --zen-charcoal: #1C1D1F;
+    --zen-gray: #4A4D52;
+    --zen-light-gray: #EAE6DF;
+    --zen-bizen: #8C6D53;
+    --zen-bizen-hover: #755942;
+    --zen-celadon: #5C7667;
+    --zen-celadon-hover: #4A6153;
+    --zen-amber: #D4AF37;
+    --zen-border: #E0DDD5;
+    --zen-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --zen-radius: 12px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--zen-bg);
+    color: var(--zen-dark);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Header */
+.pos-header {
+    height: 60px;
+    background-color: var(--zen-dark);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.25rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+}
+
+.pos-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: 0.5px;
+}
+
+.pos-brand-enso {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--zen-amber);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: var(--zen-amber);
+}
+
+.pos-header-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.pos-badge {
+    background-color: rgba(255, 255, 255, 0.12);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.pos-clock {
+    font-family: monospace;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    color: var(--zen-amber);
+}
+
+/* Main POS Layout */
+.pos-container {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    height: calc(100vh - 60px);
+}
+
+/* Left Section: Menu & Products */
+.pos-menu-section {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--zen-border);
+    background-color: var(--zen-bg);
+    overflow: hidden;
+}
+
+.pos-search-bar {
+    padding: 0.85rem 1.25rem;
+    background-color: #FFFFFF;
+    border-bottom: 1px solid var(--zen-border);
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.pos-search-input {
+    flex: 1;
+    border: 1px solid var(--zen-border);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.pos-search-input:focus {
+    border-color: var(--zen-bizen);
+}
+
+.pos-categories-nav {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    overflow-x: auto;
+    background-color: #FFFFFF;
+    border-bottom: 1px solid var(--zen-border);
+    scrollbar-width: none;
+}
+
+.pos-categories-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.pos-category-btn {
+    border: 1px solid var(--zen-border);
+    background-color: #FFFFFF;
+    color: var(--zen-dark);
+    padding: 0.55rem 1.1rem;
+    border-radius: 20px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.pos-category-btn:hover,
+.pos-category-btn.active {
+    background-color: var(--zen-charcoal);
+    color: #FFFFFF;
+    border-color: var(--zen-charcoal);
+}
+
+.pos-products-grid {
+    flex: 1;
+    padding: 1.25rem;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    align-content: start;
+}
+
+.pos-product-card {
+    background: #FFFFFF;
+    border-radius: var(--zen-radius);
+    border: 1px solid var(--zen-border);
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: var(--zen-shadow);
+}
+
+.pos-product-card:active {
+    transform: scale(0.97);
+}
+
+.pos-product-img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    background-color: #EFEFEF;
+}
+
+.pos-product-body {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: space-between;
+}
+
+.pos-product-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--zen-dark);
+    line-height: 1.25;
+    margin-bottom: 0.4rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.pos-product-price {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--zen-bizen);
+}
+
+/* Right Section: Ticket / Bill */
+.pos-ticket-section {
+    display: flex;
+    flex-direction: column;
+    background-color: #FFFFFF;
+    height: 100%;
+}
+
+.pos-ticket-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--zen-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pos-ticket-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.pos-ticket-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pos-empty-cart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #9E9E9E;
+    text-align: center;
+    gap: 0.5rem;
+}
+
+.pos-cart-item {
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: var(--zen-bg);
+    border: 1px solid var(--zen-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.pos-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.pos-item-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--zen-dark);
+}
+
+.pos-item-price {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--zen-bizen);
+}
+
+.pos-item-details {
+    font-size: 0.78rem;
+    color: #6C757D;
+    line-height: 1.3;
+}
+
+.pos-item-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.2rem;
+}
+
+.pos-qty-control {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--zen-border);
+    border-radius: 6px;
+    background-color: #FFFFFF;
+}
+
+.pos-qty-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pos-qty-btn:active {
+    background-color: #E9ECEF;
+}
+
+.pos-qty-val {
+    min-width: 28px;
+    text-align: center;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.pos-remove-btn {
+    color: #DC3545;
+    background: none;
+    border: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Ticket Footer */
+.pos-ticket-footer {
+    padding: 1rem 1.25rem;
+    border-top: 2px solid var(--zen-border);
+    background-color: #FAFAFA;
+}
+
+.pos-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    color: #6C757D;
+    margin-bottom: 0.35rem;
+}
+
+.pos-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--zen-dark);
+    margin: 0.6rem 0 1rem 0;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--zen-border);
+}
+
+.pos-action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.pos-btn {
+    padding: 0.85rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: opacity 0.15s, transform 0.1s;
+}
+
+.pos-btn:active {
+    transform: scale(0.98);
+}
+
+.pos-btn-cash {
+    background-color: var(--zen-charcoal);
+    color: #FFFFFF;
+}
+
+.pos-btn-qr {
+    background-color: var(--zen-celadon);
+    color: #FFFFFF;
+}
+
+/* Modals */
+.pos-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1060;
+    backdrop-filter: blur(4px);
+}
+
+.pos-modal {
+    background: #FFFFFF;
+    border-radius: 14px;
+    width: 90%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+}
+
+.pos-modal-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--zen-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pos-modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.pos-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #9E9E9E;
+}
+
+.pos-modal-body {
+    padding: 1.25rem;
+}
+
+.pos-opt-group {
+    margin-bottom: 1.2rem;
+}
+
+.pos-opt-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #4A4D52;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pos-opt-capsules {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.pos-capsule {
+    border: 1px solid var(--zen-border);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.pos-capsule.active {
+    background-color: var(--zen-charcoal);
+    color: #FFFFFF;
+    border-color: var(--zen-charcoal);
+}
+
+.pos-topping-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.pos-topping-item {
+    border: 1px solid var(--zen-border);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.pos-topping-item.active {
+    background-color: #F0F4F2;
+    border-color: var(--zen-celadon);
+    color: var(--zen-celadon);
+    font-weight: 600;
+}
+
+/* Numpad for Cash */
+.pos-numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.pos-num-btn {
+    height: 52px;
+    border: 1px solid var(--zen-border);
+    border-radius: 8px;
+    background: #FFFFFF;
+    font-size: 1.25rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pos-num-btn:active {
+    background-color: #E9ECEF;
+}
+
+/* Print Styles cho Máy In Nhiệt K80 (80mm) */
+@media print {
+    @page {
+        size: 80mm auto;
+        margin: 0;
+    }
+    html, body {
+        width: 80mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #FFFFFF !important;
+    }
+    body * {
+        visibility: hidden !important;
+    }
+    #receiptPrintArea, #receiptPrintArea * {
+        visibility: visible !important;
+    }
+    #receiptPrintArea {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm !important;
+        max-width: 80mm !important;
+        padding: 4mm 5mm !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-size: 12px;
+        line-height: 1.35;
+        color: #000000 !important;
+        background: #FFFFFF !important;
+        box-sizing: border-box;
+    }
+}
+
+/* ========================================================
+   CƠ CHẾ KHÓA MÁY POS & ĐIỂM DANH TRỰC CA (SHIFT ATTENDANCE)
+   ======================================================== */
+
+.pos-lock-overlay {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 16, 17, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1040;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pos-lock-card {
+    background: #FFFFFF;
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    max-width: 500px;
+    width: 90%;
+    border: 2px solid #E9ECEF;
+    animation: lockCardPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes lockCardPop {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.shift-employee-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.shift-employee-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border: 1.5px solid var(--zen-border);
+    border-radius: 10px;
+    background: #FFFFFF;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.shift-employee-item:hover {
+    background-color: #F8F9FA;
+    border-color: #CED4DA;
+}
+
+.shift-employee-item.selected {
+    border-color: #198754;
+    background-color: #F0FDF4;
+}
+
+.shift-employee-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #198754;
+}
+
+.shift-pos-role {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.shift-role-cashier {
+    background: #E0F2FE;
+    color: #0284C7;
+}
+
+.shift-role-bartender {
+    background: #FEF3C7;
+    color: #D97706;
+}
+
+.shift-role-other {
+    background: #F3F4F6;
+    color: #4B5563;
+}
