@@ -1,6 +1,6 @@
 package com.ute.trasua.config;
 
-import com.ute.trasua.entity.User;
+import com.ute.trasua.entity.*;
 import com.ute.trasua.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +8,10 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -33,6 +36,7 @@ public class DataInitializer implements CommandLineRunner {
     private final com.ute.trasua.repository.IngredientRepository ingredientRepository;
     private final com.ute.trasua.repository.BranchInventoryRepository branchInventoryRepository;
     private final com.ute.trasua.repository.ImportReceiptRepository importReceiptRepository;
+    private final com.ute.trasua.repository.OrderRepository orderRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -770,5 +774,124 @@ public class DataInitializer implements CommandLineRunner {
                 }
             }
         }
+
+        // Khởi tạo các đơn hàng mẫu phục vụ báo cáo doanh thu & biểu đồ Chart.js (Module 15 / UC19, UC26)
+        initSampleOrders();
+    }
+
+    private void initSampleOrders() {
+        if (orderRepository.count() > 0) {
+            return;
+        }
+
+        List<Branch> branches = branchRepository.findAll();
+        List<Product> products = productRepository.findAll();
+
+        if (branches.isEmpty() || products.isEmpty()) {
+            return;
+        }
+
+        Branch branchTD = branches.stream().filter(b -> "CN-TD01".equals(b.getBranchCode())).findFirst().orElse(branches.get(0));
+        Branch branchQ1 = branches.size() > 1 ? branches.get(1) : branchTD;
+        Branch branchBT = branches.size() > 2 ? branches.get(2) : branchTD;
+
+        LocalDateTime now = LocalDateTime.now();
+        String[] paymentMethods = {"CASH", "VIETQR", "MOMO", "CREDIT_CARD"};
+
+        List<Order> ordersToSave = new ArrayList<>();
+        int orderIndex = 1;
+
+        // Tạo chuỗi đơn hàng trong 7 ngày gần đây
+        for (int dayOffset = 6; dayOffset >= 0; dayOffset--) {
+            LocalDateTime dayTime = now.minusDays(dayOffset).withHour(9).withMinute(30);
+
+            // Tạo các đơn cho Chi Nhánh Thủ Đức (4 đơn/ngày)
+            for (int i = 0; i < 4; i++) {
+                ordersToSave.add(createSampleOrder(
+                        branchTD,
+                        "ORD-TD-" + String.format("%04d", orderIndex++),
+                        dayTime.plusHours(i * 3).plusMinutes(15),
+                        paymentMethods[i % paymentMethods.length],
+                        products,
+                        i % 2 == 0 ? new BigDecimal("10000") : BigDecimal.ZERO
+                ));
+            }
+
+            // Tạo các đơn cho Chi Nhánh Quận 1 (2-3 đơn/ngày)
+            for (int i = 0; i < 3; i++) {
+                ordersToSave.add(createSampleOrder(
+                        branchQ1,
+                        "ORD-Q1-" + String.format("%04d", orderIndex++),
+                        dayTime.plusHours(i * 4).plusMinutes(35),
+                        paymentMethods[(i + 1) % paymentMethods.length],
+                        products,
+                        i == 1 ? new BigDecimal("15000") : BigDecimal.ZERO
+                ));
+            }
+
+            // Tạo các đơn cho Chi Nhánh Bình Thạnh (2 đơn/ngày)
+            for (int i = 0; i < 2; i++) {
+                ordersToSave.add(createSampleOrder(
+                        branchBT,
+                        "ORD-BT-" + String.format("%04d", orderIndex++),
+                        dayTime.plusHours(i * 5).plusMinutes(20),
+                        paymentMethods[(i + 2) % paymentMethods.length],
+                        products,
+                        BigDecimal.ZERO
+                ));
+            }
+        }
+
+        orderRepository.saveAll(ordersToSave);
+        log.info(">>> Đã khởi tạo thành công {} đơn hàng mẫu phục vụ Báo Cáo Doanh Thu & Chart.js!", ordersToSave.size());
+    }
+
+    private Order createSampleOrder(Branch branch, String orderCode, LocalDateTime createdAt,
+                                    String paymentMethod, List<Product> products, BigDecimal discount) {
+        Order order = Order.builder()
+                .orderCode(orderCode)
+                .dailyQueueNumber((int) (Math.random() * 80) + 1)
+                .orderType("POS_WALK_IN")
+                .status("COMPLETED")
+                .paymentMethod(paymentMethod)
+                .paymentStatus("PAID")
+                .cashierUsername("manager1")
+                .branch(branch)
+                .note("Đơn hàng tại quầy phục vụ khách")
+                .createdAt(createdAt)
+                .paidAt(createdAt.plusMinutes(2))
+                .build();
+
+        // Chọn ngẫu nhiên 1 đến 2 sản phẩm
+        int numItems = (int) (Math.random() * 2) + 1;
+        BigDecimal totalGross = BigDecimal.ZERO;
+
+        for (int k = 0; k < numItems; k++) {
+            Product p = products.get((int) (Math.random() * products.size()));
+            int qty = (int) (Math.random() * 2) + 1;
+            BigDecimal price = p.getBasePrice() != null ? p.getBasePrice() : new BigDecimal("35000");
+            BigDecimal subtotal = price.multiply(BigDecimal.valueOf(qty));
+            totalGross = totalGross.add(subtotal);
+
+            com.ute.trasua.entity.OrderDetail detail = com.ute.trasua.entity.OrderDetail.builder()
+                    .order(order)
+                    .product(p)
+                    .productName(p.getName())
+                    .quantity(qty)
+                    .sugarLevel("70%")
+                    .iceLevel("50%")
+                    .unitPrice(price)
+                    .subtotal(subtotal)
+                    .build();
+
+            order.getOrderDetails().add(detail);
+        }
+
+        order.setTotalAmount(totalGross);
+        order.setDiscountAmount(discount != null ? discount : BigDecimal.ZERO);
+        BigDecimal net = totalGross.subtract(order.getDiscountAmount());
+        order.setFinalAmount(net.compareTo(BigDecimal.ZERO) > 0 ? net : totalGross);
+
+        return order;
     }
 }

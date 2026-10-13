@@ -71,9 +71,9 @@
         </div>
         <div>
           <div class="kpi-label">Điểm Bán Chi Nhánh</div>
-          <div class="kpi-value text-primary">8 <span style="font-size: 0.9rem; font-weight: normal; color: var(--primary-zen);">cơ sở</span></div>
+          <div class="kpi-value text-primary">${totalBranches} <span style="font-size: 0.9rem; font-weight: normal; color: var(--primary-zen);">cơ sở</span></div>
           <div class="text-muted small mt-1">
-            <span class="text-primary fw-bold"><i class="fa-solid fa-map-location-dot"></i> TP.HCM</span> & lân cận
+            <span class="text-primary fw-bold"><i class="fa-solid fa-circle-check"></i> ${activeBranches}</span> đang hoạt động
           </div>
         </div>
       </div>
@@ -87,9 +87,9 @@
         </div>
         <div>
           <div class="kpi-label">Doanh Thu Hôm Nay</div>
-          <div class="kpi-value text-danger">36.8<span style="font-size: 1rem;">tr</span></div>
+          <div class="kpi-value text-danger" style="font-size: 1.35rem;">${todayReport.formattedTotalNetRevenue != null ? todayReport.formattedTotalNetRevenue : '0 đ'}</div>
           <div class="text-muted small mt-1">
-            <span class="text-success fw-bold"><i class="fa-solid fa-receipt"></i> 245</span> đơn hoàn thành
+            <span class="text-success fw-bold"><i class="fa-solid fa-receipt"></i> ${todayReport.completedOrders != null ? todayReport.completedOrders : 0}</span> đơn hoàn thành
           </div>
         </div>
       </div>
@@ -202,45 +202,45 @@
             <i class="fa-solid fa-list-check text-success"></i> Phân Hệ Quản Trị (M11–M15)
           </h3>
           <span class="zen-badge zen-badge-success">
-            M11 Xong 100%
+            100% Hoàn Thành 🏆
           </span>
         </div>
 
         <ul class="list-group list-group-flush small">
           <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
             <div>
-              <strong>Tài Khoản & Người Dùng</strong>
-              <div class="text-muted" style="font-size: 0.76rem;">Quản lý tài khoản, phân quyền và tài xế</div>
+              <strong>Tài Khoản & Người Dùng (M11)</strong>
+              <div class="text-muted" style="font-size: 0.76rem;">${userStats.totalUsers} tài khoản • ${totalDrivers} tài xế</div>
             </div>
             <span class="badge bg-success"><i class="fa-solid fa-check"></i> Hoàn thành</span>
           </li>
           <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
             <div>
-              <strong>Mạng Lưới Chi Nhánh & GPS</strong>
-              <div class="text-muted" style="font-size: 0.76rem;">Bản đồ định vị và nhân sự ca trực</div>
+              <strong>Mạng Lưới Chi Nhánh (M12)</strong>
+              <div class="text-muted" style="font-size: 0.76rem;">${totalBranches} chi nhánh • ${activeBranches} đang mở</div>
             </div>
             <span class="badge bg-success"><i class="fa-solid fa-check"></i> Hoàn thành</span>
           </li>
           <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
             <div>
-              <strong>Thực Đơn & Món Nước</strong>
-              <div class="text-muted" style="font-size: 0.76rem;">Quản lý danh mục, món nước và hình ảnh</div>
+              <strong>Thực Đơn & Món Nước (M13)</strong>
+              <div class="text-muted" style="font-size: 0.76rem;">${totalProducts} món trà • ${totalCategories} danh mục</div>
             </div>
-            <span class="badge bg-light text-muted">Đang phát triển</span>
+            <span class="badge bg-success"><i class="fa-solid fa-check"></i> Hoàn thành</span>
           </li>
           <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
             <div>
-              <strong>Kho Hàng & Nhập Kho</strong>
-              <div class="text-muted" style="font-size: 0.76rem;">Quản lý nguyên liệu và lập phiếu nhập hàng</div>
+              <strong>Kho Hàng & Nhập Kho (M14)</strong>
+              <div class="text-muted" style="font-size: 0.76rem;">${totalIngredients} nguyên liệu chuẩn BM2</div>
             </div>
-            <span class="badge bg-light text-muted">Đang phát triển</span>
+            <span class="badge bg-success"><i class="fa-solid fa-check"></i> Hoàn thành</span>
           </li>
           <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
             <div>
-              <strong>Báo Cáo & Thống Kê</strong>
-              <div class="text-muted" style="font-size: 0.76rem;">Biểu đồ doanh thu chuỗi và xuất dữ liệu Excel</div>
+              <strong>Báo Cáo & Thống Kê (M15)</strong>
+              <div class="text-muted" style="font-size: 0.76rem;">Biểu đồ Chart.js • Xuất Excel BM1</div>
             </div>
-            <span class="badge bg-light text-muted">Đang phát triển</span>
+            <span class="badge bg-success"><i class="fa-solid fa-check"></i> Hoàn thành</span>
           </li>
         </ul>
       </div>
