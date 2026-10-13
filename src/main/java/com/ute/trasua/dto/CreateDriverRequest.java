@@ -41,11 +41,5 @@ public class CreateDriverRequest {
     @Builder.Default
     private String vehicleType = "MOTORBIKE";
 
-    /**
-     * Work shift: MORNING, AFTERNOON, EVENING, FULL_TIME
-     */
-    @NotBlank(message = "Vui lòng chọn ca làm việc phân công")
-    private String shift;
-
     private BigDecimal baseSalary;
 }

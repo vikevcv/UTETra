@@ -25,12 +25,6 @@ public class EmployeeRequest {
 
     private String email;
 
-    @Builder.Default
-    private String position = "BARTENDER";
-
-    @Builder.Default
-    private String shift = "MORNING";
-
     private Double salary;
 
     @Builder.Default

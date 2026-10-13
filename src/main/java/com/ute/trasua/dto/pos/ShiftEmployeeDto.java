@@ -14,8 +14,6 @@ public class ShiftEmployeeDto {
     private Long id;
     private String employeeCode;
     private String fullName;
-    private String position;
-    private String shift;
     private String phone;
     private boolean activeOnShift;
 }

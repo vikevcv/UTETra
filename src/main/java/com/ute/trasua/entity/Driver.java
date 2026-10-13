@@ -60,13 +60,6 @@ public class Driver {
     private String vehicleType = "MOTORBIKE";
 
     /**
-     * Work shift: MORNING, AFTERNOON, EVENING, FULL_TIME.
-     */
-    @Column(name = "shift", length = 30)
-    @Builder.Default
-    private String shift = "MORNING";
-
-    /**
      * Trạng thái hoạt động (TrangThaiHoatDong trong ERD):
      * ONLINE (Sẵn sàng nhận đơn), DELIVERING (Đang giao hàng), OFFLINE (Ngoại tuyến/Nghỉ ca).
      */

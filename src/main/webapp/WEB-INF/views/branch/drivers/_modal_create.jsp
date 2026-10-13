@@ -43,23 +43,12 @@
             <input type="email" name="email" class="form-control" placeholder="taixe@gmail.com" required />
           </div>
 
-          <div class="row g-2 mb-3">
-            <div class="col-6">
-              <label class="form-label fw-semibold">Ca Làm Việc <span class="text-danger">*</span></label>
-              <select name="shift" class="form-select" required>
-                <option value="MORNING">Ca Sáng</option>
-                <option value="AFTERNOON">Ca Chiều</option>
-                <option value="EVENING">Ca Tối</option>
-                <option value="FULL_TIME">Toàn Thời Gian</option>
-              </select>
-            </div>
-            <div class="col-6">
-              <label class="form-label fw-semibold">Phương Tiện</label>
-              <select name="vehicleType" class="form-select">
-                <option value="MOTORBIKE">Xe máy xăng</option>
-                <option value="ELECTRIC_BIKE">Xe máy điện</option>
-              </select>
-            </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Phương Tiện Di Chuyển</label>
+            <select name="vehicleType" class="form-select">
+              <option value="MOTORBIKE">Xe máy xăng</option>
+              <option value="ELECTRIC_BIKE">Xe máy điện</option>
+            </select>
           </div>
 
           <!-- Bộ điều chỉnh lương thỏa thuận linh hoạt -->

@@ -36,8 +36,6 @@ public class EmployeeController {
     public String listEmployees(
             @RequestParam(value = "branchId", required = false) Long branchId,
             @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "position", required = false) String position,
-            @RequestParam(value = "shift", required = false) String shift,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
@@ -50,8 +48,6 @@ public class EmployeeController {
         Page<EmployeeResponse> employeesPage = employeeService.searchEmployees(
                 targetBranchId,
                 keyword,
-                position,
-                shift,
                 status,
                 PageRequest.of(page, size, Sort.by("id").descending())
         );
@@ -75,10 +71,8 @@ public class EmployeeController {
         model.addAttribute("activeEmp", activeEmp);
         model.addAttribute("allBranches", allBranches);
         model.addAttribute("keyword", keyword);
-        model.addAttribute("position", position);
-        model.addAttribute("shift", shift);
         model.addAttribute("status", status);
-        model.addAttribute("pageTitle", "Quản Lý Nhân Sự & Ca Trực (UC16) — UTETra");
+        model.addAttribute("pageTitle", "Quản Lý Nhân Sự (UC16) — UTETra");
 
         return "branch/employees/list";
     }
@@ -97,8 +91,6 @@ public class EmployeeController {
 
         EmployeeRequest employee = EmployeeRequest.builder()
                 .branchId(defaultBranchId)
-                .position("BARTENDER")
-                .shift("MORNING")
                 .status("ACTIVE")
                 .hireDate(java.time.LocalDate.now())
                 .build();
@@ -135,8 +127,6 @@ public class EmployeeController {
                     .phone(resp.getPhone())
                     .citizenId(resp.getCitizenId())
                     .email(resp.getEmail())
-                    .position(resp.getPosition())
-                    .shift(resp.getShift())
                     .salary(resp.getSalary())
                     .status(resp.getStatus())
                     .hireDate(resp.getHireDate())
