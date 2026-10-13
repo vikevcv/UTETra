@@ -82,17 +82,17 @@
             </a>
           </li>
           <li class="sidebar-item">
-            <a href="${pageContext.request.contextPath}/branch/employees" 
-               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/employees') ? 'active' : ''}">
-              <i class="fa-solid fa-id-badge"></i>
-              <span>Nhân Sự Chi Nhánh</span>
-            </a>
-          </li>
-          <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/admin/products" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/products') || fn:contains(pageContext.request.requestURI, '/admin/categories') ? 'active' : ''}">
               <i class="fa-solid fa-mug-hot"></i>
               <span>Quản Lý Thực Đơn</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/admin/ingredients" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/ingredients') ? 'active' : ''}">
+              <i class="fa-solid fa-boxes-stacked"></i>
+              <span>Nguyên Liệu Chuỗi</span>
             </a>
           </li>
           <li class="sidebar-item">
