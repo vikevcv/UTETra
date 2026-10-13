@@ -110,7 +110,7 @@
           </tr>
           <tr>
             <td><strong>M12</strong></td>
-            <td>Mạng Lưới Chi Nhánh & Nhân Sự Ca Trực</td>
+            <td>Mạng Lưới Chi Nhánh & Nhân Sự Chi Nhánh</td>
             <td>Chủ Chuỗi / Quản Lý CN</td>
             <td><span class="zen-badge zen-badge-secondary">Sẵn sàng</span></td>
             <td class="text-end">

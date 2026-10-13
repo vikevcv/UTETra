@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Service handling Employee shift management and POS accounts at Branch (UC16).
+ * Service handling Employee management and POS accounts at Branch (UC16).
  */
 @Service
 @RequiredArgsConstructor
@@ -51,12 +51,10 @@ public class EmployeeService {
 
     @Transactional(readOnly = true)
     public Page<EmployeeResponse> searchEmployees(Long branchId,
-                                                 String keyword,
-                                                 String position,
-                                                 String shift,
-                                                 String status,
-                                                 Pageable pageable) {
-        Page<Employee> page = employeeRepository.searchEmployees(branchId, keyword, position, shift, status, pageable);
+                                                  String keyword,
+                                                  String status,
+                                                  Pageable pageable) {
+        Page<Employee> page = employeeRepository.searchEmployees(branchId, keyword, status, pageable);
         return page.map(EmployeeResponse::fromEntity);
     }
 
@@ -91,8 +89,6 @@ public class EmployeeService {
                 .phone(request.getPhone() != null ? request.getPhone().trim() : null)
                 .citizenId(request.getCitizenId() != null ? request.getCitizenId().trim() : null)
                 .email(request.getEmail() != null ? request.getEmail().trim() : null)
-                .position(request.getPosition() != null ? request.getPosition().trim() : "BARTENDER")
-                .shift(request.getShift() != null ? request.getShift().trim() : "MORNING")
                 .salary(request.getSalary() != null ? request.getSalary() : 0.0)
                 .status(request.getStatus() != null ? request.getStatus().trim() : "ACTIVE")
                 .hireDate(request.getHireDate() != null ? request.getHireDate() : java.time.LocalDate.now())
@@ -120,8 +116,6 @@ public class EmployeeService {
         if (request.getPhone() != null) emp.setPhone(request.getPhone().trim());
         if (request.getCitizenId() != null) emp.setCitizenId(request.getCitizenId().trim());
         if (request.getEmail() != null) emp.setEmail(request.getEmail().trim());
-        if (request.getPosition() != null) emp.setPosition(request.getPosition().trim());
-        if (request.getShift() != null) emp.setShift(request.getShift().trim());
         if (request.getSalary() != null) emp.setSalary(request.getSalary());
         if (request.getStatus() != null) emp.setStatus(request.getStatus().trim());
         if (request.getHireDate() != null) emp.setHireDate(request.getHireDate());

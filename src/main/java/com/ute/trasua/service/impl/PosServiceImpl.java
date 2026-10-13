@@ -34,6 +34,7 @@ public class PosServiceImpl implements PosService {
     private final OrderDetailRepository orderDetailRepository;
     private final PaymentRepository paymentRepository;
     private final EmployeeRepository employeeRepository;
+    private final BranchMenuRepository branchMenuRepository;
 
     @org.springframework.beans.factory.annotation.Value("${app.vietqr.bank-bin:970422}")
     private String bankBin;
@@ -57,19 +58,43 @@ public class PosServiceImpl implements PosService {
                         .build())
                 .collect(Collectors.toList());
 
+        java.util.Map<Long, BranchMenu> branchMenuMap = new java.util.HashMap<>();
+        if (branchId != null) {
+            branchMenuRepository.findByBranchId(branchId).forEach(bm -> {
+                if (bm.getProduct() != null) {
+                    branchMenuMap.put(bm.getProduct().getId(), bm);
+                }
+            });
+        }
+
         List<PosMenuResponse.ProductDto> products = productRepository.findByStatusOrderByNameAsc("ACTIVE")
                 .stream()
-                .map(p -> PosMenuResponse.ProductDto.builder()
-                        .id(p.getId())
-                        .productCode(p.getProductCode())
-                        .name(p.getName())
-                        .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
-                        .categoryName(p.getCategory() != null ? p.getCategory().getName() : "")
-                        .basePrice(p.getBasePrice())
-                        .imageUrl(p.getImageUrl())
-                        .description(p.getDescription())
-                        .status(p.getStatus())
-                        .build())
+                .filter(p -> {
+                    if (branchId != null && branchMenuMap.containsKey(p.getId())) {
+                        return branchMenuMap.get(p.getId()).isAvailable();
+                    }
+                    return true;
+                })
+                .map(p -> {
+                    BigDecimal price = p.getBasePrice();
+                    if (branchId != null && branchMenuMap.containsKey(p.getId())) {
+                        BranchMenu bm = branchMenuMap.get(p.getId());
+                        if (bm.getCustomPrice() != null) {
+                            price = bm.getCustomPrice();
+                        }
+                    }
+                    return PosMenuResponse.ProductDto.builder()
+                            .id(p.getId())
+                            .productCode(p.getProductCode())
+                            .name(p.getName())
+                            .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
+                            .categoryName(p.getCategory() != null ? p.getCategory().getName() : "")
+                            .basePrice(price)
+                            .imageUrl(p.getImageUrl())
+                            .description(p.getDescription())
+                            .status(p.getStatus())
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         List<PosMenuResponse.SizeDto> sizes = sizeRepository.findAllByActiveTrueOrderByExtraPriceAsc()
@@ -322,8 +347,6 @@ public class PosServiceImpl implements PosService {
                 employeeRepository.save(Employee.builder()
                         .employeeCode("NV005")
                         .fullName("Phạm Gia Hân")
-                        .position("CASHIER")
-                        .shift("MORNING")
                         .phone("0955667788")
                         .status("ACTIVE")
                         .branch(branch)
@@ -333,8 +356,6 @@ public class PosServiceImpl implements PosService {
                 employeeRepository.save(Employee.builder()
                         .employeeCode("NV006")
                         .fullName("Đỗ Hoàng Long")
-                        .position("BARTENDER")
-                        .shift("FULL_TIME")
                         .phone("0966778899")
                         .status("ACTIVE")
                         .branch(branch)
@@ -355,8 +376,6 @@ public class PosServiceImpl implements PosService {
                         .id(e.getId())
                         .employeeCode(e.getEmployeeCode())
                         .fullName(e.getFullName())
-                        .position(e.getPosition())
-                        .shift(e.getShift())
                         .phone(e.getPhone())
                         .activeOnShift(false)
                         .build())

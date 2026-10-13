@@ -71,10 +71,10 @@
     <div class="header-content">
       <h1 class="page-title">
         <i class="fa-solid fa-id-badge" style="color: #f59e0b; margin-right: 8px;"></i>
-        Quản Lý Nhân Sự & Ca Trực (UC16)
+        Quản Lý Nhân Sự (UC16)
       </h1>
       <p class="page-subtitle">
-        Phân công ca làm việc, quản lý hồ sơ nhân viên và thiết lập tài khoản quầy POS ca trực theo từng chi nhánh.
+        Quản lý hồ sơ nhân viên và thiết lập tài khoản quầy POS theo từng chi nhánh.
       </p>
     </div>
     <div class="header-actions">
@@ -194,35 +194,12 @@
       <input type="hidden" name="branchId" value="${branchId}" />
 
       <!-- Từ khóa -->
-      <div style="flex: 2; min-width: 220px;">
+      <div style="flex: 2; min-width: 250px;">
         <div style="position: relative;">
           <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--zen-text-muted);"></i>
           <input type="text" name="keyword" value="${keyword}" placeholder="Tìm theo tên NV, mã, SĐT, CCCD..." 
                  class="zen-input" style="padding-left: 36px; width: 100%; border-radius: 8px;">
         </div>
-      </div>
-
-      <!-- Vị trí -->
-      <div style="flex: 1; min-width: 150px;">
-        <select name="position" class="zen-select" style="width: 100%; border-radius: 8px;">
-          <option value="">-- Tất cả vị trí --</option>
-          <option value="BARTENDER" ${position == 'BARTENDER' ? 'selected' : ''}>Pha Chế</option>
-          <option value="CASHIER" ${position == 'CASHIER' ? 'selected' : ''}>Thu Ngân</option>
-          <option value="SERVER" ${position == 'SERVER' ? 'selected' : ''}>Phục Vụ</option>
-          <option value="SHIFT_MANAGER" ${position == 'SHIFT_MANAGER' ? 'selected' : ''}>Quản Lý Ca</option>
-          <option value="SECURITY" ${position == 'SECURITY' ? 'selected' : ''}>Bảo Vệ</option>
-        </select>
-      </div>
-
-      <!-- Ca làm việc -->
-      <div style="flex: 1; min-width: 150px;">
-        <select name="shift" class="zen-select" style="width: 100%; border-radius: 8px;">
-          <option value="">-- Tất cả ca trực --</option>
-          <option value="MORNING" ${shift == 'MORNING' ? 'selected' : ''}>Ca Sáng</option>
-          <option value="AFTERNOON" ${shift == 'AFTERNOON' ? 'selected' : ''}>Ca Chiều</option>
-          <option value="EVENING" ${shift == 'EVENING' ? 'selected' : ''}>Ca Tối</option>
-          <option value="FULL_TIME" ${shift == 'FULL_TIME' ? 'selected' : ''}>Full-time</option>
-        </select>
       </div>
 
       <!-- Trạng thái -->
@@ -250,7 +227,7 @@
     <div style="padding: 16px 20px; border-bottom: 1px solid var(--zen-border); display: flex; justify-content: space-between; align-items: center;">
       <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--zen-text-main); margin: 0; display: flex; align-items: center; gap: 8px;">
         <i class="fa-solid fa-clipboard-user" style="color: #f59e0b;"></i>
-        Danh Sách Nhân Viên & Lịch Phân Ca (${employeesPage.totalElements})
+        Danh Sách Nhân Viên Cơ Sở (${employeesPage.totalElements})
       </h3>
     </div>
 
@@ -261,8 +238,6 @@
             <th style="padding: 12px 16px;">Mã NV</th>
             <th style="padding: 12px 16px;">Nhân Viên</th>
             <th style="padding: 12px 16px;">Liên Hệ & CCCD</th>
-            <th style="padding: 12px 16px;">Vị Trí Công Việc</th>
-            <th style="padding: 12px 16px;">Ca Trực</th>
             <th style="padding: 12px 16px;">Mức Lương</th>
             <th style="padding: 12px 16px;">Trạng Thái</th>
             <th style="padding: 12px 16px; text-align: right;">Hành Động</th>
@@ -299,21 +274,6 @@
                         <i class="fa-solid fa-id-card" style="font-size: 0.75rem; width: 14px;"></i> ${nv.citizenId}
                       </div>
                     </c:if>
-                  </td>
-
-                  <!-- Vị trí -->
-                  <td style="padding: 12px 16px;">
-                    <span class="zen-badge ${nv.positionBadgeClass}">
-                      ${nv.positionTitle}
-                    </span>
-                  </td>
-
-                  <!-- Ca làm việc -->
-                  <td style="padding: 12px 16px;">
-                    <span class="shift-tag">
-                      <i class="fa-solid fa-clock" style="color: #f59e0b;"></i>
-                      ${nv.shiftTitle}
-                    </span>
                   </td>
 
                   <!-- Mức lương -->

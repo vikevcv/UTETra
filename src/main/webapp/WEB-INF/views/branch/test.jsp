@@ -79,8 +79,8 @@
       <div class="row g-3">
         <div class="col-md-4">
           <div class="border rounded p-3 h-100 bg-light">
-            <h5 class="fw-bold text-dark"><i class="fa-solid fa-id-badge text-warning me-2"></i>Nhân Sự & Ca Trực</h5>
-            <p class="text-muted small mb-0">Quản lý hồ sơ nhân viên pha chế, thu ngân, phân chia ca trực sáng/tối trong phạm vi chi nhánh.</p>
+            <h5 class="fw-bold text-dark"><i class="fa-solid fa-id-badge text-warning me-2"></i>Nhân Sự Chi Nhánh</h5>
+            <p class="text-muted small mb-0">Quản lý hồ sơ nhân viên toàn thời gian và thiết lập tài khoản quầy POS trong phạm vi chi nhánh.</p>
           </div>
         </div>
         <div class="col-md-4">
