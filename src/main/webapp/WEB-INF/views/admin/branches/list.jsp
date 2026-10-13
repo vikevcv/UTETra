@@ -328,10 +328,18 @@
 
                   <!-- Các nút hành động -->
                   <div class="branch-card-actions">
+                    <a href="${pageContext.request.contextPath}/branch?branchId=${branch.id}"
+                      class="zen-btn zen-btn-sm zen-btn-primary" style="flex: 1.5; justify-content: center;"
+                      title="Vào giao diện làm việc của cơ sở ${branch.name}">
+                      <i class="fa-solid fa-store"></i>
+                      <span>Quản Lý Chi Nhánh</span>
+                    </a>
+
                     <a href="${pageContext.request.contextPath}/admin/branches/edit/${branch.id}"
-                      class="zen-btn zen-btn-sm zen-btn-secondary" style="flex: 1; justify-content: center;">
+                      class="zen-btn zen-btn-sm zen-btn-secondary" style="justify-content: center; padding: 6px 12px;"
+                      title="Chỉnh sửa thông tin chi nhánh">
                       <i class="fa-solid fa-pen-to-square"></i>
-                      <span>Chỉnh Sửa</span>
+                      <span>Sửa</span>
                     </a>
 
                     <c:if test="${branch.latitude != null && branch.longitude != null}">
@@ -349,7 +357,7 @@
                       method="post" style="display: inline; margin: 0;">
                       <c:set var="toggleActionText" value="${branch.active ? 'tạm ngưng' : 'mở hoạt động'}" />
                       <button type="submit"
-                        class="zen-btn zen-btn-sm ${branch.active ? 'zen-btn-danger' : 'zen-btn-primary'}"
+                        class="zen-btn zen-btn-sm ${branch.active ? 'zen-btn-danger' : 'zen-btn-secondary'}"
                         title="${branch.active ? 'Tạm ngưng phục vụ' : 'Kích hoạt mở cửa'}"
                         onclick="return confirm('Bạn có chắc muốn ${toggleActionText} chi nhánh này?')">
                         <i class="fa-solid ${branch.active ? 'fa-pause' : 'fa-play'}"></i>

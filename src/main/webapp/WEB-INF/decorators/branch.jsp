@@ -49,10 +49,12 @@
           <div style="font-size: 0.72rem; color: #9ca3af; text-transform: uppercase; font-weight: 600;">Cơ Sở Trực Thuộc</div>
           <div style="color: #f3f4f6; font-weight: 700; font-size: 0.88rem; margin-top: 2px;">
             <i class="fa-solid fa-location-dot text-warning me-1"></i>
-            <c:out value="${currentBranchName != null ? currentBranchName : 'Chi Nhánh Số 1 (Thủ Đức)'}"/>
+            <c:out value="${currentBranch != null ? currentBranch.name : (currentBranchName != null ? currentBranchName : 'Chi Nhánh Số 1 (Thủ Đức)')}"/>
           </div>
         </div>
       </div>
+
+      <c:set var="branchQuery" value="${currentBranch != null ? ('?branchId=' += currentBranch.id) : (branchId != null ? ('?branchId=' += branchId) : '')}" />
 
       <!-- Sidebar Navigation Menu Dành Riêng Cho Quản Lý Chi Nhánh (QLCN) -->
       <div class="admin-sidebar-content">
@@ -60,7 +62,7 @@
         <div class="sidebar-heading">TỔNG QUAN ĐIỂM BÁN</div>
         <ul class="sidebar-menu">
           <li class="sidebar-item">
-            <a href="${pageContext.request.contextPath}/branch/dashboard" 
+            <a href="${pageContext.request.contextPath}/branch/dashboard${branchQuery}" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/dashboard') ? 'active' : ''}">
               <i class="fa-solid fa-chart-pie"></i>
               <span>Bàn Làm Việc Ca Trực</span>
@@ -72,28 +74,28 @@
         <div class="sidebar-heading">VẬN HÀNH TẠI QUÁN</div>
         <ul class="sidebar-menu">
           <li class="sidebar-item">
-            <a href="${pageContext.request.contextPath}/branch/employees" 
+            <a href="${pageContext.request.contextPath}/branch/employees${branchQuery}" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/employees') ? 'active' : ''}">
               <i class="fa-solid fa-id-badge text-warning"></i>
               <span>Nhân Sự Chi Nhánh</span>
             </a>
           </li>
           <li class="sidebar-item">
-            <a href="${pageContext.request.contextPath}/branch/drivers" 
+            <a href="${pageContext.request.contextPath}/branch/drivers${branchQuery}" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/drivers') ? 'active' : ''}">
               <i class="fa-solid fa-motorcycle text-success"></i>
               <span>Đội Ngũ Tài Xế</span>
             </a>
           </li>
           <li class="sidebar-item">
-            <a href="${pageContext.request.contextPath}/branch/inventory" 
+            <a href="${pageContext.request.contextPath}/branch/inventory${branchQuery}" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/inventory') ? 'active' : ''}">
               <i class="fa-solid fa-boxes-stacked text-warning"></i>
               <span>Kho Hàng & Nhập Kho</span>
             </a>
           </li>
           <li class="sidebar-item">
-            <a href="${pageContext.request.contextPath}/branch/reports" 
+            <a href="${pageContext.request.contextPath}/branch/reports${branchQuery}" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/reports') ? 'active' : ''}">
               <i class="fa-solid fa-chart-line text-warning"></i>
               <span>Báo Cáo Doanh Thu</span>
@@ -105,6 +107,12 @@
         <div class="sidebar-heading">LỐI TẮT</div>
         <ul class="sidebar-menu">
           <c:if test="${pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN')}">
+            <li class="sidebar-item">
+              <a href="${pageContext.request.contextPath}/admin/branches" class="sidebar-link">
+                <i class="fa-solid fa-store text-info"></i>
+                <span>Về Hệ Thống Chi Nhánh</span>
+              </a>
+            </li>
             <li class="sidebar-item">
               <a href="${pageContext.request.contextPath}/admin/dashboard" class="sidebar-link">
                 <i class="fa-solid fa-crown text-warning"></i>
