@@ -40,11 +40,11 @@ public class AuthService {
     private static final long RESET_TOKEN_EXPIRATION_MS = 10 * 60 * 1000; // 10 phút
 
     // Cache lưu trữ tạm thông tin đăng ký (key: email, value: RegisterOtpData)
-    private final ConcurrentHashMap<String, RegisterOtpData> registerOtpCache = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, RegisterOtpData> registerOtpCache = new ConcurrentHashMap<>();
 
     // Cache lưu trữ tạm thông tin quên mật khẩu (key: email, value:
     // ForgotPasswordData)
-    private final ConcurrentHashMap<String, ForgotPasswordData> forgotPasswordCache = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, ForgotPasswordData> forgotPasswordCache = new ConcurrentHashMap<>();
 
     @Data
     @AllArgsConstructor

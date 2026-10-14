@@ -37,6 +37,7 @@ public class DataInitializer implements CommandLineRunner {
     private final com.ute.trasua.repository.BranchInventoryRepository branchInventoryRepository;
     private final com.ute.trasua.repository.ImportReceiptRepository importReceiptRepository;
     private final com.ute.trasua.repository.OrderRepository orderRepository;
+    private final com.ute.trasua.repository.PromotionRepository promotionRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -777,6 +778,9 @@ public class DataInitializer implements CommandLineRunner {
 
         // Khởi tạo các đơn hàng mẫu phục vụ báo cáo doanh thu & biểu đồ Chart.js (Module 15 / UC19, UC26)
         initSampleOrders();
+
+        // Khởi tạo các chương trình khuyến mãi mẫu (Module 4 / UC18, UC24)
+        initSamplePromotions();
     }
 
     private void initSampleOrders() {
@@ -893,5 +897,93 @@ public class DataInitializer implements CommandLineRunner {
         order.setFinalAmount(net.compareTo(BigDecimal.ZERO) > 0 ? net : totalGross);
 
         return order;
+    }
+
+    private void initSamplePromotions() {
+        if (promotionRepository.count() > 0) {
+            return;
+        }
+
+        Branch tdBranch = branchRepository.findAll().stream()
+                .filter(b -> "CN-TD01".equals(b.getBranchCode()))
+                .findFirst()
+                .orElse(null);
+
+        List<Promotion> samplePromotions = List.of(
+                Promotion.builder()
+                        .voucherCode("CHAOMUNG2026")
+                        .title("Chào Đón Năm Mới 2026 Giảm 20%")
+                        .description("Giảm ngay 20% tối đa 40.000đ cho đơn hàng trà sữa toàn hệ thống.")
+                        .discountType("PERCENT")
+                        .discountValue(new BigDecimal("20.00"))
+                        .maxDiscountAmount(new BigDecimal("40000.00"))
+                        .minOrderAmount(new BigDecimal("60000.00"))
+                        .startDate(LocalDateTime.now().minusDays(5))
+                        .endDate(LocalDateTime.now().plusMonths(2))
+                        .totalUsageLimit(500)
+                        .usedCount(12)
+                        .usageLimitPerUser(2)
+                        .scope("GLOBAL")
+                        .branch(null)
+                        .status("ACTIVE")
+                        .build(),
+
+                Promotion.builder()
+                        .voucherCode("FREESHIP50K")
+                        .title("Ưu Đãi Trợ Giá Ship 15.000đ")
+                        .description("Hỗ trợ 15.000đ tiền vận chuyển cho đơn hàng từ 50.000đ trở lên.")
+                        .discountType("FIXED_AMOUNT")
+                        .discountValue(new BigDecimal("15000.00"))
+                        .maxDiscountAmount(null)
+                        .minOrderAmount(new BigDecimal("50000.00"))
+                        .startDate(LocalDateTime.now().minusDays(3))
+                        .endDate(LocalDateTime.now().plusDays(30))
+                        .totalUsageLimit(200)
+                        .usedCount(5)
+                        .usageLimitPerUser(1)
+                        .scope("GLOBAL")
+                        .branch(null)
+                        .status("ACTIVE")
+                        .build(),
+
+                Promotion.builder()
+                        .voucherCode("TRIANKHACHHANG")
+                        .title("Tri Ân Khách Hàng Thân Thiết Giảm 10%")
+                        .description("Áp dụng cho mọi hóa đơn trà sữa từ 80.000đ toàn chuỗi.")
+                        .discountType("PERCENT")
+                        .discountValue(new BigDecimal("10.00"))
+                        .maxDiscountAmount(new BigDecimal("25000.00"))
+                        .minOrderAmount(new BigDecimal("80000.00"))
+                        .startDate(LocalDateTime.now().minusDays(10))
+                        .endDate(LocalDateTime.now().plusDays(45))
+                        .totalUsageLimit(300)
+                        .usedCount(28)
+                        .usageLimitPerUser(3)
+                        .scope("GLOBAL")
+                        .branch(null)
+                        .status("ACTIVE")
+                        .build(),
+
+                Promotion.builder()
+                        .voucherCode("THUDUC10K")
+                        .title("Mừng Khai Trương Điểm Bán Thủ Đức Giảm 10K")
+                        .description("Ưu đãi độc quyền dành cho khách hàng đặt hàng tại chi nhánh Thủ Đức.")
+                        .discountType("FIXED_AMOUNT")
+                        .discountValue(new BigDecimal("10000.00"))
+                        .maxDiscountAmount(null)
+                        .minOrderAmount(new BigDecimal("40000.00"))
+                        .startDate(LocalDateTime.now().minusDays(7))
+                        .endDate(LocalDateTime.now().plusDays(25))
+                        .totalUsageLimit(100)
+                        .usedCount(18)
+                        .usageLimitPerUser(1)
+                        .scope("BRANCH")
+                        .branch(tdBranch)
+                        .status("ACTIVE")
+                        .build()
+        );
+
+        promotionRepository.saveAll(samplePromotions);
+        log.info(">>> Đã khởi tạo 4 chương trình khuyến mãi mẫu (3 Toàn chuỗi, 1 Chi nhánh Thủ Đức)!");
     }
 }
