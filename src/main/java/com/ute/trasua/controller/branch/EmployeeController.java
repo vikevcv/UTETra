@@ -72,7 +72,7 @@ public class EmployeeController {
         model.addAttribute("allBranches", allBranches);
         model.addAttribute("keyword", keyword);
         model.addAttribute("status", status);
-        model.addAttribute("pageTitle", "Quản Lý Nhân Sự — UTETra");
+        model.addAttribute("pageTitle", "Quản Lý Nhân Sự (UC16) — UTETra");
 
         return "branch/employees/list";
     }

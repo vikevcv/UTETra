@@ -30,12 +30,10 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
            " OR LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            " OR LOWER(u.phone) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            " OR LOWER(d.licensePlate) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
-           "(:shift IS NULL OR d.shift = :shift) AND " +
            "(:workingStatus IS NULL OR d.workingStatus = :workingStatus) " +
            "ORDER BY d.id DESC")
     Page<Driver> searchDriversByBranch(@Param("branchId") Long branchId,
                                        @Param("keyword") String keyword,
-                                       @Param("shift") String shift,
                                        @Param("workingStatus") String workingStatus,
                                        Pageable pageable);
 

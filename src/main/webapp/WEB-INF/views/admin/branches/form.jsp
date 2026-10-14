@@ -84,6 +84,12 @@
       </p>
     </div>
     <div class="header-actions">
+      <c:if test="${isEdit}">
+        <a href="${pageContext.request.contextPath}/branch?branchId=${branch.id}" class="zen-btn zen-btn-primary">
+          <i class="fa-solid fa-store"></i>
+          <span>Vào Quản Lý Chi Nhánh</span>
+        </a>
+      </c:if>
       <a href="${pageContext.request.contextPath}/admin/branches" class="zen-btn zen-btn-secondary">
         <i class="fa-solid fa-arrow-left"></i>
         <span>Quay Lại Danh Sách</span>

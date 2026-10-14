@@ -146,7 +146,7 @@
     <div class="card-body p-2 p-md-3">
       <form action="${pageContext.request.contextPath}/branch/drivers" method="get" class="row g-2 align-items-center">
         <input type="hidden" name="branchId" value="${currentBranch.id}" />
-        <div class="col-md-5">
+        <div class="col-md-6">
           <div class="input-group">
             <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
             <input type="text" name="keyword" value="${keyword}" class="form-control border-start-0"
@@ -154,15 +154,6 @@
           </div>
         </div>
         <div class="col-md-3">
-          <select name="shift" class="form-select">
-            <option value="">Tất cả ca trực</option>
-            <option value="MORNING" ${shift == 'MORNING' || shift == 'SANG' ? 'selected' : ''}>Ca Sáng</option>
-            <option value="AFTERNOON" ${shift == 'AFTERNOON' || shift == 'CHIEU' ? 'selected' : ''}>Ca Chiều</option>
-            <option value="EVENING" ${shift == 'EVENING' || shift == 'TOI' ? 'selected' : ''}>Ca Tối</option>
-            <option value="FULL_TIME" ${shift == 'FULL_TIME' || shift == 'TOAN_THOI_GIAN' ? 'selected' : ''}>Toàn Thời Gian</option>
-          </select>
-        </div>
-        <div class="col-md-2">
           <select name="status" class="form-select">
             <option value="">Tất cả trạng thái</option>
             <option value="ONLINE" ${status == 'ONLINE' ? 'selected' : ''}>Trực tuyến</option>
@@ -170,11 +161,11 @@
             <option value="OFFLINE" ${status == 'OFFLINE' ? 'selected' : ''}>Ngoại tuyến</option>
           </select>
         </div>
-        <div class="col-md-2 d-flex gap-2">
+        <div class="col-md-3 d-flex gap-2">
           <button type="submit" class="btn btn-primary w-100 fw-semibold">
             <i class="fa-solid fa-filter me-1"></i> Lọc
           </button>
-          <c:if test="${not empty keyword || not empty shift || not empty status}">
+          <c:if test="${not empty keyword || not empty status}">
             <a href="${pageContext.request.contextPath}/branch/drivers?branchId=${currentBranch.id}" class="btn btn-outline-secondary" title="Đặt lại">
               <i class="fa-solid fa-rotate-left"></i>
             </a>
@@ -193,7 +184,6 @@
             <th class="ps-4">Tài Xế</th>
             <th>Tài Khoản</th>
             <th>Biển Số</th>
-            <th>Ca Trực</th>
             <th>Lương Cứng</th>
             <th class="text-center">Trạng Thái</th>
             <th>Hiệu Suất</th>
@@ -222,14 +212,6 @@
                   </td>
                   <td>
                     <span class="plate-badge">${d.licensePlate}</span>
-                  </td>
-                  <td>
-                    <c:choose>
-                      <c:when test="${d.shift == 'MORNING' || d.shift == 'SANG'}"><span class="badge bg-info-subtle text-info border">Ca Sáng</span></c:when>
-                      <c:when test="${d.shift == 'AFTERNOON' || d.shift == 'CHIEU'}"><span class="badge bg-warning-subtle text-warning border">Ca Chiều</span></c:when>
-                      <c:when test="${d.shift == 'EVENING' || d.shift == 'TOI'}"><span class="badge bg-dark-subtle text-dark border">Ca Tối</span></c:when>
-                      <c:otherwise><span class="badge bg-primary-subtle text-primary border">Toàn Thời Gian</span></c:otherwise>
-                    </c:choose>
                   </td>
                   <td>
                     <c:choose>
@@ -272,7 +254,6 @@
                             data-phone="${fn:escapeXml(d.phone)}"
                             data-licenseplate="${fn:escapeXml(d.licensePlate)}"
                             data-vehicletype="${fn:escapeXml(d.vehicleType)}"
-                            data-shift="${fn:escapeXml(d.shift)}"
                             data-salary="${d.baseSalary != null ? d.baseSalary : 0}">
                       <i class="fa-solid fa-pen-to-square"></i>
                     </button>
@@ -412,11 +393,6 @@
         if (vehicle === 'XE_MAY') vehicle = 'MOTORBIKE';
         else if (vehicle === 'XE_DIEN') vehicle = 'ELECTRIC_BIKE';
 
-        var shift = btn.getAttribute('data-shift') || 'MORNING';
-        if (shift === 'SANG') shift = 'MORNING';
-        else if (shift === 'CHIEU') shift = 'AFTERNOON';
-        else if (shift === 'TOI') shift = 'EVENING';
-        else if (shift === 'TOAN_THOI_GIAN') shift = 'FULL_TIME';
         var salary = btn.getAttribute('data-salary') || '0';
 
         if (editForm) {
@@ -431,8 +407,6 @@
         if (plateInput) plateInput.value = plate || '';
         var vehicleSelect = document.getElementById('editVehicleType');
         if (vehicleSelect) vehicleSelect.value = vehicle;
-        var shiftSelect = document.getElementById('editShift');
-        if (shiftSelect) shiftSelect.value = shift;
         if (editSal) {
           editSal.value = salary;
           updateSalaryDisplay('editBaseSalary', 'editSalaryFormatted', 'editSalaryWordHelp');

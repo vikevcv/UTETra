@@ -67,10 +67,27 @@ public class PosServiceImpl implements PosService {
                         .build())
                 .collect(Collectors.toList());
 
+        java.util.Map<Long, BranchMenu> branchMenuMap = new java.util.HashMap<>();
+        if (branchId != null) {
+            branchMenuRepository.findByBranchId(branchId).forEach(bm -> {
+                if (bm.getProduct() != null) {
+                    branchMenuMap.put(bm.getProduct().getId(), bm);
+                }
+            });
+        }
+
         List<PosMenuResponse.ProductDto> products = productRepository.findByStatusOrderByNameAsc("ACTIVE")
                 .stream()
                 .map(p -> {
-                    boolean isAvail = productAvailMap.getOrDefault(p.getId(), true);
+                    boolean isAvail = true;
+                    BigDecimal price = p.getBasePrice();
+                    if (branchMenuMap.containsKey(p.getId())) {
+                        BranchMenu bm = branchMenuMap.get(p.getId());
+                        isAvail = bm.isAvailable();
+                        if (bm.getCustomPrice() != null) {
+                            price = bm.getCustomPrice();
+                        }
+                    }
                     int stock = isAvail ? (15 + (int)(p.getId() % 10) * 3) : 0;
                     return PosMenuResponse.ProductDto.builder()
                             .id(p.getId())
@@ -78,7 +95,7 @@ public class PosServiceImpl implements PosService {
                             .name(p.getName())
                             .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
                             .categoryName(p.getCategory() != null ? p.getCategory().getName() : "")
-                            .basePrice(p.getBasePrice())
+                            .basePrice(price)
                             .imageUrl(p.getImageUrl())
                             .description(p.getDescription())
                             .status(p.getStatus())

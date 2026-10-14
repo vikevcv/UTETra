@@ -194,15 +194,13 @@
       <input type="hidden" name="branchId" value="${branchId}" />
 
       <!-- Từ khóa -->
-      <div style="flex: 2; min-width: 220px;">
+      <div style="flex: 2; min-width: 250px;">
         <div style="position: relative;">
           <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--zen-text-muted);"></i>
           <input type="text" name="keyword" value="${keyword}" placeholder="Tìm theo tên NV, mã, SĐT, CCCD..." 
                  class="zen-input" style="padding-left: 36px; width: 100%; border-radius: 8px;">
         </div>
       </div>
-
-
 
       <!-- Trạng thái -->
       <div style="flex: 1; min-width: 140px;">
@@ -229,7 +227,7 @@
     <div style="padding: 16px 20px; border-bottom: 1px solid var(--zen-border); display: flex; justify-content: space-between; align-items: center;">
       <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--zen-text-main); margin: 0; display: flex; align-items: center; gap: 8px;">
         <i class="fa-solid fa-clipboard-user" style="color: #f59e0b;"></i>
-        Danh Sách Nhân Viên (${employeesPage.totalElements})
+        Danh Sách Nhân Viên Cơ Sở (${employeesPage.totalElements})
       </h3>
     </div>
 

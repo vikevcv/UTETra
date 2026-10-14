@@ -40,7 +40,6 @@ public class BranchDriverController {
     public String listBranchDrivers(
             @RequestParam(value = "branchId", required = false) Long branchId,
             @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "shift", required = false) String shift,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
@@ -56,7 +55,6 @@ public class BranchDriverController {
         Page<DriverResponse> driversPage = driverService.searchDriversByBranch(
                 currentBranch.getId(),
                 keyword,
-                shift,
                 status,
                 PageRequest.of(Math.max(0, page), size > 0 ? size : 10)
         );
@@ -69,7 +67,6 @@ public class BranchDriverController {
         model.addAttribute("driversPage", driversPage);
         model.addAttribute("stats", stats);
         model.addAttribute("keyword", keyword);
-        model.addAttribute("shift", shift);
         model.addAttribute("status", status);
         model.addAttribute("pageTitle", "Đội Ngũ Tài Xế — " + currentBranch.getName());
         model.addAttribute("newDriver", new CreateDriverRequest());

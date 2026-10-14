@@ -9,7 +9,7 @@ import java.util.Map;
 
 public interface DriverService {
 
-    Page<DriverResponse> searchDriversByBranch(Long branchId, String keyword, String shift, String workingStatus, Pageable pageable);
+    Page<DriverResponse> searchDriversByBranch(Long branchId, String keyword, String workingStatus, Pageable pageable);
 
     DriverResponse createDriver(CreateDriverRequest request, Long branchId);
 

@@ -37,7 +37,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
            " LOWER(e.phone) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            " LOWER(e.citizenId) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Employee> searchEmployees(@Param("branchId") Long branchId,
-                                  @Param("keyword") String keyword,
-                                  @Param("status") String status,
-                                  Pageable pageable);
+                                   @Param("keyword") String keyword,
+                                   @Param("status") String status,
+                                   Pageable pageable);
 }

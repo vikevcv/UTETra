@@ -35,9 +35,6 @@ public class DriverResponse {
     /** Loại xe di chuyển */
     private String vehicleType;
 
-    /** Ca làm việc phân công */
-    private String shift;
-
     /** Trạng thái làm việc: ONLINE (Sẵn sàng), DELIVERING (Đang giao hàng), OFFLINE (Ngoại tuyến) */
     private String workingStatus;
 
@@ -71,7 +68,6 @@ public class DriverResponse {
                 .createdAt(driver.getCreatedAt())
                 .licensePlate(driver.getLicensePlate())
                 .vehicleType(driver.getVehicleType())
-                .shift(driver.getShift())
                 .workingStatus(driver.getWorkingStatus())
                 .baseSalary(driver.getBaseSalary())
                 .totalOrders(driver.getCompletedOrders() != null ? driver.getCompletedOrders() : 0)
@@ -97,7 +93,6 @@ public class DriverResponse {
                 .createdAt(user.getCreatedAt())
                 .licensePlate("59-X1 " + String.format("%03d.%02d", (user.getId() * 37) % 999, (user.getId() * 11) % 99))
                 .vehicleType("MOTORBIKE")
-                .shift("FULL_TIME")
                 .workingStatus(user.isLocked() ? "OFFLINE" : "ONLINE")
                 .totalOrders((int) (120 + (user.getId() * 23) % 250))
                 .rating(4.9)

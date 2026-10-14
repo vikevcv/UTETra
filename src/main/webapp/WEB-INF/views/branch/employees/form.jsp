@@ -49,7 +49,7 @@
         ${isEdit ? 'Cập Nhật Hồ Sơ Nhân Viên' : 'Tiếp Nhận Nhân Viên Mới (UC16)'}
       </h1>
       <p class="page-subtitle">
-        ${isEdit ? 'Chỉnh sửa thông tin cá nhân hoặc điều chuyển chi nhánh làm việc.' : 'Khai báo hồ sơ nhân sự mới và phân bổ chi nhánh làm việc.'}
+        ${isEdit ? 'Chỉnh sửa thông tin cá nhân, mức lương hoặc điều chuyển chi nhánh.' : 'Khai báo hồ sơ nhân sự mới và mức lương thỏa thuận.'}
       </p>
     </div>
     <div class="header-actions">
@@ -147,12 +147,12 @@
         </div>
       </div>
 
-      <!-- CỘT 2: VỊ TRÍ, PHÂN CA & THÙ LAO -->
+      <!-- CỘT 2: CHẾ ĐỘ LÀM VIỆC & THÙ LAO -->
       <div>
         <div class="form-section-card">
           <div class="form-section-title">
-            <i class="fa-solid fa-coins" style="color: #2563eb;"></i>
-            Thù Lao & Thời Gian Làm Việc
+            <i class="fa-solid fa-briefcase" style="color: #2563eb;"></i>
+            Chế Độ Làm Việc & Thù Lao (Toàn Thời Gian)
           </div>
 
           <!-- Mức lương & Ngày vào làm -->

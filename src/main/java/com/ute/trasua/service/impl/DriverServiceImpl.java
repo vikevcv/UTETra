@@ -46,12 +46,11 @@ public class DriverServiceImpl implements DriverService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<DriverResponse> searchDriversByBranch(Long branchId, String keyword, String shift, String workingStatus, Pageable pageable) {
+    public Page<DriverResponse> searchDriversByBranch(Long branchId, String keyword, String workingStatus, Pageable pageable) {
         String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        String cleanShift = (shift != null && !shift.isBlank()) ? shift.trim() : null;
         String cleanStatus = (workingStatus != null && !workingStatus.isBlank()) ? workingStatus.trim() : null;
 
-        return driverRepository.searchDriversByBranch(branchId, cleanKeyword, cleanShift, cleanStatus, pageable)
+        return driverRepository.searchDriversByBranch(branchId, cleanKeyword, cleanStatus, pageable)
                 .map(DriverResponse::fromEntity);
     }
 
@@ -108,7 +107,6 @@ public class DriverServiceImpl implements DriverService {
                 .branch(branch)
                 .licensePlate(cleanPlate)
                 .vehicleType(request.getVehicleType() != null ? request.getVehicleType().trim() : "MOTORBIKE")
-                .shift(request.getShift() != null ? request.getShift().trim() : "MORNING")
                 .workingStatus("ONLINE")
                 .baseSalary(request.getBaseSalary() != null ? request.getBaseSalary() : BigDecimal.ZERO)
                 .kpiScore(5.0)
@@ -153,7 +151,6 @@ public class DriverServiceImpl implements DriverService {
 
         driver.setLicensePlate(cleanPlate);
         driver.setVehicleType(request.getVehicleType() != null ? request.getVehicleType().trim() : "MOTORBIKE");
-        driver.setShift(request.getShift() != null ? request.getShift().trim() : "MORNING");
         driver.setBaseSalary(request.getBaseSalary() != null ? request.getBaseSalary() : BigDecimal.ZERO);
         driver = driverRepository.save(driver);
 
