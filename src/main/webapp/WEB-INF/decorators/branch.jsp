@@ -101,6 +101,13 @@
               <span>Báo Cáo Doanh Thu</span>
             </a>
           </li>
+          <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/branch/promotions${branchQuery}" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/promotions') ? 'active' : ''}">
+              <i class="fa-solid fa-ticket text-warning"></i>
+              <span>Khuyến Mãi Chi Nhánh</span>
+            </a>
+          </li>
         </ul>
 
         <!-- Lối tắt Khách Hàng -->

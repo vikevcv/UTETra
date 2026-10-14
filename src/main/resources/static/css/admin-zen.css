@@ -201,6 +201,9 @@ body.admin-body {
 .admin-main {
   flex: 1;
   margin-left: var(--sidebar-width);
+  min-width: 0;
+  max-width: calc(100% - var(--sidebar-width));
+  width: calc(100% - var(--sidebar-width));
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -328,7 +331,9 @@ body.admin-body {
 /* Page Content Body */
 .admin-content {
   flex: 1;
-  padding: 2rem;
+  padding: 1.5rem 2rem;
+  min-width: 0;
+  width: 100%;
 }
 
 /* Footer */
@@ -556,5 +561,7 @@ body.admin-body {
   }
   .admin-main {
     margin-left: 0;
+    max-width: 100%;
+    width: 100%;
   }
 }

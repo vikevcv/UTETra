@@ -90,6 +90,13 @@
             </a>
           </li>
           <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/admin/promotions" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/promotions') ? 'active' : ''}">
+              <i class="fa-solid fa-ticket"></i>
+              <span>Quản Lý Khuyến Mãi</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/admin/ingredients" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/ingredients') ? 'active' : ''}">
               <i class="fa-solid fa-boxes-stacked"></i>
