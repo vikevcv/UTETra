@@ -82,6 +82,7 @@
             </a>
           </li>
           <li class="sidebar-item">
+
             <a href="${pageContext.request.contextPath}/admin/products" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/products') || fn:contains(pageContext.request.requestURI, '/admin/categories') ? 'active' : ''}">
               <i class="fa-solid fa-mug-hot"></i>

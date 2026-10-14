@@ -292,7 +292,7 @@
                   <td style="padding: 12px 16px; text-align: right;">
                     <div style="display: flex; gap: 6px; justify-content: flex-end;">
                       <a href="${pageContext.request.contextPath}/branch/employees/edit/${nv.id}" 
-                         class="zen-btn zen-btn-sm zen-btn-secondary" title="Chỉnh sửa hồ sơ & ca">
+                         class="zen-btn zen-btn-sm zen-btn-secondary" title="Chỉnh sửa hồ sơ">
                         <i class="fa-solid fa-pen-to-square"></i>
                       </a>
 
@@ -314,7 +314,7 @@
 
             <c:otherwise>
               <tr>
-                <td colspan="8" style="padding: 40px; text-align: center; color: var(--zen-text-muted);">
+                <td colspan="6" style="padding: 40px; text-align: center; color: var(--zen-text-muted);">
                   <i class="fa-solid fa-user-slash" style="font-size: 2.5rem; margin-bottom: 12px; display: block;"></i>
                   Không tìm thấy nhân viên nào phù hợp với điều kiện tìm kiếm.
                 </td>
@@ -329,7 +329,7 @@
     <c:if test="${employeesPage.totalPages > 1}">
       <div style="padding: 16px; display: flex; justify-content: center; gap: 6px; border-top: 1px solid var(--zen-border);">
         <c:forEach begin="0" end="${employeesPage.totalPages - 1}" var="p">
-          <a href="${pageContext.request.contextPath}/branch/employees?branchId=${branchId}&keyword=${keyword}&position=${position}&shift=${shift}&status=${status}&page=${p}" 
+          <a href="${pageContext.request.contextPath}/branch/employees?branchId=${branchId}&keyword=${keyword}&status=${status}&page=${p}" 
              class="zen-btn zen-btn-sm ${employeesPage.number == p ? 'zen-btn-primary' : 'zen-btn-secondary'}" style="min-width: 34px; justify-content: center;">
             ${p + 1}
           </a>

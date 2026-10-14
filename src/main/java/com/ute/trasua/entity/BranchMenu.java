@@ -8,13 +8,17 @@ import java.time.LocalDateTime;
 
 /**
  * Entity representing branch-specific menu item availability and custom pricing (UC22).
- * Allows branch managers or chain admins to toggle stock status (in-stock / out-of-stock) per branch.
+ * Quản lý trạng thái còn/hết hàng và giá bán đặc thù của từng sản phẩm tại từng cơ sở chi nhánh.
  */
 @Entity
 @Table(
     name = "branch_menus",
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_branch_product", columnNames = {"branch_id", "product_id"})
+    },
+    indexes = {
+        @Index(name = "idx_branch_menu_branch", columnList = "branch_id"),
+        @Index(name = "idx_branch_menu_available", columnList = "available")
     }
 )
 @Data
@@ -66,5 +70,14 @@ public class BranchMenu {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    // Alias methods for compatibility
+    public Boolean getIsAvailable() {
+        return this.available;
+    }
+
+    public void setIsAvailable(Boolean isAvailable) {
+        this.available = isAvailable != null && isAvailable;
     }
 }

@@ -20,7 +20,7 @@ public class PosAccount {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "counter_name", nullable = false, length = 50)
+    @Column(name = "counter_name", nullable = false, length = 100)
     private String counterName;
 
     @Column(name = "username", nullable = false, length = 50)

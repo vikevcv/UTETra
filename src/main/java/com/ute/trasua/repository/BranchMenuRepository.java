@@ -23,6 +23,8 @@ public interface BranchMenuRepository extends JpaRepository<BranchMenu, Long> {
 
     List<BranchMenu> findByBranchIdAndAvailableTrue(Long branchId);
 
+    List<BranchMenu> findByBranchIdAndAvailableFalse(Long branchId);
+
     Optional<BranchMenu> findByBranchIdAndProductId(Long branchId, Long productId);
 
     boolean existsByBranchIdAndProductId(Long branchId, Long productId);

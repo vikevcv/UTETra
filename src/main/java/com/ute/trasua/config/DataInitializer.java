@@ -41,6 +41,37 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        // Cập nhật hoặc tạo tài khoản POS: tên chi nhánh viết liền (thuduc, quan1) - mật khẩu 123123
+        branchRepository.findAll().forEach(b -> {
+            String slug = java.text.Normalizer.normalize(b.getName(), java.text.Normalizer.Form.NFD)
+                    .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                    .toLowerCase();
+            String username = "thuduc";
+            if (slug.contains("quan 1") || b.getBranchCode().contains("Q01")) {
+                username = "quan1";
+            }
+            final String finalUser = username;
+            String shortName = "Quầy POS " + (finalUser.equals("thuduc") ? "Thủ Đức" : "Quận 1");
+            PosAccount pos = posAccountRepository.findByUsername(finalUser).orElse(null);
+            if (pos == null) {
+                pos = PosAccount.builder()
+                        .counterName(shortName)
+                        .username(finalUser)
+                        .password(passwordEncoder.encode("123123"))
+                        .active(true)
+                        .branch(b)
+                        .note("Tài khoản máy POS quầy theo chi nhánh")
+                        .build();
+            } else {
+                pos.setCounterName(shortName);
+                pos.setPassword(passwordEncoder.encode("123123"));
+                pos.setActive(true);
+                pos.setBranch(b);
+            }
+            posAccountRepository.save(pos);
+            log.info(">>> Đã cập nhật tài khoản POS chi nhánh {}: username={} / password=123123", b.getName(), finalUser);
+        });
+
         if (!userRepository.existsByUsername("admin")) {
             User admin = User.builder()
                     .username("admin")
@@ -169,6 +200,8 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
             cnThuDuc = branchRepository.save(cnThuDuc);
             log.info(">>> Đã khởi tạo Chi Nhánh CN-TD01: {}", cnThuDuc.getName());
+
+
 
             // Nhân sự mẫu cho CN-TD01 (UC16)
             if (!employeeRepository.existsByEmployeeCode("NV001")) {
