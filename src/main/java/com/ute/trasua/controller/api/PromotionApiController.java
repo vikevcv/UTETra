@@ -21,7 +21,7 @@ public class PromotionApiController {
     /**
      * API checking voucher validity and calculating discount in real-time.
      */
-    @PostMapping("/validate")
+    @PostMapping({"/validate", "/apply"})
     public ResponseEntity<VoucherApplyResponse> validateVoucher(@Valid @RequestBody VoucherApplyRequest request) {
         VoucherApplyResponse response = promotionService.validateAndApplyVoucher(
                 request.getVoucherCode(), request.getBranchId(), request.getOrderSubtotal()

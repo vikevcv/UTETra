@@ -59,7 +59,45 @@
     </div>
 
     <div class="reserve-grid" id="zenProductsGrid">
-      <!-- Dynamic Products populated by JS or JSTL -->
+      <c:choose>
+        <c:when test="${not empty products}">
+          <c:forEach items="${products}" var="p">
+            <div class="reserve-card" data-product-id="${p.id}">
+              <div class="reserve-media">
+                <c:choose>
+                  <c:when test="${not empty p.imageUrl}">
+                    <img src="${p.imageUrl}" alt="${p.name}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <svg width="60" height="70" viewBox="0 0 100 100" style="display:none;">
+                      <path d="M30 30C30 80 40 90 50 90C60 90 70 80 70 30H30Z" fill="#8C6D53"/>
+                    </svg>
+                  </c:when>
+                  <c:otherwise>
+                    <svg width="60" height="70" viewBox="0 0 100 100">
+                      <path d="M30 30C30 80 40 90 50 90C60 90 70 80 70 30H30Z" fill="#8C6D53"/>
+                    </svg>
+                  </c:otherwise>
+                </c:choose>
+              </div>
+              <div class="reserve-body">
+                <h4 class="reserve-item-title">${p.name}</h4>
+                <p class="reserve-desc">${p.description}</p>
+                <div class="reserve-foot">
+                  <span class="reserve-price"><fmt:formatNumber value="${p.basePrice}" pattern="#,###"/> đ</span>
+                  <button class="btn-zen-select" type="button"
+                          onclick="openZenModal(${p.id}, '${p.name}', ${p.basePrice}, '${p.imageUrl != null ? p.imageUrl : ''}')">
+                    Chọn Trà
+                  </button>
+                </div>
+              </div>
+            </div>
+          </c:forEach>
+        </c:when>
+        <c:otherwise>
+          <div style="grid-column: 1 / -1; text-align:center; padding: 40px; color:var(--text-muted);">
+            Đang chuẩn bị các phẩm trà độc bản. Vui lòng quay lại sau!
+          </div>
+        </c:otherwise>
+      </c:choose>
     </div>
   </div>
 </section>
@@ -74,7 +112,29 @@
     </div>
 
     <div class="rooms-grid" id="zenRoomsGrid">
-      <!-- Dynamic Rooms populated by JS or JSTL -->
+      <c:choose>
+        <c:when test="${not empty branches}">
+          <c:forEach items="${branches}" var="b" varStatus="loop">
+            <div class="room-card ${loop.first ? 'active' : ''}" id="roomCard_${b.id}">
+              <h4>${b.name}</h4>
+              <p>${b.address}</p>
+              <button class="btn-select-room" type="button" onclick="chooseRoom(${b.id}, '${b.name}')">
+                <c:choose>
+                  <c:when test="${loop.first}">✓ Đang Ghé Thăm</c:when>
+                  <c:otherwise>Chọn Phòng Trà Này</c:otherwise>
+                </c:choose>
+              </button>
+            </div>
+          </c:forEach>
+        </c:when>
+        <c:otherwise>
+          <div class="room-card active">
+            <h4>Phòng Trà SPKT</h4>
+            <p>Số 01 Võ Văn Ngân, TP. Thủ Đức</p>
+            <button class="btn-select-room" type="button">✓ Đang Ghé Thăm</button>
+          </div>
+        </c:otherwise>
+      </c:choose>
     </div>
   </div>
 </section>
