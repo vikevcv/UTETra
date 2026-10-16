@@ -75,7 +75,7 @@ public class ShipperController {
         }
 
         List<HandoverOrderDto> activeOrders = (driver.getId() != null)
-                ? orderHandoverService.getDriverOrders(driver.getId(), List.of("OUT_FOR_DELIVERY", "DELIVERING"))
+                ? orderHandoverService.getDriverOrders(driver.getId(), List.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED"))
                 : Collections.emptyList();
 
         List<HandoverOrderDto> completedOrders = (driver.getId() != null)
@@ -86,27 +86,13 @@ public class ShipperController {
                 ? completedOrders.size()
                 : (driver.getCompletedOrders() != null ? driver.getCompletedOrders() : 0);
 
-        Double kpiScore = (driver.getKpiScore() != null) ? driver.getKpiScore() : 5.0;
-
-        String baseSalary = (driver.getBaseSalary() != null && driver.getBaseSalary().compareTo(BigDecimal.ZERO) > 0)
-                ? String.format("%,d₫", driver.getBaseSalary().longValue())
-                : "240.000₫";
-
-        long kpiBonusValue = completedCount * 5000L;
-        String kpiBonus = String.format("%,d₫", kpiBonusValue > 0 ? kpiBonusValue : 45000L);
-
-        long totalEarningsValue = 240000L + (kpiBonusValue > 0 ? kpiBonusValue : 45000L);
-        String todayEarnings = String.format("%,d₫", totalEarningsValue);
-
         boolean isOnline = "ONLINE".equalsIgnoreCase(driver.getWorkingStatus()) || "DELIVERING".equalsIgnoreCase(driver.getWorkingStatus());
 
         model.addAttribute("driver", driver);
         model.addAttribute("activeOrders", activeOrders);
+        model.addAttribute("completedOrders", completedOrders);
         model.addAttribute("completedCount", completedCount);
-        model.addAttribute("kpiScore", kpiScore);
-        model.addAttribute("todayEarnings", todayEarnings);
 
-        // Giữ đầy đủ các thuộc tính giao diện cũ để tương thích 100% với shipper/index.jsp
         model.addAttribute("username", username);
         model.addAttribute("fullName", (driverUser != null && driverUser.getFullName() != null)
                 ? driverUser.getFullName() : "Nguyễn Ngọc Thoại");
@@ -118,10 +104,6 @@ public class ShipperController {
         model.addAttribute("vehiclePlate", driver.getLicensePlate() != null ? driver.getLicensePlate() : "59X3-888.99");
         model.addAttribute("branchName", (driver.getBranch() != null && driver.getBranch().getName() != null)
                 ? driver.getBranch().getName() : "UTETra Cơ Sở 01 — 01 Võ Văn Ngân, Thủ Đức");
-        model.addAttribute("shiftName", "Ca Chiều (13:00 - 21:00)");
-        model.addAttribute("baseSalary", baseSalary);
-        model.addAttribute("kpiBonus", kpiBonus);
-        model.addAttribute("totalEstimatedEarnings", todayEarnings);
         model.addAttribute("isOnline", isOnline);
 
         return "shipper/index";
@@ -140,7 +122,7 @@ public class ShipperController {
             return ResponseEntity.ok(Collections.emptyList());
         }
         List<HandoverOrderDto> activeOrders = orderHandoverService.getDriverOrders(
-                driver.getId(), List.of("OUT_FOR_DELIVERY", "DELIVERING"));
+                driver.getId(), List.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED"));
         return ResponseEntity.ok(activeOrders);
     }
 
@@ -159,6 +141,25 @@ public class ShipperController {
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Đã xác nhận lấy trà tại quán thành công, bắt đầu di chuyển giao hàng",
+                "order", updated
+        ));
+    }
+
+    /**
+     * API tài xế xác nhận đã đến địa chỉ của khách hàng (UC13).
+     */
+    @PostMapping("/api/orders/{orderId}/arrived")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> arrivedOrder(
+            @PathVariable Long orderId,
+            Authentication authentication,
+            @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
+        Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
+        Long driverId = (driver != null) ? driver.getId() : null;
+        HandoverOrderDto updated = orderHandoverService.updateDeliveryStatus(orderId, driverId, "ARRIVED", "");
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Đã xác nhận đến điểm giao hàng của khách",
                 "order", updated
         ));
     }

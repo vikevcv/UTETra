@@ -303,18 +303,12 @@
     /* METRIC BAR (BẢNG CHỈ SỐ NHANH) */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-bottom: 24px;
     }
 
-    @media (max-width: 992px) {
-      .metrics-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 576px) {
+    @media (max-width: 768px) {
       .metrics-grid {
         grid-template-columns: 1fr;
         gap: 12px;
@@ -874,6 +868,170 @@
       color: var(--terracotta);
     }
 
+    /* Nút Đã Tới Điểm Giao (Nằm kế bên Google Maps) */
+    .btn-arrived {
+      background: #EA580C;
+      color: #FFFFFF;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 13px 18px;
+      font-size: 0.94rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+      transition: all 0.2s ease;
+    }
+    .btn-arrived:hover {
+      background: #C2410C;
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+
+    /* Nút Gọi Điện Cho Khách (Always Visible sau khi chụp ảnh nhận nước) */
+    .btn-call-fast {
+      background: #16A34A;
+      color: #FFFFFF;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 13px 20px;
+      font-size: 0.96rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+      transition: all 0.2s ease;
+    }
+    .btn-call-fast:hover {
+      background: #15803D;
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+    .btn-call-fast.pulse {
+      animation: pulse-green 1.8s infinite;
+    }
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+      70% { box-shadow: 0 0 0 12px rgba(22, 163, 74, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+    }
+
+    /* Nút Kết Thúc Chuyến */
+    .btn-complete-trip {
+      background: var(--matcha-deep);
+      color: #FFFFFF;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 13px 18px;
+      font-size: 0.98rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px var(--matcha-glow);
+      transition: all 0.2s ease;
+    }
+    .btn-complete-trip:hover:not(:disabled) {
+      background: var(--matcha-deep-hover);
+      transform: translateY(-1px);
+    }
+    .btn-complete-trip:disabled {
+      background: #9CA3AF;
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.7;
+    }
+
+    /* Thanh Chỉ Dẫn Bước (Step Banner) */
+    .step-banner {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-earth);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--text-charcoal);
+    }
+    .step-pill-tag {
+      background: var(--bizen-clay);
+      color: #FFFFFF;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+
+    /* Khung Chụp & Xem Trước Ảnh */
+    .photo-capture-box {
+      border: 2px dashed var(--border-earth-dark);
+      background: var(--bg-card-inner);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+    }
+    .photo-capture-box.has-photo {
+      border-style: solid;
+      border-color: #22C55E;
+      background: #F0FDF4;
+    }
+    .preview-thumb-img {
+      max-width: 100%;
+      max-height: 180px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      margin-top: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* Thanh Hàng Đợi (Queue Tracker) */
+    .queue-tracker-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border-earth);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .queue-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-earth);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-sepia);
+    }
+    .queue-pill.active {
+      background: var(--matcha-light);
+      border-color: var(--matcha-deep);
+      color: var(--matcha-deep);
+    }
+
     /* EMPTY STATE (KHI KHÔNG CÓ ĐƠN HÀNG) */
     .empty-state-box {
       background: var(--bg-card);
@@ -1129,43 +1287,31 @@
 
     <!-- 2. METRICS BAR (BẢNG CHỈ SỐ NHANH) -->
     <section class="metrics-grid">
-      <!-- Thẻ 1: Đơn hoàn thành -->
+      <!-- Thẻ 1: Tổng số cuốc giao -->
       <div class="metric-card">
         <div class="metric-icon-box metric-icon-matcha">
           <i class="fa-solid fa-circle-check"></i>
         </div>
         <div class="metric-meta">
-          <div class="label">Đơn Hoàn Thành</div>
+          <div class="label">Tổng Số Cuốc Giao</div>
           <div class="value" id="metricCompletedCount">${completedCount} cuốc</div>
-          <div class="sub-note">Trong ca hôm nay</div>
+          <div class="sub-note">Đã hoàn thành trong ca</div>
         </div>
       </div>
 
-      <!-- Thẻ 2: Điểm KPI -->
+      <!-- Thẻ 2: Chi nhánh phụ trách -->
       <div class="metric-card">
         <div class="metric-icon-box metric-icon-bizen">
-          <i class="fa-solid fa-star"></i>
+          <i class="fa-solid fa-store"></i>
         </div>
         <div class="metric-meta">
-          <div class="label">Điểm Hiệu Suất KPI</div>
-          <div class="value" id="metricKpiScore">${kpiScore} ⭐</div>
-          <div class="sub-note">Cam kết đúng giờ 99.2%</div>
+          <div class="label">Chi Nhánh Hoạt Động</div>
+          <div class="value" style="font-size: 1.05rem;">${branchName}</div>
+          <div class="sub-note">Chỉ phục vụ đơn chi nhánh này</div>
         </div>
       </div>
 
-      <!-- Thẻ 3: Thu nhập tạm tính -->
-      <div class="metric-card">
-        <div class="metric-icon-box metric-icon-terracotta">
-          <i class="fa-solid fa-wallet"></i>
-        </div>
-        <div class="metric-meta">
-          <div class="label">Thu Nhập Ca Tạm Tính</div>
-          <div class="value" id="metricTodayEarnings">${todayEarnings}</div>
-          <div class="sub-note">Lương ca + thưởng cuốc</div>
-        </div>
-      </div>
-
-      <!-- Thẻ 4: Trạng thái ca trực -->
+      <!-- Thẻ 3: Trạng thái ca trực -->
       <div class="metric-card">
         <div class="metric-icon-box metric-icon-slate" id="statusBoxIcon">
           <i class="fa-solid fa-headset"></i>
@@ -1203,12 +1349,39 @@
           <span>Thử Âm Thanh / Rung</span>
         </button>
 
-        <button class="btn-tool" onclick="openProfileDrawer()" title="Xem lịch sử và thu nhập">
-          <i class="fa-solid fa-file-invoice-dollar"></i>
-          <span>Lịch Sử & KPI</span>
+        <button class="btn-tool" onclick="openProfileDrawer()" title="Xem lịch sử cuốc giao">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>Lịch Sử Đơn Hàng</span>
         </button>
       </div>
     </section>
+
+    <!-- 3.5. QUEUE TRACKER BAR (HÀNG ĐỢI PHÂN CÔNG ĐƠN HÀNG) -->
+    <div class="queue-tracker-bar" id="queueTrackerBar">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge" style="background: var(--matcha-deep); font-size: 0.85rem; padding: 6px 12px; border-radius: 20px;">
+          <i class="fa-solid fa-layer-group me-1"></i> Hàng Đợi Phân Công
+        </span>
+        <span class="fw-bold text-charcoal" id="queueSummaryText" style="font-size: 0.92rem;">
+          <c:choose>
+            <c:when test="${not empty activeOrders}">
+              Đang thực hiện 1 đơn | ${fn:length(activeOrders) - 1} đơn chờ tiếp theo
+            </c:when>
+            <c:otherwise>
+              0 đơn trong hàng đợi
+            </c:otherwise>
+          </c:choose>
+        </span>
+      </div>
+      <div id="queuePillsList" class="d-flex gap-2 align-items-center flex-wrap">
+        <c:forEach items="${activeOrders}" var="o" varStatus="loop">
+          <span class="queue-pill ${loop.first ? 'active' : ''}">
+            <i class="fa-solid ${loop.first ? 'fa-spinner fa-spin' : 'fa-clock'}"></i>
+            #${o.orderCode} (${loop.first ? 'Đang giao' : 'Chờ lượt'})
+          </span>
+        </c:forEach>
+      </div>
+    </div>
 
     <!-- 4. ACTIVE DELIVERY DECK (DANH SÁCH ĐƠN HÀNG CẦN GIAO) -->
     <section>
@@ -1222,213 +1395,15 @@
         </div>
       </div>
 
-      <!-- Vùng render thẻ đơn hàng (Server-side + Dynamic JS) -->
+      <!-- Vùng render thẻ đơn hàng (Focus Mode: 1 đơn tại 1 thời điểm) -->
       <div class="delivery-cards-list" id="deliveryCardsDeck">
-
-        <!-- Lặp danh sách đơn hàng đã có trong model -->
-        <c:choose>
-          <c:when test="${not empty activeOrders}">
-            <c:forEach items="${activeOrders}" var="order">
-              <div class="delivery-card ${order.status == 'OUT_FOR_DELIVERY' ? 'status-pickup' : ''}" id="order-card-${order.orderId}">
-                <!-- Header Thẻ Đơn Hàng -->
-                <div class="delivery-card-top">
-                  <div class="card-code-wrap">
-                    <span class="order-code-badge">#${order.orderCode}</span>
-                    <c:if test="${order.dailyQueueNumber != null && order.dailyQueueNumber > 0}">
-                      <span class="order-queue-badge">STT #${order.dailyQueueNumber}</span>
-                    </c:if>
-                    <span class="badge bg-light text-dark border">
-                      <i class="fa-solid fa-mug-hot text-success me-1"></i> ${order.cupCount != null ? order.cupCount : 2} ly trà
-                    </span>
-                  </div>
-
-                  <div>
-                    <c:choose>
-                      <c:when test="${order.status == 'OUT_FOR_DELIVERY'}">
-                        <span class="order-status-badge status-badge-pickup">
-                          <i class="fa-solid fa-store"></i> Chờ Nhận Trà Tại Quán
-                        </span>
-                      </c:when>
-                      <c:otherwise>
-                        <span class="order-status-badge status-badge-delivering">
-                          <i class="fa-solid fa-motorcycle"></i> Đang Giao Trên Đường
-                        </span>
-                      </c:otherwise>
-                    </c:choose>
-                  </div>
-                </div>
-
-                <!-- Lộ Trình Giao Hàng Hai Điểm -->
-                <div class="route-display-box">
-                  <!-- Điểm 1: Cơ sở chi nhánh lấy hàng -->
-                  <div class="route-node">
-                    <div class="node-icon-wrap node-icon-store">
-                      <i class="fa-solid fa-store"></i>
-                    </div>
-                    <div class="node-content-wrap">
-                      <div class="node-label">Điểm Lấy Hàng (Chi Nhánh)</div>
-                      <div class="node-name">${branchName}</div>
-                      <div class="node-sub">Trà đã pha chế xong, đóng nắp seal và đóng túi chống đổ</div>
-                    </div>
-                  </div>
-
-                  <!-- Đường nối -->
-                  <div class="route-line-connector"></div>
-
-                  <!-- Điểm 2: Địa chỉ giao cho khách hàng -->
-                  <div class="route-node">
-                    <div class="node-icon-wrap node-icon-dest">
-                      <i class="fa-solid fa-location-dot"></i>
-                    </div>
-                    <div class="node-content-wrap">
-                      <div class="node-label">Điểm Giao Hàng (Khách Hàng)</div>
-                      <div class="node-name">
-                        <span>${order.customerName != null ? order.customerName : 'Khách Hàng Trà Đạo'}</span>
-                        <c:if test="${not empty order.customerPhone}">
-                          <a href="tel:${order.customerPhone}" class="btn-call-customer">
-                            <i class="fa-solid fa-phone"></i> Gọi ${order.customerPhone}
-                          </a>
-                        </c:if>
-                      </div>
-                      <div class="node-sub">
-                        <strong>Địa chỉ:</strong> ${order.deliveryAddress}
-                      </div>
-
-                      <c:if test="${not empty order.deliveryNotes}">
-                        <div class="customer-note-callout">
-                          <i class="fa-solid fa-message"></i>
-                          <span><strong>Khách dặn:</strong> ${order.deliveryNotes}</span>
-                        </div>
-                      </c:if>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Nhãn cam kết tài chính (COD = 0₫) -->
-                <div class="cod-zero-guarantee-banner">
-                  <div class="cod-guarantee-text">
-                    <i class="fa-solid fa-shield-halved text-success" style="font-size: 1.15rem;"></i>
-                    <span>ĐƠN HÀNG ĐÃ THANH TOÁN 100% TRỰC TUYẾN — KHÔNG THU TIỀN MẶT CỦA KHÁCH</span>
-                  </div>
-                  <div class="cod-zero-tag">COD: 0₫</div>
-                </div>
-
-                <!-- Tóm tắt các món đồ uống -->
-                <div class="drink-items-summary-box">
-                  <div class="drink-items-header">
-                    <span>Chi Tiết Đồ Uống Giao Hàng</span>
-                    <span class="text-success"><i class="fa-solid fa-circle-check"></i> Đã Dán Tem Niêm Phong</span>
-                  </div>
-                  <div class="drink-summary-content">
-                    ${not empty order.itemsSummary ? order.itemsSummary : '2x Trà Sữa Oolong Nướng (Size L, 70% Đường, 50% Đá)'}
-                  </div>
-                </div>
-
-                <!-- Cụm Hành Động (Action Row) -->
-                <div class="card-actions-grid">
-                  <!-- 1. Nút Chỉ Đường Google Maps Xe Máy (NÚT CHÍNH) -->
-                  <button class="btn-google-maps" onclick="openGoogleMapsMotorbike('${order.deliveryAddress}', ${order.latitude}, ${order.longitude})">
-                    <i class="fa-solid fa-motorcycle"></i>
-                    <span>Chỉ Đường Google Maps (Xe Máy)</span>
-                  </button>
-
-                  <!-- 2. Nút Cập Nhật Tiến Trình -->
-                  <c:choose>
-                    <c:when test="${order.status == 'OUT_FOR_DELIVERY'}">
-                      <button class="btn-pickup-delivery" onclick="confirmOrderPickup(${order.orderId}, '${order.orderCode}')">
-                        <i class="fa-solid fa-store"></i>
-                        <span>Xác Nhận Đã Nhận Trà</span>
-                      </button>
-                    </c:when>
-                    <c:otherwise>
-                      <button class="btn-complete-delivery" onclick="openCheckinModal(${order.orderId}, '${order.orderCode}')">
-                        <i class="fa-solid fa-camera"></i>
-                        <span>Check-in Đã Giao Xong</span>
-                      </button>
-                    </c:otherwise>
-                  </c:choose>
-
-                  <!-- 3. Nút Báo Cáo Sự Cố -->
-                  <button class="btn-report-incident" onclick="openIncidentModal(${order.orderId}, '${order.orderCode}')">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span>Báo Sự Cố</span>
-                  </button>
-                </div>
-              </div>
-            </c:forEach>
-          </c:when>
-          <c:otherwise>
-            <!-- EMPTY STATE -->
-            <div class="empty-state-box" id="emptyStatePlaceholder">
-              <div class="empty-state-icon">
-                <i class="fa-solid fa-mug-hot"></i>
-              </div>
-              <h3 class="empty-state-title">Chưa Có Đơn Hàng Cần Giao</h3>
-              <p class="empty-state-desc">
-                Hiện tại bạn chưa được phân công đơn hàng nào. Hãy duy trì trạng thái <strong>BẬT CA TRỰC</strong>, hệ thống sẽ tự động báo chuông và rung ngay khi có cuốc giao mới!
-              </p>
-              <div class="d-flex justify-content-center gap-2">
-                <button class="btn-tool btn-tool-accent" onclick="seedSampleOrder()">
-                  <i class="fa-solid fa-plus-circle"></i> Thêm Đơn Mẫu Thử Nghiệm
-                </button>
-                <button class="btn-tool" onclick="refreshOrders(true)">
-                  <i class="fa-solid fa-arrows-rotate"></i> Kiểm Tra Ngay
-                </button>
-              </div>
-            </div>
-          </c:otherwise>
-        </c:choose>
-
+        <!-- Khởi tạo và render động bởi JavaScript theo cỗ máy trạng thái 4 bước -->
       </div>
     </section>
 
   </div>
 
-  <!-- ========================================================
-       MODAL: CHỤP HÌNH CHECK-IN BÀN GIAO GIAO XONG (UC13)
-       ======================================================== -->
-  <div class="modal fade" id="checkinModal" tabindex="-1" aria-labelledby="checkinModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content" style="border-radius: var(--radius-lg); border: none; box-shadow: var(--shadow-floating);">
-        <div class="modal-header" style="border-bottom: 1px solid var(--border-earth); padding: 18px 24px;">
-          <h5 class="modal-title fw-bold" id="checkinModalLabel" style="color: var(--matcha-deep);">
-            <i class="fa-solid fa-camera me-2"></i> Chụp Hình Check-in Hoàn Tất Giao Hàng
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body" style="padding: 20px 24px;">
-          <p class="text-muted" style="font-size: 0.85rem; line-height: 1.5;">
-            Chụp ảnh ly trà đã trao tận tay cho khách hoặc đặt tại cổng/cửa để lưu bằng chứng đối soát giao hàng thành công (UC13).
-          </p>
 
-          <input type="hidden" id="checkinOrderId" value="">
-          <input type="hidden" id="checkinOrderCode" value="">
-
-          <!-- Vùng Chụp / Tải Ảnh -->
-          <div class="camera-upload-box mb-3" onclick="triggerCameraInput()">
-            <div id="cameraPrompt">
-              <i class="fa-solid fa-camera-retro mb-2" style="font-size: 2.2rem; color: var(--bizen-clay);"></i>
-              <div class="fw-bold" style="font-size: 0.95rem;">Bấm để chụp ảnh hoặc tải ảnh bàn giao</div>
-              <div class="text-muted" style="font-size: 0.78rem;">Đồng bộ bằng chứng đối soát lên hệ thống Cloudinary</div>
-            </div>
-            <img id="checkinPreviewPhoto" src="https://images.unsplash.com/photo-1558857563-b37fc9a1e095?auto=format&fit=crop&w=600&q=80" style="display: none; width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; border: 2px solid var(--matcha-deep);" alt="Ảnh giao hàng">
-            <input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display: none;" onchange="previewCapturedPhoto(event)">
-          </div>
-
-          <div class="alert alert-light border p-2 mb-0" style="font-size: 0.8rem; color: var(--text-sepia); border-radius: 8px;">
-            <i class="fa-solid fa-shield-halved text-success me-1"></i>
-            Xác nhận đơn hàng: Đã giao đủ số lượng ly và thu <strong>0₫ tiền mặt</strong> (Đã trả trước 100%).
-          </div>
-        </div>
-        <div class="modal-footer" style="border-top: 1px solid var(--border-earth); padding: 14px 24px;">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: var(--radius-md); font-weight: 600;">Hủy</button>
-          <button type="button" class="btn btn-success" onclick="submitCompleteDelivery()" id="btnSubmitComplete" style="background: var(--matcha-deep); border-color: var(--matcha-deep); border-radius: var(--radius-md); font-weight: 700; padding: 10px 20px;">
-            <i class="fa-solid fa-circle-check me-1"></i> Xác Nhận Đã Giao Thành Công
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- ========================================================
        MODAL: BÁO CÁO SỰ CỐ / HỦY GIAO ĐƠN (UC14)
@@ -1496,11 +1471,10 @@
       </button>
     </div>
 
-    <!-- 3 Tab Điều Hướng -->
+    <!-- 2 Tab Điều Hướng -->
     <div class="drawer-tabs-nav">
       <button class="dtab-btn active" onclick="switchDrawerTab('tab-profile', this)">Hồ Sơ</button>
-      <button class="dtab-btn" onclick="switchDrawerTab('tab-history', this)">Lịch Sử Đơn</button>
-      <button class="dtab-btn" onclick="switchDrawerTab('tab-kpi', this)">Thu Nhập & KPI</button>
+      <button class="dtab-btn" onclick="switchDrawerTab('tab-history', this)">Lịch Sử Đơn Trong Ca</button>
     </div>
 
     <!-- Nội dung Tab -->
@@ -1512,29 +1486,25 @@
           <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--bizen-clay);" alt="Avatar">
           <div>
             <h4 class="fw-bold mb-1" style="font-size: 1.1rem;">${fullName}</h4>
-            <div style="font-size: 0.82rem; color: var(--bizen-clay); font-weight: 700;">Mã TX: ${driverCode} · Đội Xe Thủ Đức</div>
+            <div style="font-size: 0.82rem; color: var(--bizen-clay); font-weight: 700;">Mã TX: ${driverCode} · Đội Xe Giao Vận</div>
             <div class="badge bg-light text-dark border mt-1">${vehiclePlate}</div>
           </div>
         </div>
 
         <div class="p-3 bg-white border rounded-3">
-          <h5 class="fw-bold mb-3" style="font-size: 0.92rem;">Thông Tin Hoạt Động & Ca Trực</h5>
+          <h5 class="fw-bold mb-3" style="font-size: 0.92rem;">Thông Tin Hoạt Động & Chi Nhánh</h5>
           <div class="d-flex flex-column gap-2" style="font-size: 0.86rem;">
             <div class="d-flex justify-content-between">
               <span class="text-muted">Chi nhánh phụ trách:</span>
               <strong class="text-end">${branchName}</strong>
             </div>
             <div class="d-flex justify-content-between">
-              <span class="text-muted">Ca trực đăng ký:</span>
-              <strong style="color: var(--matcha-deep);">${shiftName}</strong>
-            </div>
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Số điện thoại liên hệ:</span>
+              <span class="text-muted">Số điện thoại:</span>
               <strong>${phone}</strong>
             </div>
             <div class="d-flex justify-content-between">
-              <span class="text-muted">Email nội bộ:</span>
-              <strong>${email}</strong>
+              <span class="text-muted">Tổng cuốc đã giao ca này:</span>
+              <strong style="color: var(--matcha-deep);">${completedCount} cuốc</strong>
             </div>
           </div>
         </div>
@@ -1549,80 +1519,34 @@
       <!-- TAB 2: LỊCH SỬ ĐƠN TRONG CA -->
       <div id="tab-history" style="display: none;" class="d-flex flex-column gap-3">
         <div class="d-flex justify-content-between align-items-center">
-          <h5 class="fw-bold m-0" style="font-size: 0.95rem;">Các Cuốc Giao Trong Ca</h5>
-          <span class="badge bg-success" style="font-size: 0.75rem;">100% Trả Trước Online (COD: 0₫)</span>
+          <h5 class="fw-bold m-0" style="font-size: 0.95rem;">Các Cuốc Giao Đã Hoàn Thành</h5>
+          <span class="badge bg-success" style="font-size: 0.75rem;">100% Trả Trước (COD 0₫)</span>
         </div>
 
-        <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center">
-          <div>
-            <strong style="font-size: 0.92rem;">#UT-90250 · 2 ly trà</strong>
-            <div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">13:20 · Đến Tô Vĩnh Diện · Giao đúng giờ</div>
-          </div>
-          <div class="text-end">
-            <span class="fw-bold text-success">+5.000₫</span>
-            <span class="d-block text-muted" style="font-size: 0.72rem;">Thưởng KPI</span>
-          </div>
-        </div>
-
-        <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center">
-          <div>
-            <strong style="font-size: 0.92rem;">#UT-90248 · 3 ly trà</strong>
-            <div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">13:55 · Đến Đặng Văn Bi · Giao đúng giờ</div>
-          </div>
-          <div class="text-end">
-            <span class="fw-bold text-success">+5.000₫</span>
-            <span class="d-block text-muted" style="font-size: 0.72rem;">Thưởng KPI</span>
-          </div>
-        </div>
-
-        <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center">
-          <div>
-            <strong style="font-size: 0.92rem;">#UT-90241 · 1 ly trà</strong>
-            <div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">14:15 · Đến Hoàng Diệu 2 · Giao đúng giờ</div>
-          </div>
-          <div class="text-end">
-            <span class="fw-bold text-success">+5.000₫</span>
-            <span class="d-block text-muted" style="font-size: 0.72rem;">Thưởng KPI</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 3: THU NHẬP & KPI (UC15) -->
-      <div id="tab-kpi" style="display: none;" class="d-flex flex-column gap-3">
-        <div class="p-3 rounded-3 text-white" style="background: var(--matcha-deep);">
-          <div class="text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px; opacity: 0.9;">Thu Nhập Ca Tạm Tính</div>
-          <div class="fw-bold mt-1" style="font-size: 1.8rem;">${totalEstimatedEarnings}</div>
-          <div class="d-flex justify-content-between mt-2 pt-2 border-top border-white-50" style="font-size: 0.8rem;">
-            <span>Chỉ số đúng giờ: <strong>99.2%</strong></span>
-            <span>Đánh giá: <strong>5.0 ⭐</strong></span>
-          </div>
-        </div>
-
-        <div class="p-3 bg-white border rounded-3">
-          <h5 class="fw-bold mb-3" style="font-size: 0.92rem;">Cơ Cấu Thu Nhập Cơ Hữu (UC15)</h5>
-          <div class="d-flex flex-column gap-2" style="font-size: 0.86rem;">
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Lương cứng ca trực cố định:</span>
-              <strong style="color: var(--matcha-deep);">${baseSalary}</strong>
-            </div>
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Số đơn hoàn thành:</span>
-              <strong>${completedCount} cuốc</strong>
-            </div>
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Thưởng KPI mốc đơn (+5.000₫/cuốc):</span>
-              <strong style="color: var(--bizen-clay);">${kpiBonus}</strong>
-            </div>
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Tiền mặt COD giữ hộ:</span>
-              <strong class="text-success">0₫ (100% trả trước online)</strong>
-            </div>
-          </div>
-
-          <div class="mt-3 pt-2 border-top text-muted" style="font-size: 0.76rem; line-height: 1.45;">
-            <i class="fa-solid fa-circle-info text-secondary me-1"></i>
-            Tài xế nhận lương cứng cố định theo ca trực + thưởng KPI chất lượng dịch vụ. Không phát sinh rủi ro công nợ tiền mặt COD.
-          </div>
+        <div id="drawerHistoryList" class="d-flex flex-column gap-2">
+          <c:choose>
+            <c:when test="${not empty completedOrders}">
+              <c:forEach items="${completedOrders}" var="co">
+                <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong style="font-size: 0.92rem;">#${co.orderCode} · ${co.cupCount != null ? co.cupCount : 2} ly trà</strong>
+                    <div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">
+                      Đến: ${co.deliveryAddress} · Khách: ${co.customerName}
+                    </div>
+                  </div>
+                  <div class="text-end">
+                    <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Đã Giao</span>
+                  </div>
+                </div>
+              </c:forEach>
+            </c:when>
+            <c:otherwise>
+              <div class="p-4 text-center text-muted" style="font-size: 0.88rem;">
+                <i class="fa-solid fa-box-open fa-2x mb-2 text-secondary d-block"></i>
+                Chưa có đơn hàng nào hoàn thành trong ca làm này.
+              </div>
+            </c:otherwise>
+          </c:choose>
         </div>
       </div>
 
@@ -1637,33 +1561,566 @@
 
   <script>
     /* ========================================================
-       BIẾN TRẠNG THÁI TOÀN CỤC
+       BIẾN TRẠNG THÁI TOÀN CỤC & HÀNG ĐỢI ĐƠN HÀNG
        ======================================================== */
     let isOnline = ${isOnline ? 'true' : 'false'};
+    let ordersQueue = [];
+    let orderSteps = {};
+    let cupPhotos = {};
+    let deliveryPhotos = {};
     let knownOrderIds = new Set();
-    let checkinModalInstance = null;
     let incidentModalInstance = null;
     let audioContext = null;
 
     document.addEventListener('DOMContentLoaded', function() {
       // Khởi tạo Bootstrap Modals
-      const checkinEl = document.getElementById('checkinModal');
-      if (checkinEl) checkinModalInstance = new bootstrap.Modal(checkinEl);
-
       const incidentEl = document.getElementById('incidentModal');
       if (incidentEl) incidentModalInstance = new bootstrap.Modal(incidentEl);
 
-      // Lưu lại các ID đơn hàng ban đầu
+      // Nạp danh sách đơn hàng ban đầu từ model JSP
       <c:forEach items="${activeOrders}" var="o">
+        ordersQueue.push({
+          orderId: ${o.orderId},
+          orderCode: '${o.orderCode}',
+          dailyQueueNumber: ${o.dailyQueueNumber != null ? o.dailyQueueNumber : 'null'},
+          orderType: '${o.orderType}',
+          status: '${o.status}',
+          customerName: '${fn:escapeXml(o.customerName)}',
+          customerPhone: '${fn:escapeXml(o.customerPhone)}',
+          deliveryAddress: '${fn:escapeXml(o.deliveryAddress)}',
+          latitude: ${o.latitude != null ? o.latitude : 10.8522},
+          longitude: ${o.longitude != null ? o.longitude : 106.7716},
+          deliveryNotes: '${fn:escapeXml(o.deliveryNotes)}',
+          cupCount: ${o.cupCount != null ? o.cupCount : 2},
+          itemsSummary: '${fn:escapeXml(o.itemsSummary)}'
+        });
         knownOrderIds.add(${o.orderId});
       </c:forEach>
+
+      // Khởi tạo bước cho từng đơn trong hàng đợi
+      ordersQueue.forEach(function(o) {
+        if (o.status === 'ARRIVED') {
+          orderSteps[o.orderId] = 3;
+        } else if (o.status === 'DELIVERING') {
+          orderSteps[o.orderId] = 2;
+        } else {
+          orderSteps[o.orderId] = 0;
+        }
+      });
+
+      // Render bàn làm việc Focus Mode ban đầu
+      renderWorkbench();
 
       // Bắt đầu chu trình Polling nhẹ nhàng mỗi 12 giây
       setInterval(pollActiveOrders, 12000);
     });
 
     /* ========================================================
-       1. CHỈ ĐƯỜNG GOOGLE MAPS XE MÁY (CHUẨN 100% ĐỀ BÀI)
+       1. CỖ MÁY TRẠNG THÁI 4 BƯỚC & FOCUS WORKBENCH RENDERER
+       ======================================================== */
+    function renderWorkbench() {
+      const deck = document.getElementById('deliveryCardsDeck');
+      const countBadge = document.getElementById('activeOrdersCountBadge');
+      const queueSummary = document.getElementById('queueSummaryText');
+      const queuePills = document.getElementById('queuePillsList');
+      if (!deck) return;
+
+      const totalActive = ordersQueue.length;
+      if (countBadge) countBadge.innerText = totalActive + ' đơn';
+
+      // Cập nhật thanh Queue Tracker
+      if (queueSummary) {
+        if (totalActive > 0) {
+          queueSummary.innerText = 'Đang thực hiện 1 đơn | ' + (totalActive - 1) + ' đơn chờ tiếp theo';
+        } else {
+          queueSummary.innerText = '0 đơn trong hàng đợi';
+        }
+      }
+
+      if (queuePills) {
+        let pillsHtml = '';
+        ordersQueue.forEach(function(o, idx) {
+          if (idx === 0) {
+            pillsHtml += '<span class="queue-pill active"><i class="fa-solid fa-spinner fa-spin"></i> #' + o.orderCode + ' (Đang xử lý)</span>';
+          } else {
+            pillsHtml += '<span class="queue-pill"><i class="fa-solid fa-clock"></i> #' + o.orderCode + ' (Chờ lượt)</span>';
+          }
+        });
+        queuePills.innerHTML = pillsHtml;
+      }
+
+      // Trường hợp không có đơn nào trong hàng đợi
+      if (totalActive === 0) {
+        deck.innerHTML = 
+          '<div class="empty-state-box" id="emptyStatePlaceholder">' +
+            '<div class="empty-state-icon"><i class="fa-solid fa-mug-hot"></i></div>' +
+            '<h3 class="empty-state-title">Chưa Có Đơn Hàng Cần Giao</h3>' +
+            '<p class="empty-state-desc">' +
+              'Hiện tại bạn chưa được phân công đơn hàng nào. Hãy duy trì trạng thái <strong>BẬT CA TRỰC</strong>, hệ thống sẽ tự động báo chuông và rung ngay khi có cuốc giao mới từ chi nhánh!' +
+            '</p>' +
+            '<div class="d-flex justify-content-center gap-2">' +
+              '<button class="btn-tool btn-tool-accent" onclick="seedSampleOrder()"><i class="fa-solid fa-plus-circle"></i> Thêm Đơn Mẫu Thử Nghiệm</button>' +
+              '<button class="btn-tool" onclick="refreshOrders(true)"><i class="fa-solid fa-arrows-rotate"></i> Kiểm Tra Ngay</button>' +
+            '</div>' +
+          '</div>';
+        return;
+      }
+
+      // FOCUS MODE: Chỉ render duy nhất đơn đầu tiên trong hàng đợi (ordersQueue[0])
+      const curr = ordersQueue[0];
+      let step = orderSteps[curr.orderId];
+      if (step === undefined) {
+        step = (curr.status === 'ARRIVED') ? 3 : (curr.status === 'DELIVERING' ? 2 : 0);
+        orderSteps[curr.orderId] = step;
+      }
+
+      // Xác định badge trạng thái & banner chỉ dẫn theo bước
+      let statusBadgeHtml = '';
+      let stepBannerHtml = '';
+
+      if (step === 0) {
+        statusBadgeHtml = '<span class="order-status-badge status-badge-pickup"><i class="fa-solid fa-bell"></i> Bước 0: Đơn Mới Phân Công</span>';
+        stepBannerHtml = 
+          '<div class="step-banner">' +
+            '<div><i class="fa-solid fa-bell text-warning me-2"></i> <strong>Bước 0:</strong> Đơn mới phân công. Vui lòng bấm "OK / Xem Đơn Hàng" để bắt đầu đối soát ly.</div>' +
+            '<span class="step-pill-tag">BƯỚC 0 / 4</span>' +
+          '</div>';
+      } else if (step === 1) {
+        statusBadgeHtml = '<span class="order-status-badge status-badge-pickup"><i class="fa-solid fa-store"></i> Bước 1: Nhận Trà Tại Quán</span>';
+        stepBannerHtml = 
+          '<div class="step-banner">' +
+            '<div><i class="fa-solid fa-mug-hot text-primary me-2"></i> <strong>Bước 1:</strong> Đối soát ly nước tại quầy & chụp ảnh ly nước của quán để xác nhận nhận hàng.</div>' +
+            '<span class="step-pill-tag">BƯỚC 1 / 4</span>' +
+          '</div>';
+      } else if (step === 2) {
+        statusBadgeHtml = '<span class="order-status-badge status-badge-delivering"><i class="fa-solid fa-motorcycle"></i> Bước 2: Đang Giao Trên Đường</span>';
+        stepBannerHtml = 
+          '<div class="step-banner">' +
+            '<div><i class="fa-solid fa-motorcycle text-success me-2"></i> <strong>Bước 2:</strong> Đã nhận hàng từ quán! Bật Google Maps chỉ đường và di chuyển đến khách.</div>' +
+            '<span class="step-pill-tag">BƯỚC 2 / 4</span>' +
+          '</div>';
+      } else if (step === 3) {
+        statusBadgeHtml = '<span class="order-status-badge" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FDBA74;"><i class="fa-solid fa-location-dot"></i> Bước 3: Đã Đến Điểm Giao</span>';
+        stepBannerHtml = 
+          '<div class="step-banner">' +
+            '<div><i class="fa-solid fa-location-dot text-danger me-2"></i> <strong>Bước 3:</strong> Đã tới điểm giao! Hãy gọi điện thoại cho khách ra nhận nước.</div>' +
+            '<span class="step-pill-tag">BƯỚC 3 / 4</span>' +
+          '</div>';
+      } else if (step === 4) {
+        statusBadgeHtml = '<span class="order-status-badge status-badge-delivering"><i class="fa-solid fa-hand-holding-heart"></i> Bước 4: Khách Nhận & Kết Thúc</span>';
+        stepBannerHtml = 
+          '<div class="step-banner">' +
+            '<div><i class="fa-solid fa-camera text-success me-2"></i> <strong>Bước 4:</strong> Khách đã ra lấy nước. Chụp ảnh bàn giao và bấm Kết Thúc Chuyến.</div>' +
+            '<span class="step-pill-tag">BƯỚC 4 / 4</span>' +
+          '</div>';
+      }
+
+      // Xây dựng nội dung tác nghiệp theo từng bước
+      let stepBodyHtml = '';
+
+      if (step === 0) {
+        // BƯỚC 0: Tài xế ấn OK để xem ly nước nào cần lấy và tên khách hàng
+        stepBodyHtml = 
+          '<div class="route-display-box">' +
+            '<div class="route-node">' +
+              '<div class="node-icon-wrap node-icon-store"><i class="fa-solid fa-store"></i></div>' +
+              '<div class="node-content-wrap">' +
+                '<div class="node-label">Điểm Lấy Hàng (Chi Nhánh)</div>' +
+                '<div class="node-name">${branchName}</div>' +
+                '<div class="node-sub">Trà đã pha chế xong, đang chờ tài xế đối soát</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="route-line-connector"></div>' +
+            '<div class="route-node">' +
+              '<div class="node-icon-wrap node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>' +
+              '<div class="node-content-wrap">' +
+                '<div class="node-label">Khách Hàng</div>' +
+                '<div class="node-name">' + (curr.customerName || 'Khách Hàng Trà Đạo') + '</div>' +
+                '<div class="node-sub"><strong>Địa chỉ:</strong> ' + curr.deliveryAddress + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="mt-3">' +
+            '<button class="btn-complete-delivery w-100 py-3" style="font-size: 1.05rem;" onclick="advanceOrderToStep1(' + curr.orderId + ')">' +
+              '<i class="fa-solid fa-circle-check me-2"></i> OK / Xem Đơn Hàng & Ly Nước Cần Lấy' +
+            '</button>' +
+          '</div>';
+
+      } else if (step === 1) {
+        // BƯỚC 1: Đối soát ly nước, chụp hình ảnh ly nước của quán, sau đó mới cho nhận hàng
+        const hasCupPhoto = !!cupPhotos[curr.orderId];
+        const previewCupPhoto = hasCupPhoto ? cupPhotos[curr.orderId] : '';
+
+        stepBodyHtml = 
+          '<div class="route-display-box">' +
+            '<div class="route-node">' +
+              '<div class="node-icon-wrap node-icon-store"><i class="fa-solid fa-store"></i></div>' +
+              '<div class="node-content-wrap">' +
+                '<div class="node-label">Điểm Lấy Hàng (Chi Nhánh)</div>' +
+                '<div class="node-name">${branchName}</div>' +
+                '<div class="node-sub">Kiểm tra tem seal nắp ly và số lượng ly tại quầy</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="route-line-connector"></div>' +
+            '<div class="route-node">' +
+              '<div class="node-icon-wrap node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>' +
+              '<div class="node-content-wrap">' +
+                '<div class="node-label">Giao Đến Khách Hàng</div>' +
+                '<div class="node-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                '<div class="node-sub"><strong>Địa chỉ:</strong> ' + curr.deliveryAddress + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="cod-zero-guarantee-banner">' +
+            '<div class="cod-guarantee-text">' +
+              '<i class="fa-solid fa-shield-halved text-success" style="font-size: 1.15rem;"></i>' +
+              '<span>ĐƠN HÀNG ĐÃ THANH TOÁN 100% ONLINE — THU 0₫ TIỀN MẶT CỦA KHÁCH</span>' +
+            '</div>' +
+            '<div class="cod-zero-tag">COD: 0₫</div>' +
+          '</div>' +
+
+          '<div class="drink-items-summary-box">' +
+            '<div class="drink-items-header">' +
+              '<span><i class="fa-solid fa-mug-hot me-1 text-success"></i> Chi Tiết Ly Nước Cần Lấy Của Quán (' + (curr.cupCount || 2) + ' ly)</span>' +
+              '<span class="text-success"><i class="fa-solid fa-circle-check"></i> Đã Có Tem Seal</span>' +
+            '</div>' +
+            '<div class="drink-summary-content">' +
+              (curr.itemsSummary || '2x Trà Sữa Oolong Nướng (Size L, 70% Đường, 50% Đá)') +
+            '</div>' +
+          '</div>' +
+
+          '<div class="photo-capture-box ' + (hasCupPhoto ? 'has-photo' : '') + '" onclick="triggerCupPhotoInput(' + curr.orderId + ')">' +
+            '<div id="cupPrompt_' + curr.orderId + '" style="' + (hasCupPhoto ? 'display:none;' : '') + '">' +
+              '<i class="fa-solid fa-camera-retro fa-2x mb-2" style="color: var(--bizen-clay);"></i>' +
+              '<div class="fw-bold" style="font-size: 0.95rem;">Chụp ảnh ly nước của quán (Bắt buộc)</div>' +
+              '<div class="text-muted" style="font-size: 0.78rem;">Bấm vào đây để mở camera chụp ảnh ly nước đối soát trước khi xuất bến</div>' +
+            '</div>' +
+            (hasCupPhoto ? '<img src="' + previewCupPhoto + '" class="preview-thumb-img" alt="Ảnh ly nước">' +
+              '<div class="mt-2 text-success fw-bold" style="font-size: 0.82rem;"><i class="fa-solid fa-circle-check"></i> Đã chụp ảnh ly nước thành công (Bấm để chụp lại)</div>' : '') +
+            '<input type="file" id="cupPhotoInput_' + curr.orderId + '" accept="image/*" capture="camera" style="display: none;" onchange="onCupPhotoChosen(event, ' + curr.orderId + ')">' +
+          '</div>' +
+
+          '<div class="d-flex gap-2 flex-wrap">' +
+            '<button class="btn-pickup-delivery flex-grow-1" id="btnPickup_' + curr.orderId + '" ' +
+              (!hasCupPhoto ? 'disabled style="background: #9CA3AF; cursor: not-allowed; opacity: 0.7;"' : '') +
+              ' onclick="handlePickupWithPhoto(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+              '<i class="fa-solid fa-store me-2"></i> Đã Nhận Hàng Từ Quán' +
+            '</button>' +
+            '<button class="btn-report-incident" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+              '<i class="fa-solid fa-triangle-exclamation"></i> Báo Sự Cố' +
+            '</button>' +
+          '</div>';
+
+      } else if (step === 2) {
+        // BƯỚC 2: Hiển thị Google Maps xe máy, kế bên là nút đã tới điểm giao. Nút gọi điện ALWAYS có sẵn.
+        stepBodyHtml = 
+          '<div class="route-display-box">' +
+            '<div class="route-node">' +
+              '<div class="node-icon-wrap node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>' +
+              '<div class="node-content-wrap">' +
+                '<div class="node-label">Điểm Giao Hàng Đến Khách</div>' +
+                '<div class="node-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                '<div class="node-sub"><strong>Địa chỉ:</strong> ' + curr.deliveryAddress + '</div>' +
+                (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-message"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="cod-zero-guarantee-banner">' +
+            '<div class="cod-guarantee-text">' +
+              '<i class="fa-solid fa-shield-halved text-success"></i>' +
+              '<span>ĐƠN HÀNG ĐÃ THANH TOÁN ONLINE — THU 0₫ TIỀN MẶT CỦA KHÁCH</span>' +
+            '</div>' +
+            '<div class="cod-zero-tag">COD: 0₫</div>' +
+          '</div>' +
+
+          '<div class="d-flex flex-column gap-3 mt-3">' +
+            // Nút Gọi Điện ALWAYS CÓ SẴN từ thời điểm này
+            '<a href="tel:' + (curr.customerPhone || '') + '" class="btn-call-fast w-100 py-3" style="font-size: 1.05rem;">' +
+              '<i class="fa-solid fa-phone me-2"></i> Gọi Điện Cho Khách (' + (curr.customerPhone || 'Gọi Ngay') + ')' +
+            '</a>' +
+
+            '<div class="d-flex gap-2 flex-wrap">' +
+              // Nút Chỉ Đường Google Maps (Xe Máy)
+              '<button class="btn-google-maps flex-grow-1" onclick="openGoogleMapsMotorbike(\'' + curr.deliveryAddress + '\', ' + curr.latitude + ', ' + curr.longitude + ')">' +
+                '<i class="fa-solid fa-motorcycle me-2"></i> Chỉ Đường Google Maps (Xe Máy)' +
+              '</button>' +
+
+              // Nút Đã Tới Điểm Giao nằm KẾ BÊN Google Maps
+              '<button class="btn-arrived flex-grow-1" onclick="handleArrivedAtCustomer(' + curr.orderId + ')">' +
+                '<i class="fa-solid fa-location-dot me-2"></i> Đã Tới Điểm Giao' +
+              '</button>' +
+
+              '<button class="btn-report-incident" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+                '<i class="fa-solid fa-triangle-exclamation"></i> Báo Sự Cố' +
+              '</button>' +
+            '</div>' +
+          '</div>';
+
+      } else if (step === 3) {
+        // BƯỚC 3: Đã đến nơi, gọi khách ra lấy nước
+        stepBodyHtml = 
+          '<div class="route-display-box">' +
+            '<div class="route-node">' +
+              '<div class="node-icon-wrap node-icon-dest" style="background: #FEE2E2; color: #DC2626;"><i class="fa-solid fa-location-dot"></i></div>' +
+              '<div class="node-content-wrap">' +
+                '<div class="node-label">Tài Xế Đã Đến Nơi</div>' +
+                '<div class="node-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                '<div class="node-sub"><strong>Địa chỉ:</strong> ' + curr.deliveryAddress + '</div>' +
+                (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-message"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="d-flex flex-column gap-3 mt-3">' +
+            // Nút gọi điện cho khách nổi bật để gọi khách ra nhận nước
+            '<a href="tel:' + (curr.customerPhone || '') + '" class="btn-call-fast pulse w-100 py-3" style="font-size: 1.15rem; background: #16A34A;">' +
+              '<i class="fa-solid fa-phone-volume me-2"></i> Gọi Khách Ra Nhận Nước: ' + (curr.customerPhone || 'Chưa có SĐT') +
+            '</a>' +
+
+            '<div class="alert alert-light border p-3 d-flex align-items-center gap-2 mb-0" style="border-radius: 10px; font-size: 0.9rem;">' +
+              '<i class="fa-solid fa-circle-info text-primary fa-lg"></i>' +
+              '<span>Tài xế đã đến điểm giao. Vui lòng gọi khách. Khi khách ra nhận nước, bấm nút bên dưới để chuyển sang bước chụp ảnh bàn giao.</span>' +
+            '</div>' +
+
+            '<div class="d-flex gap-2">' +
+              '<button class="btn-complete-delivery flex-grow-1 py-3" onclick="advanceOrderToStep4(' + curr.orderId + ')">' +
+                '<i class="fa-solid fa-arrow-right me-2"></i> Khách Đã Ra Lấy ➔ Chụp Ảnh & Kết Thúc' +
+              '</button>' +
+              '<button class="btn-report-incident" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+                '<i class="fa-solid fa-triangle-exclamation"></i> Báo Sự Cố' +
+              '</button>' +
+            '</div>' +
+          '</div>';
+
+      } else if (step === 4) {
+        // BƯỚC 4: Khách ra lấy -> Chụp hình ảnh đơn hàng -> Kết thúc chuyến
+        const hasDeliveryPhoto = !!deliveryPhotos[curr.orderId];
+        const previewDeliveryPhoto = hasDeliveryPhoto ? deliveryPhotos[curr.orderId] : '';
+
+        stepBodyHtml = 
+          '<div class="cod-zero-guarantee-banner">' +
+            '<div class="cod-guarantee-text">' +
+              '<i class="fa-solid fa-shield-halved text-success"></i>' +
+              '<span>ĐƠN HÀNG ĐÃ THANH TOÁN 100% ONLINE — THU 0₫ TIỀN MẶT CỦA KHÁCH</span>' +
+            '</div>' +
+            '<div class="cod-zero-tag">COD: 0₫</div>' +
+          '</div>' +
+
+          '<div class="photo-capture-box ' + (hasDeliveryPhoto ? 'has-photo' : '') + '" onclick="triggerDeliveryPhotoInput(' + curr.orderId + ')">' +
+            '<div id="deliveryPrompt_' + curr.orderId + '" style="' + (hasDeliveryPhoto ? 'display:none;' : '') + '">' +
+              '<i class="fa-solid fa-camera fa-2x mb-2" style="color: var(--matcha-deep);"></i>' +
+              '<div class="fw-bold" style="font-size: 0.95rem;">Chụp ảnh ly trà trao cho khách (Bắt buộc)</div>' +
+              '<div class="text-muted" style="font-size: 0.78rem;">Bằng chứng xác thực giao hàng thành công để hoàn tất chuyến</div>' +
+            '</div>' +
+            (hasDeliveryPhoto ? '<img src="' + previewDeliveryPhoto + '" class="preview-thumb-img" alt="Ảnh giao hàng">' +
+              '<div class="mt-2 text-success fw-bold" style="font-size: 0.82rem;"><i class="fa-solid fa-circle-check"></i> Đã chụp ảnh bàn giao thành công (Bấm để chụp lại)</div>' : '') +
+            '<input type="file" id="deliveryPhotoInput_' + curr.orderId + '" accept="image/*" capture="camera" style="display: none;" onchange="onDeliveryPhotoChosen(event, ' + curr.orderId + ')">' +
+          '</div>' +
+
+          '<div class="d-flex flex-column gap-3 mt-3">' +
+            '<a href="tel:' + (curr.customerPhone || '') + '" class="btn-call-fast w-100" style="padding: 10px 16px; font-size: 0.88rem;">' +
+              '<i class="fa-solid fa-phone me-2"></i> Gọi Lại Cho Khách: ' + (curr.customerPhone || 'Gọi') +
+            '</a>' +
+
+            '<button class="btn-complete-trip w-100 py-3" id="btnCompleteTrip_' + curr.orderId + '" ' +
+              (!hasDeliveryPhoto ? 'disabled style="background: #9CA3AF; cursor: not-allowed; opacity: 0.7;"' : '') +
+              ' onclick="handleFinishDeliveryTrip(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+              '<i class="fa-solid fa-flag-checkered me-2"></i> Kết Thúc Chuyến Giao' +
+            '</button>' +
+          '</div>';
+      }
+
+      // Render Focus Card hoàn chỉnh
+      deck.innerHTML = 
+        '<div class="delivery-card" id="focus-order-card-' + curr.orderId + '">' +
+          '<div class="delivery-card-top">' +
+            '<div class="card-code-wrap">' +
+              '<span class="order-code-badge">#' + curr.orderCode + '</span>' +
+              (curr.dailyQueueNumber ? '<span class="order-queue-badge">STT #' + curr.dailyQueueNumber + '</span>' : '') +
+              '<span class="badge bg-light text-dark border">' +
+                '<i class="fa-solid fa-mug-hot text-success me-1"></i> ' + (curr.cupCount || 2) + ' ly trà' +
+              '</span>' +
+            '</div>' +
+            '<div>' + statusBadgeHtml + '</div>' +
+          '</div>' +
+          stepBannerHtml +
+          stepBodyHtml +
+        '</div>';
+    }
+
+    /* ========================================================
+       2. CÁC HÀM XỬ LÝ CHUYỂN BƯỚC TUẦN TỰ
+       ======================================================== */
+    // Bước 0 -> Bước 1: Tài xế ấn OK để xem đơn và danh sách ly nước cần lấy
+    function advanceOrderToStep1(orderId) {
+      orderSteps[orderId] = 1;
+      renderWorkbench();
+      showZenToast('Đã xác nhận xem đơn. Hãy đối soát tem ly và chụp ảnh ly nước của quán!', 'info');
+    }
+
+    // Trigger mở camera chụp ảnh ly nước quán
+    function triggerCupPhotoInput(orderId) {
+      const input = document.getElementById('cupPhotoInput_' + orderId);
+      if (input) input.click();
+    }
+
+    // Khi chụp xong ảnh ly nước quán (preview base64 + mở khóa nút Nhận Hàng)
+    function onCupPhotoChosen(event, orderId) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          cupPhotos[orderId] = evt.target.result;
+          renderWorkbench();
+          showZenToast('Đã chụp ảnh ly nước của quán thành công! Nút "Đã Nhận Hàng Từ Quán" đã mở khóa.', 'success');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Bước 1 -> Bước 2: Đã nhận hàng từ quán sau khi có ảnh chụp
+    function handlePickupWithPhoto(orderId, orderCode) {
+      if (!cupPhotos[orderId]) {
+        showZenToast('Bắt buộc phải chụp ảnh ly nước của quán trước khi xác nhận nhận hàng!', 'warning');
+        return;
+      }
+
+      fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/pickup', {
+        method: 'POST'
+      })
+      .then(res => res.json())
+      .then(data => {
+        orderSteps[orderId] = 2;
+        if (ordersQueue[0] && ordersQueue[0].orderId === orderId) {
+          ordersQueue[0].status = 'DELIVERING';
+        }
+        renderWorkbench();
+        showZenToast('Đã nhận hàng từ quán cho đơn #' + orderCode + '. Bắt đầu di chuyển giao hàng!', 'success');
+      })
+      .catch(err => {
+        console.error(err);
+        showZenToast('Lỗi khi gửi xác nhận lấy hàng, vui lòng thử lại', 'danger');
+      });
+    }
+
+    // Bước 2 -> Bước 3: Tài xế bấm Đã Tới Điểm Giao
+    function handleArrivedAtCustomer(orderId) {
+      fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/arrived', {
+        method: 'POST'
+      })
+      .then(res => res.json())
+      .then(data => {
+        orderSteps[orderId] = 3;
+        if (ordersQueue[0] && ordersQueue[0].orderId === orderId) {
+          ordersQueue[0].status = 'ARRIVED';
+        }
+        renderWorkbench();
+        playNotificationSound();
+        triggerPhoneVibration();
+        showZenToast('Đã đến điểm giao! Hãy bấm gọi điện thoại cho khách ra nhận nước.', 'info');
+      })
+      .catch(err => {
+        console.error(err);
+        orderSteps[orderId] = 3;
+        renderWorkbench();
+      });
+    }
+
+    // Bước 3 -> Bước 4: Khách đã ra lấy nước, chuyển sang chụp ảnh bàn giao
+    function advanceOrderToStep4(orderId) {
+      orderSteps[orderId] = 4;
+      renderWorkbench();
+      showZenToast('Khách đã ra nhận nước. Hãy chụp ảnh bàn giao và bấm Kết Thúc Chuyến Giao!', 'info');
+    }
+
+    // Trigger mở camera chụp ảnh bàn giao cho khách
+    function triggerDeliveryPhotoInput(orderId) {
+      const input = document.getElementById('deliveryPhotoInput_' + orderId);
+      if (input) input.click();
+    }
+
+    // Khi chụp xong ảnh bàn giao (preview base64 + mở khóa nút Kết Thúc)
+    function onDeliveryPhotoChosen(event, orderId) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          deliveryPhotos[orderId] = evt.target.result;
+          renderWorkbench();
+          showZenToast('Đã chụp ảnh bàn giao thành công! Nút "Kết Thúc Chuyến Giao" đã mở khóa.', 'success');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Bước 4 -> Hoàn tất: Kết thúc chuyến, tăng số cuốc, tự động trượt đơn kế tiếp vào queue
+    function handleFinishDeliveryTrip(orderId, orderCode) {
+      if (!deliveryPhotos[orderId]) {
+        showZenToast('Bắt buộc phải chụp ảnh ly trà trao cho khách trước khi kết thúc chuyến!', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('btnCompleteTrip_' + orderId);
+      if (btn) btn.disabled = true;
+
+      fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/complete', {
+        method: 'POST'
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (btn) btn.disabled = false;
+        playNotificationSound();
+        triggerPhoneVibration();
+        showZenToast('GIAO HÀNG THÀNH CÔNG: #' + orderCode + '! Đã hoàn tất cuốc giao.', 'success');
+
+        // Cập nhật số cuốc trên thanh metric (+1 cuốc)
+        const metricEl = document.getElementById('metricCompletedCount');
+        if (metricEl) {
+          const current = parseInt(metricEl.innerText) || 0;
+          metricEl.innerText = (current + 1) + ' cuốc';
+        }
+
+        // Bổ sung vào danh sách Lịch Sử Đơn Trong Ca của Profile Drawer
+        const historyList = document.getElementById('drawerHistoryList');
+        if (historyList && ordersQueue[0]) {
+          const finished = ordersQueue[0];
+          const item = document.createElement('div');
+          item.className = 'p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center mb-2';
+          item.innerHTML = 
+            '<div>' +
+              '<strong style="font-size: 0.92rem;">#' + finished.orderCode + ' · ' + (finished.cupCount || 2) + ' ly trà</strong>' +
+              '<div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">' +
+                'Đến: ' + finished.deliveryAddress + ' · Khách: ' + (finished.customerName || 'Khách hàng') +
+              '</div>' +
+            '</div>' +
+            '<div class="text-end">' +
+              '<span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Đã Giao</span>' +
+            '</div>';
+
+          const placeholder = historyList.querySelector('.text-center');
+          if (placeholder) placeholder.remove();
+          historyList.prepend(item);
+        }
+
+        // Tự động loại bỏ đơn đã xong khỏi hàng đợi và đưa đơn kế tiếp vào Focus Mode
+        ordersQueue = ordersQueue.filter(function(o) { return o.orderId !== orderId; });
+        delete orderSteps[orderId];
+        delete cupPhotos[orderId];
+        delete deliveryPhotos[orderId];
+
+        renderWorkbench();
+      })
+      .catch(err => {
+        if (btn) btn.disabled = false;
+        console.error(err);
+        showZenToast('Lỗi khi gửi xác nhận kết thúc chuyến giao', 'danger');
+      });
+    }
+
+    /* ========================================================
+       3. CHỈ ĐƯỜNG GOOGLE MAPS XE MÁY (TẬN DỤNG GEOLOCATION)
        ======================================================== */
     function openGoogleMapsMotorbike(destinationAddress, destLat, destLng) {
       const destination = (destLat && destLng) ? (destLat + ',' + destLng) : encodeURIComponent(destinationAddress);
@@ -1672,36 +2129,31 @@
           function(position) {
             const originLat = position.coords.latitude;
             const originLng = position.coords.longitude;
-            const url = `https://www.google.com/maps/dir/?api=1&origin=\${originLat},\${originLng}&destination=\${destination}&travelmode=two_wheeler`;
+            const url = 'https://www.google.com/maps/dir/?api=1&origin=' + originLat + ',' + originLng + '&destination=' + destination + '&travelmode=two_wheeler';
             window.open(url, '_blank');
           },
           function(error) {
             console.warn('Geolocation fallback:', error);
-            const url = `https://www.google.com/maps/dir/?api=1&destination=\${destination}&travelmode=two_wheeler`;
+            const url = 'https://www.google.com/maps/dir/?api=1&destination=' + destination + '&travelmode=two_wheeler';
             window.open(url, '_blank');
           },
           { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
       } else {
-        const url = `https://www.google.com/maps/dir/?api=1&destination=\${destination}&travelmode=two_wheeler`;
+        const url = 'https://www.google.com/maps/dir/?api=1&destination=' + destination + '&travelmode=two_wheeler';
         window.open(url, '_blank');
       }
     }
 
     /* ========================================================
-       2. HỆ THỐNG THÔNG BÁO: ÂM THANH + RUNG + WEB NOTIFICATION
+       4. HỆ THỐNG THÔNG BÁO: ÂM THANH + RUNG + WEB NOTIFICATION
        ======================================================== */
-    // A. Âm thanh Web Audio API (Tần số 880Hz -> 1320Hz, 100% offline không cần file mp3)
     function playNotificationSound() {
       try {
         const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtxClass) return;
-        if (!audioContext) {
-          audioContext = new AudioCtxClass();
-        }
-        if (audioContext.state === 'suspended') {
-          audioContext.resume();
-        }
+        if (!audioContext) audioContext = new AudioCtxClass();
+        if (audioContext.state === 'suspended') audioContext.resume();
         const now = audioContext.currentTime;
 
         // Nốt 1: 880Hz
@@ -1732,7 +2184,6 @@
       }
     }
 
-    // B. Rung điện thoại
     function triggerPhoneVibration() {
       if (navigator.vibrate) {
         try {
@@ -1743,7 +2194,6 @@
       }
     }
 
-    // C. Web Notification API
     function triggerWebNotification(title, message) {
       if ('Notification' in window) {
         if (Notification.permission === 'granted') {
@@ -1764,7 +2214,6 @@
       }
     }
 
-    // D. Nút Thử Nghiệm Âm Thanh / Rung
     function testNotificationSystem() {
       playNotificationSound();
       triggerPhoneVibration();
@@ -1776,7 +2225,7 @@
     }
 
     /* ========================================================
-       3. CÔNG TẮC BẬT / TẮT CA TRỰC (CAPSULE SWITCH)
+       5. CÔNG TẮC GẠT BẬT / TẮT CA TRỰC
        ======================================================== */
     function toggleShiftStatus() {
       isOnline = !isOnline;
@@ -1787,38 +2236,40 @@
       const statusBoxSub = document.getElementById('statusBoxSub');
 
       if (isOnline) {
-        capsule.classList.add('online');
-        label.innerText = 'BẬT';
-        knobIcon.className = 'fa-solid fa-check';
-        statusBoxText.innerText = 'Sẵn Sàng Nhận Đơn';
-        statusBoxText.style.color = 'var(--matcha-deep)';
-        statusBoxSub.innerText = 'Đang bật nhận đơn từ quán';
+        if (capsule) capsule.classList.add('online');
+        if (label) label.innerText = 'BẬT';
+        if (knobIcon) knobIcon.className = 'fa-solid fa-check';
+        if (statusBoxText) {
+          statusBoxText.innerText = 'Sẵn Sàng Nhận Đơn';
+          statusBoxText.style.color = 'var(--matcha-deep)';
+        }
+        if (statusBoxSub) statusBoxSub.innerText = 'Đang bật nhận đơn từ quán';
         showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
 
-        // Xin quyền notification nếu chưa có
         if ('Notification' in window && Notification.permission === 'default') {
           Notification.requestPermission();
         }
       } else {
-        capsule.classList.remove('online');
-        label.innerText = 'TẮT';
-        knobIcon.className = 'fa-solid fa-power-off';
-        statusBoxText.innerText = 'Tạm Nghỉ Ca';
-        statusBoxText.style.color = 'var(--text-sepia)';
-        statusBoxSub.innerText = 'Gạt công tắc trên để trực';
+        if (capsule) capsule.classList.remove('online');
+        if (label) label.innerText = 'TẮT';
+        if (knobIcon) knobIcon.className = 'fa-solid fa-power-off';
+        if (statusBoxText) {
+          statusBoxText.innerText = 'Tạm Nghỉ Ca';
+          statusBoxText.style.color = 'var(--text-sepia)';
+        }
+        if (statusBoxSub) statusBoxSub.innerText = 'Gạt công tắc trên để trực';
         showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
       }
 
-      // Đồng bộ trạng thái về Spring Boot backend
       fetch('${pageContext.request.contextPath}/shipper/api/toggle-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ online: isOnline })
-      }).catch(err => console.log('Toggle synced locally'));
+      }).catch(err => console.log('Toggle synced'));
     }
 
     /* ========================================================
-       4. TẢI VÀ ĐỒNG BỘ DANH SÁCH ĐƠN HÀNG (POLLING & REFRESH)
+       6. TẢI VÀ ĐỒNG BỘ DANH SÁCH ĐƠN (POLLING & REFRESH)
        ======================================================== */
     function pollActiveOrders() {
       fetch('${pageContext.request.contextPath}/shipper/api/active-orders')
@@ -1826,15 +2277,15 @@
         .then(orders => {
           if (!Array.isArray(orders)) return;
 
-          // Kiểm tra xem có đơn hàng mới nào xuất hiện không
           let hasNewOrder = false;
           let newestOrder = null;
 
-          orders.forEach(o => {
+          orders.forEach(function(o) {
             if (!knownOrderIds.has(o.orderId)) {
               hasNewOrder = true;
               newestOrder = o;
               knownOrderIds.add(o.orderId);
+              ordersQueue.push(o);
             }
           });
 
@@ -1846,7 +2297,7 @@
               'Đơn #' + newestOrder.orderCode + ' đến ' + newestOrder.deliveryAddress + ' (' + (newestOrder.cupCount || 2) + ' ly).'
             );
             showZenToast('CÓ ĐƠN HÀNG MỚI: #' + newestOrder.orderCode + ' (' + (newestOrder.cupCount || 2) + ' ly)', 'success');
-            renderOrdersDeck(orders);
+            renderWorkbench();
           }
         })
         .catch(err => console.log('Polling check:', err));
@@ -1860,7 +2311,17 @@
         .then(res => res.json())
         .then(orders => {
           if (icon) icon.classList.remove('fa-spin');
-          renderOrdersDeck(orders);
+          if (Array.isArray(orders)) {
+            // Cập nhật lại ordersQueue đồng bộ với server
+            ordersQueue = orders;
+            ordersQueue.forEach(function(o) {
+              knownOrderIds.add(o.orderId);
+              if (orderSteps[o.orderId] === undefined) {
+                orderSteps[o.orderId] = (o.status === 'ARRIVED') ? 3 : (o.status === 'DELIVERING' ? 2 : 0);
+              }
+            });
+            renderWorkbench();
+          }
           if (isManual) {
             showZenToast('Đã làm mới danh sách đơn hàng giao vận.', 'success');
           }
@@ -1872,143 +2333,8 @@
         });
     }
 
-    function renderOrdersDeck(orders) {
-      const deck = document.getElementById('deliveryCardsDeck');
-      const countBadge = document.getElementById('activeOrdersCountBadge');
-      if (!deck) return;
-
-      if (!orders || orders.length === 0) {
-        countBadge.innerText = '0 đơn';
-        deck.innerHTML = `
-          <div class="empty-state-box" id="emptyStatePlaceholder">
-            <div class="empty-state-icon">
-              <i class="fa-solid fa-mug-hot"></i>
-            </div>
-            <h3 class="empty-state-title">Chưa Có Đơn Hàng Cần Giao</h3>
-            <p class="empty-state-desc">
-              Hiện tại bạn chưa được phân công đơn hàng nào. Hãy duy trì trạng thái <strong>BẬT CA TRỰC</strong>, hệ thống sẽ tự động báo chuông và rung ngay khi có cuốc giao mới!
-            </p>
-            <div class="d-flex justify-content-center gap-2">
-              <button class="btn-tool btn-tool-accent" onclick="seedSampleOrder()">
-                <i class="fa-solid fa-plus-circle"></i> Thêm Đơn Mẫu Thử Nghiệm
-              </button>
-              <button class="btn-tool" onclick="refreshOrders(true)">
-                <i class="fa-solid fa-arrows-rotate"></i> Kiểm Tra Ngay
-              </button>
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      countBadge.innerText = orders.length + ' đơn';
-      let html = '';
-
-      orders.forEach(order => {
-        const isPickup = (order.status === 'OUT_FOR_DELIVERY');
-        const statusBadge = isPickup
-          ? '<span class="order-status-badge status-badge-pickup"><i class="fa-solid fa-store"></i> Chờ Nhận Trà Tại Quán</span>'
-          : '<span class="order-status-badge status-badge-delivering"><i class="fa-solid fa-motorcycle"></i> Đang Giao Trên Đường</span>';
-
-        const actionButton = isPickup
-          ? `<button class="btn-pickup-delivery" onclick="confirmOrderPickup(\${order.orderId}, '\${order.orderCode}')">
-               <i class="fa-solid fa-store"></i> <span>Xác Nhận Đã Nhận Trà</span>
-             </button>`
-          : `<button class="btn-complete-delivery" onclick="openCheckinModal(\${order.orderId}, '\${order.orderCode}')">
-               <i class="fa-solid fa-camera"></i> <span>Check-in Đã Giao Xong</span>
-             </button>`;
-
-        const callButton = order.customerPhone 
-          ? `<a href="tel:\${order.customerPhone}" class="btn-call-customer"><i class="fa-solid fa-phone"></i> Gọi \${order.customerPhone}</a>`
-          : '';
-
-        const notesBox = order.deliveryNotes 
-          ? `<div class="customer-note-callout"><i class="fa-solid fa-message"></i> <span><strong>Khách dặn:</strong> \${order.deliveryNotes}</span></div>`
-          : '';
-
-        const queueBadge = order.dailyQueueNumber 
-          ? `<span class="order-queue-badge">STT #\${order.dailyQueueNumber}</span>`
-          : '';
-
-        html += `
-          <div class="delivery-card \${isPickup ? 'status-pickup' : ''}" id="order-card-\${order.orderId}">
-            <div class="delivery-card-top">
-              <div class="card-code-wrap">
-                <span class="order-code-badge">#\${order.orderCode}</span>
-                \${queueBadge}
-                <span class="badge bg-light text-dark border">
-                  <i class="fa-solid fa-mug-hot text-success me-1"></i> \${order.cupCount || 2} ly trà
-                </span>
-              </div>
-              <div>\${statusBadge}</div>
-            </div>
-
-            <div class="route-display-box">
-              <div class="route-node">
-                <div class="node-icon-wrap node-icon-store"><i class="fa-solid fa-store"></i></div>
-                <div class="node-content-wrap">
-                  <div class="node-label">Điểm Lấy Hàng (Chi Nhánh)</div>
-                  <div class="node-name">${branchName}</div>
-                  <div class="node-sub">Trà đã pha chế xong, đóng nắp seal và đóng túi chống đổ</div>
-                </div>
-              </div>
-
-              <div class="route-line-connector"></div>
-
-              <div class="route-node">
-                <div class="node-icon-wrap node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>
-                <div class="node-content-wrap">
-                  <div class="node-label">Điểm Giao Hàng (Khách Hàng)</div>
-                  <div class="node-name">
-                    <span>\${order.customerName || 'Khách Hàng Trà Đạo'}</span>
-                    \${callButton}
-                  </div>
-                  <div class="node-sub"><strong>Địa chỉ:</strong> \${order.deliveryAddress}</div>
-                  \${notesBox}
-                </div>
-              </div>
-            </div>
-
-            <div class="cod-zero-guarantee-banner">
-              <div class="cod-guarantee-text">
-                <i class="fa-solid fa-shield-halved text-success" style="font-size: 1.15rem;"></i>
-                <span>ĐƠN HÀNG ĐÃ THANH TOÁN 100% TRỰC TUYẾN — KHÔNG THU TIỀN MẶT CỦA KHÁCH</span>
-              </div>
-              <div class="cod-zero-tag">COD: 0₫</div>
-            </div>
-
-            <div class="drink-items-summary-box">
-              <div class="drink-items-header">
-                <span>Chi Tiết Đồ Uống Giao Hàng</span>
-                <span class="text-success"><i class="fa-solid fa-circle-check"></i> Đã Dán Tem Niêm Phong</span>
-              </div>
-              <div class="drink-summary-content">
-                \${order.itemsSummary || '2x Trà Sữa Oolong Nướng (Size L, 70% Đường, 50% Đá)'}
-              </div>
-            </div>
-
-            <div class="card-actions-grid">
-              <button class="btn-google-maps" onclick="openGoogleMapsMotorbike('\${order.deliveryAddress}', \${order.latitude || 10.8522}, \${order.longitude || 106.7716})">
-                <i class="fa-solid fa-motorcycle"></i>
-                <span>Chỉ Đường Google Maps (Xe Máy)</span>
-              </button>
-
-              \${actionButton}
-
-              <button class="btn-report-incident" onclick="openIncidentModal(\${order.orderId}, '\${order.orderCode}')">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <span>Báo Sự Cố</span>
-              </button>
-            </div>
-          </div>
-        `;
-      });
-
-      deck.innerHTML = html;
-    }
-
     /* ========================================================
-       5. TẠO ĐƠN HÀNG MẪU DEMO (NẾU CSDL TRỐNG)
+       7. TẠO ĐƠN HÀNG MẪU DEMO (NẾU CSDL TRỐNG)
        ======================================================== */
     function seedSampleOrder() {
       const btn = document.getElementById('btnSeedSample');
@@ -2037,94 +2363,8 @@
     }
 
     /* ========================================================
-       6. THAO TÁC TIẾN TRÌNH: NHẬN TRÀ -> GIAO XONG -> SỰ CỐ
+       8. BÁO CÁO SỰ CỐ / HỦY ĐƠN (UC14)
        ======================================================== */
-    // A. Xác nhận nhận trà tại quán
-    function confirmOrderPickup(orderId, orderCode) {
-      if (!confirm('Xác nhận bạn đã kiểm tra tem seal và nhận đủ ly cho đơn #' + orderCode + ' tại quầy?')) {
-        return;
-      }
-
-      fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/pickup', {
-        method: 'POST'
-      })
-      .then(res => res.json())
-      .then(data => {
-        showZenToast('Đã nhận trà đơn #' + orderCode + '. Bắt đầu di chuyển giao cho khách!', 'success');
-        refreshOrders(false);
-      })
-      .catch(err => {
-        console.error(err);
-        showZenToast('Lỗi xác nhận lấy trà, vui lòng thử lại', 'danger');
-      });
-    }
-
-    // B. Mở modal check-in chụp hình giao xong (UC13)
-    function openCheckinModal(orderId, orderCode) {
-      document.getElementById('checkinOrderId').value = orderId;
-      document.getElementById('checkinOrderCode').value = orderCode;
-      document.getElementById('checkinModalLabel').innerHTML = '<i class="fa-solid fa-camera me-2"></i> Check-in Giao Xong: #' + orderCode;
-      
-      // Reset ảnh preview
-      const preview = document.getElementById('checkinPreviewPhoto');
-      preview.style.display = 'none';
-      document.getElementById('cameraPrompt').style.display = 'block';
-
-      if (checkinModalInstance) checkinModalInstance.show();
-    }
-
-    function triggerCameraInput() {
-      const input = document.getElementById('cameraFileInput');
-      if (input) input.click();
-    }
-
-    function previewCapturedPhoto(e) {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          const preview = document.getElementById('checkinPreviewPhoto');
-          preview.src = evt.target.result;
-          preview.style.display = 'block';
-          document.getElementById('cameraPrompt').style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function submitCompleteDelivery() {
-      const orderId = document.getElementById('checkinOrderId').value;
-      const orderCode = document.getElementById('checkinOrderCode').value;
-      const btn = document.getElementById('btnSubmitComplete');
-      if (btn) btn.disabled = true;
-
-      fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/complete', {
-        method: 'POST'
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (btn) btn.disabled = false;
-        if (checkinModalInstance) checkinModalInstance.hide();
-        playNotificationSound();
-        showZenToast('GIAO HÀNG THÀNH CÔNG: #' + orderCode + '! +5.000₫ thưởng KPI cuốc.', 'success');
-        
-        // Cập nhật số đơn hoàn thành trên thanh metric
-        const metricEl = document.getElementById('metricCompletedCount');
-        if (metricEl) {
-          const current = parseInt(metricEl.innerText) || 0;
-          metricEl.innerText = (current + 1) + ' cuốc';
-        }
-
-        refreshOrders(false);
-      })
-      .catch(err => {
-        if (btn) btn.disabled = false;
-        console.error(err);
-        showZenToast('Lỗi khi gửi xác nhận giao hàng', 'danger');
-      });
-    }
-
-    // C. Báo cáo sự cố hủy giao đơn (UC14)
     function openIncidentModal(orderId, orderCode) {
       document.getElementById('incidentOrderId').value = orderId;
       document.getElementById('incidentOrderCode').value = orderCode;
@@ -2153,7 +2393,11 @@
         if (btn) btn.disabled = false;
         if (incidentModalInstance) incidentModalInstance.hide();
         showZenToast('Đã ghi nhận sự cố cho đơn #' + orderCode + ' và hoàn trả về chi nhánh để quản lý phân công lại.', 'warning');
-        refreshOrders(false);
+        
+        // Loại bỏ đơn khỏi queue và trượt đơn kế tiếp vào
+        ordersQueue = ordersQueue.filter(function(o) { return o.orderId != orderId; });
+        delete orderSteps[orderId];
+        renderWorkbench();
       })
       .catch(err => {
         if (btn) btn.disabled = false;
@@ -2163,7 +2407,7 @@
     }
 
     /* ========================================================
-       7. DRAWER HỒ SƠ TÀI XẾ & KPI
+       9. DRAWER HỒ SƠ TÀI XẾ & LỊCH SỬ ĐƠN
        ======================================================== */
     function openProfileDrawer() {
       document.getElementById('profileDrawer').classList.add('open');
@@ -2178,7 +2422,6 @@
     function switchDrawerTab(tabId, btn) {
       document.getElementById('tab-profile').style.display = 'none';
       document.getElementById('tab-history').style.display = 'none';
-      document.getElementById('tab-kpi').style.display = 'none';
 
       const target = document.getElementById(tabId);
       if (target) target.style.display = 'flex';
@@ -2188,7 +2431,7 @@
     }
 
     /* ========================================================
-       8. TOAST NOTIFICATION TIỆN LỢI
+       10. TOAST NOTIFICATION TIỆN LỢI
        ======================================================== */
     function showZenToast(message, type) {
       const container = document.getElementById('toastContainer');

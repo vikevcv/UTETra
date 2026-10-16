@@ -65,6 +65,13 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài xế ID: " + driverId));
 
+        // Ràng buộc chi nhánh: Tài xế chi nhánh nào thì chỉ nhận đơn hàng của chi nhánh đó
+        if (order.getBranch() != null && driver.getBranch() != null &&
+                !order.getBranch().getId().equals(driver.getBranch().getId())) {
+            throw new IllegalArgumentException("Lỗi chi nhánh: Tài xế thuộc " + driver.getBranch().getName()
+                    + " không thể tiếp nhận đơn hàng của " + order.getBranch().getName() + "!");
+        }
+
         order.setDriver(driver);
         order.setStatus("OUT_FOR_DELIVERY");
         order.setHandedOverAt(LocalDateTime.now());
@@ -207,7 +214,12 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
             if (driver != null) {
                 int currentCompleted = (driver.getCompletedOrders() != null) ? driver.getCompletedOrders() : 0;
                 driver.setCompletedOrders(currentCompleted + 1);
-                driver.setWorkingStatus("ONLINE");
+
+                // Kiểm tra xem tài xế còn đơn nào khác đang giao trong hàng đợi không
+                List<Order> remaining = orderRepository.findByDriverIdAndStatusInOrderByCreatedAtDesc(
+                        driver.getId(), List.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED"));
+                boolean hasOtherActive = remaining.stream().anyMatch(o -> !o.getId().equals(order.getId()));
+                driver.setWorkingStatus(hasOtherActive ? "DELIVERING" : "ONLINE");
                 driverRepository.save(driver);
             }
         } else if ("INCIDENT".equals(upperStatus) || "FAILED".equals(upperStatus) || "DELIVERY_FAILED".equals(upperStatus)) {
