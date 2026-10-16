@@ -23,9 +23,26 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findTop30ByBranchIdAndStatusInOrderByCreatedAtDesc(Long branchId, List<String> statuses);
 
     // Handover & Driver / Dispatch Queries
-    List<Order> findByDriverIdAndStatusInOrderByCreatedAtDesc(Long driverId, List<String> statuses);
-    List<Order> findByDriverIdOrderByCreatedAtDesc(Long driverId);
-    List<Order> findByBranchIdAndStatusInOrderByCreatedAtDesc(Long branchId, List<String> statuses);
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "LEFT JOIN FETCH o.driver d " +
+           "LEFT JOIN FETCH d.user " +
+           "WHERE (:branchId IS NULL OR o.branch.id = :branchId OR (:branchId = 1L AND o.branch IS NULL)) " +
+           "AND o.status IN :statuses " +
+           "ORDER BY o.createdAt DESC")
+    List<Order> findByBranchIdAndStatusInOrderByCreatedAtDesc(@Param("branchId") Long branchId, @Param("statuses") List<String> statuses);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "WHERE o.driver.id = :driverId AND o.status IN :statuses " +
+           "ORDER BY o.createdAt DESC")
+    List<Order> findByDriverIdAndStatusInOrderByCreatedAtDesc(@Param("driverId") Long driverId, @Param("statuses") List<String> statuses);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "WHERE o.driver.id = :driverId " +
+           "ORDER BY o.createdAt DESC")
+    List<Order> findByDriverIdOrderByCreatedAtDesc(@Param("driverId") Long driverId);
 
     // Revenue Report Queries
     @Query("SELECT o FROM Order o " +

@@ -117,7 +117,7 @@
     <header class="pos-header">
         <div class="pos-brand">
             <div class="pos-brand-enso">円</div>
-            <span>UTETRA MENU</span>
+            <span>UTETRA POS</span>
             <span class="badge bg-secondary ms-2" style="font-size: 0.75rem; font-weight: normal;">Thực Đơn Chi Nhánh</span>
         </div>
 
@@ -128,6 +128,9 @@
             </a>
             <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab">
                 <i class="fa-solid fa-mug-hot me-1"></i>Pha Chế KDS
+            </a>
+            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab">
+                <i class="fa-solid fa-box-open me-1"></i>Bàn Giao Đơn
             </a>
             <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab active">
                 <i class="fa-solid fa-list-check me-1"></i>Thực Đơn Chi Nhánh
@@ -146,8 +149,12 @@
                     </c:if>
                 </select>
             </div>
-            <a href="<c:url value='/pos'/>" class="btn btn-outline-light btn-sm" title="Quay về quầy POS">
-                <i class="fa-solid fa-cash-register me-1"></i>Về Quầy POS
+            <div class="pos-badge">
+                <i class="fa-regular fa-clock"></i>
+                <span id="posClock" style="font-variant-numeric: tabular-nums;">--:--:--</span>
+            </div>
+            <a href="<c:url value='/pos/logout'/>" class="btn btn-outline-danger btn-sm" title="Đăng xuất quầy">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
             </a>
         </div>
     </header>
@@ -249,13 +256,21 @@
     <script>
         window.BRANCH_ID = ${branchId != null ? branchId : 1};
 
-        let allItems = [];
-        let currentFilter = "PRODUCT";
-        let pendingToggleItem = null;
-        let confirmModalInstance = null;
-        let toastInstance = null;
+        function initClock() {
+            const clockEl = document.getElementById('posClock');
+            function update() {
+                const now = new Date();
+                const h = String(now.getHours()).padStart(2, '0');
+                const m = String(now.getMinutes()).padStart(2, '0');
+                const s = String(now.getSeconds()).padStart(2, '0');
+                if (clockEl) clockEl.textContent = h + ':' + m + ':' + s;
+            }
+            update();
+            setInterval(update, 1000);
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
+            initClock();
             confirmModalInstance = new bootstrap.Modal(document.getElementById("confirmModal"));
             toastInstance = new bootstrap.Toast(document.getElementById("liveToast"));
 

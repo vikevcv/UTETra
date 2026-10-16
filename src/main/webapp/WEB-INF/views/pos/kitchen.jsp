@@ -868,9 +868,7 @@
                 `;
             });
 
-            const completeBtnText = isDelivery 
-                    ? `<i class="fa-solid fa-circle-check me-2"></i>ĐÃ XONG • CHUYỂN GIAO SHIPPER`
-                    : `<i class="fa-solid fa-circle-check me-2"></i>ĐÃ XONG • BÀN GIAO CHO KHÁCH`;
+            const completeBtnText = `<i class="fa-solid fa-circle-check me-2"></i>ĐÃ XONG`;
 
             workbench.innerHTML = `
                 <div class="workbench-header">

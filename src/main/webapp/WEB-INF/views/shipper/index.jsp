@@ -1672,18 +1672,18 @@
           function(position) {
             const originLat = position.coords.latitude;
             const originLng = position.coords.longitude;
-            const url = `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destination}&travelmode=two_wheeler`;
+            const url = `https://www.google.com/maps/dir/?api=1&origin=\${originLat},\${originLng}&destination=\${destination}&travelmode=two_wheeler`;
             window.open(url, '_blank');
           },
           function(error) {
             console.warn('Geolocation fallback:', error);
-            const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=two_wheeler`;
+            const url = `https://www.google.com/maps/dir/?api=1&destination=\${destination}&travelmode=two_wheeler`;
             window.open(url, '_blank');
           },
           { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
       } else {
-        const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=two_wheeler`;
+        const url = `https://www.google.com/maps/dir/?api=1&destination=\${destination}&travelmode=two_wheeler`;
         window.open(url, '_blank');
       }
     }
@@ -1843,9 +1843,9 @@
             triggerPhoneVibration();
             triggerWebNotification(
               'UTETra Shipper — Đơn Hàng Mới Cần Giao!',
-              `Đơn #${newestOrder.orderCode} đến ${newestOrder.deliveryAddress} (${newestOrder.cupCount || 2} ly).`
+              'Đơn #' + newestOrder.orderCode + ' đến ' + newestOrder.deliveryAddress + ' (' + (newestOrder.cupCount || 2) + ' ly).'
             );
-            showZenToast(`CÓ ĐƠN HÀNG MỚI: #${newestOrder.orderCode} (${newestOrder.cupCount || 2} ly)`, 'success');
+            showZenToast('CÓ ĐƠN HÀNG MỚI: #' + newestOrder.orderCode + ' (' + (newestOrder.cupCount || 2) + ' ly)', 'success');
             renderOrdersDeck(orders);
           }
         })
@@ -1911,36 +1911,36 @@
           : '<span class="order-status-badge status-badge-delivering"><i class="fa-solid fa-motorcycle"></i> Đang Giao Trên Đường</span>';
 
         const actionButton = isPickup
-          ? `<button class="btn-pickup-delivery" onclick="confirmOrderPickup(${order.orderId}, '${order.orderCode}')">
+          ? `<button class="btn-pickup-delivery" onclick="confirmOrderPickup(\${order.orderId}, '\${order.orderCode}')">
                <i class="fa-solid fa-store"></i> <span>Xác Nhận Đã Nhận Trà</span>
              </button>`
-          : `<button class="btn-complete-delivery" onclick="openCheckinModal(${order.orderId}, '${order.orderCode}')">
+          : `<button class="btn-complete-delivery" onclick="openCheckinModal(\${order.orderId}, '\${order.orderCode}')">
                <i class="fa-solid fa-camera"></i> <span>Check-in Đã Giao Xong</span>
              </button>`;
 
         const callButton = order.customerPhone 
-          ? `<a href="tel:${order.customerPhone}" class="btn-call-customer"><i class="fa-solid fa-phone"></i> Gọi ${order.customerPhone}</a>`
+          ? `<a href="tel:\${order.customerPhone}" class="btn-call-customer"><i class="fa-solid fa-phone"></i> Gọi \${order.customerPhone}</a>`
           : '';
 
         const notesBox = order.deliveryNotes 
-          ? `<div class="customer-note-callout"><i class="fa-solid fa-message"></i> <span><strong>Khách dặn:</strong> ${order.deliveryNotes}</span></div>`
+          ? `<div class="customer-note-callout"><i class="fa-solid fa-message"></i> <span><strong>Khách dặn:</strong> \${order.deliveryNotes}</span></div>`
           : '';
 
         const queueBadge = order.dailyQueueNumber 
-          ? `<span class="order-queue-badge">STT #${order.dailyQueueNumber}</span>`
+          ? `<span class="order-queue-badge">STT #\${order.dailyQueueNumber}</span>`
           : '';
 
         html += `
-          <div class="delivery-card ${isPickup ? 'status-pickup' : ''}" id="order-card-${order.orderId}">
+          <div class="delivery-card \${isPickup ? 'status-pickup' : ''}" id="order-card-\${order.orderId}">
             <div class="delivery-card-top">
               <div class="card-code-wrap">
-                <span class="order-code-badge">#${order.orderCode}</span>
-                ${queueBadge}
+                <span class="order-code-badge">#\${order.orderCode}</span>
+                \${queueBadge}
                 <span class="badge bg-light text-dark border">
-                  <i class="fa-solid fa-mug-hot text-success me-1"></i> ${order.cupCount || 2} ly trà
+                  <i class="fa-solid fa-mug-hot text-success me-1"></i> \${order.cupCount || 2} ly trà
                 </span>
               </div>
-              <div>${statusBadge}</div>
+              <div>\${statusBadge}</div>
             </div>
 
             <div class="route-display-box">
@@ -1960,11 +1960,11 @@
                 <div class="node-content-wrap">
                   <div class="node-label">Điểm Giao Hàng (Khách Hàng)</div>
                   <div class="node-name">
-                    <span>${order.customerName || 'Khách Hàng Trà Đạo'}</span>
-                    ${callButton}
+                    <span>\${order.customerName || 'Khách Hàng Trà Đạo'}</span>
+                    \${callButton}
                   </div>
-                  <div class="node-sub"><strong>Địa chỉ:</strong> ${order.deliveryAddress}</div>
-                  ${notesBox}
+                  <div class="node-sub"><strong>Địa chỉ:</strong> \${order.deliveryAddress}</div>
+                  \${notesBox}
                 </div>
               </div>
             </div>
@@ -1983,19 +1983,19 @@
                 <span class="text-success"><i class="fa-solid fa-circle-check"></i> Đã Dán Tem Niêm Phong</span>
               </div>
               <div class="drink-summary-content">
-                ${order.itemsSummary || '2x Trà Sữa Oolong Nướng (Size L, 70% Đường, 50% Đá)'}
+                \${order.itemsSummary || '2x Trà Sữa Oolong Nướng (Size L, 70% Đường, 50% Đá)'}
               </div>
             </div>
 
             <div class="card-actions-grid">
-              <button class="btn-google-maps" onclick="openGoogleMapsMotorbike('${order.deliveryAddress}', ${order.latitude || 10.8522}, ${order.longitude || 106.7716})">
+              <button class="btn-google-maps" onclick="openGoogleMapsMotorbike('\${order.deliveryAddress}', \${order.latitude || 10.8522}, \${order.longitude || 106.7716})">
                 <i class="fa-solid fa-motorcycle"></i>
                 <span>Chỉ Đường Google Maps (Xe Máy)</span>
               </button>
 
-              ${actionButton}
+              \${actionButton}
 
-              <button class="btn-report-incident" onclick="openIncidentModal(${order.orderId}, '${order.orderCode}')">
+              <button class="btn-report-incident" onclick="openIncidentModal(\${order.orderId}, '\${order.orderCode}')">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <span>Báo Sự Cố</span>
               </button>
@@ -2023,7 +2023,7 @@
         if (data.success) {
           playNotificationSound();
           triggerPhoneVibration();
-          showZenToast(`Đã tạo đơn mẫu #${data.orderCode} thành công!`, 'success');
+          showZenToast('Đã tạo đơn mẫu #' + data.orderCode + ' thành công!', 'success');
           refreshOrders(false);
         } else {
           showZenToast('Không thể tạo đơn mẫu: ' + (data.message || 'Lỗi'), 'danger');
@@ -2041,7 +2041,7 @@
        ======================================================== */
     // A. Xác nhận nhận trà tại quán
     function confirmOrderPickup(orderId, orderCode) {
-      if (!confirm(`Xác nhận bạn đã kiểm tra tem seal và nhận đủ ly cho đơn #${orderCode} tại quầy?`)) {
+      if (!confirm('Xác nhận bạn đã kiểm tra tem seal và nhận đủ ly cho đơn #' + orderCode + ' tại quầy?')) {
         return;
       }
 
@@ -2050,7 +2050,7 @@
       })
       .then(res => res.json())
       .then(data => {
-        showZenToast(`Đã nhận trà đơn #${orderCode}. Bắt đầu di chuyển giao cho khách!`, 'success');
+        showZenToast('Đã nhận trà đơn #' + orderCode + '. Bắt đầu di chuyển giao cho khách!', 'success');
         refreshOrders(false);
       })
       .catch(err => {
@@ -2063,7 +2063,7 @@
     function openCheckinModal(orderId, orderCode) {
       document.getElementById('checkinOrderId').value = orderId;
       document.getElementById('checkinOrderCode').value = orderCode;
-      document.getElementById('checkinModalLabel').innerHTML = `<i class="fa-solid fa-camera me-2"></i> Check-in Giao Xong: #${orderCode}`;
+      document.getElementById('checkinModalLabel').innerHTML = '<i class="fa-solid fa-camera me-2"></i> Check-in Giao Xong: #' + orderCode;
       
       // Reset ảnh preview
       const preview = document.getElementById('checkinPreviewPhoto');
@@ -2106,7 +2106,7 @@
         if (btn) btn.disabled = false;
         if (checkinModalInstance) checkinModalInstance.hide();
         playNotificationSound();
-        showZenToast(`GIAO HÀNG THÀNH CÔNG: #${orderCode}! +5.000₫ thưởng KPI cuốc.`, 'success');
+        showZenToast('GIAO HÀNG THÀNH CÔNG: #' + orderCode + '! +5.000₫ thưởng KPI cuốc.', 'success');
         
         // Cập nhật số đơn hoàn thành trên thanh metric
         const metricEl = document.getElementById('metricCompletedCount');
@@ -2128,7 +2128,7 @@
     function openIncidentModal(orderId, orderCode) {
       document.getElementById('incidentOrderId').value = orderId;
       document.getElementById('incidentOrderCode').value = orderCode;
-      document.getElementById('incidentModalLabel').innerHTML = `<i class="fa-solid fa-triangle-exclamation me-2"></i> Báo Sự Cố: #${orderCode}`;
+      document.getElementById('incidentModalLabel').innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2"></i> Báo Sự Cố: #' + orderCode;
       if (incidentModalInstance) incidentModalInstance.show();
     }
 
@@ -2138,7 +2138,7 @@
       const reasonRadio = document.querySelector('input[name="incidentReason"]:checked');
       const reason = reasonRadio ? reasonRadio.value : 'Sự cố bất khả kháng';
       const detailNote = document.getElementById('incidentDetailNote').value;
-      const fullNote = detailNote ? `${reason} (Ghi chú: ${detailNote})` : reason;
+      const fullNote = detailNote ? (reason + ' (Ghi chú: ' + detailNote + ')') : reason;
 
       const btn = document.getElementById('btnSubmitIncident');
       if (btn) btn.disabled = true;
@@ -2152,7 +2152,7 @@
       .then(data => {
         if (btn) btn.disabled = false;
         if (incidentModalInstance) incidentModalInstance.hide();
-        showZenToast(`Đã ghi nhận sự cố cho đơn #${orderCode} và hoàn trả về chi nhánh để quản lý phân công lại.`, 'warning');
+        showZenToast('Đã ghi nhận sự cố cho đơn #' + orderCode + ' và hoàn trả về chi nhánh để quản lý phân công lại.', 'warning');
         refreshOrders(false);
       })
       .catch(err => {
@@ -2195,18 +2195,13 @@
       if (!container) return;
 
       const toast = document.createElement('div');
-      toast.className = `zen-toast ${type === 'danger' ? 'toast-danger' : (type === 'warning' ? 'toast-warning' : '')}`;
+      toast.className = 'zen-toast ' + (type === 'danger' ? 'toast-danger' : (type === 'warning' ? 'toast-warning' : ''));
 
       let iconHtml = '<i class="fa-solid fa-circle-check text-success" style="font-size: 1.2rem;"></i>';
       if (type === 'danger') iconHtml = '<i class="fa-solid fa-circle-xmark text-danger" style="font-size: 1.2rem;"></i>';
       if (type === 'warning') iconHtml = '<i class="fa-solid fa-triangle-exclamation text-warning" style="font-size: 1.2rem;"></i>';
 
-      toast.innerHTML = `
-        ${iconHtml}
-        <div style="flex: 1; font-size: 0.86rem; font-weight: 600; color: var(--text-charcoal); line-height: 1.4;">
-          ${message}
-        </div>
-      `;
+      toast.innerHTML = iconHtml + '<div style="flex: 1; font-size: 0.86rem; font-weight: 600; color: var(--text-charcoal); line-height: 1.4;">' + message + '</div>';
 
       container.appendChild(toast);
 
