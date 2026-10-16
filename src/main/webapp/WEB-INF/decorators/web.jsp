@@ -7,6 +7,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="context-path" content="${pageContext.request.contextPath}">
   <title><%="<sitemesh:write property='title'>UTETra — Modern Zen Wabi-Sabi & Haute Couture Tea Gallery</sitemesh:write>"%></title>
 
   <!-- Typography: Outfit & Plus Jakarta Sans -->
@@ -42,19 +43,19 @@
   <!-- Header & Navigation -->
   <header class="zen-header">
     <div class="zen-container zen-nav-row">
-      <div class="zen-brand-box">
+      <a href="${pageContext.request.contextPath}/" class="zen-brand-box" style="text-decoration:none; color:inherit;">
         <!-- SVG Vòng Tròn Enso Thiền Trà -->
         <svg class="enso-symbol" viewBox="0 0 100 100" fill="none">
           <circle cx="50" cy="50" r="40" stroke="#1C1D1F" stroke-width="8" stroke-dasharray="210" stroke-linecap="round"/>
         </svg>
         <span class="zen-brand-title">UTETra Zen</span>
-      </div>
+      </a>
 
       <nav>
         <ul class="zen-menu-list">
-          <li><a href="#salonHero" class="active">Triển Lãm</a></li>
-          <li><a href="#privateReserve">Trà Độc Bản</a></li>
-          <li><a href="#teaRooms">Phòng Trà</a></li>
+          <li><a href="${pageContext.request.contextPath}/#salonHero">Triển Lãm</a></li>
+          <li><a href="${pageContext.request.contextPath}/#privateReserve">Trà Độc Bản</a></li>
+          <li><a href="${pageContext.request.contextPath}/#teaRooms">Phòng Trà</a></li>
         </ul>
       </nav>
 
@@ -126,30 +127,38 @@
   <div class="zen-drawer-backdrop" id="zenBackdrop" onclick="toggleZenDrawer()"></div>
   <aside class="zen-drawer" id="zenDrawer" aria-label="Khay trà đặt hàng">
     <div class="zen-drawer-top">
-      <h3 style="color:var(--zen-sumi); font-size:1.15rem; margin:0;">Khay Trà (<span id="zenTrayCount">2</span> phẩm trà)</h3>
+      <h3 style="color:var(--zen-sumi); font-size:1.15rem; margin:0;">Khay Trà (<span id="zenTrayCount">0</span> phẩm trà)</h3>
       <button onclick="toggleZenDrawer()" style="background:none; border:none; font-size:1.4rem; cursor:pointer;" type="button" aria-label="Đóng khay trà">✕</button>
     </div>
 
     <div class="zen-drawer-items" id="zenCartList">
-      <!-- Render dynamic items -->
+      <!-- Dynamic cart items rendered by zen-interaction.js -->
     </div>
 
     <div class="zen-drawer-pay">
       <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.9rem;">
         <span>Tạm tính phẩm trà:</span>
-        <span id="zenSubtotal" style="font-weight:700;">125.000 đ</span>
+        <span id="zenSubtotal" style="font-weight:700;">0 đ</span>
       </div>
-      <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.9rem; color:var(--ceramic-bizen);">
-        <span>Ưu đãi (UTETRA20):</span>
-        <span>-20.000 đ</span>
+      <div id="zenVoucherRow" style="display:none; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:0.9rem; color:#059669;">
+        <span>
+          Ưu đãi voucher (<span id="zenVoucherCodeBadge"></span>):
+          <button type="button" onclick="removeCartVoucher()" style="background:none; border:none; color:#ef4444; font-size:0.75rem; cursor:pointer; padding:0 3px;" title="Gỡ mã giảm giá này">✕ Gỡ</button>
+        </span>
+        <span id="zenDiscountAmount" style="font-weight:700;">-0 đ</span>
       </div>
       <div style="display:flex; justify-content:space-between; font-size:1.15rem; font-weight:800; border-top:1px solid var(--border-hairline); padding-top:10px; margin-top:8px;">
         <span>Thanh toán:</span>
-        <span id="zenTotal" style="color:var(--ceramic-bizen);">120.000 đ</span>
+        <span id="zenTotal" style="color:var(--ceramic-bizen);">0 đ</span>
       </div>
-      <button class="btn-zen-primary" style="width:100%; margin-top:14px;" onclick="checkoutZen()" type="button">
-        Xác Nhận Thưởng Trà
-      </button>
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <a href="${pageContext.request.contextPath}/cart" class="btn-zen-outline" style="flex:1; text-align:center; text-decoration:none; padding:10px 0; font-size:0.88rem;">
+          <i class="fa-solid fa-cart-shopping me-1"></i> Xem Giỏ Hàng
+        </a>
+        <button class="btn-zen-primary" style="flex:1; padding:10px 0; font-size:0.88rem;" onclick="proceedToCheckout()" type="button">
+          Thanh Toán <i class="fa-solid fa-arrow-right ms-1"></i>
+        </button>
+      </div>
     </div>
   </aside>
 
@@ -160,38 +169,76 @@
         <h3 id="zenModalTitle" style="color:var(--zen-sumi); font-size:1.15rem; margin:0;">Tùy Chỉnh Phẩm Trà</h3>
         <button onclick="closeZenModal()" style="background:none; border:none; font-size:1.3rem; cursor:pointer;" type="button" aria-label="Đóng hộp thoại">✕</button>
       </div>
-      <div class="zen-modal-body">
-        <div style="font-weight:700; margin-bottom:6px; font-size:0.88rem;">1. Định Lượng Chén Trà</div>
-        <div class="zen-chips">
-          <div class="zen-chip-item active" id="zenSizeM" onclick="selectZenSize('M', 0, this)">Chén Vừa (+0 đ)</div>
-          <div class="zen-chip-item" id="zenSizeL" onclick="selectZenSize('L', 10000, this)">Ấm Lớn (+10.000 đ)</div>
+      <div class="zen-modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 4px;">
+        <!-- 1. Kích cỡ ly -->
+        <div style="font-weight:700; margin-bottom:6px; font-size:0.88rem;">
+          <i class="fa-solid fa-mug-hot me-1 text-muted"></i> 1. Kích Cỡ Ly (Size)
+        </div>
+        <div class="zen-chips" id="zenSizeChips">
+          <div class="zen-chip-item" data-size="S" data-extra="0" onclick="selectZenSize('S', 'Chén Nhỏ (S)', 0, this)">Nhỏ (S) (+0 đ)</div>
+          <div class="zen-chip-item active" data-size="M" data-extra="0" onclick="selectZenSize('M', 'Chén Vừa (M)', 0, this)">Vừa (M) (+0 đ)</div>
+          <div class="zen-chip-item" data-size="L" data-extra="10000" onclick="selectZenSize('L', 'Ấm Lớn (L)', 10000, this)">Lớn (L) (+10.000 đ)</div>
         </div>
 
-        <div style="font-weight:700; margin-bottom:6px; font-size:0.88rem;">2. Độ Ngọt Mật Ong Tự Nhiên</div>
-        <div class="zen-chips">
-          <div class="zen-chip-item active" onclick="selectZenChip(this)">0% (Vị Mộc)</div>
-          <div class="zen-chip-item" onclick="selectZenChip(this)">30% Mật ong nhẹ</div>
-          <div class="zen-chip-item" onclick="selectZenChip(this)">50% Vừa vị</div>
+        <!-- 2. Độ ngọt -->
+        <div style="font-weight:700; margin-top:14px; margin-bottom:6px; font-size:0.88rem;">
+          <i class="fa-solid fa-cube me-1 text-muted"></i> 2. Mức Đường
+        </div>
+        <div class="zen-chips" id="zenSugarChips">
+          <div class="zen-chip-item" data-value="0%" onclick="selectZenSugar('0%', this)">0% (Vị Mộc)</div>
+          <div class="zen-chip-item" data-value="30%" onclick="selectZenSugar('30%', this)">30% Ít Ngọt</div>
+          <div class="zen-chip-item" data-value="50%" onclick="selectZenSugar('50%', this)">50% Vừa Vị</div>
+          <div class="zen-chip-item" data-value="70%" onclick="selectZenSugar('70%', this)">70%</div>
+          <div class="zen-chip-item active" data-value="100%" onclick="selectZenSugar('100%', this)">100% Chuẩn Vị</div>
         </div>
 
-        <div style="font-weight:700; margin-bottom:6px; font-size:0.88rem;">3. Nhiệt Độ Thưởng Thức</div>
-        <div class="zen-chips">
-          <div class="zen-chip-item" onclick="selectZenChip(this)">Ấm Nóng 70°C</div>
-          <div class="zen-chip-item active" onclick="selectZenChip(this)">Ủ Lạnh Cold-Brew 4°C</div>
-          <div class="zen-chip-item" onclick="selectZenChip(this)">Đá Viên Tinh Khiết</div>
+        <!-- 3. Mức đá -->
+        <div style="font-weight:700; margin-top:14px; margin-bottom:6px; font-size:0.88rem;">
+          <i class="fa-solid fa-snowflake me-1 text-muted"></i> 3. Mức Đá / Nhiệt Độ
+        </div>
+        <div class="zen-chips" id="zenIceChips">
+          <div class="zen-chip-item" data-value="0%" onclick="selectZenIce('0%', this)">Không Đá (0%)</div>
+          <div class="zen-chip-item" data-value="30%" onclick="selectZenIce('30%', this)">30% Ít Đá</div>
+          <div class="zen-chip-item" data-value="50%" onclick="selectZenIce('50%', this)">50% Vừa Đá</div>
+          <div class="zen-chip-item" data-value="70%" onclick="selectZenIce('70%', this)">70%</div>
+          <div class="zen-chip-item active" data-value="100%" onclick="selectZenIce('100%', this)">100% Đầy Đủ</div>
+          <div class="zen-chip-item" data-value="HOT" onclick="selectZenIce('HOT', this)">Ủ Ấm Nóng (70°C)</div>
         </div>
 
-        <div style="font-weight:700; margin-bottom:6px; font-size:0.88rem;">4. Hương Thảo Mộc Kèm Theo</div>
+        <!-- 4. Topping -->
+        <div style="font-weight:700; margin-top:14px; margin-bottom:6px; font-size:0.88rem;">
+          <i class="fa-solid fa-seedling me-1 text-muted"></i> 4. Thêm Topping Kèm Theo
+        </div>
         <div id="zenToppingList" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <!-- Topping checkboxes -->
+          <!-- Loaded dynamically from API -->
+        </div>
+
+        <!-- 5. Ghi chú -->
+        <div style="font-weight:700; margin-top:14px; margin-bottom:6px; font-size:0.88rem;">
+          <i class="fa-solid fa-pen-to-square me-1 text-muted"></i> 5. Ghi Chú Riêng Cho Ly Trà
+        </div>
+        <input type="text" id="zenItemNote" maxlength="150" class="form-control"
+               placeholder="Ví dụ: Giao ly giấy, ống hút giấy, ít béo..."
+               style="font-size:0.85rem; border:1px solid var(--border-hairline); border-radius:4px; padding:8px 12px;">
+
+        <!-- 6. Số lượng -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding:10px 12px; background:var(--zen-stone); border-radius:4px;">
+          <span style="font-weight:700; font-size:0.88rem;">Số lượng ly:</span>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button type="button" onclick="changeModalQty(-1)" style="width:30px; height:30px; border-radius:50%; border:1px solid var(--border-hairline); background:white; font-weight:700; cursor:pointer;">-</button>
+            <span id="zenModalQty" style="font-weight:800; font-size:1.05rem; min-width:24px; text-align:center;">1</span>
+            <button type="button" onclick="changeModalQty(1)" style="width:30px; height:30px; border-radius:50%; border:1px solid var(--border-hairline); background:white; font-weight:700; cursor:pointer;">+</button>
+          </div>
         </div>
       </div>
       <div class="zen-modal-foot">
         <div>
-          <div style="font-size:0.8rem; color:var(--text-muted);">Giá chén trà:</div>
-          <div style="font-size:1.3rem; font-weight:800; color:var(--ceramic-bizen);" id="zenLivePrice">65.000 đ</div>
+          <div style="font-size:0.8rem; color:var(--text-muted);">Giá tạm tính:</div>
+          <div style="font-size:1.3rem; font-weight:800; color:var(--ceramic-bizen);" id="zenLivePrice">0 đ</div>
         </div>
-        <button class="btn-zen-primary" onclick="confirmAddZen()" type="button">Thêm Vào Khay</button>
+        <button class="btn-zen-primary" onclick="confirmAddZen()" type="button">
+          <i class="fa-solid fa-plus me-1"></i> Thêm Vào Khay
+        </button>
       </div>
     </div>
   </div>
