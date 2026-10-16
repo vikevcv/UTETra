@@ -182,6 +182,26 @@ function saveStoredVoucher(voucherObj) {
   }
 }
 
+function clearStoredCart() {
+  try {
+    localStorage.removeItem(CART_STORAGE_KEY);
+    localStorage.removeItem(VOUCHER_STORAGE_KEY);
+    updateCartUI();
+  } catch (e) {
+    console.error("Lỗi xóa giỏ hàng:", e);
+  }
+}
+
+function removeStoredVoucher() {
+  try {
+    localStorage.removeItem(VOUCHER_STORAGE_KEY);
+    updateCartUI();
+  } catch (e) {
+    console.error("Lỗi xóa voucher:", e);
+  }
+}
+
+
 // ==================== LOGIC THÊM & GỘP MÓN THÔNG MINH ====================
 function generateItemKey(item) {
   const sortedToppingIds = (item.toppings || [])
@@ -708,8 +728,8 @@ function proceedToCheckout() {
     alert("Khay trà của bạn đang trống! Vui lòng chọn ít nhất 1 phẩm trà.");
     return;
   }
-  // Chuyển hướng sang luồng Đặt hàng & Chọn Chi nhánh (Module 3 & Module 2)
-  window.location.href = `${getContextPath()}/cart`;
+  // Chuyển hướng sang luồng Đặt hàng & Định tuyến Chi nhánh (Module 3 - UC05)
+  window.location.href = `${getContextPath()}/checkout`;
 }
 
 // ==================== KHỞI CHẠY ====================

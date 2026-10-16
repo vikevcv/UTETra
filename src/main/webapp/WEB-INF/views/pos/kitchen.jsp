@@ -723,7 +723,7 @@
                         const payload = JSON.parse(message.body);
                         console.log(">>> WebSocket Kitchen event received:", payload);
 
-                        if (payload.type === "NEW_ORDER_PAID") {
+                        if (payload.type === "NEW_ORDER_PAID" || payload.type === "ORDER_CREATED" || payload.eventType === "ORDER_CREATED") {
                             playZenBellSound();
                         }
                         fetchKitchenOrders();

@@ -235,8 +235,14 @@
             Tiến Hành Đặt Hàng <i class="fa-solid fa-arrow-right ms-1"></i>
           </button>
 
+          <div style="text-align:center; margin-top:14px;">
+            <a href="${pageContext.request.contextPath}/order/tracking" style="font-size:0.85rem; color:var(--tea-matcha, #2D5A27); font-weight:600; text-decoration:none;">
+              <i class="fa-solid fa-clock-rotate-left me-1"></i> Xem các đơn hàng bạn đã đặt
+            </a>
+          </div>
+
           <!-- Safe Note -->
-          <div style="margin-top:18px; font-size:0.78rem; color:var(--text-muted); line-height:1.5; text-align:center;">
+          <div style="margin-top:14px; font-size:0.78rem; color:var(--text-muted); line-height:1.5; text-align:center;">
             <i class="fa-solid fa-shield-halved text-success me-1"></i> 100% nguyên liệu tự nhiên • Ủ lạnh thủ công 12 giờ
           </div>
         </div>

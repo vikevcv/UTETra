@@ -13,12 +13,41 @@ import java.util.Optional;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByOrderCode(String orderCode);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.branch " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "WHERE o.orderCode = :orderCode")
+    Optional<Order> findWithDetailsByOrderCode(@Param("orderCode") String orderCode);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.branch " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "LEFT JOIN FETCH o.driver d " +
+           "LEFT JOIN FETCH d.user " +
+           "WHERE o.orderCode = :orderCode")
+    Optional<Order> findTrackingByOrderCode(@Param("orderCode") String orderCode);
+
+    List<Order> findTop10ByCustomerPhoneOrderByCreatedAtDesc(String customerPhone);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.branch " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "WHERE o.user.id = :userId " +
+           "ORDER BY o.createdAt DESC")
+    List<Order> findTop20ByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
+
     List<Order> findByBranchIdAndCreatedAtBetweenOrderByCreatedAtDesc(Long branchId, LocalDateTime start, LocalDateTime end);
     long countByBranchIdAndCreatedAtBetween(Long branchId, LocalDateTime start, LocalDateTime end);
     List<Order> findTop20ByBranchIdOrderByCreatedAtDesc(Long branchId);
 
     // KDS / Barista Queries
-    List<Order> findByBranchIdAndStatusInOrderByCreatedAtAsc(Long branchId, List<String> statuses);
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderDetails od " +
+           "WHERE (:branchId IS NULL OR o.branch.id = :branchId OR (:branchId = 1L AND o.branch IS NULL)) " +
+           "AND o.status IN :statuses " +
+           "ORDER BY o.createdAt ASC")
+    List<Order> findByBranchIdAndStatusInOrderByCreatedAtAsc(@Param("branchId") Long branchId, @Param("statuses") List<String> statuses);
     List<Order> findByBranchIdAndStatusOrderByCreatedAtAsc(Long branchId, String status);
     List<Order> findTop30ByBranchIdAndStatusInOrderByCreatedAtDesc(Long branchId, List<String> statuses);
 

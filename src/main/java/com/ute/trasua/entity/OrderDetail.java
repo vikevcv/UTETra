@@ -35,18 +35,18 @@ public class OrderDetail {
     @JoinColumn(name = "size_id")
     private Size size;
 
-    @Column(name = "size_name", length = 20)
+    @Column(name = "size_name", length = 100)
     private String sizeName;
 
     @Column(name = "quantity", nullable = false)
     @Builder.Default
     private Integer quantity = 1;
 
-    @Column(name = "sugar_level", length = 20)
+    @Column(name = "sugar_level", length = 50)
     @Builder.Default
     private String sugarLevel = "100%";
 
-    @Column(name = "ice_level", length = 20)
+    @Column(name = "ice_level", length = 50)
     @Builder.Default
     private String iceLevel = "100%";
 

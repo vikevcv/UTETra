@@ -53,5 +53,5 @@ public class CartItemDto {
     private BigDecimal subtotal;     // unitPrice * quantity
 
     @Builder.Default
-    private boolean available = true;
+    private Boolean available = true;
 }
