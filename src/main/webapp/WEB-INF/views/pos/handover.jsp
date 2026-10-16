@@ -734,6 +734,11 @@
 
                 let html = '';
                 items.forEach((itemText, idx) => {
+                    let qty = 1;
+                    const matchQty = itemText.match(/x(\d+)/);
+                    if (matchQty && matchQty[1]) {
+                        qty = parseInt(matchQty[1]);
+                    }
                     html += `
                         <tr>
                             <td class="text-center fw-bold">\${idx + 1}</td>
@@ -741,7 +746,7 @@
                                 <div class="fw-bold text-dark">\${escapeHtml(itemText)}</div>
                                 <small class="text-muted"><i class="fa-solid fa-wine-bottle me-1"></i>Đã dán tem kiểm định & seal chống tràn</small>
                             </td>
-                            <td class="text-center fw-bold">1</td>
+                            <td class="text-center fw-bold text-dark">\${qty} ly</td>
                             <td class="text-center">
                                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
                                     <i class="fa-solid fa-check me-1"></i>Đạt chuẩn
