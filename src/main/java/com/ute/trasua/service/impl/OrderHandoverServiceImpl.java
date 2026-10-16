@@ -33,6 +33,7 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
     private final OrderRepository orderRepository;
     private final DriverRepository driverRepository;
     private final BranchRepository branchRepository;
+    private final com.ute.trasua.service.OrderWebSocketPublisher orderWebSocketPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -95,6 +96,12 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
                 driver.getUser() != null ? driver.getUser().getFullName() : driver.getId(),
                 driver.getLicensePlate());
 
+        try {
+            orderWebSocketPublisher.broadcastOrderDispatched(saved, driver);
+        } catch (Exception e) {
+            log.warn("Lỗi phát WebSocket sự kiện gán tài xế: {}", e.getMessage());
+        }
+
         return mapToHandoverOrderDto(saved);
     }
 
@@ -118,6 +125,12 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         Order saved = orderRepository.save(order);
         log.info(">>> Đã bàn giao trực tiếp đơn hàng {} (STT #{}) cho khách hàng {}",
                 saved.getOrderCode(), saved.getDailyQueueNumber(), saved.getCustomerName());
+
+        try {
+            orderWebSocketPublisher.broadcastOrderCompleted(saved);
+        } catch (Exception e) {
+            log.warn("Lỗi phát WebSocket hoàn tất đơn hàng: {}", e.getMessage());
+        }
 
         return mapToHandoverOrderDto(saved);
     }
@@ -243,6 +256,18 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
 
         Order saved = orderRepository.save(order);
         log.info(">>> Đã cập nhật trạng thái giao hàng đơn {} sang: {}", saved.getOrderCode(), saved.getStatus());
+
+        try {
+            if ("DELIVERED".equals(upperStatus) || "COMPLETED".equals(upperStatus)) {
+                orderWebSocketPublisher.broadcastOrderCompleted(saved);
+            } else if ("DELIVERY_FAILED".equals(saved.getStatus())) {
+                orderWebSocketPublisher.broadcastOrderCancelled(saved, note);
+            } else {
+                orderWebSocketPublisher.broadcastOrderDelivering(saved, saved.getDriver());
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi phát WebSocket cập nhật trạng thái đơn: {}", e.getMessage());
+        }
 
         return mapToHandoverOrderDto(saved);
     }

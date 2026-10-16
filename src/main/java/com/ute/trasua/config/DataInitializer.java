@@ -39,9 +39,20 @@ public class DataInitializer implements CommandLineRunner {
     private final com.ute.trasua.repository.OrderRepository orderRepository;
     private final com.ute.trasua.repository.PromotionRepository promotionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
+        // Cập nhật schema nếu cột size_name trong order_details bị giới hạn 20 ký tự
+        try {
+            jdbcTemplate.execute("ALTER TABLE order_details MODIFY size_name VARCHAR(100)");
+            jdbcTemplate.execute("ALTER TABLE order_details MODIFY sugar_level VARCHAR(50)");
+            jdbcTemplate.execute("ALTER TABLE order_details MODIFY ice_level VARCHAR(50)");
+            log.info(">>> Đã cập nhật độ dài cột bảng order_details (size_name=100, sugar_level=50, ice_level=50)");
+        } catch (Exception e) {
+            log.debug("Notice on altering order_details columns: {}", e.getMessage());
+        }
+
         // Cập nhật hoặc tạo tài khoản POS: tên chi nhánh viết liền (thuduc, quan1) - mật khẩu 123123
         branchRepository.findAll().forEach(b -> {
             String slug = java.text.Normalizer.normalize(b.getName(), java.text.Normalizer.Form.NFD)

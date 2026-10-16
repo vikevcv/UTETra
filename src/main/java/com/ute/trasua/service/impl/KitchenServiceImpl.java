@@ -29,6 +29,7 @@ public class KitchenServiceImpl implements KitchenService {
     private final OrderRepository orderRepository;
     private final com.ute.trasua.service.BranchMenuService branchMenuService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.ute.trasua.service.OrderWebSocketPublisher orderWebSocketPublisher;
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM");
 
@@ -38,14 +39,14 @@ public class KitchenServiceImpl implements KitchenService {
         Long targetBranchId = (branchId != null) ? branchId : 1L;
 
         List<String> activeStatuses = List.of(
-                "PAID", "AWAITING_PREPARATION",
+                "PENDING", "AWAITING_PREPARATION", "PAID",
                 "PREPARING",
                 "PREPARED", "READY_FOR_PICKUP", "READY_FOR_DELIVERY"
         );
 
         List<Order> orders = orderRepository.findByBranchIdAndStatusInOrderByCreatedAtAsc(targetBranchId, activeStatuses);
         
-        // Auto-advance logic: Đơn hàng đầu tiên cần pha chế tự động chuyển sang PREPARING nếu đang ở trạng thái PAID / AWAITING_PREPARATION
+        // Auto-advance logic: Đơn hàng đầu tiên cần pha chế tự động chuyển sang PREPARING nếu đang ở trạng thái PAID / AWAITING_PREPARATION / PENDING
         for (Order o : orders) {
             String st = (o.getStatus() != null) ? o.getStatus().toUpperCase() : "";
             if ("PAID".equals(st) || "AWAITING_PREPARATION".equals(st) || "PENDING".equals(st)) {
@@ -84,6 +85,11 @@ public class KitchenServiceImpl implements KitchenService {
 
         // Broadcast realtime
         broadcastKitchenUpdate(saved.getBranch() != null ? saved.getBranch().getId() : 1L, "ORDER_PREPARING", dto);
+        try {
+            orderWebSocketPublisher.broadcastOrderPreparing(saved);
+        } catch (Exception e) {
+            log.warn("Lỗi phát WebSocket tới khách hàng: {}", e.getMessage());
+        }
 
         return dto;
     }
@@ -145,6 +151,11 @@ public class KitchenServiceImpl implements KitchenService {
 
         // Broadcast realtime
         broadcastKitchenUpdate(targetBranchId, "ORDER_COMPLETED", dto);
+        try {
+            orderWebSocketPublisher.broadcastOrderPrepared(saved);
+        } catch (Exception e) {
+            log.warn("Lỗi phát WebSocket sự kiện pha chế xong: {}", e.getMessage());
+        }
 
         return dto;
     }
@@ -191,17 +202,25 @@ public class KitchenServiceImpl implements KitchenService {
             }
         }
 
+        String customerName = order.getCustomerName();
+        String cashierOrCustomer = (customerName != null && !customerName.isBlank())
+                ? customerName
+                : (order.getCashierUsername() != null ? order.getCashierUsername() : "Khách tại quầy");
+        String combinedNote = (order.getNote() != null && !order.getNote().isBlank())
+                ? order.getNote()
+                : order.getDeliveryNotes();
+
         return KitchenOrderDto.builder()
                 .orderId(order.getId())
                 .orderCode(order.getOrderCode())
                 .dailyQueueNumber(order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : 1)
                 .orderType(order.getOrderType() != null ? order.getOrderType() : "POS_WALK_IN")
                 .status(order.getStatus())
-                .cashierOrCustomerName(order.getCashierUsername() != null ? order.getCashierUsername() : "Khách tại quầy")
+                .cashierOrCustomerName(cashierOrCustomer)
                 .createdAtFormatted(createdAt.format(TIME_FMT))
                 .elapsedMinutes(elapsedMinutes)
                 .totalCups(totalCups > 0 ? totalCups : 1)
-                .note(order.getNote())
+                .note(combinedNote)
                 .items(items)
                 .build();
     }

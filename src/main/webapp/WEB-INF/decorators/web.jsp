@@ -56,6 +56,11 @@
           <li><a href="${pageContext.request.contextPath}/#salonHero">Triển Lãm</a></li>
           <li><a href="${pageContext.request.contextPath}/#privateReserve">Trà Độc Bản</a></li>
           <li><a href="${pageContext.request.contextPath}/#teaRooms">Phòng Trà</a></li>
+          <li>
+            <a href="${pageContext.request.contextPath}/order/tracking" style="color:var(--tea-matcha, #2D5A27); font-weight:600;">
+              <i class="fa-solid fa-clock-rotate-left me-1"></i> Đơn Hàng
+            </a>
+          </li>
         </ul>
       </nav>
 
@@ -158,6 +163,11 @@
         <button class="btn-zen-primary" style="flex:1; padding:10px 0; font-size:0.88rem;" onclick="proceedToCheckout()" type="button">
           Thanh Toán <i class="fa-solid fa-arrow-right ms-1"></i>
         </button>
+      </div>
+      <div style="text-align:center; margin-top:10px;">
+        <a href="${pageContext.request.contextPath}/order/tracking" style="font-size:0.82rem; color:var(--text-muted); text-decoration:none;">
+          <i class="fa-solid fa-clock-rotate-left me-1"></i> Xem lịch sử đơn hàng đã đặt
+        </a>
       </div>
     </div>
   </aside>

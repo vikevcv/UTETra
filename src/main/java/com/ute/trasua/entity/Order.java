@@ -67,6 +67,10 @@ public class Order {
     @Column(name = "note", length = 500)
     private String note;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @Column(name = "customer_name", length = 100)
     private String customerName;
 
@@ -81,6 +85,16 @@ public class Order {
 
     @Column(name = "longitude")
     private Double longitude;
+
+    @Column(name = "distance_km", precision = 6, scale = 2)
+    private BigDecimal distanceKm;
+
+    @Column(name = "shipping_fee", precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal shippingFee = BigDecimal.ZERO;
+
+    @Column(name = "voucher_code", length = 50)
+    private String voucherCode;
 
     @Column(name = "delivery_notes", length = 500)
     private String deliveryNotes;
