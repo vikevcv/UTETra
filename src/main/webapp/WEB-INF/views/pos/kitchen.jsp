@@ -509,6 +509,9 @@
             <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab active">
                 <i class="fa-solid fa-mug-hot me-1"></i>Pha Chế KDS
             </a>
+            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab">
+                <i class="fa-solid fa-box-open me-1"></i>Bàn Giao Đơn
+            </a>
             <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab">
                 <i class="fa-solid fa-list-check me-1"></i>Thực Đơn Chi Nhánh
             </a>
@@ -865,9 +868,7 @@
                 `;
             });
 
-            const completeBtnText = isDelivery 
-                    ? `<i class="fa-solid fa-circle-check me-2"></i>ĐÃ XONG • CHUYỂN GIAO SHIPPER`
-                    : `<i class="fa-solid fa-circle-check me-2"></i>ĐÃ XONG • BÀN GIAO CHO KHÁCH`;
+            const completeBtnText = `<i class="fa-solid fa-circle-check me-2"></i>ĐÃ XONG`;
 
             workbench.innerHTML = `
                 <div class="workbench-header">

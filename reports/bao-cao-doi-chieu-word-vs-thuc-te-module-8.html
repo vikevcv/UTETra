@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Đối Chiếu: Báo Cáo Word vs Thực Tế Triển Khai Module 8 — UTETra Project</title>
+  
+  <!-- Font thuần Việt chuẩn Be Vietnam Pro & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    :root {
+      --bg-page: #F7F5F0;
+      --bg-card: #FFFFFF;
+      --bg-inner: #FBF9F5;
+      --text-main: #1F2328;
+      --text-muted: #59636E;
+      --primary: #2F6A4F;
+      --primary-light: #E7EFE9;
+      --bizen-clay: #8C6D53;
+      --bizen-light: #F6EFE9;
+      --danger: #CF222E;
+      --danger-light: #FFEBE9;
+      --warning: #9A6700;
+      --warning-light: #FFF8C5;
+      --info: #0969DA;
+      --info-light: #DDF4FF;
+      --purple: #8250DF;
+      --purple-light: #FBEFFF;
+      --border-color: #E1DCD2;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-md: 0 8px 24px rgba(40,30,20,0.08);
+      --radius: 14px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .report-container {
+      width: 100%;
+      max-width: 1100px;
+      background: var(--bg-card);
+      border-radius: 24px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md);
+      padding: 48px;
+    }
+
+    @media (max-width: 768px) {
+      .report-container {
+        padding: 24px 16px;
+      }
+    }
+
+    header.report-header {
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 28px;
+      margin-bottom: 36px;
+    }
+
+    .tag-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .badge-bizen {
+      background: var(--bizen-light);
+      color: var(--bizen-clay);
+      border: 1px solid #E5D6C7;
+    }
+
+    .badge-primary {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #C7DFD1;
+    }
+
+    .badge-warning {
+      background: var(--warning-light);
+      color: var(--warning);
+      border: 1px solid #F9E2AF;
+    }
+
+    .badge-danger {
+      background: var(--danger-light);
+      color: var(--danger);
+      border: 1px solid #FFD0CC;
+    }
+
+    .badge-purple {
+      background: var(--purple-light);
+      color: var(--purple);
+      border: 1px solid #ECD8FF;
+    }
+
+    h1.report-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #1A1C1D;
+      line-height: 1.3;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .report-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-top: 16px;
+    }
+
+    .report-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-block {
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #1A1C1D;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    .section-title i {
+      color: var(--primary);
+    }
+
+    .highlight-card {
+      background: var(--bg-inner);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    /* Bảng so sánh Matrix */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 0.9rem;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .compare-table th {
+      background: #F1ECE1;
+      color: #2D2722;
+      font-weight: 800;
+      text-align: left;
+      padding: 14px 16px;
+      border-bottom: 1.5px solid var(--border-color);
+    }
+
+    .compare-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: top;
+    }
+
+    .compare-table tr:nth-child(even) td {
+      background: #FAFAF7;
+    }
+
+    .compare-table tr:hover td {
+      background: #F5EFEB;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .pill-match {
+      background: #E6F4EA;
+      color: #137333;
+      border: 1px solid #CEEAD6;
+    }
+
+    .pill-extended {
+      background: #E8F0FE;
+      color: #1A73E8;
+      border: 1px solid #D2E3FC;
+    }
+
+    .pill-customized {
+      background: #FEF7E0;
+      color: #B06000;
+      border: 1px solid #FEEFC3;
+    }
+
+    .pill-deferred {
+      background: #FCE8E6;
+      color: #C5221F;
+      border: 1px solid #FAD2CF;
+    }
+
+    .step-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin: 20px 0;
+    }
+
+    .step-item {
+      background: var(--bg-inner);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .step-number {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .step-content h4 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #1A1C1D;
+      margin-bottom: 4px;
+    }
+
+    .step-content p {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .photo-architecture-box {
+      border: 2px dashed var(--bizen-clay);
+      background: var(--bizen-light);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-top: 20px;
+    }
+
+    .photo-architecture-box h4 {
+      color: var(--bizen-clay);
+      font-weight: 800;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .code-snippet {
+      background: #1C1D1F;
+      color: #F7F5F0;
+      padding: 14px 18px;
+      border-radius: 10px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="report-container">
+
+    <!-- 1. HEADER BÁO CÁO -->
+    <header class="report-header">
+      <div class="d-flex gap-2">
+        <span class="tag-badge badge-bizen"><i class="fa-solid fa-file-word"></i> Báo Cáo Đồ Án SE v6 vs Codebase</span>
+        <span class="tag-badge badge-primary"><i class="fa-solid fa-circle-check"></i> OpenCode QA: PASSED</span>
+        <span class="tag-badge badge-purple"><i class="fa-solid fa-motorcycle"></i> Module 8: Shipper Web App</span>
+      </div>
+      <h1 class="report-title">Báo Cáo Đối Chiếu Kỹ Thuật: Nghiệp Vụ Báo Cáo Word (Nhom19_BaoCaoProjectSE) & Thực Tế Triển Khai Module 8</h1>
+      
+      <div class="report-meta">
+        <div class="report-meta-item">
+          <i class="fa-regular fa-calendar"></i>
+          <span>Ngày lập: <strong>16/10/2026</strong></span>
+        </div>
+        <div class="report-meta-item">
+          <i class="fa-solid fa-user-gear"></i>
+          <span>Người phụ trách: <strong>Nguyễn Ngọc Thoại (NThoai)</strong></span>
+        </div>
+        <div class="report-meta-item">
+          <i class="fa-solid fa-microchip"></i>
+          <span>Thẩm định: <strong>Antigravity Orchestrator & OpenCode QA Red-Team</strong></span>
+        </div>
+        <div class="report-meta-item">
+          <i class="fa-solid fa-code-branch"></i>
+          <span>Nhánh Git: <strong>NThoai (Commit ahead of develop)</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. TỔNG QUAN ĐỐI CHIẾU (EXECUTIVE SUMMARY) -->
+    <section class="section-block">
+      <h2 class="section-title"><i class="fa-solid fa-chart-pie"></i> 1. Tổng Quan Đối Chiếu Nghiệp Vụ</h2>
+      
+      <div class="highlight-card">
+        <p style="font-size: 0.95rem; line-height: 1.6; margin-bottom: 12px;">
+          Tài liệu chuẩn mực nguồn của đồ án là <strong>Docs/Nhom19_BaoCaoProjectSE (5).docx</strong> (bao gồm 29 Use Case và 23 bảng CSDL). Trong đó, Module 8 bao quát các Use Case:
+        </p>
+        <ul style="margin-left: 20px; font-size: 0.92rem; line-height: 1.7; color: var(--text-main);">
+          <li><strong>UC10 (Mục 2.4.10):</strong> Quầy chi nhánh bàn giao đơn hàng cho tài xế hoặc trao trực tiếp cho khách.</li>
+          <li><strong>UC12 (Mục 2.4.12):</strong> Tiếp nhận phân công giao hàng bắt buộc của tài xế.</li>
+          <li><strong>UC13 (Mục 2.4.13):</strong> Cập nhật tiến trình giao hàng đến khách và hoàn tất đơn.</li>
+          <li><strong>UC14 (Mục 2.4.14):</strong> Xử lý giao hàng thất bại & hoàn trả hàng về lại chi nhánh xuất hàng.</li>
+          <li><strong>UC15 (Mục 2.4.15):</strong> Thống kê cuốc xe & báo cáo ca trực của tài xế.</li>
+        </ul>
+        <p style="font-size: 0.95rem; line-height: 1.6; margin-top: 12px;">
+          <strong>Kết luận thực tế:</strong> Toàn bộ luồng nghiệp vụ cốt lõi đều được triển khai bám sát 100% mục tiêu của đồ án. Tuy nhiên, trong quá trình phát triển, đội ngũ kỹ thuật đã <strong>nâng cấp một số điểm thực tế vượt trội hơn báo cáo Word</strong> (để ứng dụng chạy mượt mà, chống gian lận) và <strong>chủ động cắt bỏ/tinh giản một số điểm phi thực tế</strong> theo chỉ đạo của Người dùng và triết lý Ponytail YAGNI.
+        </p>
+      </div>
+    </section>
+
+    <!-- 3. MA TRẬN SO SÁNH CHI TIẾT (GAP ANALYSIS MATRIX) -->
+    <section class="section-block">
+      <h2 class="section-title"><i class="fa-solid fa-table-columns"></i> 2. Ma Trận Đối Chiếu Từng Hạng Mục (Gap Analysis Matrix)</h2>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th style="width: 20%;">Hạng Mục Nghiệp Vụ</th>
+            <th style="width: 32%;">Quy Định Trong Báo Cáo Word</th>
+            <th style="width: 36%;">Thực Tế Triển Khai Trên Codebase</th>
+            <th style="width: 12%;">Đánh Giá</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Hạng mục 1 -->
+          <tr>
+            <td><strong>1. Ràng buộc chi nhánh (Branch Scoping)</strong></td>
+            <td>Tài xế được quản lý chi nhánh cấp tài khoản (UC17), chỉ phục vụ đơn của đúng chi nhánh được phân công.</td>
+            <td>Đã thực thi chặt chẽ trong <code>OrderHandoverServiceImpl</code>: Kiểm tra <code>order.branch_id == driver.branch_id</code>, chặn hoàn toàn việc nhận đơn chi nhánh khác.</td>
+            <td><span class="status-pill pill-match"><i class="fa-solid fa-check"></i> Khớp 100%</span></td>
+          </tr>
+
+          <!-- Hạng mục 2 -->
+          <tr>
+            <td><strong>2. Thuật toán điều phối ETA tài xế (UC12)</strong></td>
+            <td>Trong báo cáo Word <strong>KHÔNG CÓ CÔNG THỨC TOÁN HỌC ETA</strong>. Chỉ mô tả hệ thống phân công tự động hoặc quầy gán tài xế rảnh.</td>
+            <td><strong>Tạm gác lại công thức phức tạp</strong> theo chỉ đạo User & Ponytail YAGNI. Bàn giao trực tiếp tại quầy <code>/pos/handover</code> chọn tài xế <code>ONLINE</code> của chi nhánh.</td>
+            <td><span class="status-pill pill-customized"><i class="fa-solid fa-hand"></i> Đã Gác Lại</span></td>
+          </tr>
+
+          <!-- Hạng mục 3 -->
+          <tr>
+            <td><strong>3. Hiển thị Sao ⭐ & Thưởng KPI trên UI Shipper (UC15)</strong></td>
+            <td>Word mô tả tài xế xem: Tổng đơn, tỷ lệ đúng giờ, điểm hiệu suất (KPI) và tiền thưởng KPI để tính thu nhập ca/tháng.</td>
+            <td><strong>Đã xóa sạch 100%</strong> điểm sao ⭐, lương cứng và thưởng KPI trên giao diện Shipper Web App. Chỉ hiển thị: <strong>Tổng số cuốc giao</strong> và <strong>Lịch sử các đơn đã giao trong ca</strong> (tài xế nhận lương cố định theo ca do quản lý chấm công, không ăn chia cước cuốc).</td>
+            <td><span class="status-pill pill-customized"><i class="fa-solid fa-scissors"></i> User Tinh Giản</span></td>
+          </tr>
+
+          <!-- Hạng mục 4 -->
+          <tr>
+            <td><strong>4. Quy trình tác nghiệp giao hàng (UC13)</strong></td>
+            <td>Word mô tả sơ sài: Bấm 'Bắt đầu giao' ➔ Mở Google Maps ➔ Bấm 'Gọi khách' ➔ Bấm 'Đã giao hàng thành công' (1 nút duy nhất).</td>
+            <td><strong>Nâng cấp vượt bậc thành Cỗ Máy Trạng Thái Tuần Tự 4 Bước (State Machine)</strong> chống nhảy cóc:
+              <br>• Bước 0: Bấm OK xem đơn
+              <br>• Bước 1: Chụp ảnh ly nước quán ➔ Mới mở nút Đã nhận hàng
+              <br>• Bước 2: Google Maps xe máy + Đã tới điểm giao + Gọi khách ALWAYS có sẵn
+              <br>• Bước 3: Đã đến nơi ➔ Gọi khách ra lấy nước
+              <br>• Bước 4: Chụp ảnh trao khách ➔ Mới mở nút Kết thúc chuyến.</td>
+            <td><span class="status-pill pill-extended"><i class="fa-solid fa-wand-magic-sparkles"></i> Nâng Cấp Vượt Trội</span></td>
+          </tr>
+
+          <!-- Hạng mục 5 -->
+          <tr>
+            <td><strong>5. Chụp ảnh đối soát & Lưu CSDL</strong></td>
+            <td>Trong 23 bảng CSDL của Word, bảng <code>DonHang</code> <strong>hoàn toàn KHÔNG có cột lưu URL ảnh chụp</strong>. Word chỉ nhắc chụp ảnh màn hình cuộc gọi khi sự cố (UC14).</td>
+            <td>• Đã hỗ trợ chụp ảnh trực tiếp từ camera HTML5 (cả ly nước của quán và ảnh bàn giao cho khách).
+              <br>• <strong>Hiện trạng:</strong> Lưu Base64 trên Client-side Memory để validate mở khóa nút và preview ảnh.
+              <br>• <strong>Điểm chưa có:</strong> Chưa tạo 2 cột <code>pickup_photo_url</code>, <code>delivery_photo_url</code> trong bảng <code>orders</code> và chưa tải lên Cloudinary.</td>
+            <td><span class="status-pill pill-deferred"><i class="fa-solid fa-clock"></i> Chưa Lưu DB</span></td>
+          </tr>
+
+          <!-- Hạng mục 6 -->
+          <tr>
+            <td><strong>6. Quản lý tải & Hàng đợi đơn hàng (Queue Bar)</strong></td>
+            <td>Word không đề cập tài xế nhận đồng thời bao nhiêu đơn hay hiển thị ra sao khi có nhiều đơn.</td>
+            <td>Triển khai <strong>Queue Tracker Bar</strong> cho phép tài xế nhận 2-3 đơn trong ca, nhưng áp dụng <strong>Focus Mode (1 đơn tại 1 thời điểm)</strong> trên bàn làm việc để tài xế không bị phân tâm khi lái xe. Xong đơn cũ thì đơn tiếp theo tự động trượt vào.</td>
+            <td><span class="status-pill pill-extended"><i class="fa-solid fa-wand-magic-sparkles"></i> Nâng Cấp UX</span></td>
+          </tr>
+
+          <!-- Hạng mục 7 -->
+          <tr>
+            <td><strong>7. Cảnh báo trên thiết bị (Chuông + Rung)</strong></td>
+            <td>Word nhắc tới WebSocket push notification thông báo đơn mới.</td>
+            <td>Triển khai hệ thống thông báo 3 tầng:
+              <br>1. Web Audio API (chuông thanh thoát 880Hz-1320Hz, 100% offline).
+              <br>2. Navigator Vibration API (rung nhịp điện thoại di động).
+              <br>3. Web Notification API popup trình duyệt.</td>
+            <td><span class="status-pill pill-match"><i class="fa-solid fa-check"></i> Khớp & Vượt Chuẩn</span></td>
+          </tr>
+
+          <!-- Hạng mục 8 -->
+          <tr>
+            <td><strong>8. Biểu mẫu in Bàn Giao QLGH_BM1 (UC10)</strong></td>
+            <td>Word quy định biểu mẫu QLGH_BM1 chứa thông tin quán, tài xế, biển số, danh sách ly và chữ ký đối soát.</td>
+            <td>Đã lập trình modal in ấn chuẩn biểu mẫu QLGH_BM1 tại giao diện quầy <code>/pos/handover</code>.</td>
+            <td><span class="status-pill pill-match"><i class="fa-solid fa-check"></i> Khớp 100%</span></td>
+          </tr>
+
+          <!-- Hạng mục 9 -->
+          <tr>
+            <td><strong>9. Luồng khách đổi địa chỉ > 2km quét QR trả thêm phí (UC14 Luồng ngoại lệ)</strong></td>
+            <td>Khách đổi địa chỉ trên app, nếu > 2km thì tính thêm phụ phí và hiển thị mã QR để khách quét trả thêm tiền.</td>
+            <td><strong>Chưa triển khai luồng này:</strong> Hiện tại hệ thống tập trung vào kịch bản chuẩn (báo cáo sự cố bất khả kháng, hoàn trả túi trà nguyên vẹn về quầy chi nhánh).</td>
+            <td><span class="status-pill pill-deferred"><i class="fa-solid fa-hourglass-half"></i> Chưa Làm</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 4. GIẢI PHÁP & TRẢ LỜI CÂU HỎI VỀ BƯỚC CHỤP ẢNH LƯU VÀO DATABASE -->
+    <section class="section-block">
+      <h2 class="section-title"><i class="fa-solid fa-camera"></i> 3. Trả Lời Câu Hỏi: Bước Chụp Ảnh Đã Hỗ Trợ Lưu Vào Database Chưa?</h2>
+
+      <div class="highlight-card">
+        <h3 style="color: var(--danger); font-size: 1.15rem; font-weight: 800; margin-bottom: 10px;">
+          <i class="fa-solid fa-circle-exclamation me-2"></i> Câu trả lời chính xác: HIỆN TẠI CHƯA LƯU VÀO DATABASE!
+        </h3>
+        <p style="font-size: 0.92rem; line-height: 1.6; color: var(--text-main);">
+          Hiện tại, hình ảnh ly nước chụp tại quán và hình ảnh bàn giao cho khách mới chỉ được lưu tạm thời dưới dạng <strong>chuỗi mã hóa Base64 trong bộ nhớ Client-side (trình duyệt)</strong>.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0;">
+          <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
+            <h5 style="color: var(--primary); font-weight: 800; margin-bottom: 8px;">
+              <i class="fa-solid fa-check-double me-1"></i> Những gì ĐÃ LÀM ĐƯỢC:
+            </h5>
+            <ul style="font-size: 0.86rem; color: var(--text-muted); margin-left: 18px; line-height: 1.6;">
+              <li>Mở camera điện thoại/laptop chụp ảnh trực tiếp qua thẻ HTML5 input.</li>
+              <li>Đọc file bất đồng bộ qua <code>FileReader</code> tạo chuỗi Base64.</li>
+              <li>Hiển thị xem trước (preview thumbnail) sắc nét ngay trong thẻ làm việc.</li>
+              <li>Làm <strong>Validation Gate</strong>: Bắt buộc phải có ảnh thì nút bấm <em>"Đã Nhận Hàng Từ Quán"</em> và <em>"Kết Thúc Chuyến Giao"</em> mới sáng lên cho bấm.</li>
+            </ul>
+          </div>
+
+          <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
+            <h5 style="color: var(--danger); font-weight: 800; margin-bottom: 8px;">
+              <i class="fa-solid fa-xmark me-1"></i> Những gì CHƯA CÓ TRONG DATABASE:
+            </h5>
+            <ul style="font-size: 0.86rem; color: var(--text-muted); margin-left: 18px; line-height: 1.6;">
+              <li>Bảng <code>orders</code> trong CSDL hiện tại chưa có cột lưu trữ URL ảnh (trong 23 bảng Word ban đầu cũng không thiết kế cột này).</li>
+              <li>API <code>/pickup</code> và <code>/complete</code> chưa nhận payload chuỗi ảnh để upload lên Cloudinary.</li>
+              <li>Nếu tài xế F5 tải lại trang sau khi đã chụp (ở giữa chừng), ảnh xem trước tạm thời bị mất (dù bước trạng thái vẫn lưu).</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Khung Kiến Trúc Đề Xuất Lưu CSDL -->
+        <div class="photo-architecture-box">
+          <h4><i class="fa-solid fa-cloud-arrow-up"></i> Kiến Trúc Đề Xuất Để Lưu Ảnh Vĩnh Viễn Vào Database (Task 7.3a):</h4>
+          <p style="font-size: 0.88rem; color: #4B382A; line-height: 1.6;">
+            Để hoàn thiện 100% việc lưu ảnh vào Database theo chuẩn Cloudinary bất đồng bộ của đồ án, chỉ cần thực hiện 3 bước đơn giản:
+          </p>
+          <div class="code-snippet">
+// 1. Thêm 2 cột vào entity Order.java và bảng orders trong MySQL:
+@Column(name = "pickup_photo_url", length = 500)
+private String pickupPhotoUrl;
+
+@Column(name = "delivery_photo_url", length = 500)
+private String deliveryPhotoUrl;
+
+// 2. Cập nhật DTO HandoverActionRequest & Controller nhận thêm photoBase64:
+@PostMapping("/api/orders/{orderId}/pickup")
+public ResponseEntity<?> pickupOrder(@PathVariable Long orderId, @RequestBody Map<String, String> body) {
+    String photoBase64 = body.get("photoBase64");
+    String uploadedUrl = cloudinaryService.uploadBase64(photoBase64, "utetra/pickups");
+    orderHandoverService.updatePickupPhoto(orderId, uploadedUrl);
+    ...
+}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. CÁC TỆP ĐÃ ĐƯỢC CẬP NHẬT GHI CHÚ (RULES & .MD PERSISTENCE) -->
+    <section class="section-block">
+      <h2 class="section-title"><i class="fa-solid fa-book-bookmark"></i> 4. Các Tệp Tài Liệu Đã Được Ghi Nhận Đầy Đủ</h2>
+
+      <div class="highlight-card">
+        <ul style="list-style-type: none; display: flex; flex-direction: column; gap: 14px;">
+          <li style="display: flex; gap: 12px; align-items: flex-start;">
+            <i class="fa-solid fa-file-lines text-success mt-1" style="font-size: 1.2rem;"></i>
+            <div>
+              <strong style="font-size: 0.95rem;">AGENTS.md (Mục 2.12 - Quy Chuẩn Điều Hành Giao Vận Shipper)</strong>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0 0;">
+                Đã bổ sung bộ quy tắc CẤM vs ĐÚNG: Cấm hiển thị sao/lương/KPI trên Shipper app, cấm tài xế nhận đơn chi nhánh khác, cấm nhảy cóc bước, bắt buộc Focus Mode (1 đơn tại 1 thời điểm) và ghi rõ trạng thái lưu ảnh Base64 vs DB.
+              </p>
+            </div>
+          </li>
+
+          <li style="display: flex; gap: 12px; align-items: flex-start;">
+            <i class="fa-solid fa-file-lines text-primary mt-1" style="font-size: 1.2rem;"></i>
+            <div>
+              <strong style="font-size: 0.95rem;">DECISIONS.md (ADR-018: Quy Trình Giao Hàng Tuần Tự 4 Bước & Gác Lại ETA Toán Học)</strong>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0 0;">
+                Ghi nhận quyết định kiến trúc: Gác lại công thức toán học ETA do Word không có; loại bỏ sao/thưởng KPI; cỗ máy trạng thái 4 bước; và lộ trình Database Persistence cho ảnh đối soát.
+              </p>
+            </div>
+          </li>
+
+          <li style="display: flex; gap: 12px; align-items: flex-start;">
+            <i class="fa-solid fa-file-lines text-warning mt-1" style="font-size: 1.2rem;"></i>
+            <div>
+              <strong style="font-size: 0.95rem;">ROADMAP.md (Cập Nhật Tiến Độ Giai Đoạn 7)</strong>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0 0;">
+                Đã tích chọn hoàn tất <code>[x] Task 7.1</code> và <code>[x] Task 7.2</code>. Bổ sung mục tiêu <code>Task 7.3a</code> dành riêng cho việc lưu trữ vĩnh viễn hình ảnh đối soát lên Cloudinary và MySQL.
+              </p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer-note">
+      <p>Báo cáo được khởi tạo tự động bởi <strong>Antigravity Senior Agent</strong> phục vụ nghiệm thu Đồ án Lập trình Web — Chuỗi Trà Đạo UTETra.</p>
+      <p style="margin-top: 4px; font-weight: 600;">© 2026 UTETra Project — Đại Học Sư Phạm Kỹ Thuật TP.HCM (HCMUTE).</p>
+    </footer>
+
+  </div>
+
+</body>
+</html>

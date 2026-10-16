@@ -67,6 +67,34 @@ public class Order {
     @Column(name = "note", length = 500)
     private String note;
 
+    @Column(name = "customer_name", length = 100)
+    private String customerName;
+
+    @Column(name = "customer_phone", length = 20)
+    private String customerPhone;
+
+    @Column(name = "delivery_address", length = 500)
+    private String deliveryAddress;
+
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    @Column(name = "delivery_notes", length = 500)
+    private String deliveryNotes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "driver_id")
+    private Driver driver;
+
+    @Column(name = "handed_over_at")
+    private LocalDateTime handedOverAt;
+
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
