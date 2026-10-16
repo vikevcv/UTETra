@@ -133,6 +133,42 @@ public class PosController {
     }
 
     /**
+     * Giao diện màn hình Bàn Giao Đơn Quầy (Module 8 - UC09, UC18).
+     */
+    @GetMapping({"/pos/handover", "/branch/handover"})
+    public String posHandoverView(@RequestParam(value = "branchId", required = false) Long branchId,
+                                 HttpSession session,
+                                 Model model) {
+        if (session.getAttribute("POS_ACCOUNT") == null) {
+            return "redirect:/pos/login";
+        }
+        List<Branch> branches = branchRepository.findAll();
+        Branch currentBranch = null;
+        if (branchId != null) {
+            currentBranch = branchRepository.findById(branchId).orElse(null);
+        }
+        if (currentBranch == null && !branches.isEmpty()) {
+            currentBranch = branches.get(0);
+        }
+        Long activeBranchId = (currentBranch != null) ? currentBranch.getId() : 1L;
+        session.setAttribute("POS_BRANCH_ID", activeBranchId);
+
+        String activeCashiers = (String) session.getAttribute("POS_ACTIVE_CASHIERS_NAME");
+        if (activeCashiers == null || activeCashiers.isBlank()) {
+            activeCashiers = "Chưa có người trực ca";
+        }
+
+        model.addAttribute("cashierUsername", activeCashiers);
+        model.addAttribute("cashierName", activeCashiers);
+        model.addAttribute("currentBranch", currentBranch);
+        model.addAttribute("branchId", activeBranchId);
+        model.addAttribute("branchName", currentBranch != null ? currentBranch.getName() : "UTETra Flagship Thủ Đức");
+        model.addAttribute("branches", branches);
+
+        return "pos/handover";
+    }
+
+    /**
      * API tải danh mục, món trà sữa, size và topping hiển thị trên POS.
      */
     @GetMapping("/api/pos/menu")

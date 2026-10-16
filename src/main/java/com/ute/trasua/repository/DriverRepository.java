@@ -18,11 +18,20 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
 
     Optional<Driver> findByUserUsername(String username);
 
+    @Query("SELECT d FROM Driver d LEFT JOIN FETCH d.user LEFT JOIN FETCH d.branch WHERE d.user.username = :username")
+    Optional<Driver> findByUserUsernameWithUserAndBranch(@Param("username") String username);
+
+    @Query("SELECT d FROM Driver d LEFT JOIN FETCH d.user LEFT JOIN FETCH d.branch")
+    List<Driver> findAllWithUserAndBranch();
+
     boolean existsByLicensePlate(String licensePlate);
 
     boolean existsByLicensePlateAndIdNot(String licensePlate, Long id);
 
     List<Driver> findByBranchId(Long branchId);
+
+    @Query("SELECT d FROM Driver d LEFT JOIN FETCH d.user WHERE d.branch.id = :branchId")
+    List<Driver> findByBranchIdWithUser(@Param("branchId") Long branchId);
 
     @Query("SELECT d FROM Driver d JOIN d.user u WHERE " +
            "d.branch.id = :branchId AND " +

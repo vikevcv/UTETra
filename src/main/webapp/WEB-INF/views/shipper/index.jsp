@@ -6,10 +6,10 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>UTETra Shipper — Zen Map-First Mobile Web App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UTETra Shipper — Điều Hành Giao Vận Trà Đạo</title>
   
-  <!-- BỘ FONT THUẦN VIỆT CHUẨN 100%: Be Vietnam Pro + Inter -->
+  <!-- Bộ Font Thuần Việt Chuẩn: Be Vietnam Pro + Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,640 +17,941 @@
   <!-- Font Awesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- Leaflet Map CSS & JS (CDNJS ổn định 100%) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <!-- Bootstrap 5.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700;800&display=swap');
-
     :root {
-      --bg-paper: #EFEBE2;
-      --bg-card: #FAF8F5;
-      --bg-card-inner: #F3EFE6;
+      --bg-paper: #F7F5F0;
+      --bg-card: #FFFFFF;
+      --bg-card-inner: #F9F7F2;
+      --bg-card-hover: #F2EFE8;
+      
       --bizen-clay: #8C6D53;
+      --bizen-clay-dark: #6E533D;
       --bizen-light: #F4ECE4;
+      
       --matcha-deep: #2F6A4F;
+      --matcha-deep-hover: #24533D;
       --matcha-light: #E7EFE9;
-      --matcha-glow: rgba(47, 106, 79, 0.35);
+      --matcha-glow: rgba(47, 106, 79, 0.3);
+      
       --terracotta: #BA5D3F;
-      --text-charcoal: #25282A;
-      --text-sepia: #66615B;
+      --terracotta-light: #FDEEE9;
+      
+      --text-charcoal: #1C1D1F;
+      --text-sepia: #5C5852;
       --text-muted: #8E8880;
-      --border-earth: #DFD7C8;
-      
+      --border-earth: #E5DEC9;
+      --border-earth-dark: #D4CABC;
+
       --font-main: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      
-      --radius-sm: 10px;
-      --radius-md: 18px;
-      --radius-lg: 28px;
-      --shadow-float: 0 8px 24px rgba(45, 35, 25, 0.14);
-      --shadow-earth: 0 10px 30px rgba(60, 48, 38, 0.12);
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+
+      --shadow-subtle: 0 4px 16px rgba(45, 35, 25, 0.05);
+      --shadow-card: 0 8px 24px rgba(45, 35, 25, 0.08);
+      --shadow-floating: 0 16px 36px rgba(45, 35, 25, 0.12);
     }
 
-    *, *::before, *::after, html, body, button, input, select, textarea, span, p, div, a, label, h1, h2, h3, h4, h5, h6 {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      text-rendering: optimizeLegibility;
-      -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      background-color: #D6D0C2;
+      background-color: var(--bg-paper);
       color: var(--text-charcoal);
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      font-family: var(--font-main);
       min-height: 100vh;
-      padding: 20px 10px;
-      overflow-x: clip;
-      line-height: 1.45;
+      line-height: 1.5;
+      padding-bottom: 50px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* KHUNG ĐIỆN THOẠI MOBILE FRAME */
-    .mobile-frame {
-      width: 100%;
-      max-width: 412px;
-      background: var(--bg-paper);
-      border-radius: 44px;
-      box-shadow: 0 25px 70px -15px rgba(50, 40, 30, 0.35), 0 0 0 10px #2D2722;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      height: 890px;
-      position: relative;
+    /* Container Dashboard chính */
+    .shipper-dashboard-container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 24px 20px;
     }
 
-    /* BẢN ĐỒ LEAFLET TRÀN VIỀN 100% */
-    #mapView {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-      background: #EAE5D9;
+    @media (max-width: 768px) {
+      .shipper-dashboard-container {
+        padding: 16px 12px;
+      }
     }
 
-    .leaflet-container {
-      width: 100% !important;
-      height: 100% !important;
-      background: #EAE5D9 !important;
-    }
-
-    .leaflet-tile {
-      filter: contrast(102%) brightness(98%);
-    }
-
-    /* STATUS BAR MOBILE */
-    .status-bar {
-      height: 44px;
-      padding: 10px 24px 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text-charcoal);
-      z-index: 20;
-      pointer-events: none;
-    }
-
-    .island-pill {
-      width: 100px;
-      height: 24px;
-      background: #2D2722;
-      border-radius: 20px;
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    /* TOP BAR NỔI: BÊN TRÁI LÀ AVATAR, BÊN PHẢI LÀ CÔNG TẮC GẠT ON/OFF */
-    .floating-top-bar {
-      position: absolute;
-      top: 52px;
-      left: 16px;
-      right: 16px;
-      z-index: 20;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      pointer-events: none;
-    }
-
-    .avatar-fab-btn {
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
+    /* TOP BAR / APP HEADER */
+    .shipper-header {
       background: var(--bg-card);
-      border: 2.5px solid var(--bizen-clay);
-      box-shadow: var(--shadow-float);
-      padding: 2px;
-      cursor: pointer;
-      pointer-events: auto;
-      transition: transform .2s cubic-bezier(0.34, 1.56, 0.64, 1);
-      position: relative;
+      border: 1px solid var(--border-earth);
+      border-radius: var(--radius-xl);
+      padding: 16px 24px;
+      box-shadow: var(--shadow-subtle);
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
     }
 
-    .avatar-fab-btn:active {
-      transform: scale(0.92);
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
 
-    .avatar-fab-btn img {
-      width: 100%;
-      height: 100%;
+    .enso-logo-circle {
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
-      object-fit: cover;
-    }
-
-    .avatar-menu-badge {
-      position: absolute;
-      bottom: -2px;
-      right: -2px;
-      width: 19px;
-      height: 19px;
-      background: var(--bizen-clay);
-      border: 2px solid white;
-      border-radius: 50%;
-      color: white;
-      font-size: 0.62rem;
+      background: var(--matcha-deep);
+      color: #FFFFFF;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 1.35rem;
+      box-shadow: 0 4px 14px var(--matcha-glow);
+      flex-shrink: 0;
     }
 
-    /* CÔNG TẮC GẠT ON / OFF CHUẨN CAO CẤP (SLIDER SWITCH) */
-    .top-switch-capsule {
-      pointer-events: auto;
-      background: rgba(250, 248, 245, 0.96);
-      backdrop-filter: blur(12px);
-      border: 1.5px solid var(--border-earth);
-      border-radius: 40px;
-      padding: 5px 6px 5px 12px;
-      box-shadow: 0 8px 24px rgba(45, 35, 25, 0.14);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      user-select: none;
-      transition: all .35s cubic-bezier(0.16, 1, 0.3, 1);
+    .brand-title-wrap h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-charcoal);
+      margin: 0;
+      letter-spacing: -0.3px;
     }
 
-    .top-switch-capsule:active {
-      transform: scale(0.96);
-    }
-
-    .top-switch-capsule.online {
-      background: rgba(240, 247, 242, 0.98);
-      border-color: rgba(47, 106, 79, 0.45);
-      box-shadow: 0 8px 25px rgba(47, 106, 79, 0.22);
-    }
-
-    .switch-status-info {
+    .brand-title-wrap .sub {
+      font-size: 0.8rem;
+      color: var(--text-sepia);
+      margin: 0;
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    .switch-status-dot {
-      width: 8px;
-      height: 8px;
+    .header-actions-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    /* Driver Pill Badge */
+    .driver-profile-pill {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-earth);
+      border-radius: 40px;
+      padding: 5px 14px 5px 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .driver-profile-pill:hover {
+      background: var(--bizen-light);
+      border-color: var(--bizen-clay);
+    }
+
+    .driver-profile-pill img {
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
-      background: #8E8880;
-      transition: all .3s ease;
+      object-fit: cover;
+      border: 2px solid var(--bizen-clay);
     }
 
-    .top-switch-capsule.online .switch-status-dot {
-      background: var(--matcha-deep);
-      box-shadow: 0 0 8px rgba(47, 106, 79, 0.7);
-      animation: pulseDot 1.8s infinite;
-    }
-
-    @keyframes pulseDot {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.3); opacity: 0.7; }
-    }
-
-    .switch-status-text {
-      font-size: 0.78rem;
+    .driver-name-text {
+      font-size: 0.86rem;
       font-weight: 700;
-      letter-spacing: 0.4px;
-      color: var(--text-sepia);
-      transition: color .3s ease;
+      color: var(--text-charcoal);
+      line-height: 1.2;
     }
 
-    .top-switch-capsule.online .switch-status-text {
+    .driver-plate-text {
+      font-size: 0.72rem;
+      color: var(--bizen-clay-dark);
+      font-weight: 600;
+    }
+
+    /* CÔNG TẮC GẠT ON / OFF CA TRỰC (SLIDER SWITCH) */
+    .capsule-switch-wrap {
+      background: var(--bg-card-inner);
+      border: 1.5px solid var(--border-earth);
+      border-radius: 40px;
+      padding: 5px 6px 5px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .capsule-switch-wrap:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .capsule-switch-wrap.online {
+      background: #F0F9F4;
+      border-color: rgba(47, 106, 79, 0.4);
+      box-shadow: 0 4px 16px rgba(47, 106, 79, 0.15);
+    }
+
+    .switch-info-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .switch-indicator-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #9CA3AF;
+      transition: all 0.3s ease;
+    }
+
+    .capsule-switch-wrap.online .switch-indicator-dot {
+      background: var(--matcha-deep);
+      box-shadow: 0 0 10px rgba(47, 106, 79, 0.8);
+      animation: pulseMatcha 1.8s infinite;
+    }
+
+    @keyframes pulseMatcha {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.65; }
+    }
+
+    .switch-label-status {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-sepia);
+      letter-spacing: 0.3px;
+    }
+
+    .capsule-switch-wrap.online .switch-label-status {
       color: var(--matcha-deep);
     }
 
-    .toggle-slider-track {
-      width: 66px;
-      height: 34px;
-      background: #7E766D;
+    .switch-track {
+      width: 60px;
+      height: 32px;
+      background: #9CA3AF;
       border-radius: 20px;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 10px;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
-      transition: background-color .35s ease, box-shadow .35s ease;
+      padding: 0 8px;
+      transition: all 0.3s ease;
     }
 
-    .top-switch-capsule.online .toggle-slider-track {
+    .capsule-switch-wrap.online .switch-track {
       background: var(--matcha-deep);
-      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 14px rgba(47, 106, 79, 0.45);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
     }
 
-    .track-text {
+    .track-tag {
       font-size: 0.65rem;
       font-weight: 800;
-      letter-spacing: 0.5px;
+      color: #FFFFFF;
       user-select: none;
-      transition: opacity .3s ease;
     }
 
-    .track-text-on {
-      color: #FFFFFF;
-      opacity: 0;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    }
+    .track-tag-on { display: none; }
+    .track-tag-off { display: block; margin-left: auto; }
 
-    .track-text-off {
-      color: #FFFFFF;
-      opacity: 0.9;
-      margin-left: auto;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    }
+    .capsule-switch-wrap.online .track-tag-on { display: block; }
+    .capsule-switch-wrap.online .track-tag-off { display: none; }
 
-    .top-switch-capsule.online .track-text-on {
-      opacity: 0.95;
-    }
-
-    .top-switch-capsule.online .track-text-off {
-      opacity: 0;
-    }
-
-    .toggle-slider-knob {
-      width: 28px;
-      height: 28px;
-      background: linear-gradient(180deg, #FFFFFF 0%, #F5F2EC 100%);
+    .switch-thumb-knob {
+      width: 26px;
+      height: 26px;
+      background: #FFFFFF;
       border-radius: 50%;
       position: absolute;
       top: 3px;
       left: 3px;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.15);
-      transition: transform .35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #7E766D;
-      font-size: 0.68rem;
+      color: #6B7280;
+      font-size: 0.72rem;
     }
 
-    .top-switch-capsule.online .toggle-slider-knob {
-      transform: translateX(32px);
+    .capsule-switch-wrap.online .switch-thumb-knob {
+      transform: translateX(28px);
       color: var(--matcha-deep);
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25), 0 0 6px rgba(47, 106, 79, 0.3);
     }
 
-    /* NÚT ĐỊNH VỊ GPS NỔI */
-    .gps-recenter-btn {
-      position: absolute;
-      right: 16px;
-      bottom: 30px;
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
+    /* METRIC BAR (BẢNG CHỈ SỐ NHANH) */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 992px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 576px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+    }
+
+    .metric-card {
       background: var(--bg-card);
-      border: 1.5px solid var(--border-earth);
-      box-shadow: var(--shadow-float);
+      border: 1px solid var(--border-earth);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow-subtle);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card);
+    }
+
+    .metric-icon-box {
+      width: 50px;
+      height: 50px;
+      border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .metric-icon-matcha {
+      background: var(--matcha-light);
+      color: var(--matcha-deep);
+    }
+
+    .metric-icon-bizen {
+      background: var(--bizen-light);
       color: var(--bizen-clay);
-      font-size: 1.15rem;
-      cursor: pointer;
-      z-index: 10;
-      transition: all .2s ease;
     }
 
-    .gps-recenter-btn:active {
-      transform: scale(0.92);
-      background: var(--bg-card-inner);
+    .metric-icon-terracotta {
+      background: var(--terracotta-light);
+      color: var(--terracotta);
     }
 
-    /* DÒNG THÔNG BÁO TÌM ĐƠN TRÔI NHẸ Ở ĐÁY */
-    .searching-pill-dock {
-      position: absolute;
-      bottom: 28px;
-      left: 20px;
-      right: 20px;
-      z-index: 15;
-      display: flex;
-      justify-content: center;
-      pointer-events: none;
+    .metric-icon-slate {
+      background: #F3F4F6;
+      color: #4B5563;
     }
 
-    .searching-bubble {
-      background: rgba(250, 248, 245, 0.95);
-      backdrop-filter: blur(8px);
+    .metric-meta .label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-sepia);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 2px;
+    }
+
+    .metric-meta .value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-charcoal);
+      line-height: 1.2;
+    }
+
+    .metric-meta .sub-note {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* TOOLBAR / NÚT TIỆN ÍCH */
+    .actions-toolbar {
+      background: var(--bg-card);
       border: 1px solid var(--border-earth);
-      padding: 10px 20px;
-      border-radius: 30px;
-      box-shadow: var(--shadow-float);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .toolbar-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text-charcoal);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toolbar-btn-group {
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--matcha-deep);
-      animation: pulseSearching 2s infinite ease-in-out;
+      flex-wrap: wrap;
     }
 
-    @keyframes pulseSearching {
-      0%, 100% { transform: translateY(0); box-shadow: var(--shadow-float); }
-      50% { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(45,35,25,0.2); }
-    }
-
-    /* THẺ ĐANG GIAO HÀNG (UC13) */
-    .active-order-sheet {
-      position: absolute;
-      bottom: 16px;
-      left: 14px;
-      right: 14px;
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-earth);
-      border: 1.5px solid var(--border-earth);
-      padding: 18px;
-      z-index: 30;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      animation: slideUpSheet .35s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes slideUpSheet {
-      from { transform: translateY(110%); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    .order-sheet-header {
-      display: flex;
-      justify-content: space-between;
+    .btn-tool {
+      border: 1px solid var(--border-earth);
+      background: var(--bg-card-inner);
+      color: var(--text-charcoal);
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.84rem;
+      font-weight: 700;
+      display: inline-flex;
       align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
     }
 
-    .order-code-text {
-      font-size: 1.05rem;
-      font-weight: 800;
+    .btn-tool:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-earth-dark);
       color: var(--text-charcoal);
     }
 
-    .step-pill-tag {
+    .btn-tool:active {
+      transform: scale(0.97);
+    }
+
+    .btn-tool-primary {
+      background: var(--matcha-deep);
+      border-color: var(--matcha-deep);
+      color: #FFFFFF;
+    }
+
+    .btn-tool-primary:hover {
+      background: var(--matcha-deep-hover);
+      border-color: var(--matcha-deep-hover);
+      color: #FFFFFF;
+    }
+
+    .btn-tool-accent {
+      background: var(--bizen-light);
+      border-color: var(--bizen-clay);
+      color: var(--bizen-clay-dark);
+    }
+
+    .btn-tool-accent:hover {
+      background: #EFE3D8;
+      color: var(--bizen-clay-dark);
+    }
+
+    /* KHÔNG GIAN ĐIỀU HÀNH ĐƠN HÀNG (ACTIVE DELIVERY DECK) */
+    .delivery-deck-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .delivery-deck-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-charcoal);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .count-badge {
       background: var(--matcha-light);
       color: var(--matcha-deep);
-      padding: 4px 10px;
-      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    /* DANH SÁCH THẺ ĐƠN HÀNG (DELIVERY CARDS) */
+    .delivery-cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .delivery-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-earth);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .delivery-card:hover {
+      box-shadow: var(--shadow-floating);
+      border-color: var(--border-earth-dark);
+    }
+
+    /* Đèn báo trạng thái ở mép trên thẻ */
+    .delivery-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: var(--matcha-deep);
+    }
+
+    .delivery-card.status-pickup::before {
+      background: var(--bizen-clay);
+    }
+
+    .delivery-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .card-code-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .order-code-badge {
+      font-size: 1.18rem;
+      font-weight: 800;
+      color: var(--text-charcoal);
+      letter-spacing: -0.2px;
+    }
+
+    .order-queue-badge {
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FCD34D;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .order-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .status-badge-delivering {
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+
+    .status-badge-pickup {
+      background: #FFFBEB;
+      color: #B45309;
+      border: 1px solid #FDE68A;
+    }
+
+    /* Khung Lộ Trình Giao Hàng Hai Điểm (Route Box) */
+    .route-display-box {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-earth);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+
+    .route-node {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .node-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .node-icon-store {
+      background: var(--matcha-light);
+      color: var(--matcha-deep);
+    }
+
+    .node-icon-dest {
+      background: var(--bizen-light);
+      color: var(--bizen-clay);
+    }
+
+    .node-content-wrap {
+      flex: 1;
+    }
+
+    .node-content-wrap .node-label {
       font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
+      color: var(--text-muted);
       letter-spacing: 0.5px;
+      margin-bottom: 2px;
     }
 
-    .compact-route-box {
-      background: var(--bg-card-inner);
+    .node-content-wrap .node-name {
+      font-size: 0.96rem;
+      font-weight: 700;
+      color: var(--text-charcoal);
+    }
+
+    .node-content-wrap .node-sub {
+      font-size: 0.84rem;
+      color: var(--text-sepia);
+      margin-top: 2px;
+    }
+
+    .route-line-connector {
+      width: 2px;
+      height: 24px;
+      background: #D1D5DB;
+      margin-left: 17px;
+      border-style: dashed;
+    }
+
+    /* Nút gọi điện cho khách hàng nhanh */
+    .btn-call-customer {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #DCFCE7;
+      color: #166534;
+      border: 1px solid #86EFAC;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      margin-left: 8px;
+    }
+
+    .btn-call-customer:hover {
+      background: #BBF7D0;
+      color: #14532D;
+    }
+
+    /* Hộp Ghi Chú Của Khách Hàng */
+    .customer-note-callout {
+      background: #FEF9C3;
+      border: 1px solid #FDE047;
       border-radius: var(--radius-sm);
-      padding: 12px 14px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      color: #713F12;
       display: flex;
-      flex-direction: column;
-      gap: 10px;
-      font-size: 0.85rem;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
     }
 
-    .route-point-row {
+    /* BANNER CAM KẾT TÀI CHÍNH (COD = 0₫) */
+    .cod-zero-guarantee-banner {
+      background: linear-gradient(135deg, #ECFDF5 0%, #E0F2FE 100%);
+      border: 1.5px solid #6EE7B7;
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-bottom: 18px;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
       gap: 10px;
     }
 
-    .route-point-row i {
-      margin-top: 3px;
-      font-size: 0.95rem;
+    .cod-guarantee-text {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #065F46;
     }
 
-    .cup-info-badge {
+    .cod-zero-tag {
+      background: #059669;
+      color: #FFFFFF;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+    }
+
+    /* DANH SÁCH MÓN ĐỒ UỐNG */
+    .drink-items-summary-box {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-earth);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+
+    .drink-items-header {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-sepia);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: var(--bg-card-inner);
-      border: 1px solid var(--border-earth);
-      border-radius: var(--radius-sm);
-      padding: 9px 13px;
-      font-size: 0.82rem;
+    }
+
+    .drink-summary-content {
+      font-size: 0.9rem;
       font-weight: 600;
       color: var(--text-charcoal);
+      line-height: 1.45;
     }
 
-    .action-row-buttons {
+    /* CỤM NÚT THAO TÁC CỦA THẺ ĐƠN HÀNG */
+    .card-actions-grid {
       display: grid;
-      grid-template-columns: 1fr 2.5fr;
-      gap: 10px;
+      grid-template-columns: 2fr 1.5fr 1fr;
+      gap: 12px;
     }
 
-    .btn-call-mini {
-      background: var(--bg-card-inner);
-      border: 1px solid var(--border-earth);
+    @media (max-width: 768px) {
+      .card-actions-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Nút Google Maps Xe Máy Nổi Bật */
+    .btn-google-maps {
+      background: #1A73E8;
+      color: #FFFFFF;
+      border: none;
       border-radius: var(--radius-md);
-      padding: 14px;
-      color: var(--text-charcoal);
+      padding: 13px 18px;
+      font-size: 0.94rem;
       font-weight: 700;
-      font-size: 0.88rem;
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(26, 115, 232, 0.35);
+      transition: all 0.2s ease;
+      text-decoration: none;
     }
 
-    .btn-action-main {
+    .btn-google-maps:hover {
+      background: #1557B0;
+      color: #FFFFFF;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(26, 115, 232, 0.4);
+    }
+
+    .btn-google-maps:active {
+      transform: scale(0.98);
+    }
+
+    /* Nút Xác Nhận Tiến Trình Giao Hàng */
+    .btn-complete-delivery {
       background: var(--matcha-deep);
-      color: white;
+      color: #FFFFFF;
       border: none;
       border-radius: var(--radius-md);
-      padding: 14px;
-      font-size: 0.95rem;
+      padding: 13px 18px;
+      font-size: 0.94rem;
       font-weight: 700;
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      box-shadow: 0 4px 15px var(--matcha-glow);
+      cursor: pointer;
+      box-shadow: 0 4px 14px var(--matcha-glow);
+      transition: all 0.2s ease;
     }
 
-    /* CARD PHÂN CÔNG ĐƠN HÀNG BẮT BUỘC (UC12) */
-    .overlay-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(37, 40, 42, 0.7);
-      backdrop-filter: blur(5px);
-      z-index: 50;
-      display: flex;
-      align-items: flex-end;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .3s ease;
+    .btn-complete-delivery:hover {
+      background: var(--matcha-deep-hover);
+      transform: translateY(-1px);
     }
 
-    .overlay-backdrop.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .dispatch-sheet {
-      background: var(--bg-card);
-      width: 100%;
-      border-radius: 32px 32px 0 0;
-      padding: 24px 20px 34px;
-      border-top: 3.5px solid var(--matcha-deep);
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      transform: translateY(100%);
-      transition: transform .32s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 -10px 40px rgba(0,0,0,0.25);
-    }
-
-    .overlay-backdrop.active .dispatch-sheet {
-      transform: translateY(0);
-    }
-
-    .dispatch-badge-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .dispatch-status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: #ECFDF5;
-      color: #065F46;
-      border: 1px solid #A7F3D0;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 0.74rem;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-    }
-
-    .dispatch-bell-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--matcha-light);
-      color: var(--matcha-deep);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      animation: bellWobble 1.5s infinite ease-in-out;
-    }
-
-    @keyframes bellWobble {
-      0%, 100% { transform: rotate(0); }
-      20%, 60% { transform: rotate(14deg); }
-      40%, 80% { transform: rotate(-14deg); }
-    }
-
-    .camera-preview-zone {
-      background: var(--bg-card-inner);
-      border: 2px dashed var(--border-earth);
+    .btn-pickup-delivery {
+      background: var(--bizen-clay);
+      color: #FFFFFF;
+      border: none;
       border-radius: var(--radius-md);
-      padding: 16px;
-      text-align: center;
-      cursor: pointer;
-      position: relative;
-      min-height: 150px;
+      padding: 13px 18px;
+      font-size: 0.94rem;
+      font-weight: 700;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      transition: all .2s ease;
-    }
-    .camera-preview-zone:active {
-      background: #EAE4D6;
-    }
-
-    /* MODAL BÁO CÁO SỰ CỐ / HỦY TIẾP NHẬN ĐƠN */
-    .incident-modal-box {
-      background: var(--bg-card);
-      width: 100%;
-      border-radius: 28px 28px 0 0;
-      padding: 24px 20px 32px;
-      border-top: 3.5px solid var(--terracotta);
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      transform: translateY(100%);
-      transition: transform .32s cubic-bezier(0.16, 1, 0.3, 1);
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(140, 109, 83, 0.35);
+      transition: all 0.2s ease;
     }
 
-    .overlay-backdrop.active .incident-modal-box {
-      transform: translateY(0);
+    .btn-pickup-delivery:hover {
+      background: var(--bizen-clay-dark);
+      transform: translateY(-1px);
     }
 
-    .incident-radio-label {
+    /* Nút Báo Cáo Sự Cố */
+    .btn-report-incident {
+      background: transparent;
+      border: 1.5px solid var(--border-earth-dark);
+      color: var(--terracotta);
+      border-radius: var(--radius-md);
+      padding: 13px 14px;
+      font-size: 0.88rem;
+      font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 12px;
-      background: var(--bg-card-inner);
-      border: 1.5px solid var(--border-earth);
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
+      justify-content: center;
+      gap: 6px;
       cursor: pointer;
-      font-size: 0.84rem;
-      font-weight: 600;
-      transition: all .2s ease;
+      transition: all 0.2s ease;
     }
 
-    .incident-radio-label:has(input:checked) {
+    .btn-report-incident:hover {
+      background: var(--terracotta-light);
       border-color: var(--terracotta);
-      background: #FFF5F2;
       color: var(--terracotta);
     }
 
-    /* DRAWER HỒ SƠ TÀI XẾ */
+    /* EMPTY STATE (KHI KHÔNG CÓ ĐƠN HÀNG) */
+    .empty-state-box {
+      background: var(--bg-card);
+      border: 2px dashed var(--border-earth);
+      border-radius: var(--radius-xl);
+      padding: 50px 24px;
+      text-align: center;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .empty-state-icon {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: var(--bg-card-inner);
+      border: 2px solid var(--border-earth);
+      color: var(--bizen-clay);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      margin-bottom: 18px;
+    }
+
+    .empty-state-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-charcoal);
+      margin-bottom: 8px;
+    }
+
+    .empty-state-desc {
+      font-size: 0.88rem;
+      color: var(--text-sepia);
+      max-width: 480px;
+      margin: 0 auto 24px;
+      line-height: 1.6;
+    }
+
+    /* DRAWER / OFFCANVAS HỒ SƠ & KPI */
     .profile-drawer {
-      position: absolute;
-      inset: 0;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-width: 460px;
       background: var(--bg-paper);
-      z-index: 60;
+      box-shadow: -10px 0 35px rgba(0, 0, 0, 0.2);
+      z-index: 1050;
       display: flex;
       flex-direction: column;
-      transform: translateX(-100%);
-      transition: transform .35s cubic-bezier(0.16, 1, 0.3, 1);
-      overflow-y: auto;
+      transform: translateX(100%);
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .profile-drawer.open {
       transform: translateX(0);
     }
 
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1040;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .drawer-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
     .drawer-header {
-      padding: 50px 20px 16px;
+      padding: 22px 24px;
       background: var(--bg-card);
       border-bottom: 1px solid var(--border-earth);
       display: flex;
@@ -658,774 +959,1263 @@
       align-items: center;
     }
 
-    .drawer-nav-tabs {
+    .drawer-header h3 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin: 0;
+      color: var(--text-charcoal);
+    }
+
+    .btn-close-drawer {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-earth);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-charcoal);
+      font-size: 1rem;
+    }
+
+    .drawer-tabs-nav {
       display: flex;
       background: var(--bg-card-inner);
       border-bottom: 1px solid var(--border-earth);
-      padding: 4px;
-      gap: 4px;
+      padding: 6px;
+      gap: 6px;
     }
 
-    .dtab {
+    .dtab-btn {
       flex: 1;
-      padding: 10px 0;
-      text-align: center;
-      background: transparent;
       border: none;
-      font-size: 0.82rem;
+      background: transparent;
+      padding: 10px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
       font-weight: 700;
       color: var(--text-sepia);
-      border-radius: 10px;
       cursor: pointer;
-      transition: all .2s ease;
+      transition: all 0.2s ease;
     }
 
-    .dtab.active {
+    .dtab-btn.active {
       background: var(--bg-card);
       color: var(--matcha-deep);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     }
 
-    .drawer-tab-content {
+    .drawer-body {
       padding: 20px;
+      overflow-y: auto;
+      flex: 1;
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
 
-    .profile-card-top {
-      background: var(--bg-card);
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border-earth);
-      padding: 18px;
+    /* TOAST NOTIFICATION CONTAINER */
+    .toast-container-zen {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1090;
       display: flex;
-      align-items: center;
-      gap: 14px;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 380px;
     }
 
-    .profile-card-top img {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      border: 2px solid var(--bizen-clay);
-      object-fit: cover;
-    }
-
-    .kpi-score-tile {
-      background: var(--matcha-deep);
-      color: white;
-      border-radius: var(--radius-md);
-      padding: 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .kpi-score-tile .num {
-      font-size: 1.6rem;
-      font-weight: 800;
-      line-height: 1;
-      margin-top: 4px;
-    }
-
-    .history-item {
+    .zen-toast {
       background: var(--bg-card);
       border: 1px solid var(--border-earth);
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
+      border-left: 5px solid var(--matcha-deep);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      box-shadow: var(--shadow-floating);
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.85rem;
+      align-items: flex-start;
+      gap: 12px;
+      animation: slideInToast 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .close-drawer-btn {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      border: 1px solid var(--border-earth);
+    .zen-toast.toast-warning {
+      border-left-color: var(--bizen-clay);
+    }
+
+    .zen-toast.toast-danger {
+      border-left-color: var(--terracotta);
+    }
+
+    @keyframes slideInToast {
+      from { transform: translateX(110%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .camera-upload-box {
       background: var(--bg-card-inner);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border: 2px dashed var(--border-earth);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      text-align: center;
       cursor: pointer;
-      color: var(--text-charcoal);
-      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .camera-upload-box:hover {
+      background: #F3EFE6;
+      border-color: var(--matcha-deep);
     }
   </style>
 </head>
 <body>
 
-  <!-- KHUNG MOBILE CHUẨN THIẾT BỊ TÀI XẾ -->
-  <div class="mobile-frame">
+  <!-- DASHBOARD CONTAINER CHÍNH -->
+  <div class="shipper-dashboard-container">
 
+    <!-- CẢNH BÁO QUYỀN TRUY CẬP (NẾU CÓ) -->
     <c:if test="${param.accessDenied == 'true'}">
-      <div style="position: absolute; top: 44px; left: 16px; right: 16px; z-index: 9999; background: #FEF2F2; border: 1px solid #F87171; color: #991B1B; padding: 10px 14px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: space-between;">
-        <span><i class="fa-solid fa-triangle-exclamation me-1"></i> Tài xế chỉ có quyền thao tác trên ứng dụng giao hàng!</span>
-        <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #991B1B; cursor: pointer; font-size: 0.9rem;">✕</button>
+      <div class="alert alert-warning alert-dismissible fade show mb-4 border-0 shadow-sm" role="alert" style="background: #FEF3C7; color: #92400E; border-radius: 14px;">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+        <strong>Chú ý:</strong> Tài xế chỉ có quyền thao tác trên ứng dụng giao hàng của ca trực!
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     </c:if>
 
-    <!-- BẢN ĐỒ LEAFLET TRÀN VIỀN 100% -->
-    <div id="mapView"></div>
-
-    <!-- Status Bar Mobile -->
-    <div class="status-bar">
-      <span>14:50</span>
-      <div class="island-pill"></div>
-      <div style="display: flex; gap: 6px; align-items: center;">
-        <i class="fa-solid fa-signal"></i>
-        <i class="fa-solid fa-wifi"></i>
-        <i class="fa-solid fa-battery-three-quarters"></i>
-      </div>
-    </div>
-
-    <!-- TOP HEADER NỔI: AVATAR BÊN TRÁI & CÔNG TẮC GẠT ON/OFF BÊN PHẢI -->
-    <div class="floating-top-bar">
-      <button class="avatar-fab-btn" onclick="openProfileDrawer()" title="Mở Hồ Sơ & Lịch Sử">
-        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" alt="Avatar">
-        <div class="avatar-menu-badge"><i class="fa-solid fa-bars"></i></div>
-      </button>
-
-      <!-- CÔNG TẮC GẠT ON / OFF Ở BÊN TRÊN (SLIDER SWITCH) -->
-      <div class="top-switch-capsule" id="topSwitchCapsule" onclick="toggleSwitchAction()" title="Gạt công tắc BẬT / TẮT nhận đơn">
-        <div class="switch-status-info">
-          <span class="switch-status-dot" id="switchStatusDot"></span>
-          <span class="switch-status-text" id="switchStatusText">TẮT</span>
+    <!-- 1. TOP HEADER / APP BAR -->
+    <header class="shipper-header">
+      <div class="brand-section">
+        <div class="enso-logo-circle" title="UTETra Shipper">
+          <i class="fa-solid fa-motorcycle"></i>
         </div>
-        <div class="toggle-slider-track" id="toggleSliderTrack">
-          <span class="track-text track-text-on">ON</span>
-          <span class="track-text track-text-off">OFF</span>
-          <div class="toggle-slider-knob" id="toggleSliderKnob">
-            <i class="fa-solid fa-power-off" id="knobIcon"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Nút Demo để thử kích hoạt Lệnh Phân Công Đơn Bắt Buộc (UC12) -->
-    <div style="position: absolute; top: 116px; right: 16px; z-index: 20;">
-      <button onclick="triggerMandatoryDispatch()" style="background: rgba(250,248,245,0.95); backdrop-filter: blur(8px); border: 1.5px solid var(--matcha-deep); color: var(--matcha-deep); padding: 7px 14px; border-radius: 20px; font-size: 0.74rem; font-weight: 700; cursor: pointer; box-shadow: var(--shadow-float); display: flex; align-items: center; gap: 6px;">
-        <i class="fa-solid fa-bell"></i> Phân Công Đơn Mới (UC12)
-      </button>
-    </div>
-
-    <!-- Nút Định Vị Lại GPS Nổi -->
-    <button class="gps-recenter-btn" onclick="recenterMap()" title="Định vị vị trí của tôi">
-      <i class="fa-solid fa-crosshairs"></i>
-    </button>
-
-    <!-- TRẠNG THÁI 1: KHI BẬT ON VÀ ĐANG TÌM ĐƠN (CHỜ ĐIỀU PHỐI) -->
-    <div class="searching-pill-dock" id="searchingPillDock" style="display: none;">
-      <div class="searching-bubble">
-        <i class="fa-solid fa-radar fa-spin"></i>
-        <span>Đang trong ca trực · Chờ quán điều phối đơn...</span>
-      </div>
-    </div>
-
-    <!-- TRẠNG THÁI 2: KHI ĐANG CÓ ĐƠN HÀNG (UC13) -> THẺ THÔNG TIN TRÔI NHẸ Ở ĐÁY -->
-    <div class="active-order-sheet" id="activeOrderSheet" style="display: none;">
-      <div class="order-sheet-header">
-        <span class="order-code-text">Đơn #UT-90255 (2 ly)</span>
-        <span class="step-pill-tag" id="currentOrderStepTag">Đang Lấy Hàng</span>
-      </div>
-
-      <div class="compact-route-box">
-        <div class="route-point-row">
-          <i class="fa-solid fa-store" style="color: var(--matcha-deep);"></i>
-          <div>
-            <strong style="display: block; font-size: 0.85rem;">UTETra Cơ Sở 01 — Võ Văn Ngân</strong>
-            <span style="color: var(--text-muted); font-size: 0.75rem;">1x Ô Long Cold Brew (L), 1x Trà Nhài Men Ngọc</span>
-          </div>
-        </div>
-        <div class="route-point-row" style="border-top: 1px dashed var(--border-earth); padding-top: 8px;">
-          <i class="fa-solid fa-location-dot" style="color: var(--bizen-clay);"></i>
-          <div>
-            <strong style="display: block; font-size: 0.85rem;">15 Lê Văn Chí, Linh Trung</strong>
-            <span style="color: var(--text-muted); font-size: 0.75rem;">Chị Bích Trâm · 2.1 km (~10 phút)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- THÔNG TIN SỐ LƯỢNG LY NƯỚC (BỎ CHỮ 0Đ THEO YÊU CẦU) -->
-      <div class="cup-info-badge">
-        <span><i class="fa-solid fa-mug-hot" style="color: var(--matcha-deep);"></i> Số lượng ly:</span>
-        <strong style="color: var(--matcha-deep);">2 ly trà (Đã đóng seal nắp)</strong>
-      </div>
-
-      <div class="action-row-buttons">
-        <button class="btn-call-mini" onclick="alert('Đang kết nối cuộc gọi khách hàng: 0938 777 666')">
-          <i class="fa-solid fa-phone" style="color: var(--bizen-clay);"></i> Gọi
-        </button>
-        <button class="btn-action-main" id="progressDeliveryBtn" onclick="nextDeliveryStep()">
-          <i class="fa-solid fa-store" id="progressDeliveryBtnIcon"></i>
-          <span id="progressDeliveryBtnText">Xác Nhận Đã Lấy Trà</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- CARD LỆNH PHÂN CÔNG ĐƠN HÀNG BẮT BUỘC TỪ CHI NHÁNH (UC12 - MANDATORY DISPATCH) -->
-    <div class="overlay-backdrop" id="dispatchBackdrop">
-      <div class="dispatch-sheet">
-        <div class="dispatch-badge-row">
-          <div>
-            <span class="dispatch-status-badge">
-              <i class="fa-solid fa-circle-exclamation"></i> Lệnh Phân Công Từ Quán (UC12)
-            </span>
-            <h3 style="font-size: 1.25rem; font-weight: 800; margin-top: 4px; color: var(--text-charcoal);">
-              Đơn Hàng #UT-90255
-            </h3>
-          </div>
-          <div class="dispatch-bell-icon">
-            <i class="fa-solid fa-bell"></i>
-          </div>
-        </div>
-
-        <!-- THÔNG TIN SỐ LƯỢNG MÓN GIAO -->
-        <div class="cup-info-badge">
-          <span><i class="fa-solid fa-mug-hot" style="color: var(--matcha-deep);"></i> Số lượng nước cần giao:</span>
-          <strong style="color: var(--matcha-deep); font-size: 0.9rem;">2 ly trà (Đã dán tem niêm phong)</strong>
-        </div>
-
-        <div style="background: var(--bg-card-inner); border-radius: var(--radius-sm); padding: 14px; border: 1px solid var(--border-earth); display: flex; flex-direction: column; gap: 8px;">
-          <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 0.85rem;">
-            <span>2 món đồ uống (Đã đóng seal)</span>
-            <span style="color: var(--matcha-deep);">Lộ trình: 2.1 km</span>
-          </div>
-          <p style="color: var(--text-sepia); font-size: 0.82rem; margin: 0; line-height: 1.4;">
-            <i class="fa-solid fa-store" style="color: var(--matcha-deep);"></i> Quán 01 Võ Văn Ngân ➔ 
-            <i class="fa-solid fa-location-dot" style="color: var(--bizen-clay);"></i> 15 Lê Văn Chí (Chị Bích Trâm)
+        <div class="brand-title-wrap">
+          <h1>UTETra Shipper</h1>
+          <p class="sub">
+            <i class="fa-solid fa-store" style="color: var(--matcha-deep);"></i>
+            <span>${branchName}</span>
           </p>
         </div>
-
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <button onclick="acceptOrder()" style="background: var(--matcha-deep); color: white; border: none; padding: 15px; border-radius: var(--radius-md); font-weight: 700; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 16px var(--matcha-glow); display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <i class="fa-solid fa-circle-check"></i> Xác Nhận & Bắt Đầu Đi Lấy Trà
-          </button>
-          <button onclick="openIncidentModal()" style="background: transparent; color: var(--terracotta); border: 1px solid var(--border-earth); padding: 11px; border-radius: var(--radius-md); font-weight: 600; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            <i class="fa-solid fa-triangle-exclamation"></i> Báo Cáo Sự Cố / Không Thể Giao
-          </button>
-        </div>
       </div>
-    </div>
 
-    <!-- MODAL BÁO CÁO SỰ CỐ / HỦY TIẾP NHẬN ĐƠN (INCIDENT CANCELLATION MODAL) -->
-    <div class="overlay-backdrop" id="incidentModalBackdrop">
-      <div class="incident-modal-box">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--terracotta);">
-            <i class="fa-solid fa-triangle-exclamation"></i> Báo Cáo Sự Cố Hủy Giao Đơn
-          </h3>
-          <button onclick="closeIncidentModal()" style="background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--text-muted);">&times;</button>
-        </div>
-
-        <p style="font-size: 0.8rem; color: var(--text-sepia); line-height: 1.4; margin: 0;">
-          Tài xế trong ca trực chỉ được từ chối khi gặp sự cố bất khả kháng. Đơn hàng sẽ được chuyển hoàn về quầy chi nhánh để quản lý phân công lại.
-        </p>
-
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <label class="incident-radio-label">
-            <input type="radio" name="incidentReason" value="xe_hong" checked>
-            <span>Xe hỏng / Thủng lốp / Sự cố phương tiện trên đường</span>
-          </label>
-          <label class="incident-radio-label">
-            <input type="radio" name="incidentReason" value="suc_khoe">
-            <span>Tài xế gặp sự cố sức khỏe đột xuất trong ca</span>
-          </label>
-          <label class="incident-radio-label">
-            <input type="radio" name="incidentReason" value="ket_don">
-            <span>Đang kẹt cuốc đơn trước, không kịp giờ cam kết</span>
-          </label>
-          <label class="incident-radio-label">
-            <input type="radio" name="incidentReason" value="khach_huy">
-            <span>Khách hàng gọi báo hủy đơn trước khi xuất bến</span>
-          </label>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; margin-top: 4px;">
-          <button onclick="closeIncidentModal()" style="background: var(--bg-card-inner); border: 1px solid var(--border-earth); color: var(--text-charcoal); padding: 13px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;">
-            Quay Lại
-          </button>
-          <button onclick="submitIncidentReport()" style="background: var(--terracotta); color: white; border: none; padding: 13px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(186,93,63,0.35);">
-            Xác Nhận Hủy Đơn
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL CHỤP HÌNH CHECK-IN HOÀN TẤT ĐƠN HÀNG (UC13) -->
-    <div class="overlay-backdrop" id="checkinModalBackdrop">
-      <div class="incident-modal-box" style="border-top-color: var(--matcha-deep);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--matcha-deep);">
-            <i class="fa-solid fa-camera"></i> Chụp Hình Check-in Đã Giao
-          </h3>
-          <button onclick="closeCheckinModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted);">&times;</button>
-        </div>
-
-        <p style="font-size: 0.8rem; color: var(--text-sepia); line-height: 1.4; margin: 0;">
-          Chụp ảnh 2 ly trà đã trao tận tay khách hàng hoặc đặt tại cửa để lưu bằng chứng đối soát hoàn tất giao hàng (UC13).
-        </p>
-
-        <!-- Khung ảnh camera preview -->
-        <div class="camera-preview-zone" onclick="triggerCameraCapture()">
-          <div id="cameraPlaceholder">
-            <i class="fa-solid fa-camera-retro" style="font-size: 2.2rem; color: var(--bizen-clay); margin-bottom: 8px;"></i>
-            <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-charcoal);">Bấm để chụp ảnh / tải ảnh</div>
-            <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 3px;">Hệ thống tự động đồng bộ lên Cloudinary</div>
+      <div class="header-actions-section">
+        <!-- Nút mở Drawer Hồ Sơ -->
+        <div class="driver-profile-pill" onclick="openProfileDrawer()" title="Xem Hồ Sơ & Lịch Sử Giao Hàng">
+          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" alt="Avatar Tài Xế">
+          <div>
+            <div class="driver-name-text">${fullName}</div>
+            <div class="driver-plate-text">${driverCode} · ${vehiclePlate}</div>
           </div>
-          <img id="checkinPreviewImg" src="https://images.unsplash.com/photo-1558857563-b37fc9a1e095?auto=format&fit=crop&w=600&q=80" style="display: none; width: 100%; max-height: 170px; object-fit: cover; border-radius: 12px; border: 1.5px solid var(--matcha-deep);" alt="Check-in ly trà">
-          <input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoUpload(event)">
+          <i class="fa-solid fa-chevron-right text-muted ms-1" style="font-size: 0.75rem;"></i>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; margin-top: 4px;">
-          <button onclick="closeCheckinModal()" style="background: var(--bg-card-inner); border: 1px solid var(--border-earth); color: var(--text-charcoal); padding: 13px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;">
-            Đóng
-          </button>
-          <button onclick="confirmDeliveryCompleted()" style="background: var(--matcha-deep); color: white; border: none; padding: 13px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px var(--matcha-glow); display: flex; align-items: center; justify-content: center; gap: 6px;">
-            <i class="fa-solid fa-circle-check"></i> Xác Nhận Đã Giao
-          </button>
+        <!-- CÔNG TẮC GẠT ON / OFF CA TRỰC -->
+        <div class="capsule-switch-wrap ${isOnline ? 'online' : ''}" id="topSwitchCapsule" onclick="toggleShiftStatus()" title="Gạt công tắc BẬT / TẮT tiếp nhận đơn hàng trong ca">
+          <div class="switch-info-group">
+            <span class="switch-indicator-dot" id="switchIndicatorDot"></span>
+            <span class="switch-label-status" id="switchLabelStatus">${isOnline ? 'BẬT' : 'TẮT'}</span>
+          </div>
+          <div class="switch-track" id="switchTrack">
+            <span class="track-tag track-tag-on">ON</span>
+            <span class="track-tag track-tag-off">OFF</span>
+            <div class="switch-thumb-knob" id="switchThumbKnob">
+              <i class="fa-solid ${isOnline ? 'fa-check' : 'fa-power-off'}" id="knobIcon"></i>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </header>
 
-    <!-- DRAWER HỒ SƠ TÀI XẾ (KHI BẤM VÀO AVATAR: HỒ SƠ, LỊCH SỬ, THU NHẬP) -->
-    <div class="profile-drawer" id="profileDrawer">
-      <div class="drawer-header">
-        <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--text-charcoal); margin: 0;">
-          Tài Khoản Tài Xế
-        </h2>
-        <button class="close-drawer-btn" onclick="closeProfileDrawer()">
-          <i class="fa-solid fa-xmark"></i>
+    <!-- 2. METRICS BAR (BẢNG CHỈ SỐ NHANH) -->
+    <section class="metrics-grid">
+      <!-- Thẻ 1: Đơn hoàn thành -->
+      <div class="metric-card">
+        <div class="metric-icon-box metric-icon-matcha">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div class="metric-meta">
+          <div class="label">Đơn Hoàn Thành</div>
+          <div class="value" id="metricCompletedCount">${completedCount} cuốc</div>
+          <div class="sub-note">Trong ca hôm nay</div>
+        </div>
+      </div>
+
+      <!-- Thẻ 2: Điểm KPI -->
+      <div class="metric-card">
+        <div class="metric-icon-box metric-icon-bizen">
+          <i class="fa-solid fa-star"></i>
+        </div>
+        <div class="metric-meta">
+          <div class="label">Điểm Hiệu Suất KPI</div>
+          <div class="value" id="metricKpiScore">${kpiScore} ⭐</div>
+          <div class="sub-note">Cam kết đúng giờ 99.2%</div>
+        </div>
+      </div>
+
+      <!-- Thẻ 3: Thu nhập tạm tính -->
+      <div class="metric-card">
+        <div class="metric-icon-box metric-icon-terracotta">
+          <i class="fa-solid fa-wallet"></i>
+        </div>
+        <div class="metric-meta">
+          <div class="label">Thu Nhập Ca Tạm Tính</div>
+          <div class="value" id="metricTodayEarnings">${todayEarnings}</div>
+          <div class="sub-note">Lương ca + thưởng cuốc</div>
+        </div>
+      </div>
+
+      <!-- Thẻ 4: Trạng thái ca trực -->
+      <div class="metric-card">
+        <div class="metric-icon-box metric-icon-slate" id="statusBoxIcon">
+          <i class="fa-solid fa-headset"></i>
+        </div>
+        <div class="metric-meta">
+          <div class="label">Trạng Thái Hoạt Động</div>
+          <div class="value" id="statusBoxText" style="font-size: 1.15rem; color: ${isOnline ? 'var(--matcha-deep)' : 'var(--text-sepia)'};">
+            ${isOnline ? 'Sẵn Sàng Nhận Đơn' : 'Tạm Nghỉ Ca'}
+          </div>
+          <div class="sub-note" id="statusBoxSub">${isOnline ? 'Đang bật nhận đơn từ quán' : 'Gạt công tắc trên để trực'}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. ACTIONS TOOLBAR (NÚT TIỆN ÍCH) -->
+    <section class="actions-toolbar">
+      <div class="toolbar-title">
+        <i class="fa-solid fa-boxes-stacked" style="color: var(--matcha-deep);"></i>
+        <span>Không Gian Điều Hành Giao Vận</span>
+      </div>
+
+      <div class="toolbar-btn-group">
+        <button class="btn-tool" onclick="refreshOrders(true)" id="btnRefreshOrders" title="Tải lại danh sách đơn">
+          <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
+          <span>Làm Mới</span>
+        </button>
+
+        <button class="btn-tool btn-tool-accent" onclick="seedSampleOrder()" id="btnSeedSample" title="Tạo đơn hàng thử nghiệm nếu CSDL trống">
+          <i class="fa-solid fa-plus-circle"></i>
+          <span>Thêm Đơn Mẫu Demo</span>
+        </button>
+
+        <button class="btn-tool" onclick="testNotificationSystem()" title="Kiểm tra âm thanh chuông và rung điện thoại">
+          <i class="fa-solid fa-bell"></i>
+          <span>Thử Âm Thanh / Rung</span>
+        </button>
+
+        <button class="btn-tool" onclick="openProfileDrawer()" title="Xem lịch sử và thu nhập">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+          <span>Lịch Sử & KPI</span>
         </button>
       </div>
+    </section>
 
-      <!-- 3 Tabs Điều Hướng Bên Trong Avatar -->
-      <div class="drawer-nav-tabs">
-        <button class="dtab active" onclick="switchDrawerTab('tab-profile', this)">Hồ Sơ</button>
-        <button class="dtab" onclick="switchDrawerTab('tab-history', this)">Lịch Sử Đơn</button>
-        <button class="dtab" onclick="switchDrawerTab('tab-earnings', this)">Thu Nhập & KPI</button>
+    <!-- 4. ACTIVE DELIVERY DECK (DANH SÁCH ĐƠN HÀNG CẦN GIAO) -->
+    <section>
+      <div class="delivery-deck-header">
+        <div class="delivery-deck-title">
+          <span>Đơn Hàng Giao Vận Của Bạn</span>
+          <span class="count-badge" id="activeOrdersCountBadge">${fn:length(activeOrders)} đơn</span>
+        </div>
+        <div class="text-muted" style="font-size: 0.82rem;">
+          <i class="fa-solid fa-clock-rotate-left me-1"></i> Tự động cập nhật mỗi 12 giây
+        </div>
       </div>
 
-      <!-- Tab 1: Hồ Sơ Cá Nhân -->
-      <div class="drawer-tab-content" id="tab-profile">
-        <div class="profile-card-top">
-          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" alt="Avatar">
+      <!-- Vùng render thẻ đơn hàng (Server-side + Dynamic JS) -->
+      <div class="delivery-cards-list" id="deliveryCardsDeck">
+
+        <!-- Lặp danh sách đơn hàng đã có trong model -->
+        <c:choose>
+          <c:when test="${not empty activeOrders}">
+            <c:forEach items="${activeOrders}" var="order">
+              <div class="delivery-card ${order.status == 'OUT_FOR_DELIVERY' ? 'status-pickup' : ''}" id="order-card-${order.orderId}">
+                <!-- Header Thẻ Đơn Hàng -->
+                <div class="delivery-card-top">
+                  <div class="card-code-wrap">
+                    <span class="order-code-badge">#${order.orderCode}</span>
+                    <c:if test="${order.dailyQueueNumber != null && order.dailyQueueNumber > 0}">
+                      <span class="order-queue-badge">STT #${order.dailyQueueNumber}</span>
+                    </c:if>
+                    <span class="badge bg-light text-dark border">
+                      <i class="fa-solid fa-mug-hot text-success me-1"></i> ${order.cupCount != null ? order.cupCount : 2} ly trà
+                    </span>
+                  </div>
+
+                  <div>
+                    <c:choose>
+                      <c:when test="${order.status == 'OUT_FOR_DELIVERY'}">
+                        <span class="order-status-badge status-badge-pickup">
+                          <i class="fa-solid fa-store"></i> Chờ Nhận Trà Tại Quán
+                        </span>
+                      </c:when>
+                      <c:otherwise>
+                        <span class="order-status-badge status-badge-delivering">
+                          <i class="fa-solid fa-motorcycle"></i> Đang Giao Trên Đường
+                        </span>
+                      </c:otherwise>
+                    </c:choose>
+                  </div>
+                </div>
+
+                <!-- Lộ Trình Giao Hàng Hai Điểm -->
+                <div class="route-display-box">
+                  <!-- Điểm 1: Cơ sở chi nhánh lấy hàng -->
+                  <div class="route-node">
+                    <div class="node-icon-wrap node-icon-store">
+                      <i class="fa-solid fa-store"></i>
+                    </div>
+                    <div class="node-content-wrap">
+                      <div class="node-label">Điểm Lấy Hàng (Chi Nhánh)</div>
+                      <div class="node-name">${branchName}</div>
+                      <div class="node-sub">Trà đã pha chế xong, đóng nắp seal và đóng túi chống đổ</div>
+                    </div>
+                  </div>
+
+                  <!-- Đường nối -->
+                  <div class="route-line-connector"></div>
+
+                  <!-- Điểm 2: Địa chỉ giao cho khách hàng -->
+                  <div class="route-node">
+                    <div class="node-icon-wrap node-icon-dest">
+                      <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                    <div class="node-content-wrap">
+                      <div class="node-label">Điểm Giao Hàng (Khách Hàng)</div>
+                      <div class="node-name">
+                        <span>${order.customerName != null ? order.customerName : 'Khách Hàng Trà Đạo'}</span>
+                        <c:if test="${not empty order.customerPhone}">
+                          <a href="tel:${order.customerPhone}" class="btn-call-customer">
+                            <i class="fa-solid fa-phone"></i> Gọi ${order.customerPhone}
+                          </a>
+                        </c:if>
+                      </div>
+                      <div class="node-sub">
+                        <strong>Địa chỉ:</strong> ${order.deliveryAddress}
+                      </div>
+
+                      <c:if test="${not empty order.deliveryNotes}">
+                        <div class="customer-note-callout">
+                          <i class="fa-solid fa-message"></i>
+                          <span><strong>Khách dặn:</strong> ${order.deliveryNotes}</span>
+                        </div>
+                      </c:if>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Nhãn cam kết tài chính (COD = 0₫) -->
+                <div class="cod-zero-guarantee-banner">
+                  <div class="cod-guarantee-text">
+                    <i class="fa-solid fa-shield-halved text-success" style="font-size: 1.15rem;"></i>
+                    <span>ĐƠN HÀNG ĐÃ THANH TOÁN 100% TRỰC TUYẾN — KHÔNG THU TIỀN MẶT CỦA KHÁCH</span>
+                  </div>
+                  <div class="cod-zero-tag">COD: 0₫</div>
+                </div>
+
+                <!-- Tóm tắt các món đồ uống -->
+                <div class="drink-items-summary-box">
+                  <div class="drink-items-header">
+                    <span>Chi Tiết Đồ Uống Giao Hàng</span>
+                    <span class="text-success"><i class="fa-solid fa-circle-check"></i> Đã Dán Tem Niêm Phong</span>
+                  </div>
+                  <div class="drink-summary-content">
+                    ${not empty order.itemsSummary ? order.itemsSummary : '2x Trà Sữa Oolong Nướng (Size L, 70% Đường, 50% Đá)'}
+                  </div>
+                </div>
+
+                <!-- Cụm Hành Động (Action Row) -->
+                <div class="card-actions-grid">
+                  <!-- 1. Nút Chỉ Đường Google Maps Xe Máy (NÚT CHÍNH) -->
+                  <button class="btn-google-maps" onclick="openGoogleMapsMotorbike('${order.deliveryAddress}', ${order.latitude}, ${order.longitude})">
+                    <i class="fa-solid fa-motorcycle"></i>
+                    <span>Chỉ Đường Google Maps (Xe Máy)</span>
+                  </button>
+
+                  <!-- 2. Nút Cập Nhật Tiến Trình -->
+                  <c:choose>
+                    <c:when test="${order.status == 'OUT_FOR_DELIVERY'}">
+                      <button class="btn-pickup-delivery" onclick="confirmOrderPickup(${order.orderId}, '${order.orderCode}')">
+                        <i class="fa-solid fa-store"></i>
+                        <span>Xác Nhận Đã Nhận Trà</span>
+                      </button>
+                    </c:when>
+                    <c:otherwise>
+                      <button class="btn-complete-delivery" onclick="openCheckinModal(${order.orderId}, '${order.orderCode}')">
+                        <i class="fa-solid fa-camera"></i>
+                        <span>Check-in Đã Giao Xong</span>
+                      </button>
+                    </c:otherwise>
+                  </c:choose>
+
+                  <!-- 3. Nút Báo Cáo Sự Cố -->
+                  <button class="btn-report-incident" onclick="openIncidentModal(${order.orderId}, '${order.orderCode}')">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Báo Sự Cố</span>
+                  </button>
+                </div>
+              </div>
+            </c:forEach>
+          </c:when>
+          <c:otherwise>
+            <!-- EMPTY STATE -->
+            <div class="empty-state-box" id="emptyStatePlaceholder">
+              <div class="empty-state-icon">
+                <i class="fa-solid fa-mug-hot"></i>
+              </div>
+              <h3 class="empty-state-title">Chưa Có Đơn Hàng Cần Giao</h3>
+              <p class="empty-state-desc">
+                Hiện tại bạn chưa được phân công đơn hàng nào. Hãy duy trì trạng thái <strong>BẬT CA TRỰC</strong>, hệ thống sẽ tự động báo chuông và rung ngay khi có cuốc giao mới!
+              </p>
+              <div class="d-flex justify-content-center gap-2">
+                <button class="btn-tool btn-tool-accent" onclick="seedSampleOrder()">
+                  <i class="fa-solid fa-plus-circle"></i> Thêm Đơn Mẫu Thử Nghiệm
+                </button>
+                <button class="btn-tool" onclick="refreshOrders(true)">
+                  <i class="fa-solid fa-arrows-rotate"></i> Kiểm Tra Ngay
+                </button>
+              </div>
+            </div>
+          </c:otherwise>
+        </c:choose>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ========================================================
+       MODAL: CHỤP HÌNH CHECK-IN BÀN GIAO GIAO XONG (UC13)
+       ======================================================== -->
+  <div class="modal fade" id="checkinModal" tabindex="-1" aria-labelledby="checkinModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: var(--radius-lg); border: none; box-shadow: var(--shadow-floating);">
+        <div class="modal-header" style="border-bottom: 1px solid var(--border-earth); padding: 18px 24px;">
+          <h5 class="modal-title fw-bold" id="checkinModalLabel" style="color: var(--matcha-deep);">
+            <i class="fa-solid fa-camera me-2"></i> Chụp Hình Check-in Hoàn Tất Giao Hàng
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" style="padding: 20px 24px;">
+          <p class="text-muted" style="font-size: 0.85rem; line-height: 1.5;">
+            Chụp ảnh ly trà đã trao tận tay cho khách hoặc đặt tại cổng/cửa để lưu bằng chứng đối soát giao hàng thành công (UC13).
+          </p>
+
+          <input type="hidden" id="checkinOrderId" value="">
+          <input type="hidden" id="checkinOrderCode" value="">
+
+          <!-- Vùng Chụp / Tải Ảnh -->
+          <div class="camera-upload-box mb-3" onclick="triggerCameraInput()">
+            <div id="cameraPrompt">
+              <i class="fa-solid fa-camera-retro mb-2" style="font-size: 2.2rem; color: var(--bizen-clay);"></i>
+              <div class="fw-bold" style="font-size: 0.95rem;">Bấm để chụp ảnh hoặc tải ảnh bàn giao</div>
+              <div class="text-muted" style="font-size: 0.78rem;">Đồng bộ bằng chứng đối soát lên hệ thống Cloudinary</div>
+            </div>
+            <img id="checkinPreviewPhoto" src="https://images.unsplash.com/photo-1558857563-b37fc9a1e095?auto=format&fit=crop&w=600&q=80" style="display: none; width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; border: 2px solid var(--matcha-deep);" alt="Ảnh giao hàng">
+            <input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display: none;" onchange="previewCapturedPhoto(event)">
+          </div>
+
+          <div class="alert alert-light border p-2 mb-0" style="font-size: 0.8rem; color: var(--text-sepia); border-radius: 8px;">
+            <i class="fa-solid fa-shield-halved text-success me-1"></i>
+            Xác nhận đơn hàng: Đã giao đủ số lượng ly và thu <strong>0₫ tiền mặt</strong> (Đã trả trước 100%).
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid var(--border-earth); padding: 14px 24px;">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: var(--radius-md); font-weight: 600;">Hủy</button>
+          <button type="button" class="btn btn-success" onclick="submitCompleteDelivery()" id="btnSubmitComplete" style="background: var(--matcha-deep); border-color: var(--matcha-deep); border-radius: var(--radius-md); font-weight: 700; padding: 10px 20px;">
+            <i class="fa-solid fa-circle-check me-1"></i> Xác Nhận Đã Giao Thành Công
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL: BÁO CÁO SỰ CỐ / HỦY GIAO ĐƠN (UC14)
+       ======================================================== -->
+  <div class="modal fade" id="incidentModal" tabindex="-1" aria-labelledby="incidentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: var(--radius-lg); border: none; box-shadow: var(--shadow-floating);">
+        <div class="modal-header" style="border-bottom: 1px solid var(--border-earth); padding: 18px 24px;">
+          <h5 class="modal-title fw-bold" id="incidentModalLabel" style="color: var(--terracotta);">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> Báo Cáo Sự Cố Hoàn Trả Đơn
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" style="padding: 20px 24px;">
+          <p class="text-muted" style="font-size: 0.84rem; line-height: 1.5;">
+            Tài xế trong ca trực chỉ được từ chối hoặc báo sự cố khi gặp lý do bất khả kháng. Đơn hàng sẽ được chuyển về quầy chi nhánh để quản lý phân công lại.
+          </p>
+
+          <input type="hidden" id="incidentOrderId" value="">
+          <input type="hidden" id="incidentOrderCode" value="">
+
+          <div class="d-flex flex-column gap-2 mb-3">
+            <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+              <input type="radio" name="incidentReason" value="Xe hỏng / Thủng lốp / Sự cố phương tiện trên đường" checked>
+              <span style="font-size: 0.88rem; font-weight: 600;">Xe hỏng / Thủng lốp / Sự cố phương tiện trên đường</span>
+            </label>
+            <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+              <input type="radio" name="incidentReason" value="Tài xế gặp sự cố sức khỏe đột xuất trong ca">
+              <span style="font-size: 0.88rem; font-weight: 600;">Tài xế gặp sự cố sức khỏe đột xuất trong ca</span>
+            </label>
+            <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+              <input type="radio" name="incidentReason" value="Kẹt cuốc đơn trước, không kịp giờ giao cam kết">
+              <span style="font-size: 0.88rem; font-weight: 600;">Kẹt cuốc đơn trước, không kịp giờ giao cam kết</span>
+            </label>
+            <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+              <input type="radio" name="incidentReason" value="Khách hàng gọi báo hủy đơn trước khi xuất bến">
+              <span style="font-size: 0.88rem; font-weight: 600;">Khách hàng gọi báo hủy đơn trước khi xuất bến</span>
+            </label>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Ghi chú bổ sung (nếu có):</label>
+            <textarea id="incidentDetailNote" class="form-control" rows="2" placeholder="Nhập thêm chi tiết sự cố..." style="font-size: 0.85rem; border-radius: 8px;"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid var(--border-earth); padding: 14px 24px;">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: var(--radius-md); font-weight: 600;">Quay Lại</button>
+          <button type="button" class="btn btn-danger" onclick="submitIncidentReport()" id="btnSubmitIncident" style="background: var(--terracotta); border-color: var(--terracotta); border-radius: var(--radius-md); font-weight: 700; padding: 10px 20px;">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Xác Nhận Hủy Đơn
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       DRAWER / OFFCANVAS: HỒ SƠ TÀI XẾ & LỊCH SỬ & KPI (UC15)
+       ======================================================== -->
+  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeProfileDrawer()"></div>
+  <div class="profile-drawer" id="profileDrawer">
+    <div class="drawer-header">
+      <h3>Tài Khoản Tài Xế</h3>
+      <button class="btn-close-drawer" onclick="closeProfileDrawer()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- 3 Tab Điều Hướng -->
+    <div class="drawer-tabs-nav">
+      <button class="dtab-btn active" onclick="switchDrawerTab('tab-profile', this)">Hồ Sơ</button>
+      <button class="dtab-btn" onclick="switchDrawerTab('tab-history', this)">Lịch Sử Đơn</button>
+      <button class="dtab-btn" onclick="switchDrawerTab('tab-kpi', this)">Thu Nhập & KPI</button>
+    </div>
+
+    <!-- Nội dung Tab -->
+    <div class="drawer-body">
+
+      <!-- TAB 1: HỒ SƠ TÀI XẾ -->
+      <div id="tab-profile" class="d-flex flex-column gap-3">
+        <div class="d-flex align-items-center gap-3 p-3 bg-white border rounded-3">
+          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--bizen-clay);" alt="Avatar">
           <div>
-            <h3 style="font-size: 1.15rem; font-weight: 700;">${fullName}</h3>
-            <p style="font-size: 0.82rem; color: var(--bizen-clay); font-weight: 600;">Mã TX: ${driverCode} · Đội Xe Thủ Đức</p>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">Biển số xe: ${vehiclePlate}</span>
+            <h4 class="fw-bold mb-1" style="font-size: 1.1rem;">${fullName}</h4>
+            <div style="font-size: 0.82rem; color: var(--bizen-clay); font-weight: 700;">Mã TX: ${driverCode} · Đội Xe Thủ Đức</div>
+            <div class="badge bg-light text-dark border mt-1">${vehiclePlate}</div>
           </div>
         </div>
 
-        <div style="background: var(--bg-card); border: 1px solid var(--border-earth); border-radius: var(--radius-md); padding: 16px;">
-          <h4 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 12px;">Thông Tin Hoạt Động</h4>
-          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem;">
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-sepia);">Chi nhánh quản lý:</span>
-              <strong>${branchName}</strong>
+        <div class="p-3 bg-white border rounded-3">
+          <h5 class="fw-bold mb-3" style="font-size: 0.92rem;">Thông Tin Hoạt Động & Ca Trực</h5>
+          <div class="d-flex flex-column gap-2" style="font-size: 0.86rem;">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Chi nhánh phụ trách:</span>
+              <strong class="text-end">${branchName}</strong>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-sepia);">Ca đăng ký:</span>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Ca trực đăng ký:</span>
               <strong style="color: var(--matcha-deep);">${shiftName}</strong>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-sepia);">Số điện thoại:</span>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Số điện thoại liên hệ:</span>
               <strong>${phone}</strong>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-sepia);">Email:</span>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Email nội bộ:</span>
               <strong>${email}</strong>
             </div>
           </div>
         </div>
 
-        <button onclick="alert('Đang mở form cập nhật thông tin hồ sơ')" style="width: 100%; padding: 14px; border-radius: var(--radius-md); background: var(--bg-card-inner); border: 1px solid var(--border-earth); font-weight: 700; cursor: pointer; color: var(--text-charcoal); font-size: 0.88rem;">
-          <i class="fa-solid fa-pen-to-square"></i> Cập Nhật Hồ Sơ
-        </button>
-
-        <a href="${pageContext.request.contextPath}/auth/logout" style="text-decoration: none;">
-          <button style="width: 100%; padding: 14px; border-radius: var(--radius-md); background: #FEE2E2; border: 1px solid #FCA5A5; color: #991B1B; font-weight: 700; cursor: pointer; font-size: 0.88rem;">
-            <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng Xuất Ca Làm
+        <a href="${pageContext.request.contextPath}/auth/logout" class="text-decoration-none">
+          <button class="btn btn-outline-danger w-100 py-3 fw-bold" style="border-radius: var(--radius-md);">
+            <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Đăng Xuất Ca Làm
           </button>
         </a>
       </div>
 
-      <!-- Tab 2: Lịch Sử Đơn Hàng (100% Trả trước, COD 0đ) -->
-      <div class="drawer-tab-content" id="tab-history" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <h4 style="font-size: 0.92rem; font-weight: 700;">Các Cuốc Đơn Trong Ca Hôm Nay</h4>
-          <span style="font-size: 0.72rem; color: #15803D; font-weight: 700; background: #DCFCE7; padding: 2px 8px; border-radius: 10px;">COD: 0₫</span>
+      <!-- TAB 2: LỊCH SỬ ĐƠN TRONG CA -->
+      <div id="tab-history" style="display: none;" class="d-flex flex-column gap-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold m-0" style="font-size: 0.95rem;">Các Cuốc Giao Trong Ca</h5>
+          <span class="badge bg-success" style="font-size: 0.75rem;">100% Trả Trước Online (COD: 0₫)</span>
         </div>
-        
-        <div class="history-item">
+
+        <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center">
           <div>
-            <strong>#UT-90250 · 2 ly trà</strong>
-            <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 2px;">13:20 · Đến Tô Vĩnh Diện · Trả trước 100%</p>
+            <strong style="font-size: 0.92rem;">#UT-90250 · 2 ly trà</strong>
+            <div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">13:20 · Đến Tô Vĩnh Diện · Giao đúng giờ</div>
           </div>
-          <div style="text-align: right;">
-            <span style="color: var(--matcha-deep); font-weight: 700;">+5.000₫</span>
-            <span style="display: block; font-size: 0.72rem; color: #15803D;">KPI Đúng giờ</span>
+          <div class="text-end">
+            <span class="fw-bold text-success">+5.000₫</span>
+            <span class="d-block text-muted" style="font-size: 0.72rem;">Thưởng KPI</span>
           </div>
         </div>
 
-        <div class="history-item">
+        <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center">
           <div>
-            <strong>#UT-90248 · 3 ly trà</strong>
-            <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 2px;">13:55 · Đến Đặng Văn Bi · Trả trước 100%</p>
+            <strong style="font-size: 0.92rem;">#UT-90248 · 3 ly trà</strong>
+            <div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">13:55 · Đến Đặng Văn Bi · Giao đúng giờ</div>
           </div>
-          <div style="text-align: right;">
-            <span style="color: var(--matcha-deep); font-weight: 700;">+5.000₫</span>
-            <span style="display: block; font-size: 0.72rem; color: #15803D;">KPI Đúng giờ</span>
+          <div class="text-end">
+            <span class="fw-bold text-success">+5.000₫</span>
+            <span class="d-block text-muted" style="font-size: 0.72rem;">Thưởng KPI</span>
           </div>
         </div>
 
-        <div class="history-item">
+        <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center">
           <div>
-            <strong>#UT-90241 · 1 ly trà</strong>
-            <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 2px;">14:15 · Đến Hoàng Diệu 2 · Trả trước 100%</p>
+            <strong style="font-size: 0.92rem;">#UT-90241 · 1 ly trà</strong>
+            <div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">14:15 · Đến Hoàng Diệu 2 · Giao đúng giờ</div>
           </div>
-          <div style="text-align: right;">
-            <span style="color: var(--matcha-deep); font-weight: 700;">+5.000₫</span>
-            <span style="display: block; font-size: 0.72rem; color: #15803D;">KPI Đúng giờ</span>
+          <div class="text-end">
+            <span class="fw-bold text-success">+5.000₫</span>
+            <span class="d-block text-muted" style="font-size: 0.72rem;">Thưởng KPI</span>
           </div>
         </div>
       </div>
 
-      <!-- Tab 3: Thu Nhập & KPI (UC15 - Chuẩn Lương Cứng & Thưởng KPI) -->
-      <div class="drawer-tab-content" id="tab-earnings" style="display: none;">
-        <div class="kpi-score-tile">
-          <div>
-            <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.88;">Thu Nhập Ngày (Ước Tính)</span>
-            <div class="num">${totalEstimatedEarnings}</div>
-          </div>
-          <div style="text-align: right;">
-            <span style="font-size: 0.75rem; opacity: 0.88;">KPI Đúng Giờ</span>
-            <div class="num" style="color: #86EFAC;">99.2%</div>
+      <!-- TAB 3: THU NHẬP & KPI (UC15) -->
+      <div id="tab-kpi" style="display: none;" class="d-flex flex-column gap-3">
+        <div class="p-3 rounded-3 text-white" style="background: var(--matcha-deep);">
+          <div class="text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px; opacity: 0.9;">Thu Nhập Ca Tạm Tính</div>
+          <div class="fw-bold mt-1" style="font-size: 1.8rem;">${totalEstimatedEarnings}</div>
+          <div class="d-flex justify-content-between mt-2 pt-2 border-top border-white-50" style="font-size: 0.8rem;">
+            <span>Chỉ số đúng giờ: <strong>99.2%</strong></span>
+            <span>Đánh giá: <strong>5.0 ⭐</strong></span>
           </div>
         </div>
 
-        <div style="background: var(--bg-card); border: 1px solid var(--border-earth); border-radius: var(--radius-md); padding: 16px;">
-          <h4 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 12px;">Cơ Cấu Thu Nhập Cơ Hữu (UC15)</h4>
-          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem;">
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-sepia);">Lương cứng ca trực:</span>
+        <div class="p-3 bg-white border rounded-3">
+          <h5 class="fw-bold mb-3" style="font-size: 0.92rem;">Cơ Cấu Thu Nhập Cơ Hữu (UC15)</h5>
+          <div class="d-flex flex-column gap-2" style="font-size: 0.86rem;">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Lương cứng ca trực cố định:</span>
               <strong style="color: var(--matcha-deep);">${baseSalary}</strong>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-sepia);">Tổng đơn giao thành công:</span>
-              <strong>9 cuốc</strong>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Số đơn hoàn thành:</span>
+              <strong>${completedCount} cuốc</strong>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-sepia);">Thưởng KPI mốc đơn (9 đơn):</span>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Thưởng KPI mốc đơn (+5.000₫/cuốc):</span>
               <strong style="color: var(--bizen-clay);">${kpiBonus}</strong>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="color: var(--text-sepia);">Tiền mặt COD giữ hộ:</span>
-              <strong style="color: #166534;">0₫ (100% trả trước online)</strong>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Tiền mặt COD giữ hộ:</span>
+              <strong class="text-success">0₫ (100% trả trước online)</strong>
             </div>
           </div>
 
-          <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--border-earth); font-size: 0.76rem; color: var(--text-muted); line-height: 1.4;">
-            <i class="fa-solid fa-circle-info" style="color: var(--bizen-clay);"></i> 
-            Toàn bộ cước phí ship thuộc về doanh thu của quán bù đắp chi phí vận hành. Tài xế nhận lương cứng cố định theo ca/tháng + thưởng KPI thi đua.
+          <div class="mt-3 pt-2 border-top text-muted" style="font-size: 0.76rem; line-height: 1.45;">
+            <i class="fa-solid fa-circle-info text-secondary me-1"></i>
+            Tài xế nhận lương cứng cố định theo ca trực + thưởng KPI chất lượng dịch vụ. Không phát sinh rủi ro công nợ tiền mặt COD.
           </div>
         </div>
       </div>
-    </div>
 
+    </div>
   </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container-zen" id="toastContainer"></div>
+
+  <!-- Bootstrap 5.3 Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
     /* ========================================================
-       1. KHỞI TẠO BẢN ĐỒ LEAFLET TRÀN VIỀN
+       BIẾN TRẠNG THÁI TOÀN CỤC
        ======================================================== */
-    const storeLatLng = [10.85072, 106.77196]; // UTETra Võ Văn Ngân
-    const customerLatLng = [10.85850, 106.78200]; // 15 Lê Văn Chí
-    const driverLatLng = [10.85300, 106.77450]; // Tài xế đang trên đường
+    let isOnline = ${isOnline ? 'true' : 'false'};
+    let knownOrderIds = new Set();
+    let checkinModalInstance = null;
+    let incidentModalInstance = null;
+    let audioContext = null;
 
-    const map = L.map('mapView', {
-      zoomControl: false,
-      attributionControl: false
-    }).setView(driverLatLng, 15);
+    document.addEventListener('DOMContentLoaded', function() {
+      // Khởi tạo Bootstrap Modals
+      const checkinEl = document.getElementById('checkinModal');
+      if (checkinEl) checkinModalInstance = new bootstrap.Modal(checkinEl);
 
-    // Tiles OpenStreetMap tiêu chuẩn - ổn định 100% không lo bị chặn mạng
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      subdomains: ['a', 'b', 'c']
-    }).addTo(map);
+      const incidentEl = document.getElementById('incidentModal');
+      if (incidentEl) incidentModalInstance = new bootstrap.Modal(incidentEl);
 
-    // Đảm bảo map render đúng kích thước sau khi load giao diện
-    function triggerMapResize() {
-      if (map) {
-        map.invalidateSize(true);
+      // Lưu lại các ID đơn hàng ban đầu
+      <c:forEach items="${activeOrders}" var="o">
+        knownOrderIds.add(${o.orderId});
+      </c:forEach>
+
+      // Bắt đầu chu trình Polling nhẹ nhàng mỗi 12 giây
+      setInterval(pollActiveOrders, 12000);
+    });
+
+    /* ========================================================
+       1. CHỈ ĐƯỜNG GOOGLE MAPS XE MÁY (CHUẨN 100% ĐỀ BÀI)
+       ======================================================== */
+    function openGoogleMapsMotorbike(destinationAddress, destLat, destLng) {
+      const destination = (destLat && destLng) ? (destLat + ',' + destLng) : encodeURIComponent(destinationAddress);
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            const originLat = position.coords.latitude;
+            const originLng = position.coords.longitude;
+            const url = `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destination}&travelmode=two_wheeler`;
+            window.open(url, '_blank');
+          },
+          function(error) {
+            console.warn('Geolocation fallback:', error);
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=two_wheeler`;
+            window.open(url, '_blank');
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+      } else {
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=two_wheeler`;
+        window.open(url, '_blank');
       }
-    }
-    window.addEventListener('load', triggerMapResize);
-    window.addEventListener('resize', triggerMapResize);
-    document.addEventListener('DOMContentLoaded', triggerMapResize);
-    setTimeout(triggerMapResize, 200);
-    setTimeout(triggerMapResize, 600);
-    setTimeout(triggerMapResize, 1500);
-
-    const storeIcon = L.divIcon({
-      className: 'custom-map-icon',
-      html: '<div style="background:#2F6A4F; color:white; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(47,106,79,0.4); border:2.5px solid white;"><i class="fa-solid fa-mug-hot" style="font-size:14px;"></i></div>',
-      iconSize: [34, 34],
-      iconAnchor: [17, 17]
-    });
-
-    const customerIcon = L.divIcon({
-      className: 'custom-map-icon',
-      html: '<div style="background:#8C6D53; color:white; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(140,109,83,0.4); border:2.5px solid white;"><i class="fa-solid fa-house" style="font-size:14px;"></i></div>',
-      iconSize: [34, 34],
-      iconAnchor: [17, 17]
-    });
-
-    const driverIcon = L.divIcon({
-      className: 'custom-map-icon',
-      html: '<div style="background:#BA5D3F; color:white; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 15px rgba(186,93,63,0.5); border:2.5px solid white;"><i class="fa-solid fa-motorcycle" style="font-size:15px;"></i></div>',
-      iconSize: [36, 36],
-      iconAnchor: [18, 18]
-    });
-
-    let storeMarker = L.marker(storeLatLng, { icon: storeIcon }).addTo(map);
-    let customerMarker = null;
-    let driverMarker = L.marker(driverLatLng, { icon: driverIcon }).addTo(map);
-    let routePolyline = null;
-
-    function recenterMap() {
-      map.flyTo(driverLatLng, 15, { duration: 1 });
     }
 
     /* ========================================================
-       2. CÔNG TẮC GẠT ON / OFF Ở BÊN TRÊN
+       2. HỆ THỐNG THÔNG BÁO: ÂM THANH + RUNG + WEB NOTIFICATION
        ======================================================== */
-    let isOnline = false;
-    let hasActiveOrder = false;
-    let currentStep = 1;
+    // A. Âm thanh Web Audio API (Tần số 880Hz -> 1320Hz, 100% offline không cần file mp3)
+    function playNotificationSound() {
+      try {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtxClass) return;
+        if (!audioContext) {
+          audioContext = new AudioCtxClass();
+        }
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        const now = audioContext.currentTime;
 
-    function toggleSwitchAction() {
-      if (hasActiveOrder) {
-        alert('Bạn đang có đơn giao dở dang, vui lòng hoàn tất đơn trước khi tắt ca!');
-        return;
+        // Nốt 1: 880Hz
+        const osc1 = audioContext.createOscillator();
+        const gain1 = audioContext.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(880, now);
+        gain1.gain.setValueAtTime(0.25, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc1.connect(gain1);
+        gain1.connect(audioContext.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.3);
+
+        // Nốt 2: 1320Hz ngân vang thanh thoát
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1320, now + 0.12);
+        gain2.gain.setValueAtTime(0.28, now + 0.12);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        osc2.start(now + 0.12);
+        osc2.stop(now + 0.55);
+      } catch (e) {
+        console.warn('Web Audio Playback Error:', e);
       }
+    }
 
+    // B. Rung điện thoại
+    function triggerPhoneVibration() {
+      if (navigator.vibrate) {
+        try {
+          navigator.vibrate([200, 100, 200, 100, 400]);
+        } catch (e) {
+          console.warn('Vibration API Error:', e);
+        }
+      }
+    }
+
+    // C. Web Notification API
+    function triggerWebNotification(title, message) {
+      if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+          new Notification(title, {
+            body: message,
+            icon: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=128&q=80'
+          });
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission().then(function(perm) {
+            if (perm === 'granted') {
+              new Notification(title, {
+                body: message,
+                icon: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=128&q=80'
+              });
+            }
+          });
+        }
+      }
+    }
+
+    // D. Nút Thử Nghiệm Âm Thanh / Rung
+    function testNotificationSystem() {
+      playNotificationSound();
+      triggerPhoneVibration();
+      triggerWebNotification(
+        'UTETra Shipper — Thử Nghiệm Thông Báo',
+        'Chuông âm thanh 880Hz-1320Hz và rung điện thoại hoạt động chuẩn xác!'
+      );
+      showZenToast('Đã phát chuông âm thanh và gửi tín hiệu rung điện thoại!', 'success');
+    }
+
+    /* ========================================================
+       3. CÔNG TẮC BẬT / TẮT CA TRỰC (CAPSULE SWITCH)
+       ======================================================== */
+    function toggleShiftStatus() {
       isOnline = !isOnline;
       const capsule = document.getElementById('topSwitchCapsule');
-      const statusText = document.getElementById('switchStatusText');
+      const label = document.getElementById('switchLabelStatus');
       const knobIcon = document.getElementById('knobIcon');
-      const searchingDock = document.getElementById('searchingPillDock');
+      const statusBoxText = document.getElementById('statusBoxText');
+      const statusBoxSub = document.getElementById('statusBoxSub');
 
       if (isOnline) {
         capsule.classList.add('online');
-        statusText.innerText = 'BẬT';
+        label.innerText = 'BẬT';
         knobIcon.className = 'fa-solid fa-check';
-        searchingDock.style.display = 'flex';
+        statusBoxText.innerText = 'Sẵn Sàng Nhận Đơn';
+        statusBoxText.style.color = 'var(--matcha-deep)';
+        statusBoxSub.innerText = 'Đang bật nhận đơn từ quán';
+        showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
+
+        // Xin quyền notification nếu chưa có
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
       } else {
         capsule.classList.remove('online');
-        statusText.innerText = 'TẮT';
+        label.innerText = 'TẮT';
         knobIcon.className = 'fa-solid fa-power-off';
-        searchingDock.style.display = 'none';
+        statusBoxText.innerText = 'Tạm Nghỉ Ca';
+        statusBoxText.style.color = 'var(--text-sepia)';
+        statusBoxSub.innerText = 'Gạt công tắc trên để trực';
+        showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
       }
 
-      // Gửi tín hiệu API cập nhật trạng thái lên Spring Boot backend
+      // Đồng bộ trạng thái về Spring Boot backend
       fetch('${pageContext.request.contextPath}/shipper/api/toggle-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ online: isOnline })
-      }).catch(err => console.log('Status synced locally'));
+      }).catch(err => console.log('Toggle synced locally'));
     }
 
     /* ========================================================
-       3. LỆNH PHÂN CÔNG ĐƠN HÀNG BẮT BUỘC (UC12)
+       4. TẢI VÀ ĐỒNG BỘ DANH SÁCH ĐƠN HÀNG (POLLING & REFRESH)
        ======================================================== */
-    function triggerMandatoryDispatch() {
-      if (!isOnline) {
-        toggleSwitchAction();
-      }
-      document.getElementById('dispatchBackdrop').classList.add('active');
+    function pollActiveOrders() {
+      fetch('${pageContext.request.contextPath}/shipper/api/active-orders')
+        .then(res => res.json())
+        .then(orders => {
+          if (!Array.isArray(orders)) return;
+
+          // Kiểm tra xem có đơn hàng mới nào xuất hiện không
+          let hasNewOrder = false;
+          let newestOrder = null;
+
+          orders.forEach(o => {
+            if (!knownOrderIds.has(o.orderId)) {
+              hasNewOrder = true;
+              newestOrder = o;
+              knownOrderIds.add(o.orderId);
+            }
+          });
+
+          if (hasNewOrder && newestOrder) {
+            playNotificationSound();
+            triggerPhoneVibration();
+            triggerWebNotification(
+              'UTETra Shipper — Đơn Hàng Mới Cần Giao!',
+              `Đơn #${newestOrder.orderCode} đến ${newestOrder.deliveryAddress} (${newestOrder.cupCount || 2} ly).`
+            );
+            showZenToast(`CÓ ĐƠN HÀNG MỚI: #${newestOrder.orderCode} (${newestOrder.cupCount || 2} ly)`, 'success');
+            renderOrdersDeck(orders);
+          }
+        })
+        .catch(err => console.log('Polling check:', err));
     }
 
-    function acceptOrder() {
-      document.getElementById('dispatchBackdrop').classList.remove('active');
-      hasActiveOrder = true;
-      currentStep = 1;
-      updateStepUI();
+    function refreshOrders(isManual) {
+      const icon = document.getElementById('refreshIcon');
+      if (icon) icon.classList.add('fa-spin');
 
-      document.getElementById('searchingPillDock').style.display = 'none';
-      document.getElementById('activeOrderSheet').style.display = 'flex';
+      fetch('${pageContext.request.contextPath}/shipper/api/active-orders')
+        .then(res => res.json())
+        .then(orders => {
+          if (icon) icon.classList.remove('fa-spin');
+          renderOrdersDeck(orders);
+          if (isManual) {
+            showZenToast('Đã làm mới danh sách đơn hàng giao vận.', 'success');
+          }
+        })
+        .catch(err => {
+          if (icon) icon.classList.remove('fa-spin');
+          console.error(err);
+          if (isManual) showZenToast('Không thể tải lại danh sách, kiểm tra kết nối mạng.', 'danger');
+        });
+    }
 
-      if (!customerMarker) {
-        customerMarker = L.marker(customerLatLng, { icon: customerIcon }).addTo(map);
+    function renderOrdersDeck(orders) {
+      const deck = document.getElementById('deliveryCardsDeck');
+      const countBadge = document.getElementById('activeOrdersCountBadge');
+      if (!deck) return;
+
+      if (!orders || orders.length === 0) {
+        countBadge.innerText = '0 đơn';
+        deck.innerHTML = `
+          <div class="empty-state-box" id="emptyStatePlaceholder">
+            <div class="empty-state-icon">
+              <i class="fa-solid fa-mug-hot"></i>
+            </div>
+            <h3 class="empty-state-title">Chưa Có Đơn Hàng Cần Giao</h3>
+            <p class="empty-state-desc">
+              Hiện tại bạn chưa được phân công đơn hàng nào. Hãy duy trì trạng thái <strong>BẬT CA TRỰC</strong>, hệ thống sẽ tự động báo chuông và rung ngay khi có cuốc giao mới!
+            </p>
+            <div class="d-flex justify-content-center gap-2">
+              <button class="btn-tool btn-tool-accent" onclick="seedSampleOrder()">
+                <i class="fa-solid fa-plus-circle"></i> Thêm Đơn Mẫu Thử Nghiệm
+              </button>
+              <button class="btn-tool" onclick="refreshOrders(true)">
+                <i class="fa-solid fa-arrows-rotate"></i> Kiểm Tra Ngay
+              </button>
+            </div>
+          </div>
+        `;
+        return;
       }
-      if (routePolyline) map.removeLayer(routePolyline);
-      routePolyline = L.polyline([driverLatLng, storeLatLng, customerLatLng], {
-        color: '#8C6D53',
-        weight: 4,
-        dashArray: '6, 8'
-      }).addTo(map);
 
-      map.fitBounds(routePolyline.getBounds(), { padding: [60, 60] });
+      countBadge.innerText = orders.length + ' đơn';
+      let html = '';
+
+      orders.forEach(order => {
+        const isPickup = (order.status === 'OUT_FOR_DELIVERY');
+        const statusBadge = isPickup
+          ? '<span class="order-status-badge status-badge-pickup"><i class="fa-solid fa-store"></i> Chờ Nhận Trà Tại Quán</span>'
+          : '<span class="order-status-badge status-badge-delivering"><i class="fa-solid fa-motorcycle"></i> Đang Giao Trên Đường</span>';
+
+        const actionButton = isPickup
+          ? `<button class="btn-pickup-delivery" onclick="confirmOrderPickup(${order.orderId}, '${order.orderCode}')">
+               <i class="fa-solid fa-store"></i> <span>Xác Nhận Đã Nhận Trà</span>
+             </button>`
+          : `<button class="btn-complete-delivery" onclick="openCheckinModal(${order.orderId}, '${order.orderCode}')">
+               <i class="fa-solid fa-camera"></i> <span>Check-in Đã Giao Xong</span>
+             </button>`;
+
+        const callButton = order.customerPhone 
+          ? `<a href="tel:${order.customerPhone}" class="btn-call-customer"><i class="fa-solid fa-phone"></i> Gọi ${order.customerPhone}</a>`
+          : '';
+
+        const notesBox = order.deliveryNotes 
+          ? `<div class="customer-note-callout"><i class="fa-solid fa-message"></i> <span><strong>Khách dặn:</strong> ${order.deliveryNotes}</span></div>`
+          : '';
+
+        const queueBadge = order.dailyQueueNumber 
+          ? `<span class="order-queue-badge">STT #${order.dailyQueueNumber}</span>`
+          : '';
+
+        html += `
+          <div class="delivery-card ${isPickup ? 'status-pickup' : ''}" id="order-card-${order.orderId}">
+            <div class="delivery-card-top">
+              <div class="card-code-wrap">
+                <span class="order-code-badge">#${order.orderCode}</span>
+                ${queueBadge}
+                <span class="badge bg-light text-dark border">
+                  <i class="fa-solid fa-mug-hot text-success me-1"></i> ${order.cupCount || 2} ly trà
+                </span>
+              </div>
+              <div>${statusBadge}</div>
+            </div>
+
+            <div class="route-display-box">
+              <div class="route-node">
+                <div class="node-icon-wrap node-icon-store"><i class="fa-solid fa-store"></i></div>
+                <div class="node-content-wrap">
+                  <div class="node-label">Điểm Lấy Hàng (Chi Nhánh)</div>
+                  <div class="node-name">${branchName}</div>
+                  <div class="node-sub">Trà đã pha chế xong, đóng nắp seal và đóng túi chống đổ</div>
+                </div>
+              </div>
+
+              <div class="route-line-connector"></div>
+
+              <div class="route-node">
+                <div class="node-icon-wrap node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>
+                <div class="node-content-wrap">
+                  <div class="node-label">Điểm Giao Hàng (Khách Hàng)</div>
+                  <div class="node-name">
+                    <span>${order.customerName || 'Khách Hàng Trà Đạo'}</span>
+                    ${callButton}
+                  </div>
+                  <div class="node-sub"><strong>Địa chỉ:</strong> ${order.deliveryAddress}</div>
+                  ${notesBox}
+                </div>
+              </div>
+            </div>
+
+            <div class="cod-zero-guarantee-banner">
+              <div class="cod-guarantee-text">
+                <i class="fa-solid fa-shield-halved text-success" style="font-size: 1.15rem;"></i>
+                <span>ĐƠN HÀNG ĐÃ THANH TOÁN 100% TRỰC TUYẾN — KHÔNG THU TIỀN MẶT CỦA KHÁCH</span>
+              </div>
+              <div class="cod-zero-tag">COD: 0₫</div>
+            </div>
+
+            <div class="drink-items-summary-box">
+              <div class="drink-items-header">
+                <span>Chi Tiết Đồ Uống Giao Hàng</span>
+                <span class="text-success"><i class="fa-solid fa-circle-check"></i> Đã Dán Tem Niêm Phong</span>
+              </div>
+              <div class="drink-summary-content">
+                ${order.itemsSummary || '2x Trà Sữa Oolong Nướng (Size L, 70% Đường, 50% Đá)'}
+              </div>
+            </div>
+
+            <div class="card-actions-grid">
+              <button class="btn-google-maps" onclick="openGoogleMapsMotorbike('${order.deliveryAddress}', ${order.latitude || 10.8522}, ${order.longitude || 106.7716})">
+                <i class="fa-solid fa-motorcycle"></i>
+                <span>Chỉ Đường Google Maps (Xe Máy)</span>
+              </button>
+
+              ${actionButton}
+
+              <button class="btn-report-incident" onclick="openIncidentModal(${order.orderId}, '${order.orderCode}')">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Báo Sự Cố</span>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      deck.innerHTML = html;
     }
 
     /* ========================================================
-       3B. BÁO CÁO SỰ CỐ & HỦY TIẾP NHẬN ĐƠN (INCIDENT REPORTING)
+       5. TẠO ĐƠN HÀNG MẪU DEMO (NẾU CSDL TRỐNG)
        ======================================================== */
-    function openIncidentModal() {
-      document.getElementById('dispatchBackdrop').classList.remove('active');
-      document.getElementById('incidentModalBackdrop').classList.add('active');
+    function seedSampleOrder() {
+      const btn = document.getElementById('btnSeedSample');
+      if (btn) btn.disabled = true;
+
+      fetch('${pageContext.request.contextPath}/shipper/api/seed-sample-order', {
+        method: 'POST'
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (btn) btn.disabled = false;
+        if (data.success) {
+          playNotificationSound();
+          triggerPhoneVibration();
+          showZenToast(`Đã tạo đơn mẫu #${data.orderCode} thành công!`, 'success');
+          refreshOrders(false);
+        } else {
+          showZenToast('Không thể tạo đơn mẫu: ' + (data.message || 'Lỗi'), 'danger');
+        }
+      })
+      .catch(err => {
+        if (btn) btn.disabled = false;
+        console.error(err);
+        showZenToast('Lỗi khi gọi API tạo đơn mẫu', 'danger');
+      });
     }
 
-    function closeIncidentModal() {
-      document.getElementById('incidentModalBackdrop').classList.remove('active');
-      document.getElementById('dispatchBackdrop').classList.add('active');
+    /* ========================================================
+       6. THAO TÁC TIẾN TRÌNH: NHẬN TRÀ -> GIAO XONG -> SỰ CỐ
+       ======================================================== */
+    // A. Xác nhận nhận trà tại quán
+    function confirmOrderPickup(orderId, orderCode) {
+      if (!confirm(`Xác nhận bạn đã kiểm tra tem seal và nhận đủ ly cho đơn #${orderCode} tại quầy?`)) {
+        return;
+      }
+
+      fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/pickup', {
+        method: 'POST'
+      })
+      .then(res => res.json())
+      .then(data => {
+        showZenToast(`Đã nhận trà đơn #${orderCode}. Bắt đầu di chuyển giao cho khách!`, 'success');
+        refreshOrders(false);
+      })
+      .catch(err => {
+        console.error(err);
+        showZenToast('Lỗi xác nhận lấy trà, vui lòng thử lại', 'danger');
+      });
     }
 
-    function submitIncidentReport() {
-      const selected = document.querySelector('input[name="incidentReason"]:checked').value;
-      const reasonLabels = {
-        'xe_hong': 'Xe hỏng / Thủng lốp / Sự cố phương tiện trên đường',
-        'suc_khoe': 'Tài xế gặp sự cố sức khỏe đột xuất trong ca',
-        'ket_don': 'Đang kẹt cuốc đơn trước, không kịp giờ cam kết',
-        'khach_huy': 'Khách hàng gọi báo hủy đơn trước khi xuất bến'
-      };
+    // B. Mở modal check-in chụp hình giao xong (UC13)
+    function openCheckinModal(orderId, orderCode) {
+      document.getElementById('checkinOrderId').value = orderId;
+      document.getElementById('checkinOrderCode').value = orderCode;
+      document.getElementById('checkinModalLabel').innerHTML = `<i class="fa-solid fa-camera me-2"></i> Check-in Giao Xong: #${orderCode}`;
       
-      document.getElementById('incidentModalBackdrop').classList.remove('active');
+      // Reset ảnh preview
+      const preview = document.getElementById('checkinPreviewPhoto');
+      preview.style.display = 'none';
+      document.getElementById('cameraPrompt').style.display = 'block';
 
-      fetch('${pageContext.request.contextPath}/shipper/api/report-incident', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderCode: 'UT-90255', reasonCode: selected })
-      }).catch(err => console.log('Incident reported locally'));
-      
-      alert('ĐÃ BÁO CÁO SỰ CỐ THÀNH CÔNG!\nLý do: ' + reasonLabels[selected] + '\n\nĐơn hàng #UT-90255 đã được thu hồi và hoàn trả về chi nhánh để quản lý phân công lại cho tài xế khác.');
-      
-      hasActiveOrder = false;
-      if (isOnline) {
-        document.getElementById('searchingPillDock').style.display = 'flex';
-      }
+      if (checkinModalInstance) checkinModalInstance.show();
     }
 
-    /* ========================================================
-       4. TIẾN TRÌNH GIAO HÀNG (UC13)
-       Chuẩn luồng:
-       Step 1: Đến quán lấy trà -> Xác nhận đã lấy trà
-       Step 2: Đang giao hàng -> Đến nơi ấn "Đã Tới Điểm Giao"
-       Step 3: Đã tới nơi -> MỚI HIỂN THỊ NÚT "Chụp Hình Check-in Giao Xong"
-       ======================================================== */
-    function updateStepUI() {
-      const stepTag = document.getElementById('currentOrderStepTag');
-      const actionBtnText = document.getElementById('progressDeliveryBtnText');
-      const actionBtn = document.getElementById('progressDeliveryBtn');
-      const btnIcon = document.getElementById('progressDeliveryBtnIcon');
-
-      if (currentStep === 1) {
-        stepTag.innerText = 'Đến Quán Lấy Trà';
-        stepTag.style.background = '#FEF3C7';
-        stepTag.style.color = '#B45309';
-        if (btnIcon) btnIcon.className = 'fa-solid fa-store';
-        actionBtnText.innerText = 'Xác Nhận Đã Lấy Trà';
-        actionBtn.style.background = 'var(--bizen-clay)';
-      } else if (currentStep === 2) {
-        stepTag.innerText = 'Đang Giao Hàng';
-        stepTag.style.background = '#EFF6FF';
-        stepTag.style.color = '#1D4ED8';
-        if (btnIcon) btnIcon.className = 'fa-solid fa-location-dot';
-        actionBtnText.innerText = 'Đã Tới Điểm Giao';
-        actionBtn.style.background = 'var(--matcha-deep)';
-      } else if (currentStep === 3) {
-        stepTag.innerText = 'Đã Đến Nơi (Khách Chờ)';
-        stepTag.style.background = '#DCFCE7';
-        stepTag.style.color = '#15803D';
-        if (btnIcon) btnIcon.className = 'fa-solid fa-camera';
-        actionBtnText.innerText = 'Chụp Hình Check-in Giao Xong';
-        actionBtn.style.background = 'var(--matcha-deep)';
-      }
+    function triggerCameraInput() {
+      const input = document.getElementById('cameraFileInput');
+      if (input) input.click();
     }
 
-    function nextDeliveryStep() {
-      if (currentStep === 1) {
-        currentStep = 2;
-        updateStepUI();
-        alert('ĐÃ NHẬN TRÀ TẠI QUÁN!\nĐã kiểm tra tem niêm phong 2 ly trà. Đang di chuyển giao đến nhà khách hàng (15 Lê Văn Chí).');
-      } else if (currentStep === 2) {
-        currentStep = 3;
-        updateStepUI();
-        alert('ĐÃ ĐẾN ĐIỂM GIAO!\nBạn đã có mặt tại 15 Lê Văn Chí. Giờ bạn hãy bấm nút "Chụp Hình Check-in Giao Xong" để chụp ảnh bàn giao cho khách.');
-      } else if (currentStep === 3) {
-        openCheckinModal();
-      }
-    }
-
-    /* ========================================================
-       4B. MODAL CHỤP HÌNH CHECK-IN HOÀN TẤT ĐƠN HÀNG
-       ======================================================== */
-    function openCheckinModal() {
-      document.getElementById('checkinModalBackdrop').classList.add('active');
-    }
-
-    function closeCheckinModal() {
-      document.getElementById('checkinModalBackdrop').classList.remove('active');
-    }
-
-    function triggerCameraCapture() {
-      const fileInput = document.getElementById('cameraFileInput');
-      if (fileInput) {
-        fileInput.click();
-      }
-    }
-
-    function handlePhotoUpload(e) {
+    function previewCapturedPhoto(e) {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = function(evt) {
-          const preview = document.getElementById('checkinPreviewImg');
+          const preview = document.getElementById('checkinPreviewPhoto');
           preview.src = evt.target.result;
           preview.style.display = 'block';
-          document.getElementById('cameraPlaceholder').style.display = 'none';
+          document.getElementById('cameraPrompt').style.display = 'none';
         };
         reader.readAsDataURL(file);
       }
     }
 
-    function confirmDeliveryCompleted() {
-      document.getElementById('checkinModalBackdrop').classList.remove('active');
-      alert('GIAO HÀNG THÀNH CÔNG!\nẢnh check-in đối soát đã được lưu trữ vào hệ thống (UC13).\nCộng +1 cuốc hoàn thành & điểm thi đua KPI ca trực!');
+    function submitCompleteDelivery() {
+      const orderId = document.getElementById('checkinOrderId').value;
+      const orderCode = document.getElementById('checkinOrderCode').value;
+      const btn = document.getElementById('btnSubmitComplete');
+      if (btn) btn.disabled = true;
 
-      hasActiveOrder = false;
-      currentStep = 1;
-      document.getElementById('activeOrderSheet').style.display = 'none';
-      if (isOnline) {
-        document.getElementById('searchingPillDock').style.display = 'flex';
-      }
+      fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/complete', {
+        method: 'POST'
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (btn) btn.disabled = false;
+        if (checkinModalInstance) checkinModalInstance.hide();
+        playNotificationSound();
+        showZenToast(`GIAO HÀNG THÀNH CÔNG: #${orderCode}! +5.000₫ thưởng KPI cuốc.`, 'success');
+        
+        // Cập nhật số đơn hoàn thành trên thanh metric
+        const metricEl = document.getElementById('metricCompletedCount');
+        if (metricEl) {
+          const current = parseInt(metricEl.innerText) || 0;
+          metricEl.innerText = (current + 1) + ' cuốc';
+        }
 
-      if (customerMarker) { map.removeLayer(customerMarker); customerMarker = null; }
-      if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
-      recenterMap();
+        refreshOrders(false);
+      })
+      .catch(err => {
+        if (btn) btn.disabled = false;
+        console.error(err);
+        showZenToast('Lỗi khi gửi xác nhận giao hàng', 'danger');
+      });
+    }
+
+    // C. Báo cáo sự cố hủy giao đơn (UC14)
+    function openIncidentModal(orderId, orderCode) {
+      document.getElementById('incidentOrderId').value = orderId;
+      document.getElementById('incidentOrderCode').value = orderCode;
+      document.getElementById('incidentModalLabel').innerHTML = `<i class="fa-solid fa-triangle-exclamation me-2"></i> Báo Sự Cố: #${orderCode}`;
+      if (incidentModalInstance) incidentModalInstance.show();
+    }
+
+    function submitIncidentReport() {
+      const orderId = document.getElementById('incidentOrderId').value;
+      const orderCode = document.getElementById('incidentOrderCode').value;
+      const reasonRadio = document.querySelector('input[name="incidentReason"]:checked');
+      const reason = reasonRadio ? reasonRadio.value : 'Sự cố bất khả kháng';
+      const detailNote = document.getElementById('incidentDetailNote').value;
+      const fullNote = detailNote ? `${reason} (Ghi chú: ${detailNote})` : reason;
+
+      const btn = document.getElementById('btnSubmitIncident');
+      if (btn) btn.disabled = true;
+
+      fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/incident', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: fullNote, reasonCode: reason, note: detailNote })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (btn) btn.disabled = false;
+        if (incidentModalInstance) incidentModalInstance.hide();
+        showZenToast(`Đã ghi nhận sự cố cho đơn #${orderCode} và hoàn trả về chi nhánh để quản lý phân công lại.`, 'warning');
+        refreshOrders(false);
+      })
+      .catch(err => {
+        if (btn) btn.disabled = false;
+        console.error(err);
+        showZenToast('Lỗi khi gửi báo cáo sự cố', 'danger');
+      });
     }
 
     /* ========================================================
-       5. DRAWER HỒ SƠ TÀI XẾ
+       7. DRAWER HỒ SƠ TÀI XẾ & KPI
        ======================================================== */
     function openProfileDrawer() {
       document.getElementById('profileDrawer').classList.add('open');
+      document.getElementById('drawerBackdrop').classList.add('active');
     }
 
     function closeProfileDrawer() {
       document.getElementById('profileDrawer').classList.remove('open');
+      document.getElementById('drawerBackdrop').classList.remove('active');
     }
 
     function switchDrawerTab(tabId, btn) {
       document.getElementById('tab-profile').style.display = 'none';
       document.getElementById('tab-history').style.display = 'none';
-      document.getElementById('tab-earnings').style.display = 'none';
+      document.getElementById('tab-kpi').style.display = 'none';
 
-      document.getElementById(tabId).style.display = 'flex';
+      const target = document.getElementById(tabId);
+      if (target) target.style.display = 'flex';
 
-      document.querySelectorAll('.dtab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.dtab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+    }
+
+    /* ========================================================
+       8. TOAST NOTIFICATION TIỆN LỢI
+       ======================================================== */
+    function showZenToast(message, type) {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = `zen-toast ${type === 'danger' ? 'toast-danger' : (type === 'warning' ? 'toast-warning' : '')}`;
+
+      let iconHtml = '<i class="fa-solid fa-circle-check text-success" style="font-size: 1.2rem;"></i>';
+      if (type === 'danger') iconHtml = '<i class="fa-solid fa-circle-xmark text-danger" style="font-size: 1.2rem;"></i>';
+      if (type === 'warning') iconHtml = '<i class="fa-solid fa-triangle-exclamation text-warning" style="font-size: 1.2rem;"></i>';
+
+      toast.innerHTML = `
+        ${iconHtml}
+        <div style="flex: 1; font-size: 0.86rem; font-weight: 600; color: var(--text-charcoal); line-height: 1.4;">
+          ${message}
+        </div>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4200);
     }
   </script>
 </body>

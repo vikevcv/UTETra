@@ -1,0 +1,533 @@
+/* ==========================================================================
+   UTETra Counter Handover System - Zen Wabi-Sabi Aesthetics (Module 8)
+   ========================================================================== */
+
+:root {
+    --zen-bg: #F7F5F0;
+    --zen-card: #FFFFFF;
+    --zen-dark: #0F1011;
+    --zen-charcoal: #1C1D1F;
+    --zen-gray: #4A4D52;
+    --zen-light-gray: #EAE6DF;
+    --zen-bizen: #8C6D53;
+    --zen-bizen-hover: #755942;
+    --zen-celadon: #5C7667;
+    --zen-celadon-hover: #4A6153;
+    --zen-amber: #D4AF37;
+    --zen-border: #E0DDD5;
+    --zen-blue: #2563EB;
+}
+
+body.handover-body {
+    background-color: var(--zen-bg);
+    color: var(--zen-dark);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Master-Detail Layout */
+.handover-layout {
+    display: flex;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+}
+
+/* Left Sidebar - Order List */
+.handover-sidebar {
+    width: 440px;
+    background: #FAF8F5;
+    border-right: 1px solid var(--zen-border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    height: 100%;
+}
+
+.handover-sidebar-header {
+    padding: 1rem 1.25rem 0.75rem;
+    background: #FFFFFF;
+    border-bottom: 1px solid var(--zen-border);
+}
+
+.sidebar-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.sidebar-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--zen-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-pills {
+    display: flex;
+    gap: 0.35rem;
+    background: #EFECE6;
+    padding: 4px;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.filter-pill {
+    flex: 1;
+    text-align: center;
+    padding: 5px 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--zen-gray);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.filter-pill:hover {
+    color: var(--zen-dark);
+}
+
+.filter-pill.active {
+    background: #FFFFFF;
+    color: var(--zen-bizen);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.search-order-box {
+    position: relative;
+}
+
+.search-order-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9CA3AF;
+    font-size: 0.85rem;
+}
+
+.search-order-box input {
+    width: 100%;
+    padding: 7px 12px 7px 34px;
+    border: 1px solid var(--zen-border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: #FFFFFF;
+}
+
+.search-order-box input:focus {
+    outline: none;
+    border-color: var(--zen-bizen);
+}
+
+/* Orders List Scroll */
+.handover-orders-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+/* Order Card */
+.order-card {
+    background: #FFFFFF;
+    border: 1.5px solid var(--zen-border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.order-card:hover {
+    border-color: #BDB7AB;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.order-card.active {
+    border-color: var(--zen-bizen);
+    background: #FDFCFA;
+    box-shadow: 0 0 0 2px rgba(140, 109, 83, 0.25);
+}
+
+.order-card.ready-pickup {
+    border-left: 4px solid var(--zen-celadon);
+}
+
+.order-card.ready-delivery {
+    border-left: 4px solid var(--zen-blue);
+}
+
+.card-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+}
+
+.queue-badge {
+    font-family: 'JetBrains Mono', monospace, sans-serif;
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--zen-dark);
+}
+
+.order-code-text {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+.card-customer-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    margin-bottom: 0.35rem;
+}
+
+.cust-name {
+    font-weight: 700;
+    color: var(--zen-dark);
+}
+
+.cust-phone {
+    color: #6B7280;
+    font-size: 0.82rem;
+}
+
+.card-summary-row {
+    font-size: 0.82rem;
+    color: var(--zen-gray);
+    line-height: 1.35;
+    margin-bottom: 0.45rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.card-foot-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px dashed #E5E7EB;
+    padding-top: 0.45rem;
+    font-size: 0.78rem;
+}
+
+.cups-count-pill {
+    background: #F3F4F6;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    color: var(--zen-dark);
+}
+
+.time-elapsed {
+    color: #9CA3AF;
+}
+
+/* Right Workbench - Details & Operations */
+.handover-workbench {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 2rem;
+    background: var(--zen-bg);
+}
+
+.workbench-card {
+    background: #FFFFFF;
+    border: 1px solid var(--zen-border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+/* Workbench Header */
+.wb-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--zen-border);
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.wb-title-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.wb-queue-big {
+    font-family: 'JetBrains Mono', monospace, sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    background: var(--zen-dark);
+    padding: 4px 16px;
+    border-radius: 10px;
+    line-height: 1.2;
+}
+
+.wb-order-info h3 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--zen-dark);
+}
+
+.wb-order-badges {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+}
+
+/* Info Grid */
+.wb-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    background: #F9F8F5;
+    border: 1px solid var(--zen-border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-item {
+    font-size: 0.88rem;
+}
+
+.info-label {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #6B7280;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.info-val {
+    font-weight: 700;
+    color: var(--zen-dark);
+}
+
+/* Seal Checklist Box */
+.seal-checklist-box {
+    background: #FAF8F5;
+    border: 1.5px solid var(--zen-bizen);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.seal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.seal-title {
+    font-size: 1.02rem;
+    font-weight: 800;
+    color: var(--zen-bizen);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cups-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #FFFFFF;
+    border: 1px solid var(--zen-border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.cups-table th {
+    background: #EFECE6;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: left;
+    color: var(--zen-dark);
+}
+
+.cups-table td {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    border-top: 1px solid #F0ECE4;
+}
+
+.seal-confirm-checkbox {
+    background: #FFFFFF;
+    border: 2px solid var(--zen-bizen);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.seal-confirm-checkbox:hover {
+    background: #FFFDF9;
+}
+
+.seal-confirm-checkbox input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--zen-bizen);
+    cursor: pointer;
+}
+
+.seal-confirm-checkbox label {
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--zen-dark);
+    margin: 0;
+}
+
+/* Action Area */
+.handover-action-area {
+    background: #F9F8F5;
+    border: 1px solid var(--zen-border);
+    border-radius: 10px;
+    padding: 1.25rem;
+}
+
+.action-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--zen-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Biểu mẫu In Bàn Giao QLGH_BM1 */
+.slip-preview-container {
+    background: #FFFFFF;
+    padding: 24px;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    color: #111827;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.slip-header-enso {
+    text-align: center;
+    border-bottom: 2px solid #111827;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+.slip-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.slip-meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+
+.slip-section-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: #F3F4F6;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin: 12px 0 6px;
+}
+
+.slip-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-top: 8px;
+}
+
+.slip-table th, .slip-table td {
+    border: 1px solid #E5E7EB;
+    padding: 6px 8px;
+}
+
+.slip-table th {
+    background: #F9FAFB;
+    font-weight: 700;
+}
+
+.slip-signatures {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+    padding-top: 10px;
+    text-align: center;
+}
+
+.signature-box {
+    width: 45%;
+}
+
+.signature-role {
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.signature-note {
+    font-size: 0.75rem;
+    color: #6B7280;
+    font-style: italic;
+    margin-bottom: 50px;
+}
+
+.signature-name {
+    font-weight: 700;
+    border-top: 1px dotted #9CA3AF;
+    padding-top: 4px;
+}
+
+/* In Phiếu */
+@media print {
+    body * {
+        visibility: hidden !important;
+    }
+    #printableSlipArea, #printableSlipArea * {
+        visibility: visible !important;
+    }
+    #printableSlipArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #FFFFFF !important;
+        margin: 0 !important;
+        padding: 10mm !important;
+    }
+}

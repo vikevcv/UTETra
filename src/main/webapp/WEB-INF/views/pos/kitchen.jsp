@@ -509,6 +509,9 @@
             <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab active">
                 <i class="fa-solid fa-mug-hot me-1"></i>Pha Chế KDS
             </a>
+            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab">
+                <i class="fa-solid fa-box-open me-1"></i>Bàn Giao Đơn
+            </a>
             <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab">
                 <i class="fa-solid fa-list-check me-1"></i>Thực Đơn Chi Nhánh
             </a>

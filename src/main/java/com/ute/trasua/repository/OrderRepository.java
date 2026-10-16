@@ -22,6 +22,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByBranchIdAndStatusOrderByCreatedAtAsc(Long branchId, String status);
     List<Order> findTop30ByBranchIdAndStatusInOrderByCreatedAtDesc(Long branchId, List<String> statuses);
 
+    // Handover & Driver / Dispatch Queries
+    List<Order> findByDriverIdAndStatusInOrderByCreatedAtDesc(Long driverId, List<String> statuses);
+    List<Order> findByDriverIdOrderByCreatedAtDesc(Long driverId);
+    List<Order> findByBranchIdAndStatusInOrderByCreatedAtDesc(Long branchId, List<String> statuses);
+
     // Revenue Report Queries
     @Query("SELECT o FROM Order o " +
            "LEFT JOIN FETCH o.branch b " +
