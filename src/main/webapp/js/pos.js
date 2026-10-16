@@ -1023,7 +1023,72 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = `/branch/pos?branchId=${currentBranchId}`;
     });
 
-    // Initialize: Tải menu & Kiểm tra trạng thái trực ca
+    // Realtime Menu & Cup Stock Synchronization via WebSocket STOMP
+    let stompClient = null;
+    function connectPosRealtimeSync() {
+        if (typeof SockJS === "undefined" || typeof Stomp === "undefined") {
+            console.warn("SockJS or Stomp is not loaded yet for POS Realtime Sync.");
+            return;
+        }
+        try {
+            const socket = new SockJS("/ws-kds");
+            stompClient = Stomp.over(socket);
+            stompClient.debug = null; // Tắt log rác
+
+            stompClient.connect({}, () => {
+                console.log(">>> POS Realtime WebSocket Connected to /ws-kds");
+                // Lắng nghe các thay đổi thực đơn / kho ly tại chi nhánh
+                stompClient.subscribe(`/topic/menu/${currentBranchId}`, (message) => {
+                    try {
+                        const event = JSON.parse(message.body);
+                        console.log(">>> POS received realtime menu event:", event);
+
+                        if (event.type === "PRODUCT_AVAILABILITY_CHANGED") {
+                            // Cập nhật trạng thái món nước
+                            if (menuData && menuData.products) {
+                                const prod = menuData.products.find(p => p.id === event.productId);
+                                if (prod) {
+                                    prod.isAvailable = event.isAvailable;
+                                    renderProducts();
+                                }
+                            }
+                        } else if (event.type === "CUP_STOCK_UPDATED") {
+                            // Cập nhật tồn kho ly theo size
+                            if (menuData && menuData.sizes) {
+                                const sizeObj = menuData.sizes.find(s => {
+                                    const sName = s.name ? s.name.trim().toUpperCase() : "";
+                                    return sName === event.size;
+                                });
+                                if (sizeObj) {
+                                    sizeObj.cupStock = event.remainingStock;
+                                    sizeObj.isCupAvailable = event.isAvailable;
+                                }
+                            }
+                        } else if (event.type === "TOPPING_AVAILABILITY_CHANGED") {
+                            // Cập nhật trạng thái topping
+                            if (menuData && menuData.toppings) {
+                                const top = menuData.toppings.find(t => t.id === event.toppingId);
+                                if (top) {
+                                    top.isAvailable = event.isAvailable;
+                                }
+                            }
+                        } else if (event.type === "PRODUCT_STOCK_UPDATED" || event.type === "TOPPING_STOCK_UPDATED") {
+                            loadMenu();
+                        }
+                    } catch (e) {
+                        console.error("Lỗi xử lý WebSocket menu event:", e);
+                    }
+                });
+            }, (err) => {
+                console.warn("POS WebSocket disconnected, fallback mode:", err);
+            });
+        } catch (err) {
+            console.warn("POS Realtime sync init error:", err);
+        }
+    }
+
+    // Initialize: Tải menu, Kiểm tra ca trực & Kết nối WebSocket đồng bộ realtime
     loadMenu();
     checkShiftStatus();
+    connectPosRealtimeSync();
 });
