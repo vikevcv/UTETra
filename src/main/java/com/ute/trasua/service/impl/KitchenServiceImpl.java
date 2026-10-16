@@ -70,6 +70,11 @@ public class KitchenServiceImpl implements KitchenService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
 
+        String currentStatus = (order.getStatus() != null) ? order.getStatus().toUpperCase() : "";
+        if ("CANCELLED".equals(currentStatus) || "COMPLETED".equals(currentStatus) || "DELIVERED".equals(currentStatus)) {
+            throw new IllegalStateException("Không thể tiếp nhận pha chế đơn hàng đã ở trạng thái: " + currentStatus);
+        }
+
         order.setStatus("PREPARING");
         Order saved = orderRepository.save(order);
 
@@ -89,13 +94,18 @@ public class KitchenServiceImpl implements KitchenService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
 
+        String currentStatus = (order.getStatus() != null) ? order.getStatus().toUpperCase() : "";
+        if ("CANCELLED".equals(currentStatus) || "COMPLETED".equals(currentStatus) || "DELIVERED".equals(currentStatus)) {
+            throw new IllegalStateException("Đơn hàng không ở trạng thái hợp lệ để hoàn tất pha chế: " + currentStatus);
+        }
+
         Long targetBranchId = (order.getBranch() != null) ? order.getBranch().getId() : 1L;
 
         // Tự động khấu trừ tồn kho Ly theo Size (M, L) và Topping của từng ly trong đơn
         if (order.getOrderDetails() != null) {
             for (OrderDetail d : order.getOrderDetails()) {
                 int qty = (d.getQuantity() != null && d.getQuantity() > 0) ? d.getQuantity() : 1;
-                String sizeName = (d.getSizeName() != null && !d.getSizeName().isBlank()) ? d.getSizeName() : "M";
+                String sizeName = (d.getSizeName() != null && !d.getSizeName().isBlank()) ? d.getSizeName().trim().toUpperCase() : "M";
 
                 // Trừ tồn kho Ly cho từng cốc
                 branchMenuService.deductCupStock(targetBranchId, sizeName, qty);
@@ -121,7 +131,7 @@ public class KitchenServiceImpl implements KitchenService {
         // Đơn giao hàng -> Chuyển sang READY_FOR_DELIVERY (Sẵn sàng điều phối / bàn giao cho Shipper)
         // Đơn tại quầy / Đặt trước đến lấy -> Chuyển sang READY_FOR_PICKUP (Bàn giao trực tiếp cho khách)
         String orderType = (order.getOrderType() != null) ? order.getOrderType().toUpperCase() : "POS_WALK_IN";
-        if (orderType.contains("DELIVERY")) {
+        if (orderType.contains("DELIVERY") || orderType.contains("SHIPPER") || orderType.contains("ONLINE")) {
             order.setStatus("READY_FOR_DELIVERY");
         } else {
             order.setStatus("READY_FOR_PICKUP");

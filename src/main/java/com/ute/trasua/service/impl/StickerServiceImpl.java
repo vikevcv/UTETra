@@ -90,18 +90,16 @@ public class StickerServiceImpl implements StickerService {
         List<CupStickerDto> allStickers = printCupStickers(orderId);
         int targetIdx = (cupIndex != null && cupIndex > 0) ? cupIndex : 1;
 
+        if (targetIdx > allStickers.size()) {
+            throw new IllegalArgumentException("Chỉ số ly " + targetIdx + " vượt quá tổng số ly (" + allStickers.size() + ") của đơn hàng ID: " + orderId);
+        }
+
         for (CupStickerDto s : allStickers) {
             if (s.getCupIndex().equals(targetIdx)) {
                 s.setIsReprint(true);
                 log.info(">>> Đã in lại tem ly số {}/{} cho đơn {}", targetIdx, s.getTotalCups(), s.getOrderCode());
                 return s;
             }
-        }
-
-        if (!allStickers.isEmpty()) {
-            CupStickerDto first = allStickers.get(0);
-            first.setIsReprint(true);
-            return first;
         }
 
         throw new IllegalArgumentException("Không tìm thấy tem ly thứ " + cupIndex + " của đơn hàng ID: " + orderId);

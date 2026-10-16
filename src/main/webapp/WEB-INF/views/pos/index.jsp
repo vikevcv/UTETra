@@ -393,6 +393,9 @@
     <!-- Container In Hóa Đơn K80 (@media print) -->
     <div id="receiptPrintArea" style="display: none;"></div>
 
+    <!-- SockJS & STOMP JS for Realtime Menu & Cup Stock Sync -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <!-- Bootstrap & POS Script -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<c:url value='/js/pos.js'/>"></script>
