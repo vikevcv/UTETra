@@ -41,4 +41,7 @@ public class HandoverOrderDto {
     private LocalDateTime createdAt;
     private LocalDateTime handedOverAt;
     private LocalDateTime deliveredAt;
+    private String incidentReason;
+    private String incidentNote;
+    private LocalDateTime incidentReportedAt;
 }

@@ -255,6 +255,11 @@
 
     <script>
         window.BRANCH_ID = ${branchId != null ? branchId : 1};
+        let allItems = [];
+        let currentFilter = "PRODUCT";
+        let confirmModalInstance = null;
+        let toastInstance = null;
+        let pendingToggleItem = null;
 
         function initClock() {
             const clockEl = document.getElementById('posClock');
@@ -353,14 +358,20 @@
 
         // Load items from REST API
         async function fetchBranchMenu() {
+            const grid = document.getElementById("menuItemsGrid");
             try {
                 const res = await fetch("<c:url value='/api/branch-menu/'/>" + window.BRANCH_ID);
-                if (!res.ok) return;
+                if (!res.ok) {
+                    throw new Error("Không thể tải danh sách thực đơn (HTTP " + res.status + ")");
+                }
                 allItems = await res.json();
                 updateCounts();
                 renderGrid();
             } catch (e) {
                 console.error("Lỗi nạp thực đơn chi nhánh:", e);
+                if (grid) {
+                    grid.innerHTML = `<div class="col-12 text-center py-5 text-danger"><i class="fa-solid fa-circle-exclamation fs-2 mb-2 d-block"></i>Không thể nạp thực đơn chi nhánh. Vui lòng tải lại trang.</div>`;
+                }
             }
         }
 
@@ -480,9 +491,9 @@
                     renderGrid();
 
                     document.getElementById("toastMessage").textContent = data.message;
-                    toastInstance.show();
                 } else {
-                    alert("Không thể cập nhật trạng thái!");
+                    document.getElementById("toastMessage").textContent = "Không thể cập nhật trạng thái món lúc này!";
+                    toastInstance.show();
                 }
             } catch (e) {
                 console.error("Lỗi khi toggle:", e);

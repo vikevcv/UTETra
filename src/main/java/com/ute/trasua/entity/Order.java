@@ -12,7 +12,8 @@ import java.util.List;
 @Table(name = "orders",
        indexes = {
            @Index(name = "idx_orders_code", columnList = "order_code"),
-           @Index(name = "idx_orders_created", columnList = "created_at")
+           @Index(name = "idx_orders_created", columnList = "created_at"),
+           @Index(name = "idx_orders_branch_status_driver", columnList = "branch_id,status,driver_id")
        })
 @Data
 @NoArgsConstructor
@@ -108,6 +109,15 @@ public class Order {
 
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
+
+    @Column(name = "incident_reason", length = 30)
+    private String incidentReason;
+
+    @Column(name = "incident_note", length = 255)
+    private String incidentNote;
+
+    @Column(name = "incident_reported_at")
+    private LocalDateTime incidentReportedAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

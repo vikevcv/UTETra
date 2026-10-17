@@ -52,4 +52,15 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
 
     @Query("SELECT COUNT(d) FROM Driver d WHERE d.branch.id = :branchId AND d.user.locked = true")
     long countSuspendedByBranchId(@Param("branchId") Long branchId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT d FROM Driver d " +
+           "WHERE d.branch.id = :branchId " +
+           "AND d.workingStatus IN ('ONLINE', 'DELIVERING') " +
+           "AND (d.user IS NULL OR d.user.locked = false)")
+    List<Driver> lockEligibleDriversForBranch(@Param("branchId") Long branchId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT d FROM Driver d WHERE d.id = :driverId")
+    Optional<Driver> findWithLockById(@Param("driverId") Long driverId);
 }

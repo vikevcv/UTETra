@@ -100,15 +100,15 @@ public class PosController {
     public String posCounterView(@RequestParam(value = "branchId", required = false) Long branchId,
                                  HttpSession session,
                                  Model model) {
-        // Bảo vệ quầy POS: Bắt buộc đăng nhập tài khoản máy POS trước khi thao tác
-        if (session.getAttribute("POS_ACCOUNT") == null) {
-            return "redirect:/pos/login";
-        }
-
         List<Branch> branches = branchRepository.findAll();
         Branch currentBranch = null;
         if (branchId != null) {
             currentBranch = branchRepository.findById(branchId).orElse(null);
+        } else {
+            Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+            if (sessionBranchId != null) {
+                currentBranch = branchRepository.findById(sessionBranchId).orElse(null);
+            }
         }
         if (currentBranch == null && !branches.isEmpty()) {
             currentBranch = branches.get(0);
@@ -117,9 +117,49 @@ public class PosController {
         Long activeBranchId = (currentBranch != null) ? currentBranch.getId() : 1L;
         session.setAttribute("POS_BRANCH_ID", activeBranchId);
 
+        // Tự động nhận diện nếu đã đăng nhập tài khoản ADMIN hoặc MANAGER qua hệ thống web
+        if (session.getAttribute("POS_ACCOUNT") == null) {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
+                User user = userRepository.findByUsername(auth.getName()).orElse(null);
+                if (user != null && user.getRoles() != null && (user.getRoles().contains("ROLE_ADMIN") || user.getRoles().contains("ROLE_MANAGER"))) {
+                    PosAccount virtualAccount = PosAccount.builder()
+                            .username(user.getUsername())
+                            .counterName(user.getFullName() + " (Quản Trị)")
+                            .branch(currentBranch)
+                            .active(true)
+                            .build();
+                    session.setAttribute("POS_ACCOUNT", virtualAccount);
+                    session.setAttribute("POS_COUNTER_NAME", virtualAccount.getCounterName());
+                }
+            }
+        }
+
+        // Cố định phiên làm việc máy POS theo chi nhánh (Kiosk mode) - Tự động liên kết tài khoản quầy của chi nhánh
+        if (session.getAttribute("POS_ACCOUNT") == null) {
+            List<PosAccount> branchAccounts = posAccountRepository.findByBranchIdAndActiveTrue(activeBranchId);
+            PosAccount posAcc = (!branchAccounts.isEmpty()) ? branchAccounts.get(0) : null;
+            if (posAcc == null) {
+                posAcc = PosAccount.builder()
+                        .username("pos_branch_" + activeBranchId)
+                        .counterName("Quầy Thu Ngân " + (currentBranch != null ? currentBranch.getName() : "UTETra"))
+                        .branch(currentBranch)
+                        .active(true)
+                        .build();
+            }
+            session.setAttribute("POS_ACCOUNT", posAcc);
+            session.setAttribute("POS_COUNTER_NAME", posAcc.getCounterName());
+            log.info(">>> Tự động kích hoạt phiên quầy POS cố định chi nhánh #{}: {}", activeBranchId, posAcc.getCounterName());
+        }
+
         String activeCashiers = (String) session.getAttribute("POS_ACTIVE_CASHIERS_NAME");
         if (activeCashiers == null || activeCashiers.isBlank()) {
-            activeCashiers = "Chưa có người trực ca";
+            PosAccount posAcc = (PosAccount) session.getAttribute("POS_ACCOUNT");
+            if (posAcc != null && posAcc.getCounterName() != null) {
+                activeCashiers = posAcc.getCounterName();
+            } else {
+                activeCashiers = "Chưa có người trực ca";
+            }
         }
 
         model.addAttribute("cashierUsername", activeCashiers);
@@ -134,18 +174,21 @@ public class PosController {
 
     /**
      * Giao diện màn hình Bàn Giao Đơn Quầy (Module 8 - UC09, UC18).
+     * Màn hình vận hành điểm bán, đồng bộ trạng thái như KDS Barista (không bắt buộc redirect login).
      */
     @GetMapping({"/pos/handover", "/branch/handover"})
     public String posHandoverView(@RequestParam(value = "branchId", required = false) Long branchId,
                                  HttpSession session,
                                  Model model) {
-        if (session.getAttribute("POS_ACCOUNT") == null) {
-            return "redirect:/pos/login";
-        }
         List<Branch> branches = branchRepository.findAll();
         Branch currentBranch = null;
         if (branchId != null) {
             currentBranch = branchRepository.findById(branchId).orElse(null);
+        } else {
+            Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+            if (sessionBranchId != null) {
+                currentBranch = branchRepository.findById(sessionBranchId).orElse(null);
+            }
         }
         if (currentBranch == null && !branches.isEmpty()) {
             currentBranch = branches.get(0);
@@ -155,7 +198,12 @@ public class PosController {
 
         String activeCashiers = (String) session.getAttribute("POS_ACTIVE_CASHIERS_NAME");
         if (activeCashiers == null || activeCashiers.isBlank()) {
-            activeCashiers = "Chưa có người trực ca";
+            PosAccount posAcc = (PosAccount) session.getAttribute("POS_ACCOUNT");
+            if (posAcc != null && posAcc.getCounterName() != null) {
+                activeCashiers = posAcc.getCounterName();
+            } else {
+                activeCashiers = "Nhân Viên Bàn Giao";
+            }
         }
 
         model.addAttribute("cashierUsername", activeCashiers);

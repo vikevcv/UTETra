@@ -73,6 +73,7 @@ public class SecurityConfig {
                     "/api/pos/**",
                     "/api/kitchen/**",
                     "/api/handover/**",
+                    "/api/dispatch/**",
                     "/api/branch-menu/**",
                     "/shipper", "/shipper/**",
                     "/ws-kds/**",

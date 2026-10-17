@@ -34,6 +34,7 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
     private final DriverRepository driverRepository;
     private final BranchRepository branchRepository;
     private final com.ute.trasua.service.OrderWebSocketPublisher orderWebSocketPublisher;
+    private final com.ute.trasua.service.DriverDispatchService driverDispatchService;
 
     @Override
     @Transactional(readOnly = true)
@@ -41,7 +42,7 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         Long targetBranchId = (branchId != null) ? branchId : 1L;
 
         List<String> readyStatuses = List.of("READY_FOR_DELIVERY", "READY_FOR_PICKUP", "PAID");
-        List<Order> orders = orderRepository.findByBranchIdAndStatusInOrderByCreatedAtDesc(targetBranchId, readyStatuses);
+        List<Order> orders = orderRepository.findByBranchIdAndStatusInOrderByCreatedAtAsc(targetBranchId, readyStatuses);
 
         return orders.stream()
                 .filter(o -> {
@@ -55,53 +56,10 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
     @Override
     @Transactional
     public HandoverOrderDto handoverToDriver(Long orderId, Long driverId, String notes) {
-        Order order = orderRepository.findById(orderId)
+        // Ủy quyền trực tiếp cho DriverDispatchService làm nguồn sự thật duy nhất (Single Source of Truth)
+        driverDispatchService.dispatchMandatoryOrder(orderId, driverId, notes);
+        Order saved = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
-
-        String currentStatus = (order.getStatus() != null) ? order.getStatus().toUpperCase() : "";
-        if ("CANCELLED".equals(currentStatus) || "COMPLETED".equals(currentStatus) || "DELIVERED".equals(currentStatus)) {
-            throw new IllegalStateException("Đơn hàng đã hoàn tất hoặc đã hủy, không thể bàn giao cho tài xế: " + currentStatus);
-        }
-
-        Driver driver = driverRepository.findById(driverId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài xế ID: " + driverId));
-
-        // Ràng buộc chi nhánh: Tài xế chi nhánh nào thì chỉ nhận đơn hàng của chi nhánh đó
-        if (order.getBranch() != null && driver.getBranch() != null &&
-                !order.getBranch().getId().equals(driver.getBranch().getId())) {
-            throw new IllegalArgumentException("Lỗi chi nhánh: Tài xế thuộc " + driver.getBranch().getName()
-                    + " không thể tiếp nhận đơn hàng của " + order.getBranch().getName() + "!");
-        }
-
-        order.setDriver(driver);
-        order.setStatus("OUT_FOR_DELIVERY");
-        order.setHandedOverAt(LocalDateTime.now());
-
-        if (notes != null && !notes.isBlank()) {
-            String existingNotes = order.getDeliveryNotes();
-            if (existingNotes != null && !existingNotes.isBlank()) {
-                order.setDeliveryNotes(existingNotes + " | Ghi chú bàn giao: " + notes.trim());
-            } else {
-                order.setDeliveryNotes("Ghi chú bàn giao: " + notes.trim());
-            }
-        }
-
-        // Cập nhật trạng thái tài xế sang đang giao hàng
-        driver.setWorkingStatus("DELIVERING");
-        driverRepository.save(driver);
-
-        Order saved = orderRepository.save(order);
-        log.info(">>> Đã bàn giao đơn hàng {} (STT #{}) cho tài xế {} ({})",
-                saved.getOrderCode(), saved.getDailyQueueNumber(),
-                driver.getUser() != null ? driver.getUser().getFullName() : driver.getId(),
-                driver.getLicensePlate());
-
-        try {
-            orderWebSocketPublisher.broadcastOrderDispatched(saved, driver);
-        } catch (Exception e) {
-            log.warn("Lỗi phát WebSocket sự kiện gán tài xế: {}", e.getMessage());
-        }
-
         return mapToHandoverOrderDto(saved);
     }
 

@@ -22,4 +22,8 @@ public interface DriverService {
     void resendDriverCredentials(Long driverId);
 
     Map<String, Object> getBranchDriverStatistics(Long branchId);
+
+    com.ute.trasua.dto.DriverResponse toggleDriverAvailability(Long driverId, Boolean isAvailable);
+
+    com.ute.trasua.dto.handover.HandoverOrderDto reportForceMajeureIncident(Long orderId, Long driverId, String incidentReason, String note);
 }

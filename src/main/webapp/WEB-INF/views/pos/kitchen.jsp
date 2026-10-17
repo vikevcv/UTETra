@@ -16,6 +16,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <!-- Custom POS CSS -->
     <link rel="stylesheet" href="<c:url value='/css/pos.css'/>">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         :root {
@@ -925,7 +927,13 @@
                     // Tự động mở xem tem ly để in dán ly ngay
                     openStickerModal(orderId);
                 } else {
-                    alert("Không thể nhận đơn này!");
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Không Thể Nhận Đơn',
+                        text: 'Đơn hàng này có thể đã được xử lý hoặc hủy!',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -938,8 +946,22 @@
                 const res = await fetch(`<c:url value='/api/kitchen/orders/'/>\${orderId}/complete`, { method: "POST" });
                 if (res.ok) {
                     fetchKitchenOrders();
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Hoàn tất pha chế! Đơn đã chuyển sang tab Bàn Giao.',
+                        showConfirmButton: false,
+                        timer: 2200
+                    });
                 } else {
-                    alert("Lỗi khi hoàn tất đơn!");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi Hoàn Tất',
+                        text: 'Không thể chuyển trạng thái hoàn tất đơn lúc này!',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -1005,7 +1027,14 @@
                 const res = await fetch(`<c:url value='/api/kitchen/orders/'/>\${orderId}/stickers/\${cupIndex}`);
                 if (!res.ok) return;
                 const stk = await res.json();
-                alert(`Đang gửi lệnh in lại tem ly số \${stk.cupIndex}/\${stk.totalCups} của đơn \${stk.orderCode}!`);
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: `Đang in lại tem ly \${stk.cupIndex}/\${stk.totalCups} (\${stk.orderCode})`,
+                    showConfirmButton: false,
+                    timer: 1800
+                });
                 window.print();
             } catch (e) {
                 console.error(e);

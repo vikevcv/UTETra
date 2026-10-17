@@ -45,9 +45,9 @@ public class OrderHandoverApiController {
     @PostMapping("/orders/{orderId}/driver")
     public ResponseEntity<HandoverOrderDto> handoverToDriver(
             @PathVariable Long orderId,
-            @RequestBody HandoverActionRequest request) {
-        log.info("API: Bàn giao đơn {} cho tài xế ID: {}, ghi chú: {}",
-                orderId, request != null ? request.getDriverId() : null, request != null ? request.getNotes() : "");
+            @RequestBody(required = false) HandoverActionRequest request) {
+        log.info("API: Bàn giao đơn {} cho tài xế, ghi chú: {}",
+                orderId, request != null ? request.getNotes() : "");
         Long driverId = (request != null) ? request.getDriverId() : null;
         String notes = (request != null) ? request.getNotes() : null;
         HandoverOrderDto result = orderHandoverService.handoverToDriver(orderId, driverId, notes);
