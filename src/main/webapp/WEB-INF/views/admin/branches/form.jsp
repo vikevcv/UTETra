@@ -68,6 +68,22 @@
       align-items: center;
       gap: 6px;
     }
+    .manager-mode-option {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border: 2px solid var(--zen-border);
+      border-radius: 10px;
+      cursor: pointer;
+      background: #ffffff;
+      transition: all 0.2s;
+    }
+    .manager-mode-option.active {
+      border-color: var(--zen-primary);
+      background: rgba(16, 185, 129, 0.05);
+    }
   </style>
 </head>
 
@@ -161,30 +177,15 @@
                    class="zen-input" style="width: 100%;" />
           </div>
 
-          <!-- Quản lý phụ trách & Hotline -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="form-group">
-              <label class="form-label">Quản Lý Phụ Trách</label>
-              <select name="managerId" class="zen-select" style="width: 100%;">
-                <option value="">-- Chưa chỉ định --</option>
-                <c:forEach var="mgr" items="${managers}">
-                  <option value="${mgr.id}" ${branch.managerId == mgr.id ? 'selected' : ''}>
-                    ${mgr.fullName} (@${mgr.username})
-                  </option>
-                </c:forEach>
-              </select>
-            </div>
-
+          <!-- Hotline & Khung giờ hoạt động -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
             <div class="form-group">
               <label class="form-label">Hotline Liên Hệ</label>
               <input type="tel" name="hotline" value="${branch.hotline}"
                      placeholder="Ví dụ: 028.3896.8641" 
                      class="zen-input" style="width: 100%;" />
             </div>
-          </div>
 
-          <!-- Khung giờ hoạt động -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group">
               <label class="form-label">Giờ Mở Cửa</label>
               <input type="time" name="openTime" value="${branch.openTime}"
@@ -195,6 +196,135 @@
               <label class="form-label">Giờ Đóng Cửa</label>
               <input type="time" name="closeTime" value="${branch.closeTime}"
                      class="zen-input" style="width: 100%;" />
+            </div>
+          </div>
+        </div>
+
+        <!-- THẺ 2: NGƯỜI QUẢN LÝ CHI NHÁNH & CẤP TÀI KHOẢN ĐĂNG NHẬP -->
+        <div class="form-section-card">
+          <div class="form-section-title">
+            <i class="fa-solid fa-user-shield" style="color: var(--zen-primary);"></i>
+            Người Quản Lý Chi Nhánh (Cấp Quyền & Đăng Nhập)
+          </div>
+
+          <p style="font-size: 0.85rem; color: var(--zen-text-muted); margin-bottom: 16px;">
+            Bạn có thể tự nhập thông tin để hệ thống tự động sinh tài khoản cho Quản lý cơ sở mới hoặc điều chuyển một quản lý đang có.
+          </p>
+
+          <!-- Bộ chuyển chế độ: TẠO MỚI vs CHỌN CÓ SẴN -->
+          <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+            <label class="manager-mode-option ${empty branch.managerId ? 'active' : ''}" id="labelOptionNew">
+              <input type="radio" name="managerOption" value="NEW" ${empty branch.managerId ? 'checked' : ''} onchange="toggleManagerMode('NEW')" style="accent-color: var(--zen-primary);" />
+              <div>
+                <div style="font-weight: 700; font-size: 0.9rem; color: var(--zen-text-main);">
+                  Tạo Quản Lý Mới & Cấp Tài Khoản
+                  <span class="badge" style="background: #10b981; font-size: 0.7rem; margin-left: 4px;">Khuyên dùng</span>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--zen-text-muted);">Tự nhập thông tin, hệ thống tự cấp tài khoản đăng nhập</div>
+              </div>
+            </label>
+
+            <label class="manager-mode-option ${not empty branch.managerId ? 'active' : ''}" id="labelOptionExisting">
+              <input type="radio" name="managerOption" value="EXISTING" ${not empty branch.managerId ? 'checked' : ''} onchange="toggleManagerMode('EXISTING')" style="accent-color: var(--zen-primary);" />
+              <div>
+                <div style="font-weight: 700; font-size: 0.9rem; color: var(--zen-text-main);">Chọn Quản Lý Đang Có</div>
+                <div style="font-size: 0.8rem; color: var(--zen-text-muted);">Điều chuyển nhân sự quản lý đã có tài khoản trong chuỗi</div>
+              </div>
+            </label>
+          </div>
+
+          <!-- KHỐI 1: TỰ NHẬP QUẢN LÝ MỚI & CẤP TÀI KHOẢN -->
+          <div id="sectionNewManager" ${not empty branch.managerId ? 'style="display: none;"' : ''}>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div class="form-group">
+                <label class="form-label">
+                  Họ Và Tên Quản Lý Cơ Sở <span class="required">*</span>
+                </label>
+                <input type="text" name="newManagerFullName" value="${branch.newManagerFullName}"
+                       placeholder="Ví dụ: Nguyễn Văn Quản Lý..." 
+                       class="zen-input" style="width: 100%;" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Số Điện Thoại Quản Lý</label>
+                <input type="tel" name="newManagerPhone" value="${branch.newManagerPhone}"
+                       placeholder="Ví dụ: 0987654321..." 
+                       class="zen-input" style="width: 100%;" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Email Liên Hệ (Dùng để nhận thông báo / bàn giao)
+              </label>
+              <input type="email" name="newManagerEmail" value="${branch.newManagerEmail}"
+                     placeholder="Ví dụ: manager.td@gmail.com (hoặc để trống hệ thống tự sinh theo mã)..." 
+                     class="zen-input" style="width: 100%;" />
+            </div>
+
+            <!-- Live Card Xem Trước Tài Khoản Cấp Tự Động -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-top: 12px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <div style="font-weight: 700; font-size: 0.875rem; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-id-badge" style="color: var(--zen-primary);"></i>
+                  Xem Trước Thông Tin Đăng Nhập Sẽ Cấp Tự Động:
+                </div>
+                <span class="badge bg-primary" style="font-size: 0.75rem;">ROLE_MANAGER</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem;">
+                <div style="background: #ffffff; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                  <span style="color: #64748b; font-size: 0.8rem; display: block;">Tên đăng nhập (Username):</span>
+                  <span id="previewUsername" style="font-family: monospace; font-weight: 700; color: #059669; font-size: 0.95rem;">@ql_cntd01</span>
+                </div>
+                <div style="background: #ffffff; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                  <span style="color: #64748b; font-size: 0.8rem; display: block;">Mật khẩu khởi tạo:</span>
+                  <span id="previewPassword" style="font-family: monospace; font-weight: 700; color: #2563eb; font-size: 0.95rem;">Branch@123</span>
+                </div>
+              </div>
+
+              <!-- Tùy chỉnh nâng cao (toggle) -->
+              <div style="margin-top: 12px;">
+                <a href="javascript:void(0)" onclick="toggleCustomCreds()" style="font-size: 0.825rem; color: #64748b; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-gear"></i> Tùy chỉnh tên đăng nhập & mật khẩu khác (Nâng cao)
+                  <i class="fa-solid fa-chevron-down" id="customCredsIcon" style="font-size: 0.7rem;"></i>
+                </a>
+
+                <div id="customCredsBlock" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                      <label class="form-label" style="font-size: 0.8rem;">Username Tùy Chọn</label>
+                      <input type="text" name="newManagerUsername" id="inputCustomUsername"
+                             placeholder="Để trống sẽ tự sinh ql_<mã>"
+                             class="zen-input" style="width: 100%; font-size: 0.85rem;" oninput="updatePreview()" />
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-size: 0.8rem;">Mật Khẩu Tùy Chọn</label>
+                      <input type="text" name="newManagerPassword" id="inputCustomPassword"
+                             placeholder="Để trống sẽ dùng Branch@123"
+                             class="zen-input" style="width: 100%; font-size: 0.85rem;" oninput="updatePreview()" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KHỐI 2: CHỌN QUẢN LÝ CÓ SẴN (ĐIỀU CHUYỂN) -->
+          <div id="sectionExistingManager" ${empty branch.managerId ? 'style="display: none;"' : ''}>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Chọn Quản Lý Từ Danh Sách</label>
+              <select name="managerId" id="selectManagerId" class="zen-select" style="width: 100%;">
+                <option value="">-- Chưa chỉ định --</option>
+                <c:forEach var="mgr" items="${managers}">
+                  <option value="${mgr.id}" ${branch.managerId == mgr.id ? 'selected' : ''}>
+                    ${mgr.fullName} (@${mgr.username}) — SĐT: ${not empty mgr.phone ? mgr.phone : 'Chưa có'}
+                  </option>
+                </c:forEach>
+              </select>
+              <small style="color: var(--zen-text-muted); font-size: 0.8rem; display: block; margin-top: 6px;">
+                Nhân sự được chọn sẽ được phân quyền phụ trách toàn bộ hoạt động kho hàng, thực đơn và báo cáo của chi nhánh này.
+              </small>
             </div>
           </div>
         </div>
@@ -385,5 +515,76 @@
         alert('Trình duyệt của bạn không hỗ trợ định vị GPS.');
       }
     }
+
+    // Chuyển đổi giữa chế độ Tạo Quản Lý Mới và Chọn Quản Lý Có Sẵn
+    function toggleManagerMode(mode) {
+      const sectionNew = document.getElementById('sectionNewManager');
+      const sectionExisting = document.getElementById('sectionExistingManager');
+      const labelNew = document.getElementById('labelOptionNew');
+      const labelExisting = document.getElementById('labelOptionExisting');
+      const selectMgr = document.getElementById('selectManagerId');
+
+      if (mode === 'NEW') {
+        if (sectionNew) sectionNew.style.display = 'block';
+        if (sectionExisting) sectionExisting.style.display = 'none';
+        if (labelNew) labelNew.classList.add('active');
+        if (labelExisting) labelExisting.classList.remove('active');
+        if (selectMgr) selectMgr.value = '';
+      } else {
+        if (sectionNew) sectionNew.style.display = 'none';
+        if (sectionExisting) sectionExisting.style.display = 'block';
+        if (labelExisting) labelExisting.classList.add('active');
+        if (labelNew) labelNew.classList.remove('active');
+      }
+    }
+
+    // Tùy chỉnh thông tin đăng nhập nâng cao
+    function toggleCustomCreds() {
+      const block = document.getElementById('customCredsBlock');
+      const icon = document.getElementById('customCredsIcon');
+      if (block) {
+        if (block.style.display === 'none') {
+          block.style.display = 'block';
+          if (icon) icon.className = 'fa-solid fa-chevron-up';
+        } else {
+          block.style.display = 'none';
+          if (icon) icon.className = 'fa-solid fa-chevron-down';
+        }
+      }
+    }
+
+    // Cập nhật thẻ xem trước thông tin đăng nhập theo mã chi nhánh hoặc tùy chọn
+    function updatePreview() {
+      const branchCodeInput = document.querySelector('input[name="branchCode"]');
+      const customUsernameInput = document.getElementById('inputCustomUsername');
+      const customPasswordInput = document.getElementById('inputCustomPassword');
+      const previewUsernameEl = document.getElementById('previewUsername');
+      const previewPasswordEl = document.getElementById('previewPassword');
+
+      let code = branchCodeInput ? branchCodeInput.value.trim() : '';
+      let cleanCode = code.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!cleanCode) cleanCode = 'branch';
+
+      let username = '@ql_' + cleanCode;
+      if (customUsernameInput && customUsernameInput.value.trim() !== '') {
+        username = '@' + customUsernameInput.value.trim().toLowerCase();
+      }
+      if (previewUsernameEl) previewUsernameEl.innerText = username;
+
+      let password = 'Branch@123';
+      if (customPasswordInput && customPasswordInput.value.trim() !== '') {
+        password = customPasswordInput.value.trim();
+      }
+      if (previewPasswordEl) previewPasswordEl.innerText = password;
+    }
+
+    // Lắng nghe sự kiện gõ mã chi nhánh
+    document.addEventListener('DOMContentLoaded', function () {
+      const branchCodeInput = document.querySelector('input[name="branchCode"]');
+      if (branchCodeInput) {
+        branchCodeInput.addEventListener('input', updatePreview);
+        updatePreview();
+      }
+    });
   </script>
 </body>

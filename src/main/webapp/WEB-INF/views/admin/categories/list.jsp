@@ -147,22 +147,6 @@
     </div>
   </div>
 
-  <!-- Alert Messages -->
-  <c:if test="${not empty successMessage}">
-    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center shadow-sm" role="alert">
-      <i class="fa-solid fa-circle-check fs-5 me-2"></i>
-      <div>${successMessage}</div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  </c:if>
-  <c:if test="${not empty errorMessage}">
-    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center shadow-sm" role="alert">
-      <i class="fa-solid fa-circle-exclamation fs-5 me-2"></i>
-      <div>${errorMessage}</div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  </c:if>
-
   <!-- Statistics Grid -->
   <div class="row g-3 mb-4">
     <div class="col-12 col-sm-6 col-xl-3">

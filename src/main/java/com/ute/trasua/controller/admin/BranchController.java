@@ -134,8 +134,20 @@ public class BranchController {
         try {
             if (request.getId() == null) {
                 BranchResponse created = branchService.createBranch(request);
-                redirectAttributes.addFlashAttribute("successMessage",
-                        "Đã tạo thành công chi nhánh mới: [" + created.getBranchCode() + "] " + created.getName());
+                if (created.isManagerAccountCreated() && created.getGeneratedManagerUsername() != null) {
+                    redirectAttributes.addFlashAttribute("accountCreatedInfo", java.util.Map.of(
+                            "branchCode", created.getBranchCode(),
+                            "branchName", created.getName(),
+                            "username", created.getGeneratedManagerUsername(),
+                            "password", created.getGeneratedManagerPassword() != null ? created.getGeneratedManagerPassword() : "Branch@123"
+                    ));
+                    redirectAttributes.addFlashAttribute("successMessage",
+                            "Đã tạo thành công chi nhánh [" + created.getBranchCode() + "] " + created.getName()
+                            + " & cấp tài khoản Quản lý: @" + created.getGeneratedManagerUsername());
+                } else {
+                    redirectAttributes.addFlashAttribute("successMessage",
+                            "Đã tạo thành công chi nhánh mới: [" + created.getBranchCode() + "] " + created.getName());
+                }
             } else {
                 BranchResponse updated = branchService.updateBranch(request.getId(), request);
                 redirectAttributes.addFlashAttribute("successMessage",

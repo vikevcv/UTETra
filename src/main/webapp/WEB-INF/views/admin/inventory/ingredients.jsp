@@ -30,20 +30,6 @@
 </head>
 
 <div class="zen-container">
-  <!-- Alerts -->
-  <c:if test="${not empty successMessage}">
-    <div class="alert alert-success d-flex align-items-center mb-4" role="alert" style="border-radius: 10px;">
-      <i class="fa-solid fa-circle-check fs-5 me-2"></i>
-      <div>${successMessage}</div>
-    </div>
-  </c:if>
-  <c:if test="${not empty errorMessage}">
-    <div class="alert alert-danger d-flex align-items-center mb-4" role="alert" style="border-radius: 10px;">
-      <i class="fa-solid fa-triangle-exclamation fs-5 me-2"></i>
-      <div>${errorMessage}</div>
-    </div>
-  </c:if>
-
   <!-- Header -->
   <div class="page-header-card">
     <div>

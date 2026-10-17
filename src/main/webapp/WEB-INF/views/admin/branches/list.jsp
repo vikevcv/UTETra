@@ -310,7 +310,11 @@
                     <!-- Quản lý phụ trách -->
                     <div class="branch-info-row">
                       <i class="fa-solid fa-user-tie"></i>
-                      <span>Phụ trách: <strong>${branch.managerFullName}</strong></span>
+                      <span>Phụ trách: <strong>${branch.managerFullName}</strong>
+                        <c:if test="${not empty branch.managerUsername}">
+                          <span class="badge bg-light text-success border ms-1 font-monospace" style="font-size: 0.75rem;">@${branch.managerUsername}</span>
+                        </c:if>
+                      </span>
                     </div>
 
                     <!-- Thống kê nhân sự & POS -->
@@ -511,5 +515,113 @@
             // Scroll mượt lên bản đồ
             document.querySelector('.branch-map-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
+
+          // Hàm sao chép thông tin tài khoản quản lý vừa cấp
+          function copyCredentials() {
+            const username = "${accountCreatedInfo.username}";
+            const password = "${accountCreatedInfo.password}";
+            const loginUrl = window.location.origin + "${pageContext.request.contextPath}/auth/login";
+            const branchName = "${accountCreatedInfo.branchName}";
+            const branchCode = "${accountCreatedInfo.branchCode}";
+            const text = "THÔNG TIN TÀI KHOẢN QUẢN LÝ CHI NHÁNH UTETRA\n"
+                       + "--------------------------------------------\n"
+                       + "• Chi nhánh: [" + branchCode + "] " + branchName + "\n"
+                       + "• Cổng đăng nhập: " + loginUrl + "\n"
+                       + "• Tên đăng nhập: @" + username + "\n"
+                       + "• Mật khẩu: " + password + "\n"
+                       + "• Quyền hạn: Quản Lý Chi Nhánh (ROLE_MANAGER)\n"
+                       + "--------------------------------------------\n"
+                       + "Vui lòng đăng nhập và đổi mật khẩu ở lần đầu sử dụng.";
+
+            navigator.clipboard.writeText(text).then(() => {
+              const btnText = document.getElementById('copyBtnText');
+              if (btnText) btnText.innerText = "Đã Sao Chép Vào Bộ Nhớ!";
+              if (window.toastSuccess) {
+                window.toastSuccess("Đã sao chép toàn bộ thông tin đăng nhập vào Clipboard!");
+              }
+              setTimeout(() => {
+                if (btnText) btnText.innerText = "Sao Chép Thông Tin Đăng Nhập";
+              }, 3000);
+            }).catch(err => {
+              alert("Không thể sao chép tự động: " + err);
+            });
+          }
+
+          // Đóng modal bàn giao tài khoản
+          function closeAccountModal() {
+            const modal = document.getElementById('accountCreatedModal');
+            if (modal) {
+              modal.style.display = 'none';
+              modal.classList.remove('show');
+            }
+          }
         </script>
+
+        <!-- MODAL BÀN GIAO TÀI KHOẢN QUẢN LÝ MỚI -->
+        <c:if test="${not empty accountCreatedInfo}">
+          <div class="modal fade show" id="accountCreatedModal" tabindex="-1" style="display: block; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px);" aria-modal="true" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+              <div class="modal-content shadow-lg" style="border-radius: 18px; border: 1px solid rgba(16, 185, 129, 0.4); overflow: hidden;">
+                <!-- Header -->
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 22px 24px;">
+                  <div class="d-flex align-items-center gap-3">
+                    <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">
+                      <i class="fa-solid fa-key"></i>
+                    </div>
+                    <div>
+                      <h5 class="modal-title fw-bold mb-0">Cấp Tài Khoản Quản Lý Mới</h5>
+                      <small style="opacity: 0.95; font-size: 0.8rem;">Bàn giao thông tin đăng nhập Cổng Quản Lý Chi Nhánh</small>
+                    </div>
+                  </div>
+                  <button type="button" class="btn-close btn-close-white" onclick="closeAccountModal()" aria-label="Close"></button>
+                </div>
+
+                <!-- Body -->
+                <div class="modal-body p-4" style="background: #ffffff;">
+                  <div class="p-3 mb-3 rounded-3" style="background: #ecfdf5; border: 1px solid #a7f3d0;">
+                    <div class="d-flex align-items-center gap-2 text-success fw-bold mb-1" style="font-size: 0.88rem;">
+                      <i class="fa-solid fa-circle-check"></i>
+                      Chi nhánh đã khởi tạo thành công:
+                    </div>
+                    <div class="text-dark fw-bold fs-6">[${accountCreatedInfo.branchCode}] ${accountCreatedInfo.branchName}</div>
+                  </div>
+
+                  <p class="text-muted small mb-3">
+                    Vui lòng sao chép thông tin đăng nhập bên dưới và gửi cho Quản lý cơ sở. Quản lý có thể dùng tài khoản này đăng nhập trực tiếp tại Cổng Đăng Nhập hệ thống.
+                  </p>
+
+                  <div class="p-3 rounded-3 mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                      <span class="text-muted small">Cổng Đăng Nhập:</span>
+                      <a href="${pageContext.request.contextPath}/auth/login" target="_blank" class="fw-semibold text-decoration-none" style="font-size: 0.85rem; color: #2563eb;">
+                        /auth/login <i class="fa-solid fa-arrow-up-right-from-square small ms-1"></i>
+                      </a>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                      <span class="text-muted small">Tên đăng nhập (Username):</span>
+                      <span class="badge bg-dark font-monospace fs-6" id="credentialUsername">@${accountCreatedInfo.username}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                      <span class="text-muted small">Mật khẩu ban đầu:</span>
+                      <span class="badge bg-primary font-monospace fs-6" id="credentialPassword">${accountCreatedInfo.password}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span class="text-muted small">Quyền hạn hệ thống:</span>
+                      <span class="badge bg-success">ROLE_MANAGER (Quản lý chi nhánh)</span>
+                    </div>
+                  </div>
+
+                  <div class="d-flex gap-2">
+                    <button type="button" class="zen-btn zen-btn-primary flex-grow-1" id="copyCredentialBtn" onclick="copyCredentials()" style="padding: 10px 16px;">
+                      <i class="fa-solid fa-copy me-1"></i> <span id="copyBtnText">Sao Chép Thông Tin Đăng Nhập</span>
+                    </button>
+                    <button type="button" class="zen-btn zen-btn-secondary" onclick="closeAccountModal()" style="padding: 10px 16px;">
+                      Đóng
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </c:if>
       </body>

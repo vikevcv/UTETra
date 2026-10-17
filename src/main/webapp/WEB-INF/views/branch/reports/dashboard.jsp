@@ -156,7 +156,7 @@
                 <i class="fa-solid fa-chart-line fs-4"></i>
               </div>
               <div>
-                <h4 class="fw-bold mb-1" style="color: #0f172a;">Báo Cáo Doanh Thu Bán Hàng (UC19)</h4>
+                <h4 class="fw-bold mb-1" style="color: #0f172a;">Báo Cáo Doanh Thu Bán Hàng</h4>
                 <div class="d-flex align-items-center gap-2 text-muted" style="font-size: 0.88rem;">
                   <span><i class="fa-solid fa-store me-1 text-primary"></i><strong>${currentBranch.name}</strong>
                     (${currentBranch.branchCode})</span>
