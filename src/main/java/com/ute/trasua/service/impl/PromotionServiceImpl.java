@@ -21,12 +21,16 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class PromotionServiceImpl implements PromotionService {
 
     private final PromotionRepository promotionRepository;
     private final BranchRepository branchRepository;
+
+    public PromotionServiceImpl(PromotionRepository promotionRepository, BranchRepository branchRepository) {
+        this.promotionRepository = promotionRepository;
+        this.branchRepository = branchRepository;
+    }
 
     // ==================== UC24: ADMIN TOÀN CHUỖI ====================
 
@@ -241,20 +245,28 @@ public class PromotionServiceImpl implements PromotionService {
             long globalCount = promotionRepository.countByScope("GLOBAL");
             long activeCount = promotionRepository.countCurrentlyActive(now);
             long inactiveCount = promotionRepository.countByStatus("INACTIVE");
+            long branchCount = total - globalCount;
 
             stats.put("total", total);
+            stats.put("global", globalCount);
             stats.put("globalCount", globalCount);
-            stats.put("branchCount", total - globalCount);
+            stats.put("branch", branchCount);
+            stats.put("branchCount", branchCount);
+            stats.put("active", activeCount);
             stats.put("activeCount", activeCount);
+            stats.put("inactive", inactiveCount);
             stats.put("inactiveCount", inactiveCount);
         } else {
             // Thống kê tại chi nhánh (UC18)
             long total = promotionRepository.countByBranchId(branchId);
             long activeCount = promotionRepository.countCurrentlyActiveByBranch(branchId, now);
+            long inactiveCount = total - activeCount;
 
             stats.put("total", total);
+            stats.put("active", activeCount);
             stats.put("activeCount", activeCount);
-            stats.put("inactiveCount", total - activeCount);
+            stats.put("inactive", inactiveCount);
+            stats.put("inactiveCount", inactiveCount);
         }
 
         return stats;

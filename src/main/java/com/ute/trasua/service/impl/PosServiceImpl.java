@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class PosServiceImpl implements PosService {
 
@@ -37,6 +36,34 @@ public class PosServiceImpl implements PosService {
     private final BranchMenuRepository branchMenuRepository;
     private final com.ute.trasua.service.BranchMenuService branchMenuService;
     private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+
+    public PosServiceImpl(
+            BranchRepository branchRepository,
+            CategoryRepository categoryRepository,
+            ProductRepository productRepository,
+            SizeRepository sizeRepository,
+            ToppingRepository toppingRepository,
+            OrderRepository orderRepository,
+            OrderDetailRepository orderDetailRepository,
+            PaymentRepository paymentRepository,
+            EmployeeRepository employeeRepository,
+            BranchMenuRepository branchMenuRepository,
+            com.ute.trasua.service.BranchMenuService branchMenuService,
+            org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate
+    ) {
+        this.branchRepository = branchRepository;
+        this.categoryRepository = categoryRepository;
+        this.productRepository = productRepository;
+        this.sizeRepository = sizeRepository;
+        this.toppingRepository = toppingRepository;
+        this.orderRepository = orderRepository;
+        this.orderDetailRepository = orderDetailRepository;
+        this.paymentRepository = paymentRepository;
+        this.employeeRepository = employeeRepository;
+        this.branchMenuRepository = branchMenuRepository;
+        this.branchMenuService = branchMenuService;
+        this.messagingTemplate = messagingTemplate;
+    }
 
     @org.springframework.beans.factory.annotation.Value("${app.vietqr.bank-bin:970422}")
     private String bankBin;

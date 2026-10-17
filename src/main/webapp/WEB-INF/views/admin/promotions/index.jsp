@@ -387,7 +387,7 @@
         btn.addEventListener('click', function () {
           const id = this.dataset.id;
           if (editForm) {
-            editForm.action = editForm.dataset.baseAction + '/' + id + '/edit';
+            editForm.action = editForm.dataset.baseAction + '/' + id + '/update';
           }
           document.getElementById('editVoucherCode').value = this.dataset.code || '';
           document.getElementById('editTitle').value = this.dataset.title || '';

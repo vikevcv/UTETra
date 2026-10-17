@@ -23,7 +23,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional(readOnly = true)
 public class InventoryServiceImpl implements InventoryService {
@@ -35,6 +34,24 @@ public class InventoryServiceImpl implements InventoryService {
     private final ImportReceiptRepository importReceiptRepository;
     private final ImportReceiptDetailRepository importReceiptDetailRepository;
     private final BranchMenuRepository branchMenuRepository;
+
+    public InventoryServiceImpl(
+            BranchRepository branchRepository,
+            UserRepository userRepository,
+            IngredientRepository ingredientRepository,
+            BranchInventoryRepository branchInventoryRepository,
+            ImportReceiptRepository importReceiptRepository,
+            ImportReceiptDetailRepository importReceiptDetailRepository,
+            BranchMenuRepository branchMenuRepository
+    ) {
+        this.branchRepository = branchRepository;
+        this.userRepository = userRepository;
+        this.ingredientRepository = ingredientRepository;
+        this.branchInventoryRepository = branchInventoryRepository;
+        this.importReceiptRepository = importReceiptRepository;
+        this.importReceiptDetailRepository = importReceiptDetailRepository;
+        this.branchMenuRepository = branchMenuRepository;
+    }
 
     @Override
     public List<BranchInventoryResponse> getStockByBranch(Long branchId, String keyword, Boolean isLowStock) {

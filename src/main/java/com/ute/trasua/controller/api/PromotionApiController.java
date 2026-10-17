@@ -13,10 +13,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/promotions")
-@RequiredArgsConstructor
 public class PromotionApiController {
 
     private final PromotionService promotionService;
+
+    public PromotionApiController(PromotionService promotionService) {
+        this.promotionService = promotionService;
+    }
 
     /**
      * API checking voucher validity and calculating discount in real-time.

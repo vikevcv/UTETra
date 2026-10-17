@@ -27,12 +27,16 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/branch/promotions")
-@RequiredArgsConstructor
 @Slf4j
 public class BranchPromotionController {
 
     private final PromotionService promotionService;
     private final BranchService branchService;
+
+    public BranchPromotionController(PromotionService promotionService, BranchService branchService) {
+        this.promotionService = promotionService;
+        this.branchService = branchService;
+    }
 
     @GetMapping
     public String index(
