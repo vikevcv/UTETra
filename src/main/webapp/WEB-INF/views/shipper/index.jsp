@@ -222,67 +222,28 @@
 
     /* CÔNG TẮC GẠT ON / OFF CA TRỰC (SLIDER SWITCH) */
     .capsule-switch-wrap {
-      background: var(--bg-card-inner);
-      border: 1.5px solid var(--border-earth);
-      border-radius: 40px;
-      padding: 5px 6px 5px 12px;
-      display: flex;
+      background: transparent;
+      border: none;
+      padding: 0;
+      display: inline-flex;
       align-items: center;
-      gap: 10px;
       cursor: pointer;
       user-select: none;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      transition: transform 0.2s ease;
     }
 
     .capsule-switch-wrap:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transform: scale(1.05);
     }
 
     .capsule-switch-wrap.online {
-      background: #F0F9F4;
-      border-color: rgba(47, 106, 79, 0.4);
-      box-shadow: 0 4px 16px rgba(47, 106, 79, 0.15);
-    }
-
-    .switch-info-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .switch-indicator-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: #9CA3AF;
-      transition: all 0.3s ease;
-    }
-
-    .capsule-switch-wrap.online .switch-indicator-dot {
-      background: var(--matcha-deep);
-      box-shadow: 0 0 10px rgba(47, 106, 79, 0.8);
-      animation: pulseMatcha 1.8s infinite;
-    }
-
-    @keyframes pulseMatcha {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.35); opacity: 0.65; }
-    }
-
-    .switch-label-status {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--text-sepia);
-      letter-spacing: 0.3px;
-    }
-
-    .capsule-switch-wrap.online .switch-label-status {
-      color: var(--matcha-deep);
+      background: transparent;
+      border: none;
+      box-shadow: none;
     }
 
     .switch-track {
-      width: 60px;
+      width: 58px;
       height: 32px;
       background: #9CA3AF;
       border-radius: 20px;
@@ -292,11 +253,12 @@
       justify-content: space-between;
       padding: 0 8px;
       transition: all 0.3s ease;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
     .capsule-switch-wrap.online .switch-track {
       background: var(--matcha-deep);
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 10px rgba(47, 106, 79, 0.4);
     }
 
     .track-tag {
@@ -304,6 +266,7 @@
       font-weight: 800;
       color: #FFFFFF;
       user-select: none;
+      letter-spacing: 0.5px;
     }
 
     .track-tag-on { display: none; }
@@ -326,11 +289,11 @@
       align-items: center;
       justify-content: center;
       color: #6B7280;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
     }
 
     .capsule-switch-wrap.online .switch-thumb-knob {
-      transform: translateX(28px);
+      transform: translateX(26px);
       color: var(--matcha-deep);
     }
 
@@ -1771,25 +1734,29 @@
 
     <!-- 1. TOP HEADER / APP BAR - Tinh Gọn Chuẩn Mobile Shipper -->
     <header class="shipper-header">
-      <div class="brand-section" onclick="openProfileDrawer('tab-profile')" style="cursor: pointer;" title="Chạm để xem thông tin tài xế">
+      <!-- Trái: Avatar Tài Xế -->
+      <div class="brand-section" onclick="openProfileDrawer('tab-profile')" style="cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: flex-start;" title="Chạm để xem thông tin tài xế">
         <div class="driver-avatar-btn">
           <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" alt="Avatar Tài Xế">
           <span class="avatar-status-dot ${isOnline ? 'online' : ''}" id="headerAvatarDot" title="${isOnline ? 'Đang trực' : 'Tạm nghỉ'}"></span>
         </div>
-        <div class="brand-title-wrap" style="min-width: 0; overflow: hidden;">
-          <h1 class="text-truncate" style="font-size: 1.02rem; font-weight: 800; margin: 0; color: #0F172A; max-width: 145px;">${fullName}</h1>
-          <p class="sub text-truncate" style="font-size: 0.76rem; margin: 2px 0 0 0; color: #64748B; max-width: 145px;">
-            <span class="${isOnline ? 'text-success fw-bold' : 'text-secondary'}">
-              <i class="fa-solid fa-circle" style="font-size: 0.55rem;"></i> ${isOnline ? 'Đang trực' : 'Tạm nghỉ'}
-            </span>
-            <span style="opacity: 0.5;">·</span>
-            <span>${branchName}</span>
-          </p>
+      </div>
+
+      <!-- Giữa: Công Tắc BẬT / TẮT Ca Trực Của Tài Xế (Nằm chính giữa) -->
+      <div class="header-center-switch" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+        <div class="capsule-switch-wrap ${isOnline ? 'online' : ''}" id="topSwitchCapsule" onclick="toggleShiftStatus()" title="Chạm để BẬT / TẮT ca trực">
+          <div class="switch-track">
+            <span class="track-tag track-tag-on">ON</span>
+            <span class="track-tag track-tag-off">OFF</span>
+            <div class="switch-thumb-knob">
+              <i class="fa-solid ${isOnline ? 'fa-check' : 'fa-power-off'}" id="knobIcon"></i>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="header-actions-section" style="flex-shrink: 0;">
-        <!-- Nút Lịch Sử Giao Hàng Trên Header (Chạm để mở lịch sử và tổng số cuốc) -->
+      <!-- Phải: Nút Lịch Sử Giao Hàng Trên Header -->
+      <div class="header-actions-section" style="flex: 1; display: flex; align-items: center; justify-content: flex-end;">
         <button type="button" class="btn-header-history" onclick="openProfileDrawer('tab-history')" title="Xem Tổng Số Cuốc & Lịch Sử Giao Hàng">
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span>Lịch Sử</span>
@@ -1863,6 +1830,10 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" style="padding: 20px 24px;">
+          <!-- Hidden inputs for tracking order being reported -->
+          <input type="hidden" id="incidentOrderId" value="">
+          <input type="hidden" id="incidentOrderCode" value="">
+
           <!-- GIAI ĐOẠN 1: TẠI QUÁN (BƯỚC 0 & 1 - CHƯA NHẬN TRÀ ĐI GIAO) -->
           <div id="incidentStorePhase" style="display: none;">
             <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3" style="font-size: 0.82rem; border-radius: 8px;">
@@ -2175,11 +2146,73 @@
     let knownOrderIds = new Set();
     let incidentModalInstance = null;
     let audioContext = null;
+    let autoAcceptOrderId = null;
+    let autoAcceptInterval = null;
+    let autoAcceptSecondsLeft = 15;
+    let isSubmittingAction = false;
+
+    function startAutoAcceptTimer(orderId, orderCode) {
+      if (autoAcceptOrderId === orderId && autoAcceptInterval) {
+        return;
+      }
+      stopAutoAcceptTimer();
+      autoAcceptOrderId = orderId;
+      autoAcceptSecondsLeft = 15;
+
+      autoAcceptInterval = setInterval(function() {
+        autoAcceptSecondsLeft--;
+        const timerSecSpan = document.getElementById('autoAcceptCountdownSec');
+        if (timerSecSpan) {
+          timerSecSpan.innerText = autoAcceptSecondsLeft;
+        }
+
+        if (autoAcceptSecondsLeft <= 0) {
+          stopAutoAcceptTimer();
+          advanceOrderToStep1(orderId);
+          showZenToast('Đơn #' + orderCode + ' đã tự động nhận (bắt buộc nhận sau 15s). Hãy chụp ảnh đối soát!', 'info');
+        }
+      }, 1000);
+    }
+
+    function stopAutoAcceptTimer() {
+      if (autoAcceptInterval) {
+        clearInterval(autoAcceptInterval);
+        autoAcceptInterval = null;
+      }
+      autoAcceptOrderId = null;
+    }
+
+    function cleanupModalBackdrop() {
+      // Xóa triệt để các phần tử backdrop che mờ màn hình còn sót lại
+      document.querySelectorAll('.modal-backdrop').forEach(function(el) { el.remove(); });
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+      const incidentEl = document.getElementById('incidentModal');
+      if (incidentEl) {
+        incidentEl.classList.remove('show');
+        incidentEl.style.display = 'none';
+        incidentEl.setAttribute('aria-hidden', 'true');
+        incidentEl.removeAttribute('aria-modal');
+      }
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
       // Khởi tạo Bootstrap Modals
       const incidentEl = document.getElementById('incidentModal');
-      if (incidentEl) incidentModalInstance = new bootstrap.Modal(incidentEl);
+      if (incidentEl) {
+        incidentModalInstance = new bootstrap.Modal(incidentEl);
+        incidentEl.addEventListener('hidden.bs.modal', function() {
+          cleanupModalBackdrop();
+          if (ordersQueue.length > 0) {
+            const curr = ordersQueue[0];
+            const step = orderSteps[curr.orderId] || 0;
+            if (step === 0) {
+              startAutoAcceptTimer(curr.orderId, curr.orderCode);
+            }
+          }
+        });
+      }
 
       // Nạp danh sách đơn hàng ban đầu từ model JSP
       <c:forEach items="${activeOrders}" var="o">
@@ -2258,6 +2291,7 @@
 
       // Trường hợp không có đơn nào trong hàng đợi
       if (totalActive === 0) {
+        stopAutoAcceptTimer();
         deck.innerHTML = 
           '<div class="empty-state-box" id="emptyStatePlaceholder">' +
             '<div class="empty-state-icon"><i class="fa-solid fa-mug-hot"></i></div>' +
@@ -2281,6 +2315,13 @@
         orderSteps[curr.orderId] = step;
       }
 
+      // Quản lý đếm ngược 15s bắt buộc tự động nhận đơn nếu đang ở Bước 0
+      if (step === 0) {
+        startAutoAcceptTimer(curr.orderId, curr.orderCode);
+      } else {
+        stopAutoAcceptTimer();
+      }
+
       // Xác định badge trạng thái theo bước (Chuẩn màu rõ nét WCAG AAA)
       let statusBadgeHtml = '';
       if (step === 0) {
@@ -2300,7 +2341,7 @@
       let stepActionButtonsHtml = '';
 
       if (step === 0) {
-        // BƯỚC 0: Tài xế ấn OK để xem ly nước nào cần lấy và tên khách hàng
+        // BƯỚC 0: Tài xế ấn OK để xem ly nước nào cần lấy và tên khách hàng (hoặc tự nhận sau 15s)
         stepBodyContentHtml = 
           '<div class="route-display-box">' +
             '<div class="route-node">' +
@@ -2333,9 +2374,17 @@
           '</div>';
 
         stepActionButtonsHtml = 
-          '<button class="btn-step-action btn-step-green w-100" onclick="advanceOrderToStep1(' + curr.orderId + ')">' +
-            '<i class="fa-solid fa-clipboard-check me-2" style="font-size: 1.25rem;"></i> NHẬN ĐƠN & ĐỐI SOÁT LY' +
-          '</button>';
+          '<div class="d-flex flex-column gap-2">' +
+            '<button class="btn-step-action btn-step-green w-100" onclick="advanceOrderToStep1(' + curr.orderId + ')">' +
+              '<i class="fa-solid fa-clipboard-check me-2" style="font-size: 1.25rem;"></i> NHẬN ĐƠN & ĐỐI SOÁT LY ' +
+              '<span class="badge bg-light text-dark ms-1 px-2 py-1" style="font-size: 0.8rem; font-weight: 700; border-radius: 6px;">' +
+                'Tự nhận sau <span id="autoAcceptCountdownSec">' + autoAcceptSecondsLeft + '</span>s' +
+              '</span>' +
+            '</button>' +
+            '<button class="btn-incident-secondary w-100 py-2" style="font-size: 0.82rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố Tại Quán' +
+            '</button>' +
+          '</div>';
 
       } else if (step === 1) {
         // BƯỚC 1: Đối soát ly nước, chụp hình ảnh ly nước của quán, sau đó mới cho nhận hàng
@@ -2435,7 +2484,7 @@
               '</button>' +
 
               // Nút Đã Tới Điểm Giao nằm KẾ BÊN Google Maps
-              '<button class="btn-step-action btn-step-orange flex-grow-1" style="min-height: 46px; font-size: 0.9rem;" onclick="handleArrivedAtCustomer(' + curr.orderId + ')">' +
+              '<button class="btn-step-action btn-step-orange flex-grow-1" id="btnArrived_' + curr.orderId + '" style="min-height: 46px; font-size: 0.9rem;" onclick="handleArrivedAtCustomer(' + curr.orderId + ')">' +
                 '<i class="fa-solid fa-location-dot me-1"></i> Đã Tới Nơi' +
               '</button>' +
             '</div>' +
@@ -2543,6 +2592,7 @@
        ======================================================== */
     // Bước 0 -> Bước 1: Tài xế ấn OK để xem đơn và danh sách ly nước cần lấy
     function advanceOrderToStep1(orderId) {
+      stopAutoAcceptTimer();
       orderSteps[orderId] = 1;
       renderWorkbench();
       showZenToast('Đã xác nhận xem đơn. Hãy đối soát tem ly và chụp ảnh ly nước của quán!', 'info');
@@ -2570,10 +2620,19 @@
 
     // Bước 1 -> Bước 2: Đã nhận hàng từ quán sau khi có ảnh chụp
     function handlePickupWithPhoto(orderId, orderCode) {
+      if (isSubmittingAction) return;
+
       if (!cupPhotos[orderId]) {
         showZenToast('Bắt buộc phải chụp ảnh ly nước của quán trước khi xác nhận nhận hàng!', 'warning');
         return;
       }
+
+      const btn = document.getElementById('btnPickup_' + orderId);
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang xác nhận lấy hàng...';
+      }
+      isSubmittingAction = true;
 
       const payload = {
         photoData: cupPhotos[orderId] || null
@@ -2586,6 +2645,7 @@
       })
       .then(res => res.json())
       .then(data => {
+        isSubmittingAction = false;
         orderSteps[orderId] = 2;
         if (ordersQueue[0] && ordersQueue[0].orderId === orderId) {
           ordersQueue[0].status = 'DELIVERING';
@@ -2594,6 +2654,11 @@
         showZenToast('Đã nhận hàng từ quán cho đơn #' + orderCode + '. Bắt đầu di chuyển giao hàng!', 'success');
       })
       .catch(err => {
+        isSubmittingAction = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-store me-2" style="font-size: 1.15rem;"></i> ĐÃ NHẬN HÀNG TỪ QUÁN';
+        }
         console.error(err);
         showZenToast('Lỗi khi gửi xác nhận lấy hàng, vui lòng thử lại', 'danger');
       });
@@ -2601,11 +2666,21 @@
 
     // Bước 2 -> Bước 3: Tài xế bấm Đã Tới Điểm Giao
     function handleArrivedAtCustomer(orderId) {
+      if (isSubmittingAction) return;
+      isSubmittingAction = true;
+
+      const btn = document.getElementById('btnArrived_' + orderId);
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang tới nơi...';
+      }
+
       fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/arrived', {
         method: 'POST'
       })
       .then(res => res.json())
       .then(data => {
+        isSubmittingAction = false;
         orderSteps[orderId] = 3;
         if (ordersQueue[0] && ordersQueue[0].orderId === orderId) {
           ordersQueue[0].status = 'ARRIVED';
@@ -2616,6 +2691,11 @@
         showZenToast('Đã đến điểm giao! Hãy bấm gọi điện thoại cho khách ra nhận nước.', 'info');
       })
       .catch(err => {
+        isSubmittingAction = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-location-dot me-1"></i> Đã Tới Nơi';
+        }
         console.error(err);
         orderSteps[orderId] = 3;
         renderWorkbench();
@@ -2651,13 +2731,19 @@
 
     // Bước 4 -> Hoàn tất: Kết thúc chuyến, tăng số cuốc, tự động trượt đơn kế tiếp vào queue
     function handleFinishDeliveryTrip(orderId, orderCode) {
+      if (isSubmittingAction) return;
+
       if (!deliveryPhotos[orderId]) {
         showZenToast('Bắt buộc phải chụp ảnh ly trà trao cho khách trước khi kết thúc chuyến!', 'warning');
         return;
       }
 
       const btn = document.getElementById('btnCompleteTrip_' + orderId);
-      if (btn) btn.disabled = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang kết thúc chuyến...';
+      }
+      isSubmittingAction = true;
 
       const payload = {
         photoData: deliveryPhotos[orderId] || null
@@ -2670,7 +2756,7 @@
       })
       .then(res => res.json())
       .then(data => {
-        if (btn) btn.disabled = false;
+        isSubmittingAction = false;
         playNotificationSound();
         triggerPhoneVibration();
         showZenToast('GIAO HÀNG THÀNH CÔNG: #' + orderCode + '! Đã hoàn tất cuốc giao.', 'success');
@@ -2738,7 +2824,11 @@
         renderWorkbench();
       })
       .catch(err => {
-        if (btn) btn.disabled = false;
+        isSubmittingAction = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-flag-checkered me-2" style="font-size: 1.25rem;"></i> KẾT THÚC CHUYẾN GIAO';
+        }
         console.error(err);
         showZenToast('Lỗi khi gửi xác nhận kết thúc chuyến giao', 'danger');
       });
@@ -2857,6 +2947,9 @@
       const capsule = document.getElementById('topSwitchCapsule');
       const label = document.getElementById('switchLabelStatus');
       const knobIcon = document.getElementById('knobIcon');
+      const avatarDot = document.getElementById('headerAvatarDot');
+      const onlineTextWrap = document.getElementById('headerOnlineTextWrap');
+      const onlineText = document.getElementById('headerOnlineText');
       const statusBoxText = document.getElementById('statusBoxText');
       const statusBoxSub = document.getElementById('statusBoxSub');
 
@@ -2864,6 +2957,9 @@
         if (capsule) capsule.classList.add('online');
         if (label) label.innerText = 'BẬT';
         if (knobIcon) knobIcon.className = 'fa-solid fa-check';
+        if (avatarDot) avatarDot.classList.add('online');
+        if (onlineTextWrap) onlineTextWrap.className = 'text-success fw-bold';
+        if (onlineText) onlineText.innerText = 'Đang trực';
         if (statusBoxText) {
           statusBoxText.innerText = 'Sẵn Sàng Nhận Đơn';
           statusBoxText.style.color = 'var(--matcha-deep)';
@@ -2878,6 +2974,9 @@
         if (capsule) capsule.classList.remove('online');
         if (label) label.innerText = 'TẮT';
         if (knobIcon) knobIcon.className = 'fa-solid fa-power-off';
+        if (avatarDot) avatarDot.classList.remove('online');
+        if (onlineTextWrap) onlineTextWrap.className = 'text-secondary';
+        if (onlineText) onlineText.innerText = 'Tạm nghỉ';
         if (statusBoxText) {
           statusBoxText.innerText = 'Tạm Nghỉ Ca';
           statusBoxText.style.color = 'var(--text-sepia)';
@@ -3012,8 +3111,12 @@
     }
 
     function openIncidentModal(orderId, orderCode) {
-      document.getElementById('incidentOrderId').value = orderId;
-      document.getElementById('incidentOrderCode').value = orderCode;
+      stopAutoAcceptTimer();
+
+      const idEl = document.getElementById('incidentOrderId');
+      if (idEl) idEl.value = orderId;
+      const codeEl = document.getElementById('incidentOrderCode');
+      if (codeEl) codeEl.value = orderCode;
       
       const currentStep = orderSteps[orderId] || 0;
       const isAtStore = currentStep <= 1;
@@ -3061,6 +3164,12 @@
       const noteInput = document.getElementById('incidentDetailNote');
       if (noteInput) noteInput.value = '';
 
+      if (!incidentModalInstance) {
+        const incidentEl = document.getElementById('incidentModal');
+        if (incidentEl && typeof bootstrap !== 'undefined') {
+          incidentModalInstance = bootstrap.Modal.getInstance(incidentEl) || new bootstrap.Modal(incidentEl);
+        }
+      }
       if (incidentModalInstance) incidentModalInstance.show();
     }
 
@@ -3101,7 +3210,13 @@
       })
       .then(data => {
         if (btn) btn.disabled = false;
-        if (incidentModalInstance) incidentModalInstance.hide();
+        if (incidentModalInstance) {
+          try {
+            incidentModalInstance.hide();
+          } catch(e) {}
+        }
+        cleanupModalBackdrop();
+        setTimeout(cleanupModalBackdrop, 350);
 
         if (window.Swal) {
           if (isAtStore) {
@@ -3109,14 +3224,20 @@
               icon: 'info',
               title: 'Đã Báo Cáo Sự Cố Tại Quán',
               text: 'Đơn hàng #' + orderCode + ' đã được chuyển giao lại cho quầy chi nhánh để phân công tài xế khác.',
-              confirmButtonColor: '#8C6D53'
+              confirmButtonColor: '#8C6D53',
+              didClose: () => {
+                cleanupModalBackdrop();
+              }
             });
           } else {
             Swal.fire({
               icon: 'warning',
               title: 'Hủy Đơn Tự Động Thành Công',
               text: 'Đơn hàng #' + orderCode + ' đã được chuyển sang trạng thái CANCELLED và ghi nhận hàng hoàn về hệ thống.',
-              confirmButtonColor: '#BA5D3F'
+              confirmButtonColor: '#BA5D3F',
+              didClose: () => {
+                cleanupModalBackdrop();
+              }
             });
           }
         } else {
@@ -3155,11 +3276,17 @@
           const capsule = document.getElementById('topSwitchCapsule');
           const label = document.getElementById('switchLabelStatus');
           const knobIcon = document.getElementById('knobIcon');
+          const avatarDot = document.getElementById('headerAvatarDot');
+          const onlineTextWrap = document.getElementById('headerOnlineTextWrap');
+          const onlineText = document.getElementById('headerOnlineText');
           const statusBoxText = document.getElementById('statusBoxText');
           const statusBoxSub = document.getElementById('statusBoxSub');
           if (capsule) capsule.classList.remove('online');
           if (label) label.innerText = 'TẮT';
           if (knobIcon) knobIcon.className = 'fa-solid fa-power-off';
+          if (avatarDot) avatarDot.classList.remove('online');
+          if (onlineTextWrap) onlineTextWrap.className = 'text-secondary';
+          if (onlineText) onlineText.innerText = 'Tạm nghỉ';
           if (statusBoxText) {
             statusBoxText.innerText = 'Tạm Nghỉ Ca';
             statusBoxText.style.color = 'var(--text-sepia)';
@@ -3333,9 +3460,25 @@
     /* ========================================================
        10. TOAST NOTIFICATION TIỆN LỢI
        ======================================================== */
+    let lastToastMessage = '';
+    let lastToastTime = 0;
+
     function showZenToast(message, type) {
+      const now = Date.now();
+      // Ngăn chặn spam trùng lặp cùng 1 thông báo trong vòng 2.5 giây
+      if (message === lastToastMessage && (now - lastToastTime) < 2500) {
+        return;
+      }
+      lastToastMessage = message;
+      lastToastTime = now;
+
       const container = document.getElementById('toastContainer');
       if (!container) return;
+
+      // Giới hạn tối đa 3 toast trên màn hình cùng lúc để không choán khung nhìn
+      while (container.children.length >= 3) {
+        container.firstElementChild.remove();
+      }
 
       const toast = document.createElement('div');
       toast.className = 'zen-toast ' + (type === 'danger' ? 'toast-danger' : (type === 'warning' ? 'toast-warning' : ''));
