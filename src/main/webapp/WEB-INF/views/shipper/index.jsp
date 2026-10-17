@@ -2182,6 +2182,7 @@
     let autoAcceptOrderId = null;
     let autoAcceptInterval = null;
     let autoAcceptSecondsLeft = 15;
+    let isSubmittingAction = false;
 
     function startAutoAcceptTimer(orderId, orderCode) {
       if (autoAcceptOrderId === orderId && autoAcceptInterval) {
@@ -2500,7 +2501,7 @@
               '</button>' +
 
               // Nút Đã Tới Điểm Giao nằm KẾ BÊN Google Maps
-              '<button class="btn-step-action btn-step-orange flex-grow-1" style="min-height: 46px; font-size: 0.9rem;" onclick="handleArrivedAtCustomer(' + curr.orderId + ')">' +
+              '<button class="btn-step-action btn-step-orange flex-grow-1" id="btnArrived_' + curr.orderId + '" style="min-height: 46px; font-size: 0.9rem;" onclick="handleArrivedAtCustomer(' + curr.orderId + ')">' +
                 '<i class="fa-solid fa-location-dot me-1"></i> Đã Tới Nơi' +
               '</button>' +
             '</div>' +
@@ -2636,10 +2637,19 @@
 
     // Bước 1 -> Bước 2: Đã nhận hàng từ quán sau khi có ảnh chụp
     function handlePickupWithPhoto(orderId, orderCode) {
+      if (isSubmittingAction) return;
+
       if (!cupPhotos[orderId]) {
         showZenToast('Bắt buộc phải chụp ảnh ly nước của quán trước khi xác nhận nhận hàng!', 'warning');
         return;
       }
+
+      const btn = document.getElementById('btnPickup_' + orderId);
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang xác nhận lấy hàng...';
+      }
+      isSubmittingAction = true;
 
       const payload = {
         photoData: cupPhotos[orderId] || null
@@ -2652,6 +2662,7 @@
       })
       .then(res => res.json())
       .then(data => {
+        isSubmittingAction = false;
         orderSteps[orderId] = 2;
         if (ordersQueue[0] && ordersQueue[0].orderId === orderId) {
           ordersQueue[0].status = 'DELIVERING';
@@ -2660,6 +2671,11 @@
         showZenToast('Đã nhận hàng từ quán cho đơn #' + orderCode + '. Bắt đầu di chuyển giao hàng!', 'success');
       })
       .catch(err => {
+        isSubmittingAction = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-store me-2" style="font-size: 1.15rem;"></i> ĐÃ NHẬN HÀNG TỪ QUÁN';
+        }
         console.error(err);
         showZenToast('Lỗi khi gửi xác nhận lấy hàng, vui lòng thử lại', 'danger');
       });
@@ -2667,11 +2683,21 @@
 
     // Bước 2 -> Bước 3: Tài xế bấm Đã Tới Điểm Giao
     function handleArrivedAtCustomer(orderId) {
+      if (isSubmittingAction) return;
+      isSubmittingAction = true;
+
+      const btn = document.getElementById('btnArrived_' + orderId);
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang tới nơi...';
+      }
+
       fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/arrived', {
         method: 'POST'
       })
       .then(res => res.json())
       .then(data => {
+        isSubmittingAction = false;
         orderSteps[orderId] = 3;
         if (ordersQueue[0] && ordersQueue[0].orderId === orderId) {
           ordersQueue[0].status = 'ARRIVED';
@@ -2682,6 +2708,11 @@
         showZenToast('Đã đến điểm giao! Hãy bấm gọi điện thoại cho khách ra nhận nước.', 'info');
       })
       .catch(err => {
+        isSubmittingAction = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-location-dot me-1"></i> Đã Tới Nơi';
+        }
         console.error(err);
         orderSteps[orderId] = 3;
         renderWorkbench();
@@ -2717,13 +2748,19 @@
 
     // Bước 4 -> Hoàn tất: Kết thúc chuyến, tăng số cuốc, tự động trượt đơn kế tiếp vào queue
     function handleFinishDeliveryTrip(orderId, orderCode) {
+      if (isSubmittingAction) return;
+
       if (!deliveryPhotos[orderId]) {
         showZenToast('Bắt buộc phải chụp ảnh ly trà trao cho khách trước khi kết thúc chuyến!', 'warning');
         return;
       }
 
       const btn = document.getElementById('btnCompleteTrip_' + orderId);
-      if (btn) btn.disabled = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang kết thúc chuyến...';
+      }
+      isSubmittingAction = true;
 
       const payload = {
         photoData: deliveryPhotos[orderId] || null
@@ -2736,7 +2773,7 @@
       })
       .then(res => res.json())
       .then(data => {
-        if (btn) btn.disabled = false;
+        isSubmittingAction = false;
         playNotificationSound();
         triggerPhoneVibration();
         showZenToast('GIAO HÀNG THÀNH CÔNG: #' + orderCode + '! Đã hoàn tất cuốc giao.', 'success');
@@ -2804,7 +2841,11 @@
         renderWorkbench();
       })
       .catch(err => {
-        if (btn) btn.disabled = false;
+        isSubmittingAction = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-flag-checkered me-2" style="font-size: 1.25rem;"></i> KẾT THÚC CHUYẾN GIAO';
+        }
         console.error(err);
         showZenToast('Lỗi khi gửi xác nhận kết thúc chuyến giao', 'danger');
       });
@@ -3409,9 +3450,25 @@
     /* ========================================================
        10. TOAST NOTIFICATION TIỆN LỢI
        ======================================================== */
+    let lastToastMessage = '';
+    let lastToastTime = 0;
+
     function showZenToast(message, type) {
+      const now = Date.now();
+      // Ngăn chặn spam trùng lặp cùng 1 thông báo trong vòng 2.5 giây
+      if (message === lastToastMessage && (now - lastToastTime) < 2500) {
+        return;
+      }
+      lastToastMessage = message;
+      lastToastTime = now;
+
       const container = document.getElementById('toastContainer');
       if (!container) return;
+
+      // Giới hạn tối đa 3 toast trên màn hình cùng lúc để không choán khung nhìn
+      while (container.children.length >= 3) {
+        container.firstElementChild.remove();
+      }
 
       const toast = document.createElement('div');
       toast.className = 'zen-toast ' + (type === 'danger' ? 'toast-danger' : (type === 'warning' ? 'toast-warning' : ''));
