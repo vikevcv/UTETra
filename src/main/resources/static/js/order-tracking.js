@@ -150,13 +150,37 @@ function connectWebSocket(orderCode) {
   }
 }
 
+function formatStatusLabel(status, statusLabel) {
+  if (statusLabel && statusLabel.trim()) return statusLabel;
+  const map = {
+    'PENDING': 'Đã Tiếp Nhận',
+    'PAID': 'Đã Thanh Toán',
+    'AWAITING_PREPARATION': 'Chờ Pha Chế',
+    'PREPARING': 'Đang Pha Chế',
+    'PROCESSING': 'Đang Pha Chế',
+    'PREPARED': 'Đã Pha Xong',
+    'READY_FOR_DELIVERY': 'Chờ Bàn Giao Shipper',
+    'READY_FOR_PICKUP': 'Sẵn Sàng Nhận Tại Quầy',
+    'OUT_FOR_DELIVERY': 'Đang Giao Hàng',
+    'DISPATCHED': 'Đang Giao Hàng',
+    'DELIVERING': 'Đang Giao Hàng',
+    'ARRIVED': 'Tài Xế Đã Đến Nơi',
+    'COMPLETED': 'Giao Thành Công',
+    'DELIVERED': 'Giao Thành Công',
+    'CANCELLED': 'Đã Hủy',
+    'DELIVERY_FAILED': 'Giao Thất Bại',
+    'INCIDENT': 'Sự Cố Giao Hàng'
+  };
+  return map[(status || '').toUpperCase()] || status;
+}
+
 function handleOrderStatusEvent(event) {
   console.log(">>> [STOMP Event Nhận Được]:", event);
 
   // 1. Cập nhật Badge Status và Title/Message
   const badgeEl = document.getElementById("badgeStatus");
-  if (badgeEl && event.status) {
-    badgeEl.innerText = event.status;
+  if (badgeEl && (event.status || event.statusLabel)) {
+    badgeEl.innerText = formatStatusLabel(event.status, event.statusLabel);
   }
   const titleEl = document.getElementById("txtStatusTitle");
   if (titleEl && event.statusTitle) {
@@ -241,6 +265,7 @@ async function pollOrderUpdate(orderCode) {
       handleOrderStatusEvent({
         orderCode: data.orderCode,
         status: data.status,
+        statusLabel: data.statusLabel,
         statusStep: data.statusStep,
         statusTitle: data.statusTitle,
         statusMessage: data.statusDescription,

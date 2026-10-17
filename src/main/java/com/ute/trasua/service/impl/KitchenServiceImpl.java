@@ -53,6 +53,11 @@ public class KitchenServiceImpl implements KitchenService {
                 o.setStatus("PREPARING");
                 orderRepository.save(o);
                 log.info(">>> [KDS AUTO-ADVANCE] Đơn hàng đầu tiên {} (STT #{}) tự động chuyển sang PREPARING", o.getOrderCode(), o.getDailyQueueNumber());
+                try {
+                    orderWebSocketPublisher.broadcastOrderPreparing(o);
+                } catch (Exception e) {
+                    log.warn("Lỗi phát WebSocket PREPARING cho đơn auto-advance: {}", e.getMessage());
+                }
                 break;
             } else if ("PREPARING".equals(st)) {
                 // Đã có đơn đang làm việc ở top
@@ -149,12 +154,31 @@ public class KitchenServiceImpl implements KitchenService {
 
         KitchenOrderDto dto = mapToKitchenOrderDto(saved);
 
-        // Broadcast realtime
+        // Broadcast realtime hoàn tất pha chế đơn hiện tại
         broadcastKitchenUpdate(targetBranchId, "ORDER_COMPLETED", dto);
         try {
             orderWebSocketPublisher.broadcastOrderPrepared(saved);
         } catch (Exception e) {
             log.warn("Lỗi phát WebSocket sự kiện pha chế xong: {}", e.getMessage());
+        }
+
+        // TỰ ĐỘNG CHUYỂN ĐƠN KẾ TIẾP TRONG QUEUE SANG PREPARING:
+        List<Order> remainingWaiting = orderRepository.findByBranchIdAndStatusInOrderByCreatedAtAsc(
+                targetBranchId, List.of("PENDING", "AWAITING_PREPARATION", "PAID"));
+        if (!remainingWaiting.isEmpty()) {
+            Order nextOrder = remainingWaiting.get(0);
+            nextOrder.setStatus("PREPARING");
+            Order savedNext = orderRepository.save(nextOrder);
+            log.info(">>> [KDS AUTO-NEXT] Đơn tiếp theo {} (STT #{}) tự động chuyển sang PREPARING",
+                    savedNext.getOrderCode(), savedNext.getDailyQueueNumber());
+
+            KitchenOrderDto nextDto = mapToKitchenOrderDto(savedNext);
+            broadcastKitchenUpdate(targetBranchId, "ORDER_PREPARING", nextDto);
+            try {
+                orderWebSocketPublisher.broadcastOrderPreparing(savedNext);
+            } catch (Exception e) {
+                log.warn("Lỗi phát WebSocket PREPARING cho đơn kế tiếp: {}", e.getMessage());
+            }
         }
 
         return dto;
@@ -210,12 +234,26 @@ public class KitchenServiceImpl implements KitchenService {
                 ? order.getNote()
                 : order.getDeliveryNotes();
 
+        String rawSt = (order.getStatus() != null) ? order.getStatus().toUpperCase() : "PENDING";
+        String statusLabel;
+        switch (rawSt) {
+            case "PREPARING": statusLabel = "Đang Pha Chế"; break;
+            case "READY_FOR_DELIVERY": statusLabel = "Chờ Bàn Giao Shipper"; break;
+            case "READY_FOR_PICKUP": statusLabel = "Sẵn Sàng Nhận Tại Quầy"; break;
+            case "PAID": statusLabel = "Đã Thanh Toán"; break;
+            case "AWAITING_PREPARATION": statusLabel = "Chờ Pha Chế"; break;
+            case "COMPLETED": statusLabel = "Hoàn Tất"; break;
+            case "CANCELLED": statusLabel = "Đã Hủy"; break;
+            default: statusLabel = "Đã Tiếp Nhận"; break;
+        }
+
         return KitchenOrderDto.builder()
                 .orderId(order.getId())
                 .orderCode(order.getOrderCode())
                 .dailyQueueNumber(order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : 1)
                 .orderType(order.getOrderType() != null ? order.getOrderType() : "POS_WALK_IN")
                 .status(order.getStatus())
+                .statusLabel(statusLabel)
                 .cashierOrCustomerName(cashierOrCustomer)
                 .createdAtFormatted(createdAt.format(TIME_FMT))
                 .elapsedMinutes(elapsedMinutes)

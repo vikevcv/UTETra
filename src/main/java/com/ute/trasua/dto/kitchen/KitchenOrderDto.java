@@ -18,6 +18,7 @@ public class KitchenOrderDto {
     private Integer dailyQueueNumber;
     private String orderType; // POS_WALK_IN, ONLINE_DELIVERY, ONLINE_PICKUP
     private String status; // PAID, PREPARING, PREPARED, READY_FOR_PICKUP, READY_FOR_DELIVERY
+    private String statusLabel; // Đang Pha Chế, Chờ Bàn Giao, ...
     private String cashierOrCustomerName;
     private String createdAtFormatted;
     private Long elapsedMinutes;

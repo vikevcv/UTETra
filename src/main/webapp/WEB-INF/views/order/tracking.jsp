@@ -348,7 +348,7 @@
                       STT Lấy Nước: #${tracking.dailyQueueNumber}
                     </span>
                     <span style="display:inline-block; background:#FEF3C7; color:#92400E; padding:3px 12px; border-radius:20px; font-size:0.82rem; font-weight:700; margin-left:6px;" id="badgeStatus">
-                      ${tracking.status}
+                      ${not empty tracking.statusLabel ? tracking.statusLabel : tracking.status}
                     </span>
                   </div>
                 </div>
@@ -608,7 +608,7 @@
                             <span class="badge bg-danger"><i class="fa-solid fa-ban me-1"></i> Đã Hủy</span>
                           </c:when>
                           <c:otherwise>
-                            <span class="badge bg-light text-dark border">${o.status}</span>
+                            <span class="badge bg-light text-dark border">${not empty o.statusLabel ? o.statusLabel : o.status}</span>
                           </c:otherwise>
                         </c:choose>
                       </div>

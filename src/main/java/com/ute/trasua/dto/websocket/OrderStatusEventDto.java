@@ -30,6 +30,7 @@ public class OrderStatusEventDto implements Serializable {
 
     private Integer dailyQueueNumber;
     private String status;         // PENDING, PREPARING, DELIVERING, COMPLETED, CANCELLED
+    private String statusLabel;    // Friendly Vietnamese status label (Đang Pha Chế, Đang Giao Hàng, ...)
     private Integer statusStep;    // 1: Placed, 2: Brewing, 3: Delivering, 4: Completed, -1: Cancelled
 
     private String statusTitle;    // Friendly Vietnamese title

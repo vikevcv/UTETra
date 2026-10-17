@@ -313,7 +313,7 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
 
         try {
             if (orderWebSocketPublisher != null) {
-                orderWebSocketPublisher.broadcastOrderDelivering(saved, saved.getDriver());
+                orderWebSocketPublisher.broadcastOrderArrived(saved, saved.getDriver());
             }
         } catch (Exception e) {
             log.warn("Lỗi phát WebSocket khi tài xế tới điểm giao: {}", e.getMessage());
@@ -521,12 +521,30 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         Driver driver = order.getDriver();
         User driverUser = (driver != null) ? driver.getUser() : null;
 
+        String rawSt = (order.getStatus() != null) ? order.getStatus().toUpperCase() : "PENDING";
+        String statusLabel;
+        switch (rawSt) {
+            case "PREPARING": statusLabel = "Đang Pha Chế"; break;
+            case "READY_FOR_DELIVERY": statusLabel = "Chờ Bàn Giao Shipper"; break;
+            case "READY_FOR_PICKUP": statusLabel = "Sẵn Sàng Nhận Tại Quầy"; break;
+            case "OUT_FOR_DELIVERY":
+            case "DELIVERING": statusLabel = "Đang Giao Hàng"; break;
+            case "ARRIVED": statusLabel = "Tài Xế Đã Đến Nơi"; break;
+            case "PAID": statusLabel = "Đã Thanh Toán"; break;
+            case "AWAITING_PREPARATION": statusLabel = "Chờ Pha Chế"; break;
+            case "COMPLETED": statusLabel = "Giao Thành Công"; break;
+            case "DELIVERY_FAILED":
+            case "CANCELLED": statusLabel = "Đã Hủy / Sự Cố"; break;
+            default: statusLabel = "Đã Tiếp Nhận"; break;
+        }
+
         return HandoverOrderDto.builder()
                 .orderId(order.getId())
                 .orderCode(order.getOrderCode())
                 .dailyQueueNumber(order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : 1)
                 .orderType(order.getOrderType() != null ? order.getOrderType() : "POS_WALK_IN")
                 .status(order.getStatus())
+                .statusLabel(statusLabel)
                 .customerName(order.getCustomerName() != null ? order.getCustomerName() : "Khách hàng")
                 .customerPhone(order.getCustomerPhone())
                 .deliveryAddress(order.getDeliveryAddress())

@@ -38,6 +38,7 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
                 .branchName(order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh UTETra")
                 .dailyQueueNumber(order.getDailyQueueNumber())
                 .status("PENDING")
+                .statusLabel("Đã Tiếp Nhận")
                 .statusStep(1)
                 .statusTitle("Đã Đặt Đơn Hàng Thành Công")
                 .statusMessage("Đơn hàng đã được tiếp nhận và chuyển đến quầy pha chế của chi nhánh.")
@@ -64,6 +65,7 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
                 .branchName(order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh UTETra")
                 .dailyQueueNumber(order.getDailyQueueNumber())
                 .status("PREPARING")
+                .statusLabel("Đang Pha Chế")
                 .statusStep(2)
                 .statusTitle("Quầy Barista Đang Pha Chế")
                 .statusMessage("Nghệ nhân pha chế đang thực hiện tùy biến ly trà theo đúng yêu cầu của bạn.")
@@ -71,11 +73,19 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
                 .build();
 
         sendToCustomer(order.getOrderCode(), event);
+
+        Long branchId = order.getBranch() != null ? order.getBranch().getId() : 1L;
+        sendToKitchen(branchId, event);
     }
 
     @Override
     public void broadcastOrderPrepared(Order order) {
         if (order == null) return;
+
+        String rawStatus = order.getStatus() != null ? order.getStatus() : "PREPARED";
+        String label = "READY_FOR_DELIVERY".equalsIgnoreCase(rawStatus)
+                ? "Chờ Bàn Giao Shipper"
+                : ("READY_FOR_PICKUP".equalsIgnoreCase(rawStatus) ? "Sẵn Sàng Nhận Tại Quầy" : "Đã Pha Xong");
 
         OrderStatusEventDto event = OrderStatusEventDto.builder()
                 .eventType("PREPARED")
@@ -84,10 +94,11 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
                 .branchId(order.getBranch() != null ? order.getBranch().getId() : 1L)
                 .branchName(order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh UTETra")
                 .dailyQueueNumber(order.getDailyQueueNumber())
-                .status("PREPARED")
+                .status(rawStatus)
+                .statusLabel(label)
                 .statusStep(2)
-                .statusTitle("Pha Chế Hoàn Tất — Chờ Bàn Giao")
-                .statusMessage("Ly trà đã được đóng gói kỹ lưỡng và chuyển sang bàn giao cho tài xế giao vận.")
+                .statusTitle("Pha Chế Hoàn Tất — " + label)
+                .statusMessage("Ly trà đã được đóng gói kỹ lưỡng và chuyển sang bàn giao cho bộ phận giao nhận.")
                 .timestamp(LocalDateTime.now().format(TIME_FORMATTER))
                 .build();
 
@@ -113,7 +124,8 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
                 .branchId(order.getBranch() != null ? order.getBranch().getId() : 1L)
                 .branchName(order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh UTETra")
                 .dailyQueueNumber(order.getDailyQueueNumber())
-                .status("DELIVERING")
+                .status("OUT_FOR_DELIVERY")
+                .statusLabel("Đang Giao Hàng")
                 .statusStep(3)
                 .statusTitle("Tài Xế Đang Trên Đường Giao Hàng")
                 .statusMessage("Tài xế " + driverName + " đã nhận phẩm trà và đang di chuyển tới địa chỉ nhận.")
@@ -126,6 +138,9 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
 
         sendToCustomer(order.getOrderCode(), event);
 
+        Long branchId = order.getBranch() != null ? order.getBranch().getId() : 1L;
+        sendToHandover(branchId, event);
+
         if (driver != null) {
             sendToShipper(driver.getId(), event);
         }
@@ -133,7 +148,76 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
 
     @Override
     public void broadcastOrderDelivering(Order order, Driver driver) {
-        broadcastOrderDispatched(order, driver);
+        if (order == null) return;
+
+        String driverName = driver != null && driver.getUser() != null ? driver.getUser().getFullName() : "Tài xế UTETra";
+        String driverPhone = driver != null && driver.getUser() != null ? driver.getUser().getPhone() : "";
+        String vehiclePlate = driver != null ? driver.getLicensePlate() : "";
+
+        OrderStatusEventDto event = OrderStatusEventDto.builder()
+                .eventType("DELIVERING")
+                .orderId(order.getId())
+                .orderCode(order.getOrderCode())
+                .branchId(order.getBranch() != null ? order.getBranch().getId() : 1L)
+                .branchName(order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh UTETra")
+                .dailyQueueNumber(order.getDailyQueueNumber())
+                .status("DELIVERING")
+                .statusLabel("Đang Giao Hàng")
+                .statusStep(3)
+                .statusTitle("Tài Xế Đang Di Chuyển Giao Trà")
+                .statusMessage("Tài xế " + driverName + " đã xuất phát từ quán và đang trên đường tới bạn.")
+                .driverId(driver != null ? driver.getId() : null)
+                .driverName(driverName)
+                .driverPhone(driverPhone)
+                .vehiclePlate(vehiclePlate)
+                .timestamp(LocalDateTime.now().format(TIME_FORMATTER))
+                .build();
+
+        sendToCustomer(order.getOrderCode(), event);
+
+        Long branchId = order.getBranch() != null ? order.getBranch().getId() : 1L;
+        sendToHandover(branchId, event);
+
+        if (driver != null) {
+            sendToShipper(driver.getId(), event);
+        }
+    }
+
+    @Override
+    public void broadcastOrderArrived(Order order, Driver driver) {
+        if (order == null) return;
+
+        String driverName = driver != null && driver.getUser() != null ? driver.getUser().getFullName() : "Tài xế UTETra";
+        String driverPhone = driver != null && driver.getUser() != null ? driver.getUser().getPhone() : "";
+        String vehiclePlate = driver != null ? driver.getLicensePlate() : "";
+
+        OrderStatusEventDto event = OrderStatusEventDto.builder()
+                .eventType("ARRIVED")
+                .orderId(order.getId())
+                .orderCode(order.getOrderCode())
+                .branchId(order.getBranch() != null ? order.getBranch().getId() : 1L)
+                .branchName(order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh UTETra")
+                .dailyQueueNumber(order.getDailyQueueNumber())
+                .status("ARRIVED")
+                .statusLabel("Tài Xế Đã Đến Nơi")
+                .statusStep(3)
+                .statusTitle("Tài Xế Đã Đến Điểm Giao Hàng")
+                .statusMessage("Tài xế " + driverName + " đã đến điểm giao. Quý khách vui lòng để ý điện thoại và ra nhận trà!")
+                .driverId(driver != null ? driver.getId() : null)
+                .driverName(driverName)
+                .driverPhone(driverPhone)
+                .vehiclePlate(vehiclePlate)
+                .timestamp(LocalDateTime.now().format(TIME_FORMATTER))
+                .build();
+
+        sendToCustomer(order.getOrderCode(), event);
+
+        Long branchId = order.getBranch() != null ? order.getBranch().getId() : 1L;
+        sendToHandover(branchId, event);
+
+        if (driver != null) {
+            sendToShipper(driver.getId(), event);
+        }
     }
 
     @Override
@@ -148,6 +232,7 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
                 .branchName(order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh UTETra")
                 .dailyQueueNumber(order.getDailyQueueNumber())
                 .status("COMPLETED")
+                .statusLabel("Giao Thành Công")
                 .statusStep(4)
                 .statusTitle("Giao Hàng Thành Công")
                 .statusMessage("Đơn hàng đã được giao tận tay. Chúc quý khách thưởng trà an nhiên và thư thái!")
@@ -155,6 +240,13 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
                 .build();
 
         sendToCustomer(order.getOrderCode(), event);
+
+        Long branchId = order.getBranch() != null ? order.getBranch().getId() : 1L;
+        sendToHandover(branchId, event);
+
+        if (order.getDriver() != null) {
+            sendToShipper(order.getDriver().getId(), event);
+        }
     }
 
     @Override
@@ -167,6 +259,7 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
                 .orderCode(order.getOrderCode())
                 .branchId(order.getBranch() != null ? order.getBranch().getId() : 1L)
                 .status("CANCELLED")
+                .statusLabel("Đã Hủy")
                 .statusStep(-1)
                 .statusTitle("Đơn Hàng Đã Bị Hủy")
                 .statusMessage(reason != null ? reason : "Đơn hàng đã được hủy theo yêu cầu.")
@@ -174,6 +267,13 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
                 .build();
 
         sendToCustomer(order.getOrderCode(), event);
+
+        Long branchId = order.getBranch() != null ? order.getBranch().getId() : 1L;
+        sendToHandover(branchId, event);
+
+        if (order.getDriver() != null) {
+            sendToShipper(order.getDriver().getId(), event);
+        }
     }
 
     @Override

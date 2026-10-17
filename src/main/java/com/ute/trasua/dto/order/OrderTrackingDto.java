@@ -35,6 +35,7 @@ public class OrderTrackingDto implements Serializable {
      * -1 = CANCELLED (Đã hủy)
      */
     private String status;
+    private String statusLabel;    // Nhãn trạng thái hiển thị tiếng Việt thân thiện (VD: Đang Pha Chế, Chờ Bàn Giao)
     private Integer statusStep;
     private String statusTitle;
     private String statusDescription;
