@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -242,6 +244,18 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                 ? order.getCreatedAt().format(TIME_FORMATTER)
                 : "";
 
+        boolean canCancel = "PENDING".equalsIgnoreCase(rawStatus)
+                || "AWAITING_PREPARATION".equalsIgnoreCase(rawStatus)
+                || "PAID".equalsIgnoreCase(rawStatus);
+
+        BigDecimal baseRefundAmount = order.getFinalAmount();
+        if (baseRefundAmount == null || baseRefundAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            baseRefundAmount = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+        }
+        BigDecimal estimatedCompensationAmount = baseRefundAmount != null && baseRefundAmount.compareTo(BigDecimal.ZERO) > 0
+                ? baseRefundAmount.multiply(new BigDecimal("0.80")).setScale(0, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
         return OrderTrackingDto.builder()
                 .orderId(order.getId())
                 .orderCode(order.getOrderCode())
@@ -252,6 +266,7 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                 .statusStep(statusStep)
                 .statusTitle(statusTitle)
                 .statusDescription(statusDesc)
+                .canCancel(canCancel)
                 .paymentMethod(order.getPaymentMethod())
                 .paymentStatus(order.getPaymentStatus())
                 .createdAt(formattedTime)
@@ -279,6 +294,7 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                 .discountAmount(order.getDiscountAmount())
                 .voucherCode(order.getVoucherCode())
                 .finalAmount(order.getFinalAmount())
+                .estimatedCompensationAmount(estimatedCompensationAmount)
                 .items(items)
                 .build();
     }

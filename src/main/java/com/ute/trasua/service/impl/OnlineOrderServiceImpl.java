@@ -4,6 +4,8 @@ import com.ute.trasua.dto.CartDto;
 import com.ute.trasua.dto.CartItemDto;
 import com.ute.trasua.dto.CartItemToppingDto;
 import com.ute.trasua.dto.VoucherApplyResponse;
+import com.ute.trasua.dto.order.CancelOrderRequest;
+import com.ute.trasua.dto.order.CancelOrderResponse;
 import com.ute.trasua.dto.order.CheckoutRequest;
 import com.ute.trasua.dto.order.CheckoutResponse;
 import com.ute.trasua.entity.*;
@@ -247,5 +249,95 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
             });
         }
         return order;
+    }
+
+    @Override
+    @Transactional
+    public CancelOrderResponse cancelOnlineOrder(String orderCode, CancelOrderRequest request, User currentUser) {
+        if (orderCode == null || orderCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã đơn hàng không hợp lệ.");
+        }
+
+        String cleanCode = orderCode.trim();
+        Order order = orderRepository.findByOrderCode(cleanCode)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng với mã: " + cleanCode));
+
+        // 1. Kiểm tra trạng thái: Nghiêm ngặt chỉ cho phép hủy khi chưa bắt đầu pha chế (PENDING, AWAITING_PREPARATION, PAID)
+        String currentStatus = order.getStatus() != null ? order.getStatus().trim().toUpperCase() : "PENDING";
+        boolean isCancelable = "PENDING".equals(currentStatus)
+                || "AWAITING_PREPARATION".equals(currentStatus)
+                || "PAID".equals(currentStatus);
+
+        if (!isCancelable) {
+            if ("CANCELLED".equals(currentStatus)) {
+                throw new IllegalStateException("Đơn hàng này đã được hủy trước đó.");
+            }
+            throw new IllegalStateException("Đơn hàng đã được quầy đưa vào pha chế hoặc đang vận chuyển, không thể hủy.");
+        }
+
+        // 2. Kiểm tra quyền sở hữu (nếu người dùng đăng nhập)
+        if (currentUser != null && order.getUser() != null) {
+            boolean isOwner = order.getUser().getId().equals(currentUser.getId());
+            boolean isStaff = currentUser.getRoles() != null && currentUser.getRoles().stream()
+                    .anyMatch(r -> "ROLE_ADMIN".equalsIgnoreCase(r) || "ROLE_MANAGER".equalsIgnoreCase(r));
+            if (!isOwner && !isStaff) {
+                throw new IllegalStateException("Bạn không có quyền hủy đơn hàng này.");
+            }
+        }
+
+        // 3. Ghi nhận lý do hủy đơn
+        String reason = (request != null && request.getReason() != null && !request.getReason().trim().isEmpty())
+                ? request.getReason().trim()
+                : "Khách hàng yêu cầu hủy đơn trực tuyến";
+
+        String cancelLog = "[Khách hủy đơn: " + reason + "]";
+        if (order.getDeliveryNotes() != null && !order.getDeliveryNotes().isEmpty()) {
+            order.setDeliveryNotes(order.getDeliveryNotes() + " | " + cancelLog);
+        } else {
+            order.setDeliveryNotes(cancelLog);
+        }
+        order.setStatus("CANCELLED");
+
+        // 4. Phục hồi lượt sử dụng voucher cũ (nếu đơn có dùng voucher)
+        boolean restoredOldVoucher = false;
+        if (order.getVoucherCode() != null && !order.getVoucherCode().trim().isEmpty()) {
+            try {
+                promotionService.restoreVoucherUsage(order.getVoucherCode().trim());
+                restoredOldVoucher = true;
+            } catch (Exception e) {
+                log.warn(">>> [UC28] Không thể phục hồi voucher cũ {}: {}", order.getVoucherCode(), e.getMessage());
+            }
+        }
+
+        // 5. Tự động sinh voucher bồi hoàn 80% (Triple-Shield Anti-Collision, ngẫu nhiên hoàn toàn 10 ký tự, hạn 30 ngày)
+        Promotion compVoucher = promotionService.createCompensationVoucher(order, new BigDecimal("0.80"), 30);
+
+        // 6. Lưu trạng thái đơn hàng đã hủy vào DB ngay lập tức
+        Order savedOrder = orderRepository.saveAndFlush(order);
+        log.info(">>> [UC28] Hủy đơn hàng {} thành công. Đã cấp voucher bồi hoàn {} ({}đ)",
+                savedOrder.getOrderCode(), compVoucher.getVoucherCode(), compVoucher.getDiscountValue());
+
+        // 7. Đồng bộ WebSocket STOMP tới Khách Hàng, Bếp KDS và Bàn giao
+        try {
+            orderWebSocketPublisher.broadcastOrderCancelled(savedOrder, reason);
+        } catch (Exception e) {
+            log.warn(">>> [UC28] Lỗi phát WebSocket hủy đơn: {}", e.getMessage());
+        }
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        String expiryFormatted = compVoucher.getEndDate() != null
+                ? compVoucher.getEndDate().format(dtf)
+                : "30 ngày sau";
+
+        return CancelOrderResponse.builder()
+                .success(true)
+                .orderCode(savedOrder.getOrderCode())
+                .status("CANCELLED")
+                .compensationVoucherCode(compVoucher.getVoucherCode())
+                .compensationAmount(compVoucher.getDiscountValue())
+                .expiryDateFormatted(expiryFormatted)
+                .restoredOldVoucher(restoredOldVoucher)
+                .message("Hủy đơn hàng thành công! Quý khách được bồi hoàn voucher 80% giá trị đơn hàng.")
+                .build();
     }
 }

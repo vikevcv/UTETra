@@ -269,6 +269,7 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
         sendToCustomer(order.getOrderCode(), event);
 
         Long branchId = order.getBranch() != null ? order.getBranch().getId() : 1L;
+        sendToKitchen(branchId, event);
         sendToHandover(branchId, event);
 
         if (order.getDriver() != null) {
