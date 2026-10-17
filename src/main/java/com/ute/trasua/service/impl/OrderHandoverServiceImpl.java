@@ -42,7 +42,7 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         Long targetBranchId = (branchId != null) ? branchId : 1L;
 
         List<String> readyStatuses = List.of("READY_FOR_DELIVERY", "READY_FOR_PICKUP", "PAID");
-        List<Order> orders = orderRepository.findByBranchIdAndStatusInOrderByCreatedAtDesc(targetBranchId, readyStatuses);
+        List<Order> orders = orderRepository.findByBranchIdAndStatusInOrderByCreatedAtAsc(targetBranchId, readyStatuses);
 
         return orders.stream()
                 .filter(o -> {

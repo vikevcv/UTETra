@@ -55,16 +55,35 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
             throw new IllegalStateException("Đơn hàng " + order.getOrderCode() + " đã được phân công cho tài xế #" + order.getDriver().getId());
         }
 
-        // Khóa bi quan dòng tài xế chống xung đột đa luồng gán trùng
-        Driver driver = driverRepository.findWithLockById(driverId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài xế ID: " + driverId));
-
         // Ràng buộc chi nhánh tuyệt đối
         Long orderBranchId = (order.getBranch() != null) ? order.getBranch().getId() : 1L;
-        Long driverBranchId = (driver.getBranch() != null) ? driver.getBranch().getId() : 1L;
-        if (!orderBranchId.equals(driverBranchId)) {
-            throw new IllegalStateException("Lỗi chi nhánh: Tài xế thuộc chi nhánh #" + driverBranchId
-                    + " không thể tiếp nhận đơn của chi nhánh #" + orderBranchId);
+
+        Driver driver;
+        if (driverId == null || driverId <= 0) {
+            // Tự động phân công theo thuật toán 3 tầng tối ưu (Ít tải nhất -> KPI cao nhất -> Hoàn thành nhiều nhất)
+            List<Driver> candidates = driverRepository.lockEligibleDriversForBranch(orderBranchId);
+            if (candidates.isEmpty()) {
+                throw new IllegalStateException("Chi nhánh hiện không có tài xế nào đang BẬT CA TRỰC (ONLINE) để bàn giao đơn!");
+            }
+            List<Long> driverIds = candidates.stream().map(Driver::getId).collect(Collectors.toList());
+            Map<Long, Long> loadByDriver = new HashMap<>();
+            List<Object[]> loadRows = orderRepository.countActiveOrdersByDriverIds(driverIds, ACTIVE_DELIVERY_STATUSES);
+            for (Object[] row : loadRows) {
+                loadByDriver.put((Long) row[0], (Long) row[1]);
+            }
+            driver = selectBestDriver(candidates, loadByDriver);
+            if (driver == null) {
+                throw new IllegalStateException("Tất cả tài xế trực tuyến của chi nhánh đều đã đầy tải (tối đa 3 đơn/ca)!");
+            }
+        } else {
+            // Khóa bi quan dòng tài xế chỉ định
+            driver = driverRepository.findWithLockById(driverId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài xế ID: " + driverId));
+            Long driverBranchId = (driver.getBranch() != null) ? driver.getBranch().getId() : 1L;
+            if (!orderBranchId.equals(driverBranchId)) {
+                throw new IllegalStateException("Lỗi chi nhánh: Tài xế thuộc chi nhánh #" + driverBranchId
+                        + " không thể tiếp nhận đơn của chi nhánh #" + orderBranchId);
+            }
         }
 
         // Kiểm tra tài khoản tài xế có bị khóa hay không

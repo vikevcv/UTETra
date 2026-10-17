@@ -252,35 +252,29 @@
                             <div id="wbIncidentNoteText" class="text-secondary fst-italic"></div>
                         </div>
 
-                        <!-- Chọn Tài Xế -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-7">
-                                <label class="form-label fw-bold small text-dark">
-                                    <i class="fa-solid fa-id-card me-1 text-primary"></i>Chọn Tài Xế Giao Hàng (Đang Online):
-                                </label>
-                                <select class="form-select" id="driverSelect" onchange="handleDriverSelected()">
-                                    <option value="">-- Đang nạp danh sách tài xế... --</option>
-                                </select>
-                                <div id="noDriverWarning" class="alert alert-warning py-2 px-3 mt-2 small d-none">
-                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
-                                    Chi nhánh hiện chưa có tài xế trực tuyến trong ca!
-                                </div>
+                        <!-- Bàn Giao Tự Động Theo Thuật Toán -->
+                        <div class="p-3 mb-3 rounded" style="background: rgba(92, 118, 103, 0.08); border: 1px dashed #5C7667;">
+                            <div class="d-flex align-items-center gap-2 text-success fw-bold small">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>Điều Phối Tự Động Cưỡng Chế (Thuật Toán 3 Tầng: Ít đơn nhất -> KPI cao nhất -> Hoàn thành nhiều nhất)</span>
                             </div>
-                            <div class="col-md-5">
-                                <label class="form-label fw-bold small text-dark">
-                                    <i class="fa-regular fa-comment-dots me-1 text-secondary"></i>Ghi Chú Bàn Giao:
-                                </label>
-                                <input type="text" class="form-control" id="handoverNotesInput" placeholder="Ví dụ: Cẩn thận ly nhiều đá, giao trước 15h...">
+                            <div class="text-secondary small mt-1">
+                                Hệ thống sẽ tự động quét toàn bộ tài xế đang BẬT CA TRỰC của chi nhánh để phân công đơn hàng công bằng, tối ưu và hạn chế trần tối đa 3 đơn/ca.
                             </div>
+                        </div>
+
+                        <!-- Ghi Chú Bàn Giao -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-dark">
+                                <i class="fa-regular fa-comment-dots me-1 text-secondary"></i>Ghi Chú Bàn Giao (Tùy chọn):
+                            </label>
+                            <input type="text" class="form-control" id="handoverNotesInput" placeholder="Ví dụ: Cẩn thận ly nhiều đá, giao trước 15h...">
                         </div>
 
                         <!-- Các Nút Thao Tác Bàn Giao Cho Shipper -->
                         <div class="d-flex gap-2 flex-wrap">
                             <button class="btn btn-primary btn-lg flex-grow-1 py-3 fw-bold" id="btnHandoverDriver" onclick="submitHandoverToDriver()" disabled>
                                 <i class="fa-solid fa-motorcycle me-2"></i>Bàn Giao Cho Tài Xế
-                            </button>
-                            <button class="btn btn-warning btn-lg py-3 px-3 fw-bold" id="btnAutoReassign" onclick="handleAutoReassign()" style="background: #F59E0B; border-color: #D97706; color: #78350F;" title="Tự động tìm tài xế ít đơn nhất & KPI cao nhất để gán lại">
-                                <i class="fa-solid fa-bolt me-1"></i>Tự Động Gán Lại
                             </button>
                             <button class="btn btn-outline-dark btn-lg py-3 px-4 fw-bold" id="btnPrintSlipBtn" onclick="openHandoverSlipModal()">
                                 <i class="fa-solid fa-print me-2"></i>In Phiếu Bàn Giao QLGH_BM1
@@ -814,20 +808,14 @@
             const isConfirmed = document.getElementById('sealConfirmedCheckbox').checked;
             const btnCustomer = document.getElementById('btnHandoverCustomer');
             const btnDriver = document.getElementById('btnHandoverDriver');
-            const driverSelect = document.getElementById('driverSelect');
 
             if (btnCustomer) {
                 btnCustomer.disabled = !isConfirmed;
             }
 
             if (btnDriver) {
-                const hasDriver = driverSelect && driverSelect.value;
-                btnDriver.disabled = !(isConfirmed && hasDriver);
+                btnDriver.disabled = !isConfirmed;
             }
-        }
-
-        function handleDriverSelected() {
-            toggleHandoverButtons();
         }
 
         // Xác Nhận Bàn Giao Cho Khách Hàng Tại Quầy
@@ -896,7 +884,7 @@
             }
         }
 
-        // Xác Nhận Bàn Giao Cho Tài Xế Giao Hàng (Shipper)
+        // Xác Nhận Bàn Giao Cho Tài Xế Giao Hàng (Tự Động Điều Phối Theo Thuật Toán)
         async function submitHandoverToDriver() {
             if (!activeSelectedOrder) return;
 
@@ -911,31 +899,16 @@
                 return;
             }
 
-            const driverSelect = document.getElementById('driverSelect');
-            const driverId = driverSelect ? driverSelect.value : null;
-
-            if (!driverId) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Chưa chọn tài xế!',
-                    text: 'Vui lòng chọn tài xế sẽ nhận đơn giao hàng này.',
-                    confirmButtonColor: '#8C6D53'
-                });
-                return;
-            }
-
-            const selectedDriverObj = branchActiveDrivers.find(d => String(d.id) === String(driverId));
-            const driverName = selectedDriverObj ? selectedDriverObj.fullName : ('Tài xế #' + driverId);
             const notes = document.getElementById('handoverNotesInput').value.trim();
 
             const confirmResult = await Swal.fire({
                 title: 'Bàn Giao Cho Tài Xế?',
-                html: `Bàn giao đơn hàng <strong>\${activeSelectedOrder.orderCode}</strong> cho tài xế <strong>\${escapeHtml(driverName)}</strong>?`,
+                html: `Hệ thống sẽ tự động quét tài xế trực tuyến tối ưu (ít đơn nhất & KPI cao nhất) để phân công đơn <strong>\${activeSelectedOrder.orderCode}</strong>. Xác nhận bàn giao ngay?`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#0d6efd',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="fa-solid fa-motorcycle me-1"></i>Bàn Giao Ngay',
+                confirmButtonText: '<i class="fa-solid fa-motorcycle me-1"></i>Bàn Giao Cho Tài Xế',
                 cancelButtonText: 'Kiểm tra lại'
             });
 
@@ -946,7 +919,6 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        driverId: Number(driverId),
                         notes: notes
                     })
                 });
@@ -956,10 +928,13 @@
                     throw new Error(errData.message || 'Lỗi bàn giao cho tài xế');
                 }
 
+                const resultDto = await res.json();
+                const assignedName = resultDto.driverName || 'Tài xế nhận đơn';
+
                 Swal.fire({
                     icon: 'success',
                     title: 'Bàn Giao Thành Công!',
-                    html: `Đơn hàng đã bàn giao cho tài xế <strong>\${escapeHtml(driverName)}</strong>.<br>Trạng thái chuyển sang <strong>Đang Giao Hàng</strong>.`,
+                    html: `Đơn hàng <strong>\${activeSelectedOrder.orderCode}</strong> đã được điều phối tự động cho tài xế: <strong>\${escapeHtml(assignedName)}</strong>.<br>Hệ thống STOMP đã báo chuông cho tài xế.`,
                     timer: 2500,
                     showConfirmButton: false
                 });
@@ -976,7 +951,7 @@
                 console.error('submitHandoverToDriver error:', err);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Thao Tác Thất Bại',
+                    title: 'Bàn Giao Thất Bại',
                     text: err.message || 'Không thể thực hiện bàn giao lúc này.',
                     confirmButtonColor: '#8C6D53'
                 });
@@ -1114,62 +1089,6 @@
                 });
             } catch (e) {
                 console.error('Handover WebSocket init error:', e);
-            }
-        }
-
-        // Tự động phân công lại đơn hàng bằng thuật toán 3 tầng
-        async function handleAutoReassign() {
-            if (!activeSelectedOrder) return;
-            
-            const confirmResult = await Swal.fire({
-                title: 'Tự Động Phân Công Lại?',
-                html: `Hệ thống sẽ tự động tìm tài xế tối ưu (ít đơn nhất & KPI cao nhất) trong ca để giao đơn <strong>\${activeSelectedOrder.orderCode}</strong>.`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#F59E0B',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="fa-solid fa-bolt me-1"></i>Tự Động Gán',
-                cancelButtonText: 'Hủy'
-            });
-
-            if (!confirmResult.isConfirmed) return;
-
-            try {
-                const res = await fetch('<c:url value="/api/dispatch/orders"/>/' + activeSelectedOrder.orderId + '/reassign', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        reason: 'Quản lý quầy yêu cầu phân công lại tự động',
-                        notes: 'Tự động điều phối qua KDS'
-                    })
-                });
-
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    throw new Error(errData.message || 'Không thể điều phối lại đơn');
-                }
-
-                const result = await res.json();
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Phân Công Thành Công!',
-                    text: `Đã phân công đơn \${activeSelectedOrder.orderCode} cho tài xế: \${result.assignedDriverName || ('ID #' + result.assignedDriverId)}`,
-                    timer: 2500,
-                    showConfirmButton: false
-                });
-
-                activeSelectedOrder = null;
-                document.getElementById('emptyWorkbench').classList.remove('d-none');
-                document.getElementById('activeWorkbench').classList.add('d-none');
-                await loadPendingOrders();
-            } catch (err) {
-                console.error('handleAutoReassign error:', err);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Phân Công Thất Bại',
-                    text: err.message || 'Không tìm được tài xế phù hợp trong ca',
-                    confirmButtonColor: '#8C6D53'
-                });
             }
         }
     </script>
