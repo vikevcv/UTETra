@@ -5,6 +5,7 @@
 
 <head>
   <title>${pageTitle}</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     .driver-stat-card {
       background: #ffffff;
@@ -419,30 +420,71 @@
       });
     });
 
+    function escapeHtml(text) {
+      if (!text) return '';
+      var d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
     // Xác nhận gửi lại email mật khẩu
     document.querySelectorAll('.form-resend').forEach(function(form) {
       form.addEventListener('submit', function(e) {
+        e.preventDefault();
         var btn = form.querySelector('button');
         var name = btn ? btn.getAttribute('data-name') : 'tài xế';
-        if (!confirm("Cấp lại mật khẩu và gửi email cho tài xế '" + name + "'?")) {
-          e.preventDefault();
-        }
+        Swal.fire({
+          title: 'Cấp Lại Mật Khẩu?',
+          html: 'Hệ thống sẽ tạo mật khẩu ngẫu nhiên mới và gửi email kích hoạt cho tài xế <strong>' + escapeHtml(name) + '</strong>.',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#8C6D53',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: '<i class="fa-solid fa-paper-plane me-1"></i>Gửi Ngay',
+          cancelButtonText: 'Hủy bỏ',
+          customClass: { popup: 'rounded-4 shadow border-0' }
+        }).then(function(result) {
+          if (result.isConfirmed) {
+            if (form.requestSubmit) {
+              form.requestSubmit();
+            } else {
+              form.submit();
+            }
+          }
+        });
       });
     });
 
     // Xác nhận khóa / mở khóa tài xế
     document.querySelectorAll('.form-toggle').forEach(function(form) {
       form.addEventListener('submit', function(e) {
+        e.preventDefault();
         var btn = form.querySelector('button');
         var name = btn ? btn.getAttribute('data-name') : 'tài xế';
         var action = btn ? btn.getAttribute('data-action') : 'thay đổi trạng thái';
-        if (!confirm("Bạn có chắc muốn " + action + " tài xế '" + name + "'?")) {
-          e.preventDefault();
-        }
+        var isLock = action.toLowerCase().includes('khóa');
+        Swal.fire({
+          title: 'Xác Nhận ' + escapeHtml(action.toUpperCase()) + '?',
+          html: 'Bạn có chắc chắn muốn <strong>' + escapeHtml(action) + '</strong> tài xế <strong>' + escapeHtml(name) + '</strong>?',
+          icon: isLock ? 'warning' : 'question',
+          showCancelButton: true,
+          confirmButtonColor: isLock ? '#dc3545' : '#198754',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Xác nhận',
+          cancelButtonText: 'Hủy bỏ',
+          customClass: { popup: 'rounded-4 shadow border-0' }
+        }).then(function(result) {
+          if (result.isConfirmed) {
+            if (form.requestSubmit) {
+              form.requestSubmit();
+            } else {
+              form.submit();
+            }
+          }
+        });
       });
     });
   });
 </script>
-
 </body>
 </html>

@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
             renderProducts();
         } catch (err) {
             console.error("Lỗi tải menu POS:", err);
-            alert("Lỗi khi tải thực đơn chi nhánh: " + err.message);
+            showPosZenToast("Lỗi khi tải thực đơn chi nhánh: " + err.message, "error", 2800);
         }
     }
 
@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (isAvail) {
                 card.addEventListener("click", () => openCustomizer(p));
             } else {
-                card.addEventListener("click", () => alert("Món [" + p.name + "] hiện đang tạm hết tại cơ sở này!"));
+                card.addEventListener("click", () => showPosZenToast("Món [" + p.name + "] hiện đang tạm hết tại cơ sở này!", "warning", 2400));
             }
             grid.appendChild(card);
         });
@@ -396,20 +396,39 @@ document.addEventListener("DOMContentLoaded", () => {
     // Quản lý đơn hàng Pending cho VietQR (tránh spam ID)
     let activePendingOrder = null;
 
-    // Clear Ticket
+    // Clear Ticket (Hủy toàn bộ đơn hàng quầy)
     document.getElementById("btnClearCart")?.addEventListener("click", async () => {
-        if (cart.length > 0 && confirm("Bạn có chắc muốn xóa toàn bộ món trong đơn này?")) {
-            if (activePendingOrder && activePendingOrder.orderId) {
-                try {
-                    await fetch(`/api/pos/orders/${activePendingOrder.orderId}/cancel`, { method: "POST" });
-                } catch (e) {
-                    console.warn("Không thể hủy đơn pending:", e);
-                }
+        if (cart.length === 0) return;
+
+        const result = await Swal.fire({
+            title: 'Hủy Toàn Bộ Đơn Hàng?',
+            text: 'Bạn có chắc chắn muốn xóa tất cả món đang chọn khỏi đơn này không?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#8C6D53',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fa-solid fa-trash-can me-1"></i>Xác Nhận Xóa',
+            cancelButtonText: 'Giữ lại đơn',
+            customClass: {
+                popup: 'rounded-4 shadow border-0',
+                confirmButton: 'rounded-pill px-4',
+                cancelButton: 'rounded-pill px-3'
             }
-            cart = [];
-            activePendingOrder = null;
-            renderCart();
+        });
+
+        if (!result.isConfirmed) return;
+
+        if (activePendingOrder && activePendingOrder.orderId) {
+            try {
+                await fetch(`/api/pos/orders/${activePendingOrder.orderId}/cancel`, { method: "POST" });
+            } catch (e) {
+                console.warn("Không thể hủy đơn pending:", e);
+            }
         }
+        cart = [];
+        activePendingOrder = null;
+        renderCart();
+        showPosZenToast("Đã làm trống giỏ hàng quầy", "info", 1800);
     });
 
     // Helper tạo payload OrderRequest từ giỏ hàng
@@ -433,7 +452,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Helper tạo đơn hàng trên Backend (chỉ dùng cho VietQR khi cần mã đơn trước)
     async function createOrderOnBackend() {
         if (cart.length === 0) {
-            alert("Vui lòng chọn món trước khi thanh toán!");
+            showPosZenToast("Vui lòng chọn món trước khi thanh toán!", "warning", 2200);
             return null;
         }
 
@@ -453,7 +472,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Cash Checkout Flow (Không tạo đơn trước, chỉ tạo khi thu ngân xác nhận tiền)
     document.getElementById("btnCheckoutCash")?.addEventListener("click", () => {
         if (cart.length === 0) {
-            alert("Vui lòng chọn món trước khi thanh toán!");
+            showPosZenToast("Vui lòng chọn món trước khi thanh toán!", "warning", 2200);
             return;
         }
 
@@ -557,7 +576,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
         if (tendered < total) {
-            alert("Tiền khách đưa chưa đủ!");
+            showPosZenToast("Tiền khách đưa chưa đủ để thanh toán!", "warning", 2400);
             return;
         }
 
@@ -586,14 +605,14 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("cashModalBackdrop").style.display = "none";
             await printReceiptAndFinish(orderRes.orderId);
         } catch (err) {
-            alert("Lỗi hoàn tất tiền mặt: " + err.message);
+            showPosZenToast("Lỗi hoàn tất tiền mặt: " + err.message, "error", 2800);
         }
     });
 
     // VietQR Checkout Flow (Tái sử dụng đơn nếu giỏ hàng không đổi, tránh spam ID)
     document.getElementById("btnCheckoutQr")?.addEventListener("click", async () => {
         if (cart.length === 0) {
-            alert("Vui lòng chọn món trước khi thanh toán!");
+            showPosZenToast("Vui lòng chọn món trước khi thanh toán!", "warning", 2200);
             return;
         }
 
@@ -646,7 +665,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             document.getElementById("vietQrModalBackdrop").style.display = "flex";
         } catch (err) {
-            alert("Lỗi tạo mã QR động: " + err.message);
+            showPosZenToast("Lỗi tạo mã QR động: " + err.message, "error", 2800);
         }
     });
 
@@ -671,7 +690,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btnConfirmQrPay")?.addEventListener("click", async () => {
         const chk = document.getElementById("chkQrMoneyReceived");
         if (chk && !chk.checked) {
-            alert("Vui lòng tick xác nhận đã nhận được tiền trước khi in hóa đơn!");
+            showPosZenToast("Vui lòng tick xác nhận đã nhận được tiền trước khi in hóa đơn!", "warning", 2400);
             return;
         }
         if (!activePendingOrder || !activePendingOrder.orderId) return;
@@ -693,7 +712,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("vietQrModalBackdrop").style.display = "none";
             await printReceiptAndFinish(orderIdToPay);
         } catch (err) {
-            alert("Lỗi hoàn tất VietQR: " + err.message);
+            showPosZenToast("Lỗi hoàn tất VietQR: " + err.message, "error", 2800);
         }
     });
 
@@ -803,14 +822,63 @@ document.addEventListener("DOMContentLoaded", () => {
             renderCart();
         } catch (err) {
             console.error("Lỗi in bill:", err);
-            alert("Đã thanh toán thành công nhưng có lỗi nạp dữ liệu in hóa đơn: " + err.message);
+            showPosZenToast("Đã thanh toán thành công nhưng có lỗi nạp dữ liệu in hóa đơn: " + err.message, "warning", 3000);
         }
     }
 
     // ========================================================
-    // QUẢN LÝ TRỰC CA & KHÓA MÁY POS (SHIFT ATTENDANCE)
+    // ZEN WABI-SABI TOAST NOTIFICATION (Hiệu ứng tinh tế, tự tan, hạn chế click)
     // ========================================================
-    let shiftState = { active: false, count: 0, summary: "Chưa có người trực", employees: [] };
+    function showPosZenToast(message, type = 'success', duration = 2400) {
+        let container = document.getElementById("posToastContainer");
+        if (!container) {
+            container = document.createElement("div");
+            container.id = "posToastContainer";
+            container.className = "pos-toast-container";
+            document.body.appendChild(container);
+        }
+
+        // Giới hạn tối đa 3 toast nổi cùng lúc để chống tràn viewport
+        while (container.children.length >= 3) {
+            container.removeChild(container.firstChild);
+        }
+
+        const icons = {
+            success: 'fa-solid fa-circle-check',
+            warning: 'fa-solid fa-triangle-exclamation',
+            error: 'fa-solid fa-circle-xmark',
+            info: 'fa-solid fa-circle-info'
+        };
+
+        const toast = document.createElement("div");
+        toast.className = `pos-zen-toast toast-${type}`;
+
+        const iconDiv = document.createElement("div");
+        iconDiv.className = "pos-zen-toast-icon";
+        const iconEl = document.createElement("i");
+        iconEl.className = icons[type] || icons.info;
+        iconDiv.appendChild(iconEl);
+
+        const textDiv = document.createElement("div");
+        textDiv.className = "pos-zen-toast-text";
+        textDiv.textContent = message; // An toàn 100% trước XSS
+
+        toast.appendChild(iconDiv);
+        toast.appendChild(textDiv);
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add("fade-out");
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, duration);
+    }
+
+    // ========================================================
+    // QUẢN LÝ TRỰC CA & ĐIỂM DANH QUẦY POS
+    // ========================================================
+    let shiftState = { active: false, count: 0, summary: "Quầy Sẵn Sàng", employees: [] };
 
     // Kiểm tra trạng thái trực ca của quầy POS
     async function checkShiftStatus() {
@@ -820,10 +888,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json();
             updateShiftUI(data);
 
-            // LOGIC QUAN TRỌNG: Nếu chưa có người trực ca -> MÁY POS OFF & TỰ ĐỘNG BẬT ĐIỂM DANH ĐẦU TIÊN
-            if (!data.shiftActive) {
-                openShiftModal(true);
-            }
+            // Hiệu ứng chào đón nhẹ nhàng, êm dịu khi mở quầy POS (Không bật popup chặn màn hình)
+            const cashierTitle = data.shiftActive ? data.activeCashiersSummary : "Quầy Bán Lẻ Thu Ngân";
+            showPosZenToast(`Máy POS Đã Sẵn Sàng Phục Vụ • ${cashierTitle}`, "success", 2200);
         } catch (err) {
             console.error("Lỗi kiểm tra ca trực:", err);
         }
@@ -856,17 +923,18 @@ document.addEventListener("DOMContentLoaded", () => {
             if (btnCheckout) btnCheckout.style.display = "block";
             window.POS_CASHIER_USERNAME = data.activeCashiersSummary;
         } else {
+            // Máy POS luôn ở trạng thái SẴN SÀNG BÁN HÀNG theo tài khoản chi nhánh, không khóa màn hình
             if (dot) {
-                dot.className = "badge bg-danger rounded-pill px-2 py-1";
-                dot.textContent = "OFF";
+                dot.className = "badge bg-success-subtle text-success border border-success rounded-pill px-2 py-1";
+                dot.textContent = "READY";
             }
             if (summaryText) {
-                summaryText.textContent = "🔴 Chưa có người trực";
-                summaryText.title = "Chưa có người trực ca - Máy POS đang khóa";
+                summaryText.textContent = "🟢 Quầy Sẵn Sàng Bán";
+                summaryText.title = "Máy POS đang mở bán • Bấm để chọn danh sách nhân viên trực ca";
             }
-            if (lockOverlay) lockOverlay.style.display = "flex";
+            if (lockOverlay) lockOverlay.style.display = "none";
             if (btnCheckout) btnCheckout.style.display = "none";
-            window.POS_CASHIER_USERNAME = "";
+            window.POS_CASHIER_USERNAME = "Quầy Thu Ngân Chi Nhánh";
         }
     }
 
@@ -963,17 +1031,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Đóng modal điểm danh
     document.getElementById("closeShiftModal")?.addEventListener("click", () => {
         document.getElementById("shiftModalBackdrop").style.display = "none";
-        // Nếu vẫn chưa có người trực -> màn hình khóa overlay vẫn giữ nguyên
-        if (!shiftState.active) {
-            document.getElementById("posLockOverlay").style.display = "flex";
-        }
     });
 
     // Xác nhận vào ca & mở bán máy POS
     document.getElementById("btnShiftConfirm")?.addEventListener("click", async () => {
         const checked = Array.from(document.querySelectorAll(".shift-emp-check:checked")).map(c => parseInt(c.value));
         if (checked.length === 0) {
-            alert("Vui lòng tick chọn ít nhất 1 nhân viên đang đứng ca!");
+            showPosZenToast("Vui lòng tick chọn ít nhất 1 nhân viên đang đứng ca!", "warning", 2400);
             return;
         }
 
@@ -992,16 +1056,27 @@ document.addEventListener("DOMContentLoaded", () => {
             updateShiftUI(data);
 
             document.getElementById("shiftModalBackdrop").style.display = "none";
-            alert(`✅ Điểm danh nhận ca thành công!\nĐang trực: ${data.activeCashiersSummary} (${data.activeCount} nhân viên).\nMáy POS đã sẵn sàng bán hàng!`);
+            showPosZenToast(`Đã nhận ca trực: ${data.activeCashiersSummary}`, "success", 2500);
         } catch (err) {
-            alert("Lỗi điểm danh ca trực: " + err.message);
+            showPosZenToast("Lỗi điểm danh ca trực: " + err.message, "error", 2500);
         }
     });
 
-    // Rời ca / Kết thúc ca (Khóa máy POS)
+    // Rời ca / Kết thúc ca
     document.getElementById("btnShiftCheckout")?.addEventListener("click", async () => {
-        if (!confirm("Bạn có chắc chắn muốn kết thúc ca trực? Máy POS sẽ tạm khóa cho đến khi có người nhận ca tiếp theo!")) {
-            return;
+        if (typeof Swal !== 'undefined') {
+            const result = await Swal.fire({
+                title: 'Kết thúc ca trực?',
+                text: 'Bạn có chắc chắn muốn kết thúc ca trực của quầy POS không?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#8C6D53',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Đồng ý kết thúc',
+                cancelButtonText: 'Hủy bỏ',
+                customClass: { popup: 'rounded-4 shadow-lg border-0' }
+            });
+            if (!result.isConfirmed) return;
         }
 
         try {
@@ -1011,9 +1086,9 @@ document.addEventListener("DOMContentLoaded", () => {
             updateShiftUI(data);
 
             document.getElementById("shiftModalBackdrop").style.display = "none";
-            alert("🔒 Đã kết thúc ca trực! Máy POS đã tạm khóa.");
+            showPosZenToast("Đã chuyển về chế độ quầy mặc định", "info", 2200);
         } catch (err) {
-            alert("Lỗi khi rời ca: " + err.message);
+            showPosZenToast("Lỗi khi rời ca: " + err.message, "error", 2500);
         }
     });
 

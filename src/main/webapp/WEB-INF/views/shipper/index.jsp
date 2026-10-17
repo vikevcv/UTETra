@@ -306,7 +306,7 @@
     /* METRIC BAR (BẢNG CHỈ SỐ NHANH) */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -316,6 +316,41 @@
         grid-template-columns: 1fr;
         gap: 12px;
       }
+    }
+
+    /* NÚT LỊCH SỬ GIAO HÀNG TRÊN HEADER */
+    .btn-header-history {
+      background: var(--bg-card-inner);
+      border: 1.5px solid var(--border-earth);
+      border-radius: 40px;
+      padding: 8px 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-charcoal);
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      user-select: none;
+    }
+
+    .btn-header-history:hover {
+      background: var(--bizen-light);
+      border-color: var(--bizen-clay);
+      color: var(--bizen-clay-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-header-history:active {
+      transform: scale(0.97);
+    }
+
+    .btn-header-history i {
+      color: var(--matcha-deep);
+      font-size: 0.95rem;
     }
 
     .metric-card {
@@ -1271,20 +1306,11 @@
           <i class="fa-solid fa-chevron-right text-muted ms-1" style="font-size: 0.75rem;"></i>
         </div>
 
-        <!-- CÔNG TẮC GẠT ON / OFF CA TRỰC -->
-        <div class="capsule-switch-wrap ${isOnline ? 'online' : ''}" id="topSwitchCapsule" onclick="toggleShiftStatus()" title="Gạt công tắc BẬT / TẮT tiếp nhận đơn hàng trong ca">
-          <div class="switch-info-group">
-            <span class="switch-indicator-dot" id="switchIndicatorDot"></span>
-            <span class="switch-label-status" id="switchLabelStatus">${isOnline ? 'BẬT' : 'TẮT'}</span>
-          </div>
-          <div class="switch-track" id="switchTrack">
-            <span class="track-tag track-tag-on">ON</span>
-            <span class="track-tag track-tag-off">OFF</span>
-            <div class="switch-thumb-knob" id="switchThumbKnob">
-              <i class="fa-solid ${isOnline ? 'fa-check' : 'fa-power-off'}" id="knobIcon"></i>
-            </div>
-          </div>
-        </div>
+        <!-- Nút Lịch Sử Giao Hàng Trên Header (Thay thế công tắc onl theo yêu cầu) -->
+        <button type="button" class="btn-header-history" onclick="openProfileDrawer('tab-history')" title="Xem Lịch Sử Các Đơn Đã Giao Trong Ca">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>Lịch Sử</span>
+        </button>
       </div>
     </header>
 
@@ -1314,49 +1340,6 @@
         </div>
       </div>
 
-      <!-- Thẻ 3: Trạng thái ca trực -->
-      <div class="metric-card">
-        <div class="metric-icon-box metric-icon-slate" id="statusBoxIcon">
-          <i class="fa-solid fa-headset"></i>
-        </div>
-        <div class="metric-meta">
-          <div class="label">Trạng Thái Hoạt Động</div>
-          <div class="value" id="statusBoxText" style="font-size: 1.15rem; color: ${isOnline ? 'var(--matcha-deep)' : 'var(--text-sepia)'};">
-            ${isOnline ? 'Sẵn Sàng Nhận Đơn' : 'Tạm Nghỉ Ca'}
-          </div>
-          <div class="sub-note" id="statusBoxSub">${isOnline ? 'Đang bật nhận đơn từ quán' : 'Gạt công tắc trên để trực'}</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 3. ACTIONS TOOLBAR (NÚT TIỆN ÍCH) -->
-    <section class="actions-toolbar">
-      <div class="toolbar-title">
-        <i class="fa-solid fa-boxes-stacked" style="color: var(--matcha-deep);"></i>
-        <span>Không Gian Điều Hành Giao Vận</span>
-      </div>
-
-      <div class="toolbar-btn-group">
-        <button class="btn-tool" onclick="refreshOrders(true)" id="btnRefreshOrders" title="Tải lại danh sách đơn">
-          <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
-          <span>Làm Mới</span>
-        </button>
-
-        <button class="btn-tool btn-tool-accent" onclick="seedSampleOrder()" id="btnSeedSample" title="Tạo đơn hàng thử nghiệm nếu CSDL trống">
-          <i class="fa-solid fa-plus-circle"></i>
-          <span>Thêm Đơn Mẫu Demo</span>
-        </button>
-
-        <button class="btn-tool" onclick="testNotificationSystem()" title="Kiểm tra âm thanh chuông và rung điện thoại">
-          <i class="fa-solid fa-bell"></i>
-          <span>Thử Âm Thanh / Rung</span>
-        </button>
-
-        <button class="btn-tool" onclick="openProfileDrawer()" title="Xem lịch sử cuốc giao">
-          <i class="fa-solid fa-clock-rotate-left"></i>
-          <span>Lịch Sử Đơn Hàng</span>
-        </button>
-      </div>
     </section>
 
     <!-- 3.5. QUEUE TRACKER BAR (HÀNG ĐỢI PHÂN CÔNG ĐƠN HÀNG) -->
@@ -1476,8 +1459,8 @@
 
     <!-- 2 Tab Điều Hướng -->
     <div class="drawer-tabs-nav">
-      <button class="dtab-btn active" onclick="switchDrawerTab('tab-profile', this)">Hồ Sơ</button>
-      <button class="dtab-btn" onclick="switchDrawerTab('tab-history', this)">Lịch Sử Đơn Trong Ca</button>
+      <button id="btnDrawerTabProfile" class="dtab-btn active" onclick="switchDrawerTab('tab-profile', this)">Hồ Sơ</button>
+      <button id="btnDrawerTabHistory" class="dtab-btn" onclick="switchDrawerTab('tab-history', this)">Lịch Sử Đơn Trong Ca</button>
     </div>
 
     <!-- Nội dung Tab -->
@@ -2474,9 +2457,21 @@
     /* ========================================================
        9. DRAWER HỒ SƠ TÀI XẾ & LỊCH SỬ ĐƠN
        ======================================================== */
-    function openProfileDrawer() {
+    function openProfileDrawer(initialTab = 'tab-profile') {
       document.getElementById('profileDrawer').classList.add('open');
       document.getElementById('drawerBackdrop').classList.add('active');
+
+      if (initialTab === 'tab-history') {
+        const historyBtn = document.getElementById('btnDrawerTabHistory');
+        if (historyBtn) {
+          switchDrawerTab('tab-history', historyBtn);
+        }
+      } else {
+        const profileBtn = document.getElementById('btnDrawerTabProfile');
+        if (profileBtn) {
+          switchDrawerTab('tab-profile', profileBtn);
+        }
+      }
     }
 
     function closeProfileDrawer() {

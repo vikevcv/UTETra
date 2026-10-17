@@ -704,3 +704,77 @@ body {
     background: #F3F4F6;
     color: #4B5563;
 }
+
+/* ==========================================================================
+   Zen Wabi-Sabi Floating Toast Notification (Hiệu ứng tinh tế, tự tan, hạn chế click)
+   ========================================================================== */
+.pos-toast-container {
+    position: fixed;
+    top: 75px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.pos-zen-toast {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(15, 16, 17, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: #F7F5F0;
+    padding: 11px 22px;
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28), 0 0 16px rgba(212, 175, 55, 0.15);
+    font-size: 0.92rem;
+    font-weight: 600;
+    pointer-events: auto;
+    animation: zenToastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: all 0.3s ease;
+}
+
+.pos-zen-toast.fade-out {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.94);
+}
+
+.pos-zen-toast-icon {
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pos-zen-toast.toast-success .pos-zen-toast-icon {
+    color: #10B981;
+}
+
+.pos-zen-toast.toast-warning .pos-zen-toast-icon {
+    color: #F59E0B;
+}
+
+.pos-zen-toast.toast-error .pos-zen-toast-icon {
+    color: #EF4444;
+}
+
+.pos-zen-toast.toast-info .pos-zen-toast-icon {
+    color: #38BDF8;
+}
+
+@keyframes zenToastSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-22px) scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
