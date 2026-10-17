@@ -1863,6 +1863,10 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" style="padding: 20px 24px;">
+          <!-- Hidden inputs for tracking order being reported -->
+          <input type="hidden" id="incidentOrderId" value="">
+          <input type="hidden" id="incidentOrderCode" value="">
+
           <!-- GIAI ĐOẠN 1: TẠI QUÁN (BƯỚC 0 & 1 - CHƯA NHẬN TRÀ ĐI GIAO) -->
           <div id="incidentStorePhase" style="display: none;">
             <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3" style="font-size: 0.82rem; border-radius: 8px;">
@@ -2175,11 +2179,56 @@
     let knownOrderIds = new Set();
     let incidentModalInstance = null;
     let audioContext = null;
+    let autoAcceptOrderId = null;
+    let autoAcceptInterval = null;
+    let autoAcceptSecondsLeft = 15;
+
+    function startAutoAcceptTimer(orderId, orderCode) {
+      if (autoAcceptOrderId === orderId && autoAcceptInterval) {
+        return;
+      }
+      stopAutoAcceptTimer();
+      autoAcceptOrderId = orderId;
+      autoAcceptSecondsLeft = 15;
+
+      autoAcceptInterval = setInterval(function() {
+        autoAcceptSecondsLeft--;
+        const timerSecSpan = document.getElementById('autoAcceptCountdownSec');
+        if (timerSecSpan) {
+          timerSecSpan.innerText = autoAcceptSecondsLeft;
+        }
+
+        if (autoAcceptSecondsLeft <= 0) {
+          stopAutoAcceptTimer();
+          advanceOrderToStep1(orderId);
+          showZenToast('Đơn #' + orderCode + ' đã tự động nhận (bắt buộc nhận sau 15s). Hãy chụp ảnh đối soát!', 'info');
+        }
+      }, 1000);
+    }
+
+    function stopAutoAcceptTimer() {
+      if (autoAcceptInterval) {
+        clearInterval(autoAcceptInterval);
+        autoAcceptInterval = null;
+      }
+      autoAcceptOrderId = null;
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
       // Khởi tạo Bootstrap Modals
       const incidentEl = document.getElementById('incidentModal');
-      if (incidentEl) incidentModalInstance = new bootstrap.Modal(incidentEl);
+      if (incidentEl) {
+        incidentModalInstance = new bootstrap.Modal(incidentEl);
+        incidentEl.addEventListener('hidden.bs.modal', function() {
+          if (ordersQueue.length > 0) {
+            const curr = ordersQueue[0];
+            const step = orderSteps[curr.orderId] || 0;
+            if (step === 0) {
+              startAutoAcceptTimer(curr.orderId, curr.orderCode);
+            }
+          }
+        });
+      }
 
       // Nạp danh sách đơn hàng ban đầu từ model JSP
       <c:forEach items="${activeOrders}" var="o">
@@ -2258,6 +2307,7 @@
 
       // Trường hợp không có đơn nào trong hàng đợi
       if (totalActive === 0) {
+        stopAutoAcceptTimer();
         deck.innerHTML = 
           '<div class="empty-state-box" id="emptyStatePlaceholder">' +
             '<div class="empty-state-icon"><i class="fa-solid fa-mug-hot"></i></div>' +
@@ -2281,6 +2331,13 @@
         orderSteps[curr.orderId] = step;
       }
 
+      // Quản lý đếm ngược 15s bắt buộc tự động nhận đơn nếu đang ở Bước 0
+      if (step === 0) {
+        startAutoAcceptTimer(curr.orderId, curr.orderCode);
+      } else {
+        stopAutoAcceptTimer();
+      }
+
       // Xác định badge trạng thái theo bước (Chuẩn màu rõ nét WCAG AAA)
       let statusBadgeHtml = '';
       if (step === 0) {
@@ -2300,7 +2357,7 @@
       let stepActionButtonsHtml = '';
 
       if (step === 0) {
-        // BƯỚC 0: Tài xế ấn OK để xem ly nước nào cần lấy và tên khách hàng
+        // BƯỚC 0: Tài xế ấn OK để xem ly nước nào cần lấy và tên khách hàng (hoặc tự nhận sau 15s)
         stepBodyContentHtml = 
           '<div class="route-display-box">' +
             '<div class="route-node">' +
@@ -2333,9 +2390,17 @@
           '</div>';
 
         stepActionButtonsHtml = 
-          '<button class="btn-step-action btn-step-green w-100" onclick="advanceOrderToStep1(' + curr.orderId + ')">' +
-            '<i class="fa-solid fa-clipboard-check me-2" style="font-size: 1.25rem;"></i> NHẬN ĐƠN & ĐỐI SOÁT LY' +
-          '</button>';
+          '<div class="d-flex flex-column gap-2">' +
+            '<button class="btn-step-action btn-step-green w-100" onclick="advanceOrderToStep1(' + curr.orderId + ')">' +
+              '<i class="fa-solid fa-clipboard-check me-2" style="font-size: 1.25rem;"></i> NHẬN ĐƠN & ĐỐI SOÁT LY ' +
+              '<span class="badge bg-light text-dark ms-1 px-2 py-1" style="font-size: 0.8rem; font-weight: 700; border-radius: 6px;">' +
+                'Tự nhận sau <span id="autoAcceptCountdownSec">' + autoAcceptSecondsLeft + '</span>s' +
+              '</span>' +
+            '</button>' +
+            '<button class="btn-incident-secondary w-100 py-2" style="font-size: 0.82rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố Tại Quán' +
+            '</button>' +
+          '</div>';
 
       } else if (step === 1) {
         // BƯỚC 1: Đối soát ly nước, chụp hình ảnh ly nước của quán, sau đó mới cho nhận hàng
@@ -2543,6 +2608,7 @@
        ======================================================== */
     // Bước 0 -> Bước 1: Tài xế ấn OK để xem đơn và danh sách ly nước cần lấy
     function advanceOrderToStep1(orderId) {
+      stopAutoAcceptTimer();
       orderSteps[orderId] = 1;
       renderWorkbench();
       showZenToast('Đã xác nhận xem đơn. Hãy đối soát tem ly và chụp ảnh ly nước của quán!', 'info');
@@ -3012,8 +3078,12 @@
     }
 
     function openIncidentModal(orderId, orderCode) {
-      document.getElementById('incidentOrderId').value = orderId;
-      document.getElementById('incidentOrderCode').value = orderCode;
+      stopAutoAcceptTimer();
+
+      const idEl = document.getElementById('incidentOrderId');
+      if (idEl) idEl.value = orderId;
+      const codeEl = document.getElementById('incidentOrderCode');
+      if (codeEl) codeEl.value = orderCode;
       
       const currentStep = orderSteps[orderId] || 0;
       const isAtStore = currentStep <= 1;
@@ -3061,6 +3131,12 @@
       const noteInput = document.getElementById('incidentDetailNote');
       if (noteInput) noteInput.value = '';
 
+      if (!incidentModalInstance) {
+        const incidentEl = document.getElementById('incidentModal');
+        if (incidentEl && typeof bootstrap !== 'undefined') {
+          incidentModalInstance = bootstrap.Modal.getInstance(incidentEl) || new bootstrap.Modal(incidentEl);
+        }
+      }
       if (incidentModalInstance) incidentModalInstance.show();
     }
 
