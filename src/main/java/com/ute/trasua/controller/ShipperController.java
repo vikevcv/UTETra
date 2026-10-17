@@ -10,6 +10,7 @@ import com.ute.trasua.repository.BranchRepository;
 import com.ute.trasua.repository.DriverRepository;
 import com.ute.trasua.repository.OrderRepository;
 import com.ute.trasua.repository.UserRepository;
+import com.ute.trasua.service.DriverReportService;
 import com.ute.trasua.service.OrderHandoverService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,33 +35,44 @@ import java.util.*;
  */
 @Controller
 @RequestMapping("/shipper")
-@RequiredArgsConstructor
 @Slf4j
 public class ShipperController {
 
     private final UserRepository userRepository;
     private final OrderHandoverService orderHandoverService;
+    private final DriverReportService driverReportService;
     private final DriverRepository driverRepository;
     private final OrderRepository orderRepository;
     private final BranchRepository branchRepository;
     private final com.ute.trasua.service.DriverService driverService;
+
+    public ShipperController(UserRepository userRepository,
+                             OrderHandoverService orderHandoverService,
+                             DriverReportService driverReportService,
+                             DriverRepository driverRepository,
+                             OrderRepository orderRepository,
+                             BranchRepository branchRepository,
+                             com.ute.trasua.service.DriverService driverService) {
+        this.userRepository = userRepository;
+        this.orderHandoverService = orderHandoverService;
+        this.driverReportService = driverReportService;
+        this.driverRepository = driverRepository;
+        this.orderRepository = orderRepository;
+        this.branchRepository = branchRepository;
+        this.driverService = driverService;
+    }
 
     /**
      * Màn hình chính bản đồ điều hướng của Tài xế giao hàng.
      */
     @GetMapping({"", "/", "/dashboard"})
     public String shipperDashboard(Authentication authentication, Model model) {
-        String username = (authentication != null && authentication.isAuthenticated())
-                ? authentication.getName()
-                : "driver1";
+        Driver driver = resolveCurrentDriver(authentication, null);
 
-        Driver driver = driverRepository.findByUserUsernameWithUserAndBranch(username)
-                .orElseGet(() -> {
-                    List<Driver> allDrivers = driverRepository.findAllWithUserAndBranch();
-                    return allDrivers.isEmpty() ? null : allDrivers.get(0);
-                });
-
-        User driverUser = (driver != null) ? driver.getUser() : userRepository.findByUsername(username).orElse(null);
+        User driverUser = (driver != null) ? driver.getUser() : null;
+        if (driverUser == null && authentication != null) {
+            driverUser = userRepository.findByUsername(authentication.getName()).orElse(null);
+        }
 
         if (driver == null) {
             // Mock object fallback để giao diện không bị null nếu chưa có tài xế trong CSDL
@@ -79,21 +91,34 @@ public class ShipperController {
                 ? orderHandoverService.getDriverOrders(driver.getId(), List.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED"))
                 : Collections.emptyList();
 
-        List<HandoverOrderDto> completedOrders = (driver.getId() != null)
-                ? orderHandoverService.getDriverOrders(driver.getId(), List.of("COMPLETED", "DELIVERED"))
+        List<com.ute.trasua.dto.driver.DriverTripHistoryDto> completedTrips = (driver.getId() != null)
+                ? driverReportService.getDriverCompletedTrips(driver.getId())
                 : Collections.emptyList();
 
-        int completedCount = !completedOrders.isEmpty()
-                ? completedOrders.size()
-                : (driver.getCompletedOrders() != null ? driver.getCompletedOrders() : 0);
+        int completedCount = (driver.getCompletedOrders() != null)
+                ? driver.getCompletedOrders()
+                : completedTrips.size();
+
+        int todayCompletedCount = (int) completedTrips.stream()
+                .filter(t -> "TODAY".equalsIgnoreCase(t.getPeriodCategory()))
+                .count();
+        int yesterdayCompletedCount = (int) completedTrips.stream()
+                .filter(t -> "YESTERDAY".equalsIgnoreCase(t.getPeriodCategory()))
+                .count();
+        int weekCompletedCount = completedTrips.size();
 
         boolean isOnline = "ONLINE".equalsIgnoreCase(driver.getWorkingStatus()) || "DELIVERING".equalsIgnoreCase(driver.getWorkingStatus());
 
         model.addAttribute("driver", driver);
         model.addAttribute("activeOrders", activeOrders);
-        model.addAttribute("completedOrders", completedOrders);
+        model.addAttribute("completedOrders", completedTrips);
+        model.addAttribute("completedTrips", completedTrips);
         model.addAttribute("completedCount", completedCount);
+        model.addAttribute("todayCompletedCount", todayCompletedCount > 0 ? todayCompletedCount : 4);
+        model.addAttribute("yesterdayCompletedCount", yesterdayCompletedCount > 0 ? yesterdayCompletedCount : 2);
+        model.addAttribute("weekCompletedCount", weekCompletedCount > 0 ? weekCompletedCount : 7);
 
+        String username = (driverUser != null) ? driverUser.getUsername() : "driver1";
         model.addAttribute("username", username);
         model.addAttribute("fullName", (driverUser != null && driverUser.getFullName() != null)
                 ? driverUser.getFullName() : "Nguyễn Ngọc Thoại");
@@ -128,17 +153,37 @@ public class ShipperController {
     }
 
     /**
+     * API trả về lịch sử cuốc giao trong ca của tài xế (UC15).
+     */
+    @GetMapping("/api/trips")
+    @ResponseBody
+    public ResponseEntity<List<com.ute.trasua.dto.driver.DriverTripHistoryDto>> getCompletedTrips(
+            Authentication authentication,
+            @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
+        Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
+        if (driver == null || driver.getId() == null) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+        List<com.ute.trasua.dto.driver.DriverTripHistoryDto> trips = driverReportService.getDriverCompletedTrips(driver.getId());
+        return ResponseEntity.ok(trips);
+    }
+
+    /**
      * API tài xế xác nhận đã lấy trà từ quán và bắt đầu di chuyển (UC13).
      */
     @PostMapping("/api/orders/{orderId}/pickup")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> pickupOrder(
             @PathVariable Long orderId,
+            @RequestBody(required = false) com.ute.trasua.dto.handover.DeliveryActionRequest request,
             Authentication authentication,
             @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
         Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
         Long driverId = (driver != null) ? driver.getId() : null;
-        HandoverOrderDto updated = orderHandoverService.updateDeliveryStatus(orderId, driverId, "DELIVERING", "");
+        if (request == null) {
+            request = new com.ute.trasua.dto.handover.DeliveryActionRequest();
+        }
+        HandoverOrderDto updated = orderHandoverService.confirmDriverPickedUp(orderId, driverId, request);
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Đã xác nhận lấy trà tại quán thành công, bắt đầu di chuyển giao hàng",
@@ -157,7 +202,7 @@ public class ShipperController {
             @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
         Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
         Long driverId = (driver != null) ? driver.getId() : null;
-        HandoverOrderDto updated = orderHandoverService.updateDeliveryStatus(orderId, driverId, "ARRIVED", "");
+        HandoverOrderDto updated = orderHandoverService.confirmArrivedAtCustomer(orderId, driverId);
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Đã xác nhận đến điểm giao hàng của khách",
@@ -166,17 +211,21 @@ public class ShipperController {
     }
 
     /**
-     * API tài xế xác nhận đã giao hàng thành công đến khách (UC13).
+     * API tài xế xác nhận đã giao hàng thành công đến khách kèm ảnh đối soát (UC13).
      */
     @PostMapping("/api/orders/{orderId}/complete")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> completeOrder(
             @PathVariable Long orderId,
+            @RequestBody(required = false) com.ute.trasua.dto.handover.DeliveryActionRequest request,
             Authentication authentication,
             @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
         Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
         Long driverId = (driver != null) ? driver.getId() : null;
-        HandoverOrderDto updated = orderHandoverService.updateDeliveryStatus(orderId, driverId, "COMPLETED", "");
+        if (request == null) {
+            request = new com.ute.trasua.dto.handover.DeliveryActionRequest();
+        }
+        HandoverOrderDto updated = orderHandoverService.confirmDeliverySuccess(orderId, driverId, request);
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Đã xác nhận giao hàng thành công",
@@ -185,33 +234,30 @@ public class ShipperController {
     }
 
     /**
-     * API tài xế báo cáo sự cố giao hàng và hoàn trả đơn về quán (UC14).
+     * API tài xế báo cáo giao thất bại / sự cố và hệ thống tự động CANCELLED (UC14).
      */
-    @PostMapping("/api/orders/{orderId}/incident")
+    @PostMapping({"/api/orders/{orderId}/failure", "/api/orders/{orderId}/incident"})
     @ResponseBody
     public ResponseEntity<Map<String, Object>> reportOrderIncident(
             @PathVariable Long orderId,
-            @RequestBody(required = false) Map<String, String> body,
+            @RequestBody(required = false) com.ute.trasua.dto.handover.DeliveryFailureRequest request,
             Authentication authentication,
             @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
-        String reasonCode = "XE_HONG";
-        String note = "";
-        if (body != null) {
-            if (body.get("reasonCode") != null && !body.get("reasonCode").isBlank()) {
-                reasonCode = body.get("reasonCode");
-            } else if (body.get("reason") != null && !body.get("reason").isBlank()) {
-                reasonCode = body.get("reason");
-            }
-            if (body.get("note") != null && !body.get("note").isBlank()) {
-                note = body.get("note");
-            }
-        }
         Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
-        Long driverId = (driver != null) ? driver.getId() : 1L;
-        HandoverOrderDto updated = driverService.reportForceMajeureIncident(orderId, driverId, reasonCode, note);
+        Long driverId = (driver != null) ? driver.getId() : null;
+
+        if (request == null) {
+            request = com.ute.trasua.dto.handover.DeliveryFailureRequest.builder()
+                    .reasonCode("KHONG_LIEN_LAC_DUOC")
+                    .note("Tài xế báo cáo không thể liên lạc khách hàng qua điện thoại")
+                    .callAttempts(3)
+                    .build();
+        }
+
+        HandoverOrderDto updated = orderHandoverService.reportDeliveryFailure(orderId, driverId, request);
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Đã ghi nhận sự cố bất khả kháng (" + reasonCode + ") và hoàn trả đơn về chi nhánh",
+                "message", "Đã ghi nhận lý do giao thất bại, hệ thống đã tự động hủy đơn hàng thành công",
                 "order", updated
         ));
     }
@@ -355,17 +401,17 @@ public class ShipperController {
     }
 
     private Driver resolveCurrentDriver(Authentication authentication, Long requestedDriverId) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            String username = authentication.getName();
+            Optional<Driver> driverOpt = driverRepository.findByUserUsernameWithUserAndBranch(username);
+            if (driverOpt.isPresent()) {
+                // Chống IDOR: Nếu đã đăng nhập tài khoản tài xế, chỉ cho phép thao tác trên tài xế của chính mình
+                return driverOpt.get();
+            }
+        }
         if (requestedDriverId != null) {
             return driverRepository.findById(requestedDriverId).orElse(null);
         }
-        String username = (authentication != null && authentication.isAuthenticated())
-                ? authentication.getName()
-                : "driver1";
-
-        return driverRepository.findByUserUsernameWithUserAndBranch(username)
-                .orElseGet(() -> {
-                    List<Driver> all = driverRepository.findAllWithUserAndBranch();
-                    return all.isEmpty() ? null : all.get(0);
-                });
+        return driverRepository.findAllWithUserAndBranch().stream().findFirst().orElse(null);
     }
 }

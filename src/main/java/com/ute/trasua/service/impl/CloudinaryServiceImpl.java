@@ -18,11 +18,15 @@ import java.util.concurrent.CompletableFuture;
  * Implementation of CloudinaryService for managing media assets on Cloudinary.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CloudinaryServiceImpl implements CloudinaryService {
 
     private final Cloudinary cloudinary;
+
+    public CloudinaryServiceImpl(@org.springframework.beans.factory.annotation.Autowired(required = false) Cloudinary cloudinary) {
+        super();
+        this.cloudinary = cloudinary;
+    }
 
     @Override
     public String uploadImage(MultipartFile file, String folder) {
@@ -125,5 +129,32 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         }
 
         return pathAfterUpload;
+    }
+
+    @Override
+    public String uploadBase64Image(String base64Data, String folder) {
+        if (base64Data == null || base64Data.trim().isEmpty()) {
+            return null;
+        }
+        // Nếu đã là URL Cloudinary hoặc HTTP URL thì giữ nguyên
+        if (base64Data.startsWith("http://") || base64Data.startsWith("https://")) {
+            return base64Data;
+        }
+        try {
+            if (cloudinary != null) {
+                Map<String, Object> options = ObjectUtils.asMap(
+                        "folder", "utetra/" + folder,
+                        "resource_type", "image"
+                );
+                Map uploadResult = cloudinary.uploader().upload(base64Data, options);
+                if (uploadResult != null && uploadResult.get("secure_url") != null) {
+                    return uploadResult.get("secure_url").toString();
+                }
+            }
+        } catch (Exception e) {
+            log.warn(">>> Cloudinary upload failed, falling back to base64 data URI: {}", e.getMessage());
+        }
+        // ponytail: fallback an toàn giữ nguyên base64 data URI nếu Cloudinary mất kết nối
+        return base64Data;
     }
 }
