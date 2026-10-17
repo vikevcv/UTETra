@@ -26,12 +26,16 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/admin/promotions")
-@RequiredArgsConstructor
 @Slf4j
 public class AdminPromotionController {
 
     private final PromotionService promotionService;
     private final BranchService branchService;
+
+    public AdminPromotionController(PromotionService promotionService, BranchService branchService) {
+        this.promotionService = promotionService;
+        this.branchService = branchService;
+    }
 
     /**
      * Display centralized promotions management dashboard.
@@ -85,7 +89,7 @@ public class AdminPromotionController {
         return "redirect:/admin/promotions";
     }
 
-    @PostMapping("/{id}/update")
+    @PostMapping(path = {"/{id}/update", "/{id}/edit"})
     public String updatePromotion(
             @PathVariable Long id,
             @Valid @ModelAttribute UpdatePromotionRequest request,

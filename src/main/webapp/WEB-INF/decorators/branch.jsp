@@ -88,6 +88,13 @@
             </a>
           </li>
           <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/branch/menu${branchQuery}" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/menu') ? 'active' : ''}">
+              <i class="fa-solid fa-mug-hot text-danger"></i>
+              <span>Thực Đơn Chi Nhánh</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/branch/inventory${branchQuery}" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/inventory') ? 'active' : ''}">
               <i class="fa-solid fa-boxes-stacked text-warning"></i>

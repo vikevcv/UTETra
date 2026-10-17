@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
  * Service implementation for Product/Menu item management (UC22).
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ProductServiceImpl implements ProductService {
 
@@ -37,6 +36,22 @@ public class ProductServiceImpl implements ProductService {
     private final BranchMenuRepository branchMenuRepository;
     private final com.ute.trasua.repository.OrderDetailRepository orderDetailRepository;
     private final CloudinaryService cloudinaryService;
+
+    public ProductServiceImpl(
+            ProductRepository productRepository,
+            CategoryRepository categoryRepository,
+            BranchRepository branchRepository,
+            BranchMenuRepository branchMenuRepository,
+            com.ute.trasua.repository.OrderDetailRepository orderDetailRepository,
+            CloudinaryService cloudinaryService
+    ) {
+        this.productRepository = productRepository;
+        this.categoryRepository = categoryRepository;
+        this.branchRepository = branchRepository;
+        this.branchMenuRepository = branchMenuRepository;
+        this.orderDetailRepository = orderDetailRepository;
+        this.cloudinaryService = cloudinaryService;
+    }
 
     @Override
     @Transactional(readOnly = true)

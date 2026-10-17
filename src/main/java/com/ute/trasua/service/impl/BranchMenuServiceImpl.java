@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
  * Service implementation for BranchMenu management (UC22) and Kitchen / Barista KDS (UC11).
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class BranchMenuServiceImpl implements BranchMenuService {
 
@@ -39,6 +38,20 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     private final ProductRepository productRepository;
     private final ToppingRepository toppingRepository;
     private final SimpMessagingTemplate messagingTemplate;
+
+    public BranchMenuServiceImpl(
+            BranchMenuRepository branchMenuRepository,
+            BranchRepository branchRepository,
+            ProductRepository productRepository,
+            ToppingRepository toppingRepository,
+            SimpMessagingTemplate messagingTemplate
+    ) {
+        this.branchMenuRepository = branchMenuRepository;
+        this.branchRepository = branchRepository;
+        this.productRepository = productRepository;
+        this.toppingRepository = toppingRepository;
+        this.messagingTemplate = messagingTemplate;
+    }
 
     // Lưu trữ tồn kho Món Nước theo Chi nhánh trong bộ nhớ: Map<branchId, Map<productId, stock>>
     private static final ConcurrentHashMap<Long, ConcurrentHashMap<Long, Integer>> BRANCH_PRODUCT_STOCKS = new ConcurrentHashMap<>();
