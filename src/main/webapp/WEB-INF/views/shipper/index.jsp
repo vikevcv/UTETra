@@ -1734,23 +1734,16 @@
 
     <!-- 1. TOP HEADER / APP BAR - Tinh Gọn Chuẩn Mobile Shipper -->
     <header class="shipper-header">
-      <div class="brand-section" onclick="openProfileDrawer('tab-profile')" style="cursor: pointer;" title="Chạm để xem thông tin tài xế">
+      <!-- Trái: Avatar Tài Xế -->
+      <div class="brand-section" onclick="openProfileDrawer('tab-profile')" style="cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: flex-start;" title="Chạm để xem thông tin tài xế">
         <div class="driver-avatar-btn">
           <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" alt="Avatar Tài Xế">
           <span class="avatar-status-dot ${isOnline ? 'online' : ''}" id="headerAvatarDot" title="${isOnline ? 'Đang trực' : 'Tạm nghỉ'}"></span>
         </div>
-        <div class="brand-title-wrap" style="min-width: 0; overflow: hidden;">
-          <h1 class="text-truncate" style="font-size: 1.02rem; font-weight: 800; margin: 0; color: #0F172A; max-width: 175px;">${fullName}</h1>
-          <p class="sub text-truncate" style="font-size: 0.76rem; margin: 2px 0 0 0; color: #64748B;">
-            <span class="${isOnline ? 'text-success fw-bold' : 'text-secondary'}" id="headerOnlineTextWrap">
-              <i class="fa-solid fa-circle" style="font-size: 0.55rem;"></i> <span id="headerOnlineText">${isOnline ? 'Đang trực' : 'Tạm nghỉ'}</span>
-            </span>
-          </p>
-        </div>
       </div>
 
-      <div class="header-actions-section" style="flex-shrink: 0; display: flex; align-items: center; gap: 8px;">
-        <!-- Công Tắc BẬT / TẮT Ca Trực Của Tài Xế (Chỉ hiển thị công tắc) -->
+      <!-- Giữa: Công Tắc BẬT / TẮT Ca Trực Của Tài Xế (Nằm chính giữa) -->
+      <div class="header-center-switch" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
         <div class="capsule-switch-wrap ${isOnline ? 'online' : ''}" id="topSwitchCapsule" onclick="toggleShiftStatus()" title="Chạm để BẬT / TẮT ca trực">
           <div class="switch-track">
             <span class="track-tag track-tag-on">ON</span>
@@ -1760,8 +1753,10 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Nút Lịch Sử Giao Hàng Trên Header (Chạm để mở lịch sử và tổng số cuốc) -->
+      <!-- Phải: Nút Lịch Sử Giao Hàng Trên Header -->
+      <div class="header-actions-section" style="flex: 1; display: flex; align-items: center; justify-content: flex-end;">
         <button type="button" class="btn-header-history" onclick="openProfileDrawer('tab-history')" title="Xem Tổng Số Cuốc & Lịch Sử Giao Hàng">
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span>Lịch Sử</span>
