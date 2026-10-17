@@ -68,6 +68,22 @@
       align-items: center;
       gap: 6px;
     }
+    .manager-mode-option {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border: 2px solid var(--zen-border);
+      border-radius: 10px;
+      cursor: pointer;
+      background: #ffffff;
+      transition: all 0.2s;
+    }
+    .manager-mode-option.active {
+      border-color: var(--zen-primary);
+      background: rgba(16, 185, 129, 0.05);
+    }
   </style>
 </head>
 
@@ -197,7 +213,7 @@
 
           <!-- Bộ chuyển chế độ: TẠO MỚI vs CHỌN CÓ SẴN -->
           <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-            <label style="flex: 1; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 2px solid ${empty branch.managerId ? 'var(--zen-primary)' : 'var(--zen-border)'}; border-radius: 10px; cursor: pointer; background: ${empty branch.managerId ? 'rgba(16, 185, 129, 0.05)' : '#ffffff'}; transition: all 0.2s;" id="labelOptionNew">
+            <label class="manager-mode-option ${empty branch.managerId ? 'active' : ''}" id="labelOptionNew">
               <input type="radio" name="managerOption" value="NEW" ${empty branch.managerId ? 'checked' : ''} onchange="toggleManagerMode('NEW')" style="accent-color: var(--zen-primary);" />
               <div>
                 <div style="font-weight: 700; font-size: 0.9rem; color: var(--zen-text-main);">
@@ -208,7 +224,7 @@
               </div>
             </label>
 
-            <label style="flex: 1; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 2px solid ${not empty branch.managerId ? 'var(--zen-primary)' : 'var(--zen-border)'}; border-radius: 10px; cursor: pointer; background: ${not empty branch.managerId ? 'rgba(16, 185, 129, 0.05)' : '#ffffff'}; transition: all 0.2s;" id="labelOptionExisting">
+            <label class="manager-mode-option ${not empty branch.managerId ? 'active' : ''}" id="labelOptionExisting">
               <input type="radio" name="managerOption" value="EXISTING" ${not empty branch.managerId ? 'checked' : ''} onchange="toggleManagerMode('EXISTING')" style="accent-color: var(--zen-primary);" />
               <div>
                 <div style="font-weight: 700; font-size: 0.9rem; color: var(--zen-text-main);">Chọn Quản Lý Đang Có</div>
@@ -218,7 +234,7 @@
           </div>
 
           <!-- KHỐI 1: TỰ NHẬP QUẢN LÝ MỚI & CẤP TÀI KHOẢN -->
-          <div id="sectionNewManager" style="display: ${empty branch.managerId ? 'block' : 'none'};">
+          <div id="sectionNewManager" ${not empty branch.managerId ? 'style="display: none;"' : ''}>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
               <div class="form-group">
                 <label class="form-label">
@@ -295,7 +311,7 @@
           </div>
 
           <!-- KHỐI 2: CHỌN QUẢN LÝ CÓ SẴN (ĐIỀU CHUYỂN) -->
-          <div id="sectionExistingManager" style="display: ${not empty branch.managerId ? 'block' : 'none'};">
+          <div id="sectionExistingManager" ${empty branch.managerId ? 'style="display: none;"' : ''}>
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label">Chọn Quản Lý Từ Danh Sách</label>
               <select name="managerId" id="selectManagerId" class="zen-select" style="width: 100%;">
@@ -511,26 +527,14 @@
       if (mode === 'NEW') {
         if (sectionNew) sectionNew.style.display = 'block';
         if (sectionExisting) sectionExisting.style.display = 'none';
-        if (labelNew) {
-          labelNew.style.borderColor = 'var(--zen-primary)';
-          labelNew.style.background = 'rgba(16, 185, 129, 0.05)';
-        }
-        if (labelExisting) {
-          labelExisting.style.borderColor = 'var(--zen-border)';
-          labelExisting.style.background = '#ffffff';
-        }
+        if (labelNew) labelNew.classList.add('active');
+        if (labelExisting) labelExisting.classList.remove('active');
         if (selectMgr) selectMgr.value = '';
       } else {
         if (sectionNew) sectionNew.style.display = 'none';
         if (sectionExisting) sectionExisting.style.display = 'block';
-        if (labelExisting) {
-          labelExisting.style.borderColor = 'var(--zen-primary)';
-          labelExisting.style.background = 'rgba(16, 185, 129, 0.05)';
-        }
-        if (labelNew) {
-          labelNew.style.borderColor = 'var(--zen-border)';
-          labelNew.style.background = '#ffffff';
-        }
+        if (labelExisting) labelExisting.classList.add('active');
+        if (labelNew) labelNew.classList.remove('active');
       }
     }
 
