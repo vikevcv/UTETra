@@ -53,4 +53,13 @@ public interface CloudinaryService {
      * @return public ID or empty string if not found
      */
     String extractPublicId(String imageUrl);
+
+    /**
+     * Upload an image from base64 data string (with fallback).
+     *
+     * @param base64Data base64 data URI string or raw base64
+     * @param folder target folder (e.g. "deliveries")
+     * @return secure image URL or original data URI fallback
+     */
+    String uploadBase64Image(String base64Data, String folder);
 }

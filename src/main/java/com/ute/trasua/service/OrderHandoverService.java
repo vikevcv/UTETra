@@ -40,4 +40,24 @@ public interface OrderHandoverService {
      * Cập nhật tiến độ giao hàng của tài xế (hoàn tất hoặc báo cáo sự cố).
      */
     HandoverOrderDto updateDeliveryStatus(Long orderId, Long driverId, String status, String note);
+
+    /**
+     * Tài xế xác nhận nhận hàng tại quầy kèm ảnh ly nước đối soát (UC13 - Bước 1).
+     */
+    HandoverOrderDto confirmDriverPickedUp(Long orderId, Long driverId, com.ute.trasua.dto.handover.DeliveryActionRequest request);
+
+    /**
+     * Tài xế xác nhận đã tới điểm giao của khách (UC13 - Bước 2/3).
+     */
+    HandoverOrderDto confirmArrivedAtCustomer(Long orderId, Long driverId);
+
+    /**
+     * Tài xế xác nhận đã giao hàng thành công kèm ảnh trao nước cho khách (UC13 - Bước 4).
+     */
+    HandoverOrderDto confirmDeliverySuccess(Long orderId, Long driverId, com.ute.trasua.dto.handover.DeliveryActionRequest request);
+
+    /**
+     * Tài xế báo cáo giao hàng thất bại kèm ảnh bằng chứng và tự động hủy đơn hoàn trả (UC14 Tự Động).
+     */
+    HandoverOrderDto reportDeliveryFailure(Long orderId, Long driverId, com.ute.trasua.dto.handover.DeliveryFailureRequest request);
 }

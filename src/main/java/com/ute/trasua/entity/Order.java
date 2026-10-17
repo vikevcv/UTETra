@@ -32,31 +32,25 @@ public class Order {
     private Integer dailyQueueNumber;
 
     @Column(name = "order_type", length = 30)
-    @Builder.Default
-    private String orderType = "POS_WALK_IN";
+    private String orderType;
 
     @Column(name = "status", length = 30)
-    @Builder.Default
-    private String status = "PENDING";
+    private String status;
 
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal totalAmount = BigDecimal.ZERO;
+    private BigDecimal totalAmount;
 
     @Column(name = "discount_amount", precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal discountAmount = BigDecimal.ZERO;
+    private BigDecimal discountAmount;
 
     @Column(name = "final_amount", nullable = false, precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal finalAmount = BigDecimal.ZERO;
+    private BigDecimal finalAmount;
 
     @Column(name = "payment_method", length = 50)
     private String paymentMethod;
 
     @Column(name = "payment_status", length = 30)
-    @Builder.Default
-    private String paymentStatus = "UNPAID";
+    private String paymentStatus;
 
     @Column(name = "cashier_username", length = 50)
     private String cashierUsername;
@@ -91,8 +85,7 @@ public class Order {
     private BigDecimal distanceKm;
 
     @Column(name = "shipping_fee", precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal shippingFee = BigDecimal.ZERO;
+    private BigDecimal shippingFee;
 
     @Column(name = "voucher_code", length = 50)
     private String voucherCode;
@@ -119,10 +112,24 @@ public class Order {
     @Column(name = "incident_reported_at")
     private LocalDateTime incidentReportedAt;
 
+    @Column(name = "pickup_photo_url", columnDefinition = "LONGTEXT")
+    private String pickupPhotoUrl;
+
+    @Column(name = "delivery_photo_url", columnDefinition = "LONGTEXT")
+    private String deliveryPhotoUrl;
+
+    @Column(name = "failure_reason", length = 50)
+    private String failureReason;
+
+    @Column(name = "failure_proof_url", columnDefinition = "LONGTEXT")
+    private String failureProofUrl;
+
+    @Column(name = "returned_at")
+    private LocalDateTime returnedAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     @ToString.Exclude
-    private List<OrderDetail> orderDetails = new ArrayList<>();
+    private List<OrderDetail> orderDetails;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -133,11 +140,29 @@ public class Order {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.orderType == null) {
+            this.orderType = "POS_WALK_IN";
+        }
         if (this.status == null) {
             this.status = "PENDING";
         }
         if (this.paymentStatus == null) {
             this.paymentStatus = "UNPAID";
+        }
+        if (this.totalAmount == null) {
+            this.totalAmount = BigDecimal.ZERO;
+        }
+        if (this.discountAmount == null) {
+            this.discountAmount = BigDecimal.ZERO;
+        }
+        if (this.finalAmount == null) {
+            this.finalAmount = BigDecimal.ZERO;
+        }
+        if (this.shippingFee == null) {
+            this.shippingFee = BigDecimal.ZERO;
+        }
+        if (this.orderDetails == null) {
+            this.orderDetails = new ArrayList<>();
         }
     }
 }

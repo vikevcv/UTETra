@@ -44,4 +44,9 @@ public class HandoverOrderDto {
     private String incidentReason;
     private String incidentNote;
     private LocalDateTime incidentReportedAt;
+    private String pickupPhotoUrl;
+    private String deliveryPhotoUrl;
+    private String failureReason;
+    private String failureProofUrl;
+    private LocalDateTime returnedAt;
 }

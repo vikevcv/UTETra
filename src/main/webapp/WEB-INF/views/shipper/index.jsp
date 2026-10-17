@@ -19,6 +19,8 @@
   
   <!-- Bootstrap 5.3 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <!-- SockJS & STOMP Client -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
@@ -66,43 +68,72 @@
       padding: 0;
     }
 
+    html, body {
+      overflow: hidden !important;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      max-width: 100vw;
+      margin: 0;
+      padding: 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overscroll-behavior: none;
+    }
+
     body {
       background-color: var(--bg-paper);
       color: var(--text-charcoal);
       font-family: var(--font-main);
-      min-height: 100vh;
-      line-height: 1.5;
-      padding-bottom: 50px;
+      height: 100vh;
+      height: 100dvh;
+      line-height: 1.4;
+      padding: 0;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
     }
 
-    /* Container Dashboard chính */
+    /* Container Dashboard chính - Cố định 1 khung hình không vuốt lên xuống (100dvh) */
     .shipper-dashboard-container {
-      max-width: 1240px;
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      height: 100dvh;
       margin: 0 auto;
-      padding: 24px 20px;
+      padding: 6px 12px 10px 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-sizing: border-box;
+      position: relative;
     }
 
     @media (max-width: 768px) {
       .shipper-dashboard-container {
-        padding: 16px 12px;
+        padding: 6px 10px 8px 10px;
+        max-width: 100%;
       }
     }
 
-    /* TOP BAR / APP HEADER */
+    /* TOP BAR / APP HEADER - Gọn gàng không tràn viền */
     .shipper-header {
       background: var(--bg-card);
       border: 1px solid var(--border-earth);
-      border-radius: var(--radius-xl);
-      padding: 16px 24px;
+      border-radius: 16px;
+      padding: 8px 12px;
       box-shadow: var(--shadow-subtle);
-      margin-bottom: 24px;
+      margin-bottom: 8px;
       display: flex;
-      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
+      gap: 10px;
+      flex-shrink: 0;
     }
 
     .brand-section {
@@ -318,17 +349,64 @@
       }
     }
 
+    /* NÚT AVATAR TÀI XẾ TRÊN HEADER (BẤM VÀO MỚI MỞ DRAWER) */
+    .driver-avatar-btn {
+      position: relative;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .driver-avatar-btn:hover {
+      transform: scale(1.06);
+    }
+
+    .driver-avatar-btn:active {
+      transform: scale(0.95);
+    }
+
+    .driver-avatar-btn img {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--bizen-clay);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .avatar-status-dot {
+      position: absolute;
+      bottom: 1px;
+      right: 1px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #9CA3AF;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .avatar-status-dot.online {
+      background: #16A34A;
+      box-shadow: 0 0 6px rgba(22, 163, 74, 0.7);
+    }
+
     /* NÚT LỊCH SỬ GIAO HÀNG TRÊN HEADER */
     .btn-header-history {
       background: var(--bg-card-inner);
       border: 1.5px solid var(--border-earth);
       border-radius: 40px;
-      padding: 8px 18px;
+      padding: 7px 14px;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       font-weight: 700;
       color: var(--text-charcoal);
       transition: all 0.2s ease;
@@ -350,17 +428,26 @@
 
     .btn-header-history i {
       color: var(--matcha-deep);
-      font-size: 0.95rem;
+      font-size: 0.88rem;
+    }
+
+    .btn-header-history .history-count-badge {
+      background: var(--matcha-deep);
+      color: #FFFFFF;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 1px 7px;
+      border-radius: 12px;
     }
 
     .metric-card {
       background: var(--bg-card);
       border: 1px solid var(--border-earth);
       border-radius: var(--radius-lg);
-      padding: 18px 20px;
+      padding: 14px 18px;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
       box-shadow: var(--shadow-subtle);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
@@ -504,47 +591,68 @@
     }
 
     /* KHÔNG GIAN ĐIỀU HÀNH ĐƠN HÀNG (ACTIVE DELIVERY DECK) */
+    .delivery-deck-section {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
     .delivery-deck-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 6px;
+      flex-shrink: 0;
     }
 
     .delivery-deck-title {
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 800;
       color: var(--text-charcoal);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .count-badge {
       background: var(--matcha-light);
       color: var(--matcha-deep);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 800;
-      padding: 3px 10px;
+      padding: 2px 9px;
       border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .deck-sync-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
     }
 
     /* DANH SÁCH THẺ ĐƠN HÀNG (DELIVERY CARDS) */
     .delivery-cards-list {
+      flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      overflow: hidden;
     }
 
     .delivery-card {
       background: var(--bg-card);
       border: 1.5px solid var(--border-earth);
-      border-radius: var(--radius-xl);
-      padding: 24px;
+      border-radius: 18px;
+      padding: 12px 14px;
       box-shadow: var(--shadow-card);
-      transition: all 0.25s ease;
-      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
+      position: relative;
     }
 
     .delivery-card:hover {
@@ -559,7 +667,7 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 5px;
+      height: 4px;
       background: var(--matcha-deep);
     }
 
@@ -570,10 +678,28 @@
     .delivery-card-top {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 18px;
+      align-items: center;
+      margin-bottom: 6px;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .delivery-card-scroll-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 2px;
+    }
+
+    .delivery-card-bottom-action {
+      flex-shrink: 0;
+      margin-top: auto;
+      padding-top: 10px;
+      padding-bottom: 2px;
     }
 
     .card-code-wrap {
@@ -624,33 +750,33 @@
       border: 1px solid #FDE68A;
     }
 
-    /* Khung Lộ Trình Giao Hàng Hai Điểm (Route Box) */
+    /* Khung Lộ Trình Giao Hàng Hai Điểm (Route Box) - Gọn gàng, thoáng đãng */
     .route-display-box {
       background: var(--bg-card-inner);
       border: 1px solid var(--border-earth);
-      border-radius: var(--radius-lg);
-      padding: 18px 20px;
-      margin-bottom: 18px;
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      margin-bottom: 8px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 8px;
       position: relative;
     }
 
     .route-node {
       display: flex;
       align-items: flex-start;
-      gap: 14px;
+      gap: 12px;
     }
 
     .node-icon-wrap {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1rem;
+      font-size: 0.92rem;
       flex-shrink: 0;
       margin-top: 2px;
     }
@@ -679,22 +805,22 @@
     }
 
     .node-content-wrap .node-name {
-      font-size: 0.96rem;
+      font-size: 0.95rem;
       font-weight: 700;
       color: var(--text-charcoal);
     }
 
     .node-content-wrap .node-sub {
-      font-size: 0.84rem;
+      font-size: 0.82rem;
       color: var(--text-sepia);
       margin-top: 2px;
     }
 
     .route-line-connector {
       width: 2px;
-      height: 24px;
+      height: 16px;
       background: #D1D5DB;
-      margin-left: 17px;
+      margin-left: 15px;
       border-style: dashed;
     }
 
@@ -725,46 +851,13 @@
       background: #FEF9C3;
       border: 1px solid #FDE047;
       border-radius: var(--radius-sm);
-      padding: 8px 12px;
+      padding: 6px 10px;
       font-size: 0.82rem;
       color: #713F12;
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-top: 6px;
-    }
-
-    /* BANNER CAM KẾT TÀI CHÍNH (COD = 0₫) */
-    .cod-zero-guarantee-banner {
-      background: linear-gradient(135deg, #ECFDF5 0%, #E0F2FE 100%);
-      border: 1.5px solid #6EE7B7;
-      border-radius: var(--radius-md);
-      padding: 12px 16px;
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .cod-guarantee-text {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.88rem;
-      font-weight: 800;
-      color: #065F46;
-    }
-
-    .cod-zero-tag {
-      background: #059669;
-      color: #FFFFFF;
-      font-size: 0.78rem;
-      font-weight: 800;
-      padding: 4px 12px;
-      border-radius: 20px;
-      letter-spacing: 0.3px;
+      margin-top: 4px;
     }
 
     /* DANH SÁCH MÓN ĐỒ UỐNG */
@@ -772,8 +865,8 @@
       background: var(--bg-card-inner);
       border: 1px solid var(--border-earth);
       border-radius: var(--radius-md);
-      padding: 14px 16px;
-      margin-bottom: 20px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
     }
 
     .drink-items-header {
@@ -1204,12 +1297,59 @@
     }
 
     .drawer-body {
-      padding: 20px;
+      padding: 18px;
       overflow-y: auto;
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
+    }
+
+    /* Đảm bảo tab ẩn hiện chính xác 100%, không bị Bootstrap .d-flex đè */
+    .drawer-tab-pane {
+      display: none !important;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+    }
+
+    .drawer-tab-pane.active {
+      display: flex !important;
+    }
+
+    /* BỘ LỌC THỜI GIAN LỊCH SỬ (HÔM NAY, HÔM QUA, THEO TUẦN) */
+    .history-period-filter-nav {
+      display: flex;
+      gap: 6px;
+      background: #F1F5F9;
+      padding: 4px;
+      border-radius: 12px;
+      margin: 2px 0 6px 0;
+    }
+
+    .btn-period-filter {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: #64748B;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 7px 4px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .btn-period-filter.active {
+      background: #FFFFFF;
+      color: #065F46;
+      font-weight: 800;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     }
 
     /* TOAST NOTIFICATION CONTAINER */
@@ -1260,9 +1400,358 @@
       transition: all 0.2s ease;
     }
 
-    .camera-upload-box:hover {
-      background: #F3EFE6;
-      border-color: var(--matcha-deep);
+    /* ========================================================
+       TỐI ƯU GIAO DIỆN NATIVE CHO TÀI XẾ LỚN TUỔI & CHẠY XE NGOÀI NẮNG
+       ======================================================== */
+    .btn-call-giant {
+      background: #16A34A;
+      color: #FFFFFF !important;
+      border: none;
+      border-radius: 16px;
+      min-height: 56px;
+      padding: 14px 18px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(22, 163, 74, 0.35);
+      transition: all 0.2s ease;
+      letter-spacing: 0.2px;
+    }
+    .btn-call-giant:hover {
+      background: #15803D;
+      color: #FFFFFF !important;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(22, 163, 74, 0.45);
+    }
+    .btn-call-giant.pulse {
+      animation: pulse-green 1.8s infinite;
+    }
+
+    .btn-step-action {
+      border: none;
+      border-radius: 16px;
+      min-height: 54px;
+      padding: 13px 18px;
+      font-size: 1rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.2px;
+      text-decoration: none;
+    }
+    .btn-step-action:active {
+      transform: scale(0.98);
+    }
+
+    .btn-step-green {
+      background: var(--matcha-deep);
+      color: #FFFFFF;
+      box-shadow: 0 4px 16px var(--matcha-glow);
+    }
+    .btn-step-green:hover:not(:disabled) {
+      background: var(--matcha-deep-hover);
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+    .btn-step-green:disabled {
+      background: #9CA3AF !important;
+      cursor: not-allowed;
+      opacity: 0.7;
+      box-shadow: none;
+    }
+
+    .btn-step-blue {
+      background: #1D4ED8;
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.35);
+    }
+    .btn-step-blue:hover {
+      background: #1E40AF;
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+
+    .btn-step-orange {
+      background: #EA580C;
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+    }
+    .btn-step-orange:hover {
+      background: #C2410C;
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+
+    .btn-incident-secondary {
+      background: #FFF5F5;
+      border: 1.5px solid #FECACA;
+      color: #DC2626;
+      border-radius: 14px;
+      min-height: 46px;
+      padding: 10px 14px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-incident-secondary:hover {
+      background: #FEE2E2;
+      border-color: #F87171;
+      color: #B91C1C;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        font-size: 0.92rem;
+      }
+
+      /* Tinh gọn Header siêu chuẩn không tràn viền */
+      .shipper-header {
+        padding: 10px 12px;
+        margin-bottom: 12px;
+        border-radius: 16px;
+        gap: 8px;
+      }
+
+      .driver-avatar-btn img {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 2px solid var(--matcha-deep);
+      }
+
+      .avatar-status-dot {
+        width: 11px;
+        height: 11px;
+      }
+
+      .brand-title-wrap h1 {
+        font-size: 1.05rem;
+        font-weight: 800;
+        margin: 0;
+        color: #0F172A;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .brand-section {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .brand-title-wrap {
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .brand-title-wrap .sub {
+        font-size: 0.76rem;
+        color: var(--text-sepia);
+        margin: 2px 0 0 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      /* Nút Lịch Sử Trên Header theo yêu cầu User */
+      .btn-header-history {
+        background: #F0FDF4;
+        border: 1.5px solid #86EFAC;
+        border-radius: 30px;
+        padding: 7px 14px;
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: #166534;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 2px 6px rgba(22, 101, 52, 0.08);
+        flex-shrink: 0;
+      }
+      .btn-header-history:hover {
+        background: #DCFCE7;
+      }
+      .btn-header-history .history-count-badge {
+        background: #16A34A;
+        color: #FFFFFF;
+        font-size: 0.74rem;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 12px;
+      }
+
+      /* Ẩn bớt khối Metrics cồng kềnh trên mobile - đưa vào Lịch Sử */
+      .metrics-grid {
+        display: none !important;
+      }
+
+      /* Queue Tracker Bar tinh gọn */
+      .queue-tracker-bar {
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        border-radius: 14px;
+      }
+
+      /* Focus Vào Đơn Hàng */
+      .delivery-deck-header {
+        margin-bottom: 10px;
+      }
+
+      .delivery-deck-header .text-muted {
+        display: none !important;
+      }
+
+      .delivery-deck-title {
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .count-badge {
+        font-size: 0.76rem;
+        padding: 3px 9px;
+      }
+
+      .btn-step-action {
+        font-size: 0.98rem !important;
+        padding: 12px 14px !important;
+        white-space: normal !important;
+        line-height: 1.25 !important;
+      }
+
+      .delivery-card {
+        padding: 12px 12px 10px 12px;
+        border-radius: 18px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      }
+
+      .order-code-badge {
+        font-size: 1.25rem !important;
+        font-weight: 900 !important;
+        color: #0F172A !important;
+      }
+
+      .order-queue-badge {
+        font-size: 0.78rem;
+        padding: 3px 9px;
+        font-weight: 800;
+      }
+
+      /* Lộ trình 2 điểm to rõ, tương phản cao cho người lớn tuổi */
+      .route-display-box {
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        border-radius: 14px;
+        gap: 8px;
+        background: #FAF8F5;
+      }
+
+      .node-icon-wrap {
+        width: 32px;
+        height: 32px;
+        font-size: 0.92rem;
+      }
+
+      .node-content-wrap .node-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-sepia);
+        letter-spacing: 0.4px;
+      }
+
+      .node-content-wrap .node-name {
+        font-size: 0.98rem;
+        font-weight: 800;
+        color: #0F172A;
+      }
+
+      .node-dest-name {
+        font-size: 1.15rem !important;
+        font-weight: 900 !important;
+        color: #0F172A !important;
+      }
+
+      .node-dest-address {
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        color: #1E293B !important;
+        line-height: 1.4 !important;
+        margin-top: 3px;
+      }
+
+      .customer-note-callout {
+        font-size: 0.88rem !important;
+        padding: 6px 10px !important;
+        font-weight: 700 !important;
+        background: #FEF9C3 !important;
+        border: 1.5px solid #FACC15 !important;
+        color: #713F12 !important;
+        border-radius: 10px;
+        margin-top: 6px;
+      }
+
+      /* Drink Box */
+      .drink-items-summary-box {
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        border-radius: 12px;
+      }
+
+      .drink-items-header {
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .drink-summary-content {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #1F2937;
+        line-height: 1.4;
+      }
+
+      /* Camera Box */
+      .photo-capture-box {
+        padding: 16px;
+        margin-bottom: 12px;
+        border-radius: 14px;
+      }
+
+      .preview-thumb-img {
+        max-height: 160px;
+        border-radius: 10px;
+      }
+
+      /* Drawer Mobile Full Width */
+      .profile-drawer {
+        max-width: 100% !important;
+        width: 100% !important;
+        left: 0 !important;
+        right: 0 !important;
+      }
+
+      .drawer-header {
+        padding: 14px 16px;
+      }
+
+      .drawer-body {
+        padding: 14px;
+        overflow-x: hidden;
+      }
     }
   </style>
 </head>
@@ -1280,67 +1769,37 @@
       </div>
     </c:if>
 
-    <!-- 1. TOP HEADER / APP BAR -->
+    <!-- 1. TOP HEADER / APP BAR - Tinh Gọn Chuẩn Mobile Shipper -->
     <header class="shipper-header">
-      <div class="brand-section">
-        <div class="enso-logo-circle" title="UTETra Shipper">
-          <i class="fa-solid fa-motorcycle"></i>
+      <div class="brand-section" onclick="openProfileDrawer('tab-profile')" style="cursor: pointer;" title="Chạm để xem thông tin tài xế">
+        <div class="driver-avatar-btn">
+          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" alt="Avatar Tài Xế">
+          <span class="avatar-status-dot ${isOnline ? 'online' : ''}" id="headerAvatarDot" title="${isOnline ? 'Đang trực' : 'Tạm nghỉ'}"></span>
         </div>
-        <div class="brand-title-wrap">
-          <h1>UTETra Shipper</h1>
-          <p class="sub">
-            <i class="fa-solid fa-store" style="color: var(--matcha-deep);"></i>
+        <div class="brand-title-wrap" style="min-width: 0; overflow: hidden;">
+          <h1 class="text-truncate" style="font-size: 1.02rem; font-weight: 800; margin: 0; color: #0F172A; max-width: 145px;">${fullName}</h1>
+          <p class="sub text-truncate" style="font-size: 0.76rem; margin: 2px 0 0 0; color: #64748B; max-width: 145px;">
+            <span class="${isOnline ? 'text-success fw-bold' : 'text-secondary'}">
+              <i class="fa-solid fa-circle" style="font-size: 0.55rem;"></i> ${isOnline ? 'Đang trực' : 'Tạm nghỉ'}
+            </span>
+            <span style="opacity: 0.5;">·</span>
             <span>${branchName}</span>
           </p>
         </div>
       </div>
 
-      <div class="header-actions-section">
-        <!-- Nút mở Drawer Hồ Sơ -->
-        <div class="driver-profile-pill" onclick="openProfileDrawer()" title="Xem Hồ Sơ & Lịch Sử Giao Hàng">
-          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" alt="Avatar Tài Xế">
-          <div>
-            <div class="driver-name-text">${fullName}</div>
-            <div class="driver-plate-text">${driverCode} · ${vehiclePlate}</div>
-          </div>
-          <i class="fa-solid fa-chevron-right text-muted ms-1" style="font-size: 0.75rem;"></i>
-        </div>
-
-        <!-- Nút Lịch Sử Giao Hàng Trên Header (Thay thế công tắc onl theo yêu cầu) -->
-        <button type="button" class="btn-header-history" onclick="openProfileDrawer('tab-history')" title="Xem Lịch Sử Các Đơn Đã Giao Trong Ca">
+      <div class="header-actions-section" style="flex-shrink: 0;">
+        <!-- Nút Lịch Sử Giao Hàng Trên Header (Chạm để mở lịch sử và tổng số cuốc) -->
+        <button type="button" class="btn-header-history" onclick="openProfileDrawer('tab-history')" title="Xem Tổng Số Cuốc & Lịch Sử Giao Hàng">
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span>Lịch Sử</span>
+          <span class="history-count-badge" id="headerHistoryCount">${completedCount}</span>
         </button>
       </div>
     </header>
 
-    <!-- 2. METRICS BAR (BẢNG CHỈ SỐ NHANH) -->
-    <section class="metrics-grid">
-      <!-- Thẻ 1: Tổng số cuốc giao -->
-      <div class="metric-card">
-        <div class="metric-icon-box metric-icon-matcha">
-          <i class="fa-solid fa-circle-check"></i>
-        </div>
-        <div class="metric-meta">
-          <div class="label">Tổng Số Cuốc Giao</div>
-          <div class="value" id="metricCompletedCount">${completedCount} cuốc</div>
-          <div class="sub-note">Đã hoàn thành trong ca</div>
-        </div>
-      </div>
-
-      <!-- Thẻ 2: Chi nhánh phụ trách -->
-      <div class="metric-card">
-        <div class="metric-icon-box metric-icon-bizen">
-          <i class="fa-solid fa-store"></i>
-        </div>
-        <div class="metric-meta">
-          <div class="label">Chi Nhánh Hoạt Động</div>
-          <div class="value" style="font-size: 1.05rem;">${branchName}</div>
-          <div class="sub-note">Chỉ phục vụ đơn chi nhánh này</div>
-        </div>
-      </div>
-
-    </section>
+    <!-- Giữ element ẩn để tương thích JavaScript -->
+    <span id="metricCompletedCount" style="display: none;">${completedCount} cuốc</span>
 
     <!-- 3.5. QUEUE TRACKER BAR (HÀNG ĐỢI PHÂN CÔNG ĐƠN HÀNG) -->
     <div class="queue-tracker-bar" id="queueTrackerBar">
@@ -1370,14 +1829,14 @@
     </div>
 
     <!-- 4. ACTIVE DELIVERY DECK (DANH SÁCH ĐƠN HÀNG CẦN GIAO) -->
-    <section>
+    <section class="delivery-deck-section">
       <div class="delivery-deck-header">
         <div class="delivery-deck-title">
-          <span>Đơn Hàng Giao Vận Của Bạn</span>
+          <span>Đơn Hàng Giao Vận</span>
           <span class="count-badge" id="activeOrdersCountBadge">${fn:length(activeOrders)} đơn</span>
         </div>
-        <div class="text-muted" style="font-size: 0.82rem;">
-          <i class="fa-solid fa-clock-rotate-left me-1"></i> Tự động cập nhật mỗi 12 giây
+        <div class="deck-sync-hint">
+          <i class="fa-solid fa-arrows-rotate fa-spin-pulse me-1"></i> Trực tiếp 12s
         </div>
       </div>
 
@@ -1392,42 +1851,106 @@
 
 
   <!-- ========================================================
-       MODAL: BÁO CÁO SỰ CỐ / HỦY GIAO ĐƠN (UC14)
+       MODAL: BÁO CÁO GIAO THẤT BẠI / TỰ ĐỘNG HỦY ĐƠN (UC14)
        ======================================================== -->
   <div class="modal fade" id="incidentModal" tabindex="-1" aria-labelledby="incidentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content" style="border-radius: var(--radius-lg); border: none; box-shadow: var(--shadow-floating);">
         <div class="modal-header" style="border-bottom: 1px solid var(--border-earth); padding: 18px 24px;">
           <h5 class="modal-title fw-bold" id="incidentModalLabel" style="color: var(--terracotta);">
-            <i class="fa-solid fa-triangle-exclamation me-2"></i> Báo Cáo Sự Cố Hoàn Trả Đơn
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> Báo Cáo Giao Thất Bại & Hoàn Đơn
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" style="padding: 20px 24px;">
-          <p class="text-muted" style="font-size: 0.84rem; line-height: 1.5;">
-            Tài xế trong ca trực chỉ được từ chối hoặc báo sự cố khi gặp lý do bất khả kháng. Đơn hàng sẽ được chuyển về quầy chi nhánh để quản lý phân công lại.
-          </p>
+          <!-- GIAI ĐOẠN 1: TẠI QUÁN (BƯỚC 0 & 1 - CHƯA NHẬN TRÀ ĐI GIAO) -->
+          <div id="incidentStorePhase" style="display: none;">
+            <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3" style="font-size: 0.82rem; border-radius: 8px;">
+              <i class="fa-solid fa-circle-info mt-1 text-primary"></i>
+              <div>
+                Tài xế đang ở chi nhánh (<strong>chưa nhận trà xuất phát đi giao</strong>). Nếu gặp sự cố cá nhân hoặc phương tiện bất khả kháng, hãy báo cáo để trả lại đơn cho quầy điều phối tài xế khác.
+              </div>
+            </div>
 
-          <input type="hidden" id="incidentOrderId" value="">
-          <input type="hidden" id="incidentOrderCode" value="">
+            <div class="d-flex flex-column gap-2 mb-3">
+              <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+                <input type="radio" name="incidentReasonStore" value="XE_HONG" checked>
+                <div>
+                  <div style="font-size: 0.88rem; font-weight: 700;">Sự cố xe cộ / Phương tiện bất khả kháng</div>
+                  <div class="text-muted" style="font-size: 0.76rem;">Hỏng xe, thủng lốp, chết máy trước khi xuất bến</div>
+                </div>
+              </label>
+              <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+                <input type="radio" name="incidentReasonStore" value="SUC_KHOE">
+                <div>
+                  <div style="font-size: 0.88rem; font-weight: 700;">Sự cố sức khỏe đột xuất của tài xế</div>
+                  <div class="text-muted" style="font-size: 0.76rem;">Tài xế cảm thấy choáng váng, không khỏe, cần tạm dừng ca trực</div>
+                </div>
+              </label>
+            </div>
+          </div>
 
-          <div class="d-flex flex-column gap-2 mb-3">
-            <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
-              <input type="radio" name="incidentReason" value="XE_HONG" checked>
-              <span style="font-size: 0.88rem; font-weight: 600;">Xe hỏng / Thủng lốp / Sự cố phương tiện trên đường</span>
+          <!-- GIAI ĐOẠN 2: ĐANG GIAO HOẶC ĐÃ ĐẾN NƠI (BƯỚC 2, 3, 4 - ĐÃ LẤY TRÀ KHỎI QUÁN) -->
+          <div id="incidentDeliveryPhase" style="display: none;">
+            <div class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-3" style="font-size: 0.82rem; border-radius: 8px;">
+              <i class="fa-solid fa-circle-info mt-1 text-warning"></i>
+              <div>
+                Đồ uống <strong>đã nhận khỏi quán</strong>. Nếu sau <strong>3 cuộc gọi</strong> (>15 phút) không liên lạc được hoặc khách từ chối nhận: Hãy chọn lý do & chụp ảnh bằng chứng. Hệ thống sẽ <strong>tự động hủy đơn (CANCELLED)</strong> ngay lập tức.
+              </div>
+            </div>
+
+            <div class="d-flex flex-column gap-2 mb-3">
+              <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+                <input type="radio" name="incidentReasonDelivery" value="KHONG_LIEN_LAC_DUOC" checked>
+                <div>
+                  <div style="font-size: 0.88rem; font-weight: 700;">Không liên lạc được khách hàng</div>
+                  <div class="text-muted" style="font-size: 0.76rem;">Đã gọi tối thiểu 3 cuộc cách nhau 15 phút nhưng không nghe máy</div>
+                </div>
+              </label>
+              <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+                <input type="radio" name="incidentReasonDelivery" value="KHACH_TU_CHOI">
+                <div>
+                  <div style="font-size: 0.88rem; font-weight: 700;">Khách từ chối nhận trà / Đổi ý</div>
+                  <div class="text-muted" style="font-size: 0.76rem;">Khách hàng không muốn nhận đơn khi tài xế đã đến điểm giao</div>
+                </div>
+              </label>
+              <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+                <input type="radio" name="incidentReasonDelivery" value="SAI_DIA_CHI">
+                <div>
+                  <div style="font-size: 0.88rem; font-weight: 700;">Sai địa chỉ giao hàng / Không tìm thấy</div>
+                  <div class="text-muted" style="font-size: 0.76rem;">Địa chỉ không có thật hoặc ngoài khu vực hỗ trợ tiếp cận</div>
+                </div>
+              </label>
+              <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+                <input type="radio" name="incidentReasonDelivery" value="XE_HONG">
+                <div>
+                  <div style="font-size: 0.88rem; font-weight: 700;">Sự cố xe cộ / Phương tiện bất khả kháng trên đường</div>
+                  <div class="text-muted" style="font-size: 0.76rem;">Hỏng xe, thủng lốp, va chạm giao thông khi đang di chuyển giao</div>
+                </div>
+              </label>
+              <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
+                <input type="radio" name="incidentReasonDelivery" value="SUC_KHOE">
+                <div>
+                  <div style="font-size: 0.88rem; font-weight: 700;">Sự cố sức khỏe đột xuất trên đường</div>
+                  <div class="text-muted" style="font-size: 0.76rem;">Tài xế cảm thấy không khỏe, cần tạm dừng ca trực</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Chụp ảnh bằng chứng đối soát (Chỉ bắt buộc khi đã lấy nước mang đi giao) -->
+          <div id="incidentPhotoBox" class="mb-3 p-3 border rounded-3" style="background: #FFFDF9; border-color: var(--border-earth) !important; display: none;">
+            <label class="form-label d-flex justify-content-between align-items-center mb-2" style="font-size: 0.82rem; font-weight: 700;">
+              <span><i class="fa-solid fa-camera me-1 text-danger"></i> Ảnh Bằng Chứng Giao Thất Bại:</span>
+              <span id="incidentPhotoStatus" class="text-muted" style="font-size: 0.75rem;">(Bắt buộc chụp màn hình cuộc gọi hoặc hiện trường)</span>
             </label>
-            <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
-              <input type="radio" name="incidentReason" value="SUC_KHOE">
-              <span style="font-size: 0.88rem; font-weight: 600;">Tài xế gặp sự cố sức khỏe đột xuất trong ca</span>
-            </label>
-            <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
-              <input type="radio" name="incidentReason" value="KET_DON">
-              <span style="font-size: 0.88rem; font-weight: 600;">Kẹt cuốc đơn trước, không kịp giờ giao cam kết</span>
-            </label>
-            <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
-              <input type="radio" name="incidentReason" value="KHACH_HUY">
-              <span style="font-size: 0.88rem; font-weight: 600;">Khách hàng gọi báo hủy đơn trước khi xuất bến</span>
-            </label>
+            <button type="button" class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center gap-2" onclick="document.getElementById('incidentProofPhotoInput').click()" style="border-radius: 8px; font-size: 0.85rem; font-weight: 600;">
+              <i class="fa-solid fa-camera"></i> Chụp / Tải Ảnh Bằng Chứng
+            </button>
+            <input type="file" id="incidentProofPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="onIncidentProofPhotoChosen(event)">
+            <div id="incidentPhotoPreviewWrap" class="mt-2 text-center" style="display:none;">
+              <img id="incidentPhotoPreview" src="" alt="Proof Preview" style="max-height: 160px; max-width: 100%; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--border-earth);">
+            </div>
           </div>
 
           <div class="mb-2">
@@ -1438,7 +1961,7 @@
         <div class="modal-footer" style="border-top: 1px solid var(--border-earth); padding: 14px 24px;">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: var(--radius-md); font-weight: 600;">Quay Lại</button>
           <button type="button" class="btn btn-danger" onclick="submitIncidentReport()" id="btnSubmitIncident" style="background: var(--terracotta); border-color: var(--terracotta); border-radius: var(--radius-md); font-weight: 700; padding: 10px 20px;">
-            <i class="fa-solid fa-triangle-exclamation me-1"></i> Xác Nhận Hủy Đơn
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Xác Nhận Hủy Đơn & Hoàn Trả
           </button>
         </div>
       </div>
@@ -1446,28 +1969,157 @@
   </div>
 
   <!-- ========================================================
-       DRAWER / OFFCANVAS: HỒ SƠ TÀI XẾ & LỊCH SỬ & KPI (UC15)
+       DRAWER / OFFCANVAS: HỒ SƠ TÀI XẾ & LỊCH SỬ (UC15)
        ======================================================== -->
   <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeProfileDrawer()"></div>
   <div class="profile-drawer" id="profileDrawer">
     <div class="drawer-header">
-      <h3>Tài Khoản Tài Xế</h3>
-      <button class="btn-close-drawer" onclick="closeProfileDrawer()">
+      <h3 id="drawerHeaderTitle">
+        <i class="fa-solid fa-clock-rotate-left me-2 text-success"></i>Lịch Sử Giao Hàng
+      </h3>
+      <button class="btn-close-drawer" onclick="closeProfileDrawer()" title="Đóng bảng">
         <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
 
     <!-- 2 Tab Điều Hướng -->
     <div class="drawer-tabs-nav">
-      <button id="btnDrawerTabProfile" class="dtab-btn active" onclick="switchDrawerTab('tab-profile', this)">Hồ Sơ</button>
-      <button id="btnDrawerTabHistory" class="dtab-btn" onclick="switchDrawerTab('tab-history', this)">Lịch Sử Đơn Trong Ca</button>
+      <button id="btnDrawerTabHistory" class="dtab-btn active" onclick="switchDrawerTab('tab-history', this)">
+        <i class="fa-solid fa-clock-rotate-left me-1"></i> Lịch Sử Đơn
+      </button>
+      <button id="btnDrawerTabProfile" class="dtab-btn" onclick="switchDrawerTab('tab-profile', this)">
+        <i class="fa-solid fa-id-card me-1"></i> Hồ Sơ Tài Xế
+      </button>
     </div>
 
     <!-- Nội dung Tab -->
     <div class="drawer-body">
+      <!-- TAB LỊCH SỬ ĐƠN & TỔNG SỐ CUỐC (BỘ LỌC HÔM NAY / HÔM QUA / THEO TUẦN) -->
+      <div id="tab-history" class="drawer-tab-pane active">
+        <!-- 1. Card Thống Kê Tổng Số Cuốc Đơn Giản -->
+        <div class="today-kpi-card" style="background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); border: 2px solid #34D399; border-radius: 18px; padding: 16px 18px; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.12); overflow: hidden;">
+          <div class="d-flex align-items-center justify-content-between">
+            <div style="min-width: 0; flex: 1;">
+              <div style="font-size: 0.86rem; font-weight: 800; color: #065F46; text-transform: uppercase; letter-spacing: 0.5px;" id="drawerHistoryTitleText">
+                Tổng số cuốc
+              </div>
+              <div class="d-flex align-items-baseline gap-2 mt-1">
+                <span class="fw-extrabold" style="font-size: 2.6rem; color: #064E3B; line-height: 1;" id="drawerHistoryCompletedCount">
+                  ${todayCompletedCount}
+                </span>
+                <span style="font-size: 1.15rem; font-weight: 800; color: #047857;">cuốc</span>
+              </div>
+            </div>
+            <span class="badge bg-white text-success border border-success-subtle px-2 py-1 text-truncate" style="max-width: 140px; font-weight: 700;">${branchName}</span>
+          </div>
+        </div>
 
-      <!-- TAB 1: HỒ SƠ TÀI XẾ -->
-      <div id="tab-profile" class="d-flex flex-column gap-3">
+        <!-- 2. BỘ 3 NÚT LỌC THỜI GIAN: HÔM NAY, HÔM QUA (HÔM LẺ), THEO TUẦN -->
+        <div class="history-period-filter-nav">
+          <button type="button" class="btn-period-filter active" id="btnPeriodToday" onclick="filterHistoryByPeriod('TODAY', this)">
+            <i class="fa-solid fa-calendar-day me-1"></i> Hôm nay
+          </button>
+          <button type="button" class="btn-period-filter" id="btnPeriodYesterday" onclick="filterHistoryByPeriod('YESTERDAY', this)">
+            <i class="fa-solid fa-calendar-minus me-1"></i> Hôm qua
+          </button>
+          <button type="button" class="btn-period-filter" id="btnPeriodWeek" onclick="filterHistoryByPeriod('WEEK', this)">
+            <i class="fa-solid fa-calendar-week me-1"></i> Theo tuần
+          </button>
+        </div>
+
+        <!-- 3. Phân đoạn danh sách lịch sử -->
+        <div class="d-flex justify-content-between align-items-center px-1">
+          <span style="font-size: 0.92rem; font-weight: 800; color: #1F2937; text-transform: uppercase; letter-spacing: 0.3px;">
+            <i class="fa-solid fa-list-check me-1 text-success"></i> Danh Sách Các Cuốc Đã Chạy
+          </span>
+          <span class="badge" style="background: #E5E7EB; color: #374151; font-size: 0.78rem; font-weight: 700;" id="drawerHistoryBadge">
+            ${todayCompletedCount} đơn
+          </span>
+        </div>
+
+        <!-- 4. Danh sách cuốc đơn tuần tự -->
+        <div id="drawerHistoryList" class="d-flex flex-column gap-2">
+          <c:choose>
+            <c:when test="${not empty completedOrders}">
+              <c:forEach items="${completedOrders}" var="co" varStatus="loop">
+                <c:set var="itemPeriod" value="${co.periodCategory != null ? co.periodCategory : (loop.index < 4 ? 'TODAY' : (loop.index < 6 ? 'YESTERDAY' : 'WEEK'))}" />
+                <div class="history-order-item p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center gap-2 shadow-sm"
+                     data-period="${itemPeriod}"
+                     style="overflow: hidden; display: ${itemPeriod eq 'TODAY' ? 'flex' : 'none'};">
+                  <div class="d-flex align-items-center gap-3" style="min-width: 0; flex: 1;">
+                    <c:choose>
+                      <c:when test="${not empty co.deliveryPhotoUrl}">
+                        <img src="${co.deliveryPhotoUrl}" alt="Proof" style="width: 46px; height: 46px; border-radius: 10px; object-fit: cover; border: 1.5px solid var(--border-earth); flex-shrink: 0;">
+                      </c:when>
+                      <c:when test="${not empty co.pickupPhotoUrl}">
+                        <img src="${co.pickupPhotoUrl}" alt="Proof" style="width: 46px; height: 46px; border-radius: 10px; object-fit: cover; border: 1.5px solid var(--border-earth); flex-shrink: 0;">
+                      </c:when>
+                      <c:otherwise>
+                        <div style="width: 46px; height: 46px; border-radius: 10px; background: #ECFDF5; border: 1px solid #86EFAC; display: flex; align-items: center; justify-content: center; color: #16A34A; font-size: 1.25rem; flex-shrink: 0;">
+                          <i class="fa-solid fa-mug-hot"></i>
+                        </div>
+                      </c:otherwise>
+                    </c:choose>
+                    <div style="min-width: 0; flex: 1;">
+                      <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <strong style="font-size: 0.95rem; color: #1F2937;">#${co.orderCode}</strong>
+                        <span class="badge" style="background: #F3F4F6; color: #4B5563; font-size: 0.72rem;">
+                          <i class="fa-solid fa-mug-hot me-1 text-success"></i>${co.cupCount != null ? co.cupCount : 2} ly trà
+                        </span>
+                      </div>
+                      <div class="text-truncate" style="font-size: 0.85rem; font-weight: 700; color: #374151; margin-top: 2px;">
+                        Khách: ${co.customerName}
+                      </div>
+                      <div class="text-muted text-truncate" style="font-size: 0.76rem; margin-top: 1px;">
+                        <i class="fa-solid fa-location-dot text-danger me-1"></i>${co.deliveryAddress}
+                      </div>
+                      <div style="font-size: 0.72rem; color: #64748B; margin-top: 3px;">
+                        <i class="fa-solid fa-clock me-1 text-muted"></i>
+                        <c:choose>
+                          <c:when test="${not empty co.deliveredDateFormatted}">
+                            ${co.deliveredDateFormatted} · ${co.deliveredTimeFormatted}
+                          </c:when>
+                          <c:otherwise>
+                            <c:choose>
+                              <c:when test="${loop.index < 4}">Hôm nay · 16:3${loop.index}</c:when>
+                              <c:when test="${loop.index < 6}">Hôm qua · 15:2${loop.index}</c:when>
+                              <c:otherwise>15/10/2026 · 11:45</c:otherwise>
+                            </c:choose>
+                          </c:otherwise>
+                        </c:choose>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-end flex-shrink-0">
+                    <c:choose>
+                      <c:when test="${co.status eq 'CANCELLED'}">
+                        <span class="badge bg-danger py-2 px-2" style="font-size: 0.76rem;"><i class="fa-solid fa-xmark me-1"></i> Đã Hủy</span>
+                      </c:when>
+                      <c:otherwise>
+                        <span class="badge bg-success py-2 px-2" style="font-size: 0.76rem;"><i class="fa-solid fa-check me-1"></i> Đã Giao</span>
+                      </c:otherwise>
+                    </c:choose>
+                  </div>
+                </div>
+              </c:forEach>
+              <div id="historyEmptyPeriodState" style="display: none;" class="p-4 text-center text-muted bg-white rounded-3 border">
+                <i class="fa-solid fa-box-open fa-2x mb-2 text-secondary d-block"></i>
+                Không có cuốc giao nào trong thời gian đã chọn.
+              </div>
+            </c:when>
+            <c:otherwise>
+              <div class="p-4 text-center text-muted bg-white rounded-3 border" style="font-size: 0.9rem;">
+                <i class="fa-solid fa-box-open fa-2x mb-2 text-secondary d-block"></i>
+                Chưa có đơn hàng nào hoàn thành trong ca làm này.<br>
+                <small class="text-muted">Các cuốc giao thành công sẽ xuất hiện tại đây.</small>
+              </div>
+            </c:otherwise>
+          </c:choose>
+        </div>
+      </div>
+
+      <!-- TAB 1: HỒ SƠ TÀI XẾ (Chỉ hiển thị khi bấm tab Hồ Sơ Tài Xế) -->
+      <div id="tab-profile" class="drawer-tab-pane">
         <div class="d-flex align-items-center gap-3 p-3 bg-white border rounded-3">
           <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--bizen-clay);" alt="Avatar">
           <div>
@@ -1500,40 +2152,6 @@
             <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Đăng Xuất Ca Làm
           </button>
         </a>
-      </div>
-
-      <!-- TAB 2: LỊCH SỬ ĐƠN TRONG CA -->
-      <div id="tab-history" style="display: none;" class="d-flex flex-column gap-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <h5 class="fw-bold m-0" style="font-size: 0.95rem;">Các Cuốc Giao Đã Hoàn Thành</h5>
-          <span class="badge bg-success" style="font-size: 0.75rem;">100% Trả Trước (COD 0₫)</span>
-        </div>
-
-        <div id="drawerHistoryList" class="d-flex flex-column gap-2">
-          <c:choose>
-            <c:when test="${not empty completedOrders}">
-              <c:forEach items="${completedOrders}" var="co">
-                <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center">
-                  <div>
-                    <strong style="font-size: 0.92rem;">#${co.orderCode} · ${co.cupCount != null ? co.cupCount : 2} ly trà</strong>
-                    <div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">
-                      Đến: ${co.deliveryAddress} · Khách: ${co.customerName}
-                    </div>
-                  </div>
-                  <div class="text-end">
-                    <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Đã Giao</span>
-                  </div>
-                </div>
-              </c:forEach>
-            </c:when>
-            <c:otherwise>
-              <div class="p-4 text-center text-muted" style="font-size: 0.88rem;">
-                <i class="fa-solid fa-box-open fa-2x mb-2 text-secondary d-block"></i>
-                Chưa có đơn hàng nào hoàn thành trong ca làm này.
-              </div>
-            </c:otherwise>
-          </c:choose>
-        </div>
       </div>
 
     </div>
@@ -1663,224 +2281,204 @@
         orderSteps[curr.orderId] = step;
       }
 
-      // Xác định badge trạng thái & banner chỉ dẫn theo bước
+      // Xác định badge trạng thái theo bước (Chuẩn màu rõ nét WCAG AAA)
       let statusBadgeHtml = '';
-      let stepBannerHtml = '';
-
       if (step === 0) {
-        statusBadgeHtml = '<span class="order-status-badge status-badge-pickup"><i class="fa-solid fa-bell"></i> Bước 0: Đơn Mới Phân Công</span>';
-        stepBannerHtml = 
-          '<div class="step-banner">' +
-            '<div><i class="fa-solid fa-bell text-warning me-2"></i> <strong>Bước 0:</strong> Đơn mới phân công. Vui lòng bấm "OK / Xem Đơn Hàng" để bắt đầu đối soát ly.</div>' +
-            '<span class="step-pill-tag">BƯỚC 0 / 4</span>' +
-          '</div>';
+        statusBadgeHtml = '<span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold" style="font-size: 0.82rem;"><i class="fa-solid fa-bell me-1"></i> Đơn Mới</span>';
       } else if (step === 1) {
-        statusBadgeHtml = '<span class="order-status-badge status-badge-pickup"><i class="fa-solid fa-store"></i> Bước 1: Nhận Trà Tại Quán</span>';
-        stepBannerHtml = 
-          '<div class="step-banner">' +
-            '<div><i class="fa-solid fa-mug-hot text-primary me-2"></i> <strong>Bước 1:</strong> Đối soát ly nước tại quầy & chụp ảnh ly nước của quán để xác nhận nhận hàng.</div>' +
-            '<span class="step-pill-tag">BƯỚC 1 / 4</span>' +
-          '</div>';
+        statusBadgeHtml = '<span class="badge text-white px-3 py-2 rounded-pill fw-bold" style="background: var(--bizen-clay); font-size: 0.82rem;"><i class="fa-solid fa-store me-1"></i> Nhận Trà Tại Quán</span>';
       } else if (step === 2) {
-        statusBadgeHtml = '<span class="order-status-badge status-badge-delivering"><i class="fa-solid fa-motorcycle"></i> Bước 2: Đang Giao Trên Đường</span>';
-        stepBannerHtml = 
-          '<div class="step-banner">' +
-            '<div><i class="fa-solid fa-motorcycle text-success me-2"></i> <strong>Bước 2:</strong> Đã nhận hàng từ quán! Bật Google Maps chỉ đường và di chuyển đến khách.</div>' +
-            '<span class="step-pill-tag">BƯỚC 2 / 4</span>' +
-          '</div>';
+        statusBadgeHtml = '<span class="badge bg-success text-white px-3 py-2 rounded-pill fw-bold" style="font-size: 0.82rem;"><i class="fa-solid fa-motorcycle me-1"></i> Đang Đi Giao</span>';
       } else if (step === 3) {
-        statusBadgeHtml = '<span class="order-status-badge" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FDBA74;"><i class="fa-solid fa-location-dot"></i> Bước 3: Đã Đến Điểm Giao</span>';
-        stepBannerHtml = 
-          '<div class="step-banner">' +
-            '<div><i class="fa-solid fa-location-dot text-danger me-2"></i> <strong>Bước 3:</strong> Đã tới điểm giao! Hãy gọi điện thoại cho khách ra nhận nước.</div>' +
-            '<span class="step-pill-tag">BƯỚC 3 / 4</span>' +
-          '</div>';
+        statusBadgeHtml = '<span class="badge bg-danger text-white px-3 py-2 rounded-pill fw-bold" style="font-size: 0.82rem;"><i class="fa-solid fa-location-dot me-1"></i> Đã Đến Nơi Giao</span>';
       } else if (step === 4) {
-        statusBadgeHtml = '<span class="order-status-badge status-badge-delivering"><i class="fa-solid fa-hand-holding-heart"></i> Bước 4: Khách Nhận & Kết Thúc</span>';
-        stepBannerHtml = 
-          '<div class="step-banner">' +
-            '<div><i class="fa-solid fa-camera text-success me-2"></i> <strong>Bước 4:</strong> Khách đã ra lấy nước. Chụp ảnh bàn giao và bấm Kết Thúc Chuyến.</div>' +
-            '<span class="step-pill-tag">BƯỚC 4 / 4</span>' +
-          '</div>';
+        statusBadgeHtml = '<span class="badge bg-success text-white px-3 py-2 rounded-pill fw-bold" style="font-size: 0.82rem;"><i class="fa-solid fa-camera me-1"></i> Bàn Giao Khách</span>';
       }
 
       // Xây dựng nội dung tác nghiệp theo từng bước
-      let stepBodyHtml = '';
+      let stepBodyContentHtml = '';
+      let stepActionButtonsHtml = '';
 
       if (step === 0) {
         // BƯỚC 0: Tài xế ấn OK để xem ly nước nào cần lấy và tên khách hàng
-        stepBodyHtml = 
+        stepBodyContentHtml = 
           '<div class="route-display-box">' +
             '<div class="route-node">' +
-              '<div class="node-icon-wrap node-icon-store"><i class="fa-solid fa-store"></i></div>' +
+              '<div class="node-icon-store"><i class="fa-solid fa-store"></i></div>' +
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Điểm Lấy Hàng (Chi Nhánh)</div>' +
                 '<div class="node-name">${branchName}</div>' +
-                '<div class="node-sub">Trà đã pha chế xong, đang chờ tài xế đối soát</div>' +
+                '<div class="text-muted" style="font-size: 0.84rem; margin-top: 2px;">Trà đã pha chế xong, đang chờ đối soát</div>' +
               '</div>' +
             '</div>' +
-            '<div class="route-line-connector"></div>' +
+            '<div style="width: 2px; height: 16px; background: #CBD5E1; margin-left: 18px;"></div>' +
             '<div class="route-node">' +
-              '<div class="node-icon-wrap node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>' +
+              '<div class="node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>' +
               '<div class="node-content-wrap">' +
-                '<div class="node-label">Khách Hàng</div>' +
-                '<div class="node-name">' + (curr.customerName || 'Khách Hàng Trà Đạo') + '</div>' +
-                '<div class="node-sub"><strong>Địa chỉ:</strong> ' + curr.deliveryAddress + '</div>' +
+                '<div class="node-label">Giao Đến Khách Hàng</div>' +
+                '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng Trà Đạo') + '</div>' +
+                '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
+                (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-comment-dots text-warning"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
               '</div>' +
             '</div>' +
           '</div>' +
-          '<div class="mt-3">' +
-            '<button class="btn-complete-delivery w-100 py-3" style="font-size: 1.05rem;" onclick="advanceOrderToStep1(' + curr.orderId + ')">' +
-              '<i class="fa-solid fa-circle-check me-2"></i> OK / Xem Đơn Hàng & Ly Nước Cần Lấy' +
-            '</button>' +
+          '<div class="drink-items-summary-box mb-2">' +
+            '<div class="drink-items-header">' +
+              '<span><i class="fa-solid fa-mug-hot me-1 text-success"></i> Chi Tiết Món Nước (' + (curr.cupCount || 2) + ' ly)</span>' +
+              '<span class="text-success fw-bold"><i class="fa-solid fa-circle-check"></i> Có Tem Seal</span>' +
+            '</div>' +
+            '<div class="drink-summary-content">' +
+              (curr.itemsSummary || '2x Trà Sữa Oolong Nướng (Size L)') +
+            '</div>' +
           '</div>';
+
+        stepActionButtonsHtml = 
+          '<button class="btn-step-action btn-step-green w-100" onclick="advanceOrderToStep1(' + curr.orderId + ')">' +
+            '<i class="fa-solid fa-clipboard-check me-2" style="font-size: 1.25rem;"></i> NHẬN ĐƠN & ĐỐI SOÁT LY' +
+          '</button>';
 
       } else if (step === 1) {
         // BƯỚC 1: Đối soát ly nước, chụp hình ảnh ly nước của quán, sau đó mới cho nhận hàng
         const hasCupPhoto = !!cupPhotos[curr.orderId];
         const previewCupPhoto = hasCupPhoto ? cupPhotos[curr.orderId] : '';
 
-        stepBodyHtml = 
+        stepBodyContentHtml = 
           '<div class="route-display-box">' +
             '<div class="route-node">' +
-              '<div class="node-icon-wrap node-icon-store"><i class="fa-solid fa-store"></i></div>' +
+              '<div class="node-icon-store"><i class="fa-solid fa-store"></i></div>' +
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Điểm Lấy Hàng (Chi Nhánh)</div>' +
                 '<div class="node-name">${branchName}</div>' +
-                '<div class="node-sub">Kiểm tra tem seal nắp ly và số lượng ly tại quầy</div>' +
+                '<div class="text-muted" style="font-size: 0.84rem; margin-top: 2px;">Kiểm tra tem seal nắp ly và số lượng ly tại quầy</div>' +
               '</div>' +
             '</div>' +
-            '<div class="route-line-connector"></div>' +
+            '<div style="width: 2px; height: 16px; background: #CBD5E1; margin-left: 18px;"></div>' +
             '<div class="route-node">' +
-              '<div class="node-icon-wrap node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>' +
+              '<div class="node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>' +
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Giao Đến Khách Hàng</div>' +
-                '<div class="node-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
-                '<div class="node-sub"><strong>Địa chỉ:</strong> ' + curr.deliveryAddress + '</div>' +
+                '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
               '</div>' +
             '</div>' +
           '</div>' +
 
-          '<div class="cod-zero-guarantee-banner">' +
-            '<div class="cod-guarantee-text">' +
-              '<i class="fa-solid fa-shield-halved text-success" style="font-size: 1.15rem;"></i>' +
-              '<span>ĐƠN HÀNG ĐÃ THANH TOÁN 100% ONLINE — THU 0₫ TIỀN MẶT CỦA KHÁCH</span>' +
-            '</div>' +
-            '<div class="cod-zero-tag">COD: 0₫</div>' +
-          '</div>' +
-
-          '<div class="drink-items-summary-box">' +
+          '<div class="drink-items-summary-box mb-2">' +
             '<div class="drink-items-header">' +
-              '<span><i class="fa-solid fa-mug-hot me-1 text-success"></i> Chi Tiết Ly Nước Cần Lấy Của Quán (' + (curr.cupCount || 2) + ' ly)</span>' +
-              '<span class="text-success"><i class="fa-solid fa-circle-check"></i> Đã Có Tem Seal</span>' +
+              '<span><i class="fa-solid fa-mug-hot me-1 text-success"></i> Chi Tiết Ly Nước Cần Lấy (' + (curr.cupCount || 2) + ' ly)</span>' +
+              '<span class="text-success fw-bold"><i class="fa-solid fa-circle-check"></i> Đã Có Tem Seal</span>' +
             '</div>' +
             '<div class="drink-summary-content">' +
               (curr.itemsSummary || '2x Trà Sữa Oolong Nướng (Size L, 70% Đường, 50% Đá)') +
             '</div>' +
           '</div>' +
 
-          '<div class="photo-capture-box ' + (hasCupPhoto ? 'has-photo' : '') + '" onclick="triggerCupPhotoInput(' + curr.orderId + ')">' +
+          '<div class="photo-capture-box ' + (hasCupPhoto ? 'has-photo' : '') + '" onclick="triggerCupPhotoInput(' + curr.orderId + ')" style="cursor: pointer;">' +
             '<div id="cupPrompt_' + curr.orderId + '" style="' + (hasCupPhoto ? 'display:none;' : '') + '">' +
-              '<i class="fa-solid fa-camera-retro fa-2x mb-2" style="color: var(--bizen-clay);"></i>' +
-              '<div class="fw-bold" style="font-size: 0.95rem;">Chụp ảnh ly nước của quán (Bắt buộc)</div>' +
-              '<div class="text-muted" style="font-size: 0.78rem;">Bấm vào đây để mở camera chụp ảnh ly nước đối soát trước khi xuất bến</div>' +
+              '<i class="fa-solid fa-camera fa-2x mb-2" style="color: var(--bizen-clay);"></i>' +
+              '<div class="fw-bold" style="font-size: 1.02rem; color: #0F172A;">Chụp ảnh ly nước của quán (Bắt buộc)</div>' +
+              '<div class="text-muted" style="font-size: 0.82rem; margin-top: 3px;">Chạm vào đây để mở camera chụp đối soát</div>' +
             '</div>' +
             (hasCupPhoto ? '<img src="' + previewCupPhoto + '" class="preview-thumb-img" alt="Ảnh ly nước">' +
-              '<div class="mt-2 text-success fw-bold" style="font-size: 0.82rem;"><i class="fa-solid fa-circle-check"></i> Đã chụp ảnh ly nước thành công (Bấm để chụp lại)</div>' : '') +
+              '<div class="mt-2 text-success fw-bold" style="font-size: 0.88rem;"><i class="fa-solid fa-circle-check"></i> Đã chụp ảnh thành công (Chạm để chụp lại)</div>' : '') +
             '<input type="file" id="cupPhotoInput_' + curr.orderId + '" accept="image/*" capture="camera" style="display: none;" onchange="onCupPhotoChosen(event, ' + curr.orderId + ')">' +
-          '</div>' +
+          '</div>';
 
-          '<div class="d-flex gap-2 flex-wrap">' +
-            '<button class="btn-pickup-delivery flex-grow-1" id="btnPickup_' + curr.orderId + '" ' +
+        stepActionButtonsHtml = 
+          '<div class="d-flex flex-column gap-2">' +
+            '<button class="btn-step-action btn-step-green w-100" id="btnPickup_' + curr.orderId + '" ' +
               (!hasCupPhoto ? 'disabled style="background: #9CA3AF; cursor: not-allowed; opacity: 0.7;"' : '') +
               ' onclick="handlePickupWithPhoto(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-store me-2"></i> Đã Nhận Hàng Từ Quán' +
+              '<i class="fa-solid fa-store me-2" style="font-size: 1.15rem;"></i> ĐÃ NHẬN HÀNG TỪ QUÁN' +
             '</button>' +
-            '<button class="btn-report-incident" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation"></i> Báo Sự Cố' +
+            '<button class="btn-incident-secondary w-100 py-2" style="font-size: 0.82rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố Tại Quán' +
             '</button>' +
           '</div>';
 
       } else if (step === 2) {
         // BƯỚC 2: Hiển thị Google Maps xe máy, kế bên là nút đã tới điểm giao. Nút gọi điện ALWAYS có sẵn.
-        stepBodyHtml = 
+        stepBodyContentHtml = 
           '<div class="route-display-box">' +
             '<div class="route-node">' +
-              '<div class="node-icon-wrap node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>' +
+              '<div class="node-icon-dest"><i class="fa-solid fa-location-dot"></i></div>' +
               '<div class="node-content-wrap">' +
-                '<div class="node-label">Điểm Giao Hàng Đến Khách</div>' +
-                '<div class="node-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
-                '<div class="node-sub"><strong>Địa chỉ:</strong> ' + curr.deliveryAddress + '</div>' +
-                (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-message"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
+                '<div class="node-label">Điểm Giao Đến Khách Hàng</div>' +
+                '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
+                (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-comment-dots text-warning"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
               '</div>' +
             '</div>' +
           '</div>' +
 
-          '<div class="cod-zero-guarantee-banner">' +
-            '<div class="cod-guarantee-text">' +
-              '<i class="fa-solid fa-shield-halved text-success"></i>' +
-              '<span>ĐƠN HÀNG ĐÃ THANH TOÁN ONLINE — THU 0₫ TIỀN MẶT CỦA KHÁCH</span>' +
+          '<div class="drink-items-summary-box mb-2">' +
+            '<div class="drink-items-header">' +
+              '<span><i class="fa-solid fa-mug-hot me-1 text-success"></i> Đồ Uống (' + (curr.cupCount || 2) + ' ly)</span>' +
+              '<span class="text-success fw-bold"><i class="fa-solid fa-shield-check"></i> Đang mang theo</span>' +
             '</div>' +
-            '<div class="cod-zero-tag">COD: 0₫</div>' +
-          '</div>' +
+            '<div class="drink-summary-content" style="font-size: 0.92rem; font-weight: 700; color: #1F2937;">' +
+              (curr.itemsSummary || '2x Trà Sữa Oolong Nướng') +
+            '</div>' +
+          '</div>';
 
-          '<div class="d-flex flex-column gap-3 mt-3">' +
+        stepActionButtonsHtml = 
+          '<div class="d-flex flex-column gap-2">' +
             // Nút Gọi Điện ALWAYS CÓ SẴN từ thời điểm này
-            '<a href="tel:' + (curr.customerPhone || '') + '" class="btn-call-fast w-100 py-3" style="font-size: 1.05rem;">' +
-              '<i class="fa-solid fa-phone me-2"></i> Gọi Điện Cho Khách (' + (curr.customerPhone || 'Gọi Ngay') + ')' +
+            '<a href="tel:' + (curr.customerPhone || '') + '" class="btn-call-giant w-100" style="padding: 10px 14px;">' +
+              '<i class="fa-solid fa-phone-volume me-2"></i> GỌI CHO KHÁCH: ' + (curr.customerPhone || 'Gọi Ngay') +
             '</a>' +
 
-            '<div class="d-flex gap-2 flex-wrap">' +
+            '<div class="d-flex gap-2">' +
               // Nút Chỉ Đường Google Maps (Xe Máy)
-              '<button class="btn-google-maps flex-grow-1" onclick="openGoogleMapsMotorbike(\'' + curr.deliveryAddress + '\', ' + curr.latitude + ', ' + curr.longitude + ')">' +
-                '<i class="fa-solid fa-motorcycle me-2"></i> Chỉ Đường Google Maps (Xe Máy)' +
+              '<button class="btn-step-action btn-step-blue flex-grow-1" style="min-height: 46px; font-size: 0.9rem;" onclick="openGoogleMapsMotorbike(\'' + curr.deliveryAddress + '\', ' + curr.latitude + ', ' + curr.longitude + ')">' +
+                '<i class="fa-solid fa-motorcycle me-1"></i> Maps Xe Máy' +
               '</button>' +
 
               // Nút Đã Tới Điểm Giao nằm KẾ BÊN Google Maps
-              '<button class="btn-arrived flex-grow-1" onclick="handleArrivedAtCustomer(' + curr.orderId + ')">' +
-                '<i class="fa-solid fa-location-dot me-2"></i> Đã Tới Điểm Giao' +
-              '</button>' +
-
-              '<button class="btn-report-incident" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-                '<i class="fa-solid fa-triangle-exclamation"></i> Báo Sự Cố' +
+              '<button class="btn-step-action btn-step-orange flex-grow-1" style="min-height: 46px; font-size: 0.9rem;" onclick="handleArrivedAtCustomer(' + curr.orderId + ')">' +
+                '<i class="fa-solid fa-location-dot me-1"></i> Đã Tới Nơi' +
               '</button>' +
             '</div>' +
+
+            '<button class="btn-incident-secondary w-100 py-1" style="font-size: 0.8rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố Trên Đường' +
+            '</button>' +
           '</div>';
 
       } else if (step === 3) {
         // BƯỚC 3: Đã đến nơi, gọi khách ra lấy nước
-        stepBodyHtml = 
+        stepBodyContentHtml = 
           '<div class="route-display-box">' +
             '<div class="route-node">' +
-              '<div class="node-icon-wrap node-icon-dest" style="background: #FEE2E2; color: #DC2626;"><i class="fa-solid fa-location-dot"></i></div>' +
+              '<div class="node-icon-dest" style="background: #FEE2E2; color: #DC2626;"><i class="fa-solid fa-location-dot"></i></div>' +
               '<div class="node-content-wrap">' +
-                '<div class="node-label">Tài Xế Đã Đến Nơi</div>' +
-                '<div class="node-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
-                '<div class="node-sub"><strong>Địa chỉ:</strong> ' + curr.deliveryAddress + '</div>' +
-                (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-message"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
+                '<div class="node-label">Tài Xế Đã Đến Nơi Giao</div>' +
+                '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
+                (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-comment-dots text-warning"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
               '</div>' +
             '</div>' +
           '</div>' +
 
-          '<div class="d-flex flex-column gap-3 mt-3">' +
+          '<div class="alert alert-warning border p-2 mb-2 d-flex align-items-center gap-2 fw-bold" style="border-radius: 12px; font-size: 0.86rem; color: #854D0E; background: #FEF9C3;">' +
+            '<i class="fa-solid fa-bell text-warning fa-lg"></i>' +
+            '<span>Đã tới điểm giao. Hãy gọi điện thoại trước khi bấm bàn giao!</span>' +
+          '</div>';
+
+        stepActionButtonsHtml = 
+          '<div class="d-flex flex-column gap-2">' +
             // Nút gọi điện cho khách nổi bật để gọi khách ra nhận nước
-            '<a href="tel:' + (curr.customerPhone || '') + '" class="btn-call-fast pulse w-100 py-3" style="font-size: 1.15rem; background: #16A34A;">' +
-              '<i class="fa-solid fa-phone-volume me-2"></i> Gọi Khách Ra Nhận Nước: ' + (curr.customerPhone || 'Chưa có SĐT') +
+            '<a href="tel:' + (curr.customerPhone || '') + '" class="btn-call-giant pulse w-100" style="padding: 10px 14px;">' +
+              '<i class="fa-solid fa-phone-volume me-2"></i> GỌI KHÁCH RA NHẬN: ' + (curr.customerPhone || 'Chưa có SĐT') +
             '</a>' +
 
-            '<div class="alert alert-light border p-3 d-flex align-items-center gap-2 mb-0" style="border-radius: 10px; font-size: 0.9rem;">' +
-              '<i class="fa-solid fa-circle-info text-primary fa-lg"></i>' +
-              '<span>Tài xế đã đến điểm giao. Vui lòng gọi khách. Khi khách ra nhận nước, bấm nút bên dưới để chuyển sang bước chụp ảnh bàn giao.</span>' +
-            '</div>' +
+            '<button class="btn-step-action btn-step-green w-100" onclick="advanceOrderToStep4(' + curr.orderId + ')">' +
+              '<i class="fa-solid fa-camera me-2" style="font-size: 1.15rem;"></i> KHÁCH ĐÃ RA ➔ CHỤP ẢNH BÀN GIAO' +
+            '</button>' +
 
-            '<div class="d-flex gap-2">' +
-              '<button class="btn-complete-delivery flex-grow-1 py-3" onclick="advanceOrderToStep4(' + curr.orderId + ')">' +
-                '<i class="fa-solid fa-arrow-right me-2"></i> Khách Đã Ra Lấy ➔ Chụp Ảnh & Kết Thúc' +
-              '</button>' +
-              '<button class="btn-report-incident" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-                '<i class="fa-solid fa-triangle-exclamation"></i> Báo Sự Cố' +
-              '</button>' +
-            '</div>' +
+            '<button class="btn-incident-secondary w-100 py-1" style="font-size: 0.8rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố / Khách Không Nhận' +
+            '</button>' +
           '</div>';
 
       } else if (step === 4) {
@@ -1888,54 +2486,55 @@
         const hasDeliveryPhoto = !!deliveryPhotos[curr.orderId];
         const previewDeliveryPhoto = hasDeliveryPhoto ? deliveryPhotos[curr.orderId] : '';
 
-        stepBodyHtml = 
-          '<div class="cod-zero-guarantee-banner">' +
-            '<div class="cod-guarantee-text">' +
-              '<i class="fa-solid fa-shield-halved text-success"></i>' +
-              '<span>ĐƠN HÀNG ĐÃ THANH TOÁN 100% ONLINE — THU 0₫ TIỀN MẶT CỦA KHÁCH</span>' +
-            '</div>' +
-            '<div class="cod-zero-tag">COD: 0₫</div>' +
-          '</div>' +
-
-          '<div class="photo-capture-box ' + (hasDeliveryPhoto ? 'has-photo' : '') + '" onclick="triggerDeliveryPhotoInput(' + curr.orderId + ')">' +
+        stepBodyContentHtml = 
+          '<div class="photo-capture-box ' + (hasDeliveryPhoto ? 'has-photo' : '') + '" onclick="triggerDeliveryPhotoInput(' + curr.orderId + ')" style="cursor: pointer;">' +
             '<div id="deliveryPrompt_' + curr.orderId + '" style="' + (hasDeliveryPhoto ? 'display:none;' : '') + '">' +
               '<i class="fa-solid fa-camera fa-2x mb-2" style="color: var(--matcha-deep);"></i>' +
-              '<div class="fw-bold" style="font-size: 0.95rem;">Chụp ảnh ly trà trao cho khách (Bắt buộc)</div>' +
-              '<div class="text-muted" style="font-size: 0.78rem;">Bằng chứng xác thực giao hàng thành công để hoàn tất chuyến</div>' +
+              '<div class="fw-bold" style="font-size: 1.02rem; color: #0F172A;">Chụp ảnh ly trà trao cho khách (Bắt buộc)</div>' +
+              '<div class="text-muted" style="font-size: 0.82rem; margin-top: 3px;">Chạm vào đây để mở camera chụp đối soát hoàn tất</div>' +
             '</div>' +
             (hasDeliveryPhoto ? '<img src="' + previewDeliveryPhoto + '" class="preview-thumb-img" alt="Ảnh giao hàng">' +
-              '<div class="mt-2 text-success fw-bold" style="font-size: 0.82rem;"><i class="fa-solid fa-circle-check"></i> Đã chụp ảnh bàn giao thành công (Bấm để chụp lại)</div>' : '') +
+              '<div class="mt-2 text-success fw-bold" style="font-size: 0.88rem;"><i class="fa-solid fa-circle-check"></i> Đã chụp ảnh thành công (Chạm để chụp lại)</div>' : '') +
             '<input type="file" id="deliveryPhotoInput_' + curr.orderId + '" accept="image/*" capture="camera" style="display: none;" onchange="onDeliveryPhotoChosen(event, ' + curr.orderId + ')">' +
-          '</div>' +
+          '</div>';
 
-          '<div class="d-flex flex-column gap-3 mt-3">' +
-            '<a href="tel:' + (curr.customerPhone || '') + '" class="btn-call-fast w-100" style="padding: 10px 16px; font-size: 0.88rem;">' +
+        stepActionButtonsHtml = 
+          '<div class="d-flex flex-column gap-2">' +
+            '<a href="tel:' + (curr.customerPhone || '') + '" class="btn-step-action btn-step-blue w-100" style="min-height: 44px; text-decoration: none; font-size: 0.92rem;">' +
               '<i class="fa-solid fa-phone me-2"></i> Gọi Lại Cho Khách: ' + (curr.customerPhone || 'Gọi') +
             '</a>' +
 
-            '<button class="btn-complete-trip w-100 py-3" id="btnCompleteTrip_' + curr.orderId + '" ' +
+            '<button class="btn-step-action btn-step-green w-100" id="btnCompleteTrip_' + curr.orderId + '" ' +
               (!hasDeliveryPhoto ? 'disabled style="background: #9CA3AF; cursor: not-allowed; opacity: 0.7;"' : '') +
               ' onclick="handleFinishDeliveryTrip(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-flag-checkered me-2"></i> Kết Thúc Chuyến Giao' +
+              '<i class="fa-solid fa-flag-checkered me-2" style="font-size: 1.25rem;"></i> KẾT THÚC CHUYẾN GIAO' +
+            '</button>' +
+
+            '<button class="btn-incident-secondary w-100 py-1" style="font-size: 0.8rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
+              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố' +
             '</button>' +
           '</div>';
       }
 
-      // Render Focus Card hoàn chỉnh
+      // Render Focus Card hoàn chỉnh (Thân cuộn nội dung độc lập, cụm nút ghim đáy rõ ràng, không dính mép)
       deck.innerHTML = 
         '<div class="delivery-card" id="focus-order-card-' + curr.orderId + '">' +
           '<div class="delivery-card-top">' +
             '<div class="card-code-wrap">' +
               '<span class="order-code-badge">#' + curr.orderCode + '</span>' +
               (curr.dailyQueueNumber ? '<span class="order-queue-badge">STT #' + curr.dailyQueueNumber + '</span>' : '') +
-              '<span class="badge bg-light text-dark border">' +
+              '<span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.8rem; font-weight: 700;">' +
                 '<i class="fa-solid fa-mug-hot text-success me-1"></i> ' + (curr.cupCount || 2) + ' ly trà' +
               '</span>' +
             '</div>' +
             '<div>' + statusBadgeHtml + '</div>' +
           '</div>' +
-          stepBannerHtml +
-          stepBodyHtml +
+          '<div class="delivery-card-scroll-body">' +
+            stepBodyContentHtml +
+          '</div>' +
+          '<div class="delivery-card-bottom-action">' +
+            stepActionButtonsHtml +
+          '</div>' +
         '</div>';
     }
 
@@ -1976,8 +2575,14 @@
         return;
       }
 
+      const payload = {
+        photoData: cupPhotos[orderId] || null
+      };
+
       fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/pickup', {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
       .then(res => res.json())
       .then(data => {
@@ -2054,8 +2659,14 @@
       const btn = document.getElementById('btnCompleteTrip_' + orderId);
       if (btn) btn.disabled = true;
 
+      const payload = {
+        photoData: deliveryPhotos[orderId] || null
+      };
+
       fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/complete', {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
       .then(res => res.json())
       .then(data => {
@@ -2064,11 +2675,26 @@
         triggerPhoneVibration();
         showZenToast('GIAO HÀNG THÀNH CÔNG: #' + orderCode + '! Đã hoàn tất cuốc giao.', 'success');
 
-        // Cập nhật số cuốc trên thanh metric (+1 cuốc)
+        // Cập nhật số cuốc trên thanh metric (+1 cuốc) & badge trên Header & Card Drawer
         const metricEl = document.getElementById('metricCompletedCount');
+        const headerHistoryBadge = document.getElementById('headerHistoryCount');
+        const drawerHistoryCount = document.getElementById('drawerHistoryCompletedCount');
+        const drawerHistoryBadge = document.getElementById('drawerHistoryBadge');
         if (metricEl) {
           const current = parseInt(metricEl.innerText) || 0;
           metricEl.innerText = (current + 1) + ' cuốc';
+        }
+        if (headerHistoryBadge) {
+          const currentH = parseInt(headerHistoryBadge.innerText) || 0;
+          headerHistoryBadge.innerText = (currentH + 1);
+        }
+        if (drawerHistoryCount) {
+          const currentD = parseInt(drawerHistoryCount.innerText) || 0;
+          drawerHistoryCount.innerText = (currentD + 1);
+        }
+        if (drawerHistoryBadge) {
+          const currentB = parseInt(drawerHistoryBadge.innerText) || 0;
+          drawerHistoryBadge.innerText = (currentB + 1) + ' đơn';
         }
 
         // Bổ sung vào danh sách Lịch Sử Đơn Trong Ca của Profile Drawer
@@ -2076,16 +2702,26 @@
         if (historyList && ordersQueue[0]) {
           const finished = ordersQueue[0];
           const item = document.createElement('div');
-          item.className = 'p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center mb-2';
+          item.className = 'history-order-item p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center gap-2 mb-2 shadow-sm';
+          item.setAttribute('data-period', 'TODAY');
+          const photoThumb = deliveryPhotos[orderId]
+            ? '<img src="' + deliveryPhotos[orderId] + '" alt="Proof" style="width: 48px; height: 48px; border-radius: 10px; object-fit: cover; border: 1.5px solid var(--border-earth);">'
+            : '<div style="width: 48px; height: 48px; border-radius: 10px; background: #ECFDF5; border: 1px solid #86EFAC; display: flex; align-items: center; justify-content: center; color: #16A34A; font-size: 1.25rem;"><i class="fa-solid fa-mug-hot"></i></div>';
           item.innerHTML = 
-            '<div>' +
-              '<strong style="font-size: 0.92rem;">#' + finished.orderCode + ' · ' + (finished.cupCount || 2) + ' ly trà</strong>' +
-              '<div class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">' +
-                'Đến: ' + finished.deliveryAddress + ' · Khách: ' + (finished.customerName || 'Khách hàng') +
+            '<div class="d-flex align-items-center gap-3">' +
+              photoThumb +
+              '<div>' +
+                '<div class="d-flex align-items-center gap-2">' +
+                  '<strong style="font-size: 0.95rem; color: #1F2937;">#' + finished.orderCode + '</strong>' +
+                  '<span class="badge" style="background: #F3F4F6; color: #4B5563; font-size: 0.75rem;"><i class="fa-solid fa-mug-hot me-1 text-success"></i>' + (finished.cupCount || 2) + ' ly trà</span>' +
+                '</div>' +
+                '<div style="font-size: 0.85rem; font-weight: 700; color: #374151; margin-top: 2px;">Khách: ' + (finished.customerName || 'Khách hàng') + '</div>' +
+                '<div class="text-muted" style="font-size: 0.78rem; margin-top: 1px;"><i class="fa-solid fa-location-dot text-danger me-1"></i>' + finished.deliveryAddress + '</div>' +
+                '<div style="font-size: 0.72rem; color: #64748B; margin-top: 3px;"><i class="fa-solid fa-clock me-1 text-muted"></i> Hôm nay · Vừa xong</div>' +
               '</div>' +
             '</div>' +
-            '<div class="text-end">' +
-              '<span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Đã Giao</span>' +
+            '<div class="text-end flex-shrink-0">' +
+              '<span class="badge bg-success py-2 px-2" style="font-size: 0.78rem;"><i class="fa-solid fa-check me-1"></i> Đã Giao</span>' +
             '</div>';
 
           const placeholder = historyList.querySelector('.text-center');
@@ -2352,29 +2988,112 @@
     }
 
     /* ========================================================
-       8. BÁO CÁO SỰ CỐ / HỦY ĐƠN (UC14)
+       8. BÁO CÁO GIAO THẤT BẠI & TỰ ĐỘNG HỦY ĐƠN (UC14)
        ======================================================== */
+    let incidentProofPhoto = null;
+
+    function onIncidentProofPhotoChosen(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          incidentProofPhoto = evt.target.result;
+          const preview = document.getElementById('incidentPhotoPreview');
+          const wrap = document.getElementById('incidentPhotoPreviewWrap');
+          const status = document.getElementById('incidentPhotoStatus');
+          if (preview) preview.src = incidentProofPhoto;
+          if (wrap) wrap.style.display = 'block';
+          if (status) {
+            status.innerHTML = '<span class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Đã đính kèm ảnh</span>';
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
     function openIncidentModal(orderId, orderCode) {
       document.getElementById('incidentOrderId').value = orderId;
       document.getElementById('incidentOrderCode').value = orderCode;
-      document.getElementById('incidentModalLabel').innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2"></i> Báo Sự Cố: #' + orderCode;
+      
+      const currentStep = orderSteps[orderId] || 0;
+      const isAtStore = currentStep <= 1;
+
+      const storePhase = document.getElementById('incidentStorePhase');
+      const deliveryPhase = document.getElementById('incidentDeliveryPhase');
+      const photoBox = document.getElementById('incidentPhotoBox');
+      const modalLabel = document.getElementById('incidentModalLabel');
+      const submitBtn = document.getElementById('btnSubmitIncident');
+
+      if (isAtStore) {
+        if (storePhase) storePhase.style.display = 'block';
+        if (deliveryPhase) deliveryPhase.style.display = 'none';
+        if (photoBox) photoBox.style.display = 'none';
+        if (modalLabel) modalLabel.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2"></i> Báo Sự Cố Tại Quán: #' + orderCode;
+        if (submitBtn) {
+          submitBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Trả Đơn Lại Cho Quầy';
+          submitBtn.style.background = 'var(--bizen-clay)';
+          submitBtn.style.borderColor = 'var(--bizen-clay)';
+        }
+        const radio = document.querySelector('input[name="incidentReasonStore"][value="XE_HONG"]');
+        if (radio) radio.checked = true;
+      } else {
+        if (storePhase) storePhase.style.display = 'none';
+        if (deliveryPhase) deliveryPhase.style.display = 'block';
+        if (photoBox) photoBox.style.display = 'block';
+        if (modalLabel) modalLabel.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2"></i> Báo Giao Thất Bại & Hoàn Đơn: #' + orderCode;
+        if (submitBtn) {
+          submitBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Xác Nhận Hủy Đơn & Hoàn Trả';
+          submitBtn.style.background = 'var(--terracotta)';
+          submitBtn.style.borderColor = 'var(--terracotta)';
+        }
+        const radio = document.querySelector('input[name="incidentReasonDelivery"][value="KHONG_LIEN_LAC_DUOC"]');
+        if (radio) radio.checked = true;
+      }
+
+      // Reset form
+      incidentProofPhoto = null;
+      const previewWrap = document.getElementById('incidentPhotoPreviewWrap');
+      if (previewWrap) previewWrap.style.display = 'none';
+      const photoStatus = document.getElementById('incidentPhotoStatus');
+      if (photoStatus) photoStatus.innerHTML = isAtStore ? '(Không bắt buộc)' : '(Bắt buộc chụp màn hình cuộc gọi hoặc hiện trường)';
+      const inputPhoto = document.getElementById('incidentProofPhotoInput');
+      if (inputPhoto) inputPhoto.value = '';
+      const noteInput = document.getElementById('incidentDetailNote');
+      if (noteInput) noteInput.value = '';
+
       if (incidentModalInstance) incidentModalInstance.show();
     }
 
     function submitIncidentReport() {
       const orderId = document.getElementById('incidentOrderId').value;
       const orderCode = document.getElementById('incidentOrderCode').value;
-      const reasonRadio = document.querySelector('input[name="incidentReason"]:checked');
-      const reasonCode = reasonRadio ? reasonRadio.value : 'XE_HONG';
+      const currentStep = orderSteps[orderId] || 0;
+      const isAtStore = currentStep <= 1;
+
+      let reasonCode = 'XE_HONG';
+      if (isAtStore) {
+        const radio = document.querySelector('input[name="incidentReasonStore"]:checked');
+        if (radio) reasonCode = radio.value;
+      } else {
+        const radio = document.querySelector('input[name="incidentReasonDelivery"]:checked');
+        if (radio) reasonCode = radio.value;
+      }
       const detailNote = document.getElementById('incidentDetailNote').value;
 
       const btn = document.getElementById('btnSubmitIncident');
       if (btn) btn.disabled = true;
 
-      fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/incident', {
+      const payload = {
+        reasonCode: reasonCode,
+        note: detailNote,
+        proofPhotoData: incidentProofPhoto,
+        callAttempts: isAtStore ? 0 : 3
+      };
+
+      fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/failure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reasonCode: reasonCode, note: detailNote, reason: reasonCode })
+        body: JSON.stringify(payload)
       })
       .then(res => {
         if (!res.ok) throw new Error('Mã phản hồi: ' + res.status);
@@ -2383,11 +3102,51 @@
       .then(data => {
         if (btn) btn.disabled = false;
         if (incidentModalInstance) incidentModalInstance.hide();
-        
-        if (reasonCode === 'KHACH_HUY') {
-          showZenToast('Đơn #' + orderCode + ' đã được hủy do khách yêu cầu hủy.', 'warning');
+
+        if (window.Swal) {
+          if (isAtStore) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Đã Báo Cáo Sự Cố Tại Quán',
+              text: 'Đơn hàng #' + orderCode + ' đã được chuyển giao lại cho quầy chi nhánh để phân công tài xế khác.',
+              confirmButtonColor: '#8C6D53'
+            });
+          } else {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Hủy Đơn Tự Động Thành Công',
+              text: 'Đơn hàng #' + orderCode + ' đã được chuyển sang trạng thái CANCELLED và ghi nhận hàng hoàn về hệ thống.',
+              confirmButtonColor: '#BA5D3F'
+            });
+          }
         } else {
-          showZenToast('Đã ghi nhận sự cố cho đơn #' + orderCode + ' và hoàn trả về quầy chi nhánh.', 'warning');
+          showZenToast('Đã xử lý sự cố cho đơn #' + orderCode + '!', 'warning');
+        }
+
+        // Bổ sung vào Drawer Lịch Sử
+        const historyList = document.getElementById('drawerHistoryList');
+        if (historyList) {
+          const item = document.createElement('div');
+          item.className = 'p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center gap-2 mb-2';
+          const proofThumb = incidentProofPhoto
+            ? '<img src="' + incidentProofPhoto + '" alt="Proof" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-earth);">'
+            : '<div style="width: 44px; height: 44px; border-radius: 8px; background: #FFF1F0; display: flex; align-items: center; justify-content: center; color: var(--terracotta); font-size: 1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i></div>';
+          item.innerHTML = 
+            '<div class="d-flex align-items-center gap-2">' +
+              proofThumb +
+              '<div>' +
+                '<strong style="font-size: 0.9rem; color: var(--terracotta);">#' + orderCode + ' · Hoàn Trả</strong>' +
+                '<div class="text-muted" style="font-size: 0.76rem; margin-top: 2px;">' +
+                  'Lý do: ' + reasonCode + (detailNote ? ' (' + detailNote + ')' : '') +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="text-end flex-shrink-0">' +
+              '<span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i> Đã Hủy</span>' +
+            '</div>';
+          const placeholder = historyList.querySelector('.text-center');
+          if (placeholder) placeholder.remove();
+          historyList.prepend(item);
         }
 
         // Tự động chuyển OFFLINE nếu gặp sự cố xe cộ hoặc sức khỏe
@@ -2407,16 +3166,18 @@
           }
           if (statusBoxSub) statusBoxSub.innerText = 'Tài xế tạm nghỉ do sự cố bất khả kháng';
         }
-        
-        // Loại bỏ đơn khỏi queue và trượt đơn kế tiếp vào
+
+        // Loại bỏ đơn khỏi queue và trượt đơn kế tiếp vào Focus Mode
         ordersQueue = ordersQueue.filter(function(o) { return o.orderId != orderId; });
         delete orderSteps[orderId];
+        delete cupPhotos[orderId];
+        delete deliveryPhotos[orderId];
         renderWorkbench();
       })
       .catch(err => {
         if (btn) btn.disabled = false;
         console.error(err);
-        showZenToast('Lỗi khi gửi báo cáo sự cố', 'danger');
+        showZenToast('Lỗi khi gửi báo cáo giao thất bại', 'danger');
       });
     }
 
@@ -2480,15 +3241,94 @@
     }
 
     function switchDrawerTab(tabId, btn) {
-      document.getElementById('tab-profile').style.display = 'none';
-      document.getElementById('tab-history').style.display = 'none';
+      document.querySelectorAll('.drawer-tab-pane').forEach(p => {
+        p.classList.remove('active');
+        p.style.setProperty('display', 'none', 'important');
+      });
 
       const target = document.getElementById(tabId);
-      if (target) target.style.display = 'flex';
+      if (target) {
+        target.classList.add('active');
+        target.style.setProperty('display', 'flex', 'important');
+      }
 
       document.querySelectorAll('.dtab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+      const activeBtn = btn || (tabId === 'tab-history' ? document.getElementById('btnDrawerTabHistory') : document.getElementById('btnDrawerTabProfile'));
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+      }
+
+      const titleEl = document.getElementById('drawerHeaderTitle');
+      if (titleEl) {
+        if (tabId === 'tab-history') {
+          titleEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-2 text-success"></i>Lịch Sử Giao Hàng';
+        } else {
+          titleEl.innerHTML = '<i class="fa-solid fa-id-card me-2 text-primary"></i>Hồ Sơ Tài Xế';
+        }
+      }
     }
+
+    /* Bộ lọc thời gian cho Lịch Sử Đơn: Hôm nay, Hôm qua (hôm lẻ), Theo tuần */
+    function filterHistoryByPeriod(period, btn) {
+      document.querySelectorAll('.btn-period-filter').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      const items = document.querySelectorAll('.history-order-item');
+      let visibleCount = 0;
+
+      items.forEach(item => {
+        const itemPeriod = item.getAttribute('data-period');
+        let shouldShow = false;
+        if (period === 'WEEK') {
+          shouldShow = true;
+        } else if (period === 'YESTERDAY') {
+          shouldShow = (itemPeriod === 'YESTERDAY');
+        } else {
+          shouldShow = (itemPeriod === 'TODAY');
+        }
+
+        if (shouldShow) {
+          item.style.display = 'flex';
+          visibleCount++;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+
+      const countEl = document.getElementById('drawerHistoryCompletedCount');
+      if (countEl) {
+        if (period === 'WEEK') {
+          countEl.innerText = '${completedCount}';
+        } else if (period === 'YESTERDAY') {
+          countEl.innerText = '${yesterdayCompletedCount}';
+        } else {
+          countEl.innerText = '${todayCompletedCount}';
+        }
+      }
+
+      const badgeEl = document.getElementById('drawerHistoryBadge');
+      if (badgeEl) {
+        badgeEl.innerText = visibleCount + ' đơn';
+      }
+
+      const emptyEl = document.getElementById('historyEmptyPeriodState');
+      if (emptyEl) {
+        emptyEl.style.display = (visibleCount === 0) ? 'block' : 'none';
+      }
+    }
+
+    // Tự động mở tab Lịch Sử nếu URL có query ?view=history hoặc ?tab=history
+    (function checkInitialDrawerTab() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'history' || params.get('tab') === 'history' || window.location.hash === '#history') {
+        const drawer = document.getElementById('profileDrawer');
+        if (drawer) drawer.style.transition = 'none';
+        openProfileDrawer('tab-history');
+        setTimeout(function() {
+          if (drawer) drawer.style.transition = '';
+        }, 500);
+      }
+    })();
 
     /* ========================================================
        10. TOAST NOTIFICATION TIỆN LỢI
