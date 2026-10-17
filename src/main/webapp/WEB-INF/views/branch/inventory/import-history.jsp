@@ -86,22 +86,6 @@
 </head>
 
 <div class="zen-container">
-  <!-- Alerts Flash Message -->
-  <c:if test="${not empty successMessage}">
-    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert" style="border-radius: 10px;">
-      <i class="fa-solid fa-circle-check fs-5 me-2"></i>
-      <div>${successMessage}</div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  </c:if>
-  <c:if test="${not empty errorMessage}">
-    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert" style="border-radius: 10px;">
-      <i class="fa-solid fa-triangle-exclamation fs-5 me-2"></i>
-      <div>${errorMessage}</div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  </c:if>
-
   <!-- TOP HEADER & BRANCH ACTIONS -->
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-2 border-bottom">
     <div class="d-flex align-items-center gap-3">

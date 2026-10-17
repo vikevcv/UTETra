@@ -206,22 +206,15 @@
         </div>
       </header>
 
-      <!-- Global Alerts (Flash messages) -->
-      <div class="container-fluid px-4 pt-3">
-        <c:if test="${not empty successMessage}">
-          <div class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-0" role="alert">
-            <i class="fa-solid fa-circle-check fs-5 me-2"></i>
-            <div>${successMessage}</div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        </c:if>
-        <c:if test="${not empty errorMessage}">
-          <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-0" role="alert">
-            <i class="fa-solid fa-triangle-exclamation fs-5 me-2"></i>
-            <div>${errorMessage}</div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        </c:if>
+      <!-- Zen Toast Notification Container -->
+      <div id="zenToastContainer" class="zen-toast-container" aria-live="polite"></div>
+
+      <!-- Hidden Flash Message Data for Universal Zen Toast -->
+      <div id="zenFlashData" style="display:none;"
+           data-success="<c:out value='${successMessage}'/>"
+           data-error="<c:out value='${errorMessage}'/>"
+           data-warning="<c:out value='${warningMessage}'/>"
+           data-info="<c:out value='${infoMessage}'/>">
       </div>
 
       <!-- Main Body Injected By SiteMesh -->
@@ -243,6 +236,9 @@
 
   <!-- Bootstrap 5.3 Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Zen Toast System JS -->
+  <script src="${pageContext.request.contextPath}/js/zen-toast.js"></script>
 
   <!-- Sidebar Toggle Script -->
   <script>

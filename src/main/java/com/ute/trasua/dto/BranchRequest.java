@@ -35,4 +35,18 @@ public class BranchRequest {
     private boolean active = true;
 
     private Long managerId;
+    
+    // Feedback 1 & 2: Quản lý chi nhánh mới & Tự động cấp tài khoản
+    @Builder.Default
+    private String managerOption = "NEW"; // "NEW" (Tự nhập & cấp tài khoản) hoặc "EXISTING" (Chọn quản lý có sẵn)
+
+    private String newManagerFullName;
+
+    private String newManagerPhone;
+
+    private String newManagerEmail;
+
+    private String newManagerUsername; // Tùy chọn (để trống sẽ tự sinh ql_<branchCode>)
+
+    private String newManagerPassword; // Tùy chọn (để trống sẽ dùng mặc định an toàn Branch@123)
 }

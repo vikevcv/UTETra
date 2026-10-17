@@ -14,19 +14,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * Service implementation handling branch network business logic (UC21).
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class BranchServiceImpl implements BranchService {
 
@@ -34,6 +35,21 @@ public class BranchServiceImpl implements BranchService {
     private final EmployeeRepository employeeRepository;
     private final PosAccountRepository posAccountRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public BranchServiceImpl(
+            BranchRepository branchRepository,
+            EmployeeRepository employeeRepository,
+            PosAccountRepository posAccountRepository,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder
+    ) {
+        this.branchRepository = branchRepository;
+        this.employeeRepository = employeeRepository;
+        this.posAccountRepository = posAccountRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -91,35 +107,40 @@ public class BranchServiceImpl implements BranchService {
     @Transactional
     public BranchResponse createBranch(BranchRequest request) {
         if (request.getBranchCode() == null || request.getBranchCode().trim().isEmpty()) {
-            throw new IllegalArgumentException("Branch code must not be empty!");
+            throw new IllegalArgumentException("Mã chi nhánh không được để trống!");
         }
 
         String code = request.getBranchCode().trim().toUpperCase();
         if (branchRepository.existsByBranchCode(code)) {
-            throw new IllegalArgumentException("Branch code [" + code + "] already exists in the system!");
+            throw new IllegalArgumentException("Mã chi nhánh [" + code + "] đã tồn tại trong hệ thống!");
         }
 
-        User manager = null;
-        if (request.getManagerId() != null) {
-            manager = userRepository.findById(request.getManagerId()).orElse(null);
-        }
+        // Tự động cấp tài khoản hoặc liên kết quản lý
+        ManagerProvisionResult mgrResult = resolveManager(request, code, request.getName() != null ? request.getName().trim() : code);
 
         Branch branch = Branch.builder()
                 .branchCode(code)
-                .name(request.getName().trim())
-                .address(request.getAddress().trim())
+                .name(request.getName() != null ? request.getName().trim() : "")
+                .address(request.getAddress() != null ? request.getAddress().trim() : "")
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .hotline(request.getHotline() != null ? request.getHotline().trim() : null)
                 .openTime(request.getOpenTime() != null ? request.getOpenTime().trim() : "07:00")
                 .closeTime(request.getCloseTime() != null ? request.getCloseTime().trim() : "22:30")
                 .active(request.isActive())
-                .manager(manager)
+                .manager(mgrResult.user())
                 .build();
 
         Branch saved = branchRepository.save(branch);
         log.info(">>> Created new branch: [{}] {}", saved.getBranchCode(), saved.getName());
-        return enrichToResponse(saved);
+
+        BranchResponse resp = enrichToResponse(saved);
+        if (mgrResult.created()) {
+            resp.setGeneratedManagerUsername(mgrResult.username());
+            resp.setGeneratedManagerPassword(mgrResult.rawPassword());
+            resp.setManagerAccountCreated(true);
+        }
+        return resp;
     }
 
     @Override
@@ -130,7 +151,7 @@ public class BranchServiceImpl implements BranchService {
         if (request.getBranchCode() != null && !request.getBranchCode().trim().isEmpty()) {
             String code = request.getBranchCode().trim().toUpperCase();
             if (branchRepository.existsByBranchCodeAndIdNot(code, id)) {
-                throw new IllegalArgumentException("Branch code [" + code + "] is already used by another branch!");
+                throw new IllegalArgumentException("Mã chi nhánh [" + code + "] đã được sử dụng bởi chi nhánh khác!");
             }
             branch.setBranchCode(code);
         }
@@ -144,17 +165,132 @@ public class BranchServiceImpl implements BranchService {
         if (request.getCloseTime() != null) branch.setCloseTime(request.getCloseTime().trim());
         branch.setActive(request.isActive());
 
-        if (request.getManagerId() != null) {
+        // Cập nhật người quản lý (Tạo mới hoặc Điều chuyển quản lý sẵn có)
+        if ("NEW".equalsIgnoreCase(request.getManagerOption()) && hasNewManagerInfo(request)) {
+            ManagerProvisionResult mgrResult = resolveManager(request, branch.getBranchCode(), branch.getName());
+            branch.setManager(mgrResult.user());
+        } else if ("EXISTING".equalsIgnoreCase(request.getManagerOption())) {
+            if (request.getManagerId() != null) {
+                User manager = userRepository.findById(request.getManagerId()).orElse(null);
+                branch.setManager(manager);
+            } else {
+                branch.setManager(null);
+            }
+        } else if (request.getManagerId() != null) {
             User manager = userRepository.findById(request.getManagerId()).orElse(null);
             branch.setManager(manager);
-        } else {
-            branch.setManager(null);
         }
 
         Branch updated = branchRepository.save(branch);
         log.info(">>> Updated branch ID {}: [{}] {}", id, updated.getBranchCode(), updated.getName());
         return enrichToResponse(updated);
     }
+
+    /**
+     * Helper kiểm tra xem request có thông tin quản lý mới cần cấp tài khoản hay không.
+     */
+    private boolean hasNewManagerInfo(BranchRequest request) {
+        return (request.getNewManagerFullName() != null && !request.getNewManagerFullName().trim().isEmpty())
+                || (request.getNewManagerPhone() != null && !request.getNewManagerPhone().trim().isEmpty())
+                || (request.getNewManagerEmail() != null && !request.getNewManagerEmail().trim().isEmpty())
+                || (request.getNewManagerUsername() != null && !request.getNewManagerUsername().trim().isEmpty());
+    }
+
+    /**
+     * Tự động khởi tạo hoặc chỉ định tài khoản Quản lý chi nhánh (ROLE_MANAGER).
+     */
+    private ManagerProvisionResult resolveManager(BranchRequest request, String branchCode, String branchName) {
+        String option = request.getManagerOption();
+        boolean isExisting = "EXISTING".equalsIgnoreCase(option);
+
+        // Trường hợp 1: Chọn quản lý có sẵn từ danh sách
+        if (isExisting && request.getManagerId() != null) {
+            User existing = userRepository.findById(request.getManagerId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy quản lý ID: " + request.getManagerId()));
+            return new ManagerProvisionResult(existing, null, null, false);
+        }
+
+        // Trường hợp 2: Tự nhập quản lý mới và tự động cấp tài khoản
+        boolean hasInfo = hasNewManagerInfo(request);
+        if (!isExisting || hasInfo) {
+            // Xác định Tên đăng nhập (username)
+            String username;
+            if (request.getNewManagerUsername() != null && !request.getNewManagerUsername().trim().isEmpty()) {
+                username = request.getNewManagerUsername().trim().toLowerCase();
+                if (userRepository.existsByUsername(username)) {
+                    throw new IllegalArgumentException("Tên đăng nhập quản lý [" + username + "] đã tồn tại trong hệ thống!");
+                }
+            } else {
+                String sanitizedCode = branchCode.toLowerCase().replaceAll("[^a-z0-9]", "");
+                String baseUsername = "ql_" + (sanitizedCode.isEmpty() ? "branch" : sanitizedCode);
+                username = baseUsername;
+                int suffix = 1;
+                while (userRepository.existsByUsername(username)) {
+                    username = baseUsername + "_" + suffix++;
+                }
+            }
+
+            // Xác định Mật khẩu khởi tạo
+            String rawPassword;
+            if (request.getNewManagerPassword() != null && !request.getNewManagerPassword().trim().isEmpty()) {
+                rawPassword = request.getNewManagerPassword().trim();
+            } else {
+                rawPassword = "Branch@123";
+            }
+
+            // Xác định Email
+            String email;
+            if (request.getNewManagerEmail() != null && !request.getNewManagerEmail().trim().isEmpty()) {
+                email = request.getNewManagerEmail().trim().toLowerCase();
+                if (userRepository.existsByEmail(email)) {
+                    throw new IllegalArgumentException("Email quản lý [" + email + "] đã được sử dụng bởi tài khoản khác!");
+                }
+            } else {
+                String baseEmail = username + "@utetra.vn";
+                email = baseEmail;
+                int suffix = 1;
+                while (userRepository.existsByEmail(email)) {
+                    email = username + suffix++ + "@utetra.vn";
+                }
+            }
+
+            // Họ và tên
+            String fullName = (request.getNewManagerFullName() != null && !request.getNewManagerFullName().trim().isEmpty())
+                    ? request.getNewManagerFullName().trim()
+                    : "Quản lý " + branchName;
+
+            // Số điện thoại
+            String phone = (request.getNewManagerPhone() != null && !request.getNewManagerPhone().trim().isEmpty())
+                    ? request.getNewManagerPhone().trim()
+                    : (request.getHotline() != null ? request.getHotline().trim() : null);
+
+            // Khởi tạo thực thể User với vai trò ROLE_MANAGER
+            User newManager = User.builder()
+                    .username(username)
+                    .password(passwordEncoder.encode(rawPassword))
+                    .fullName(fullName)
+                    .phone(phone)
+                    .email(email)
+                    .enabled(true)
+                    .locked(false)
+                    .roles(Set.of("ROLE_MANAGER"))
+                    .build();
+
+            User savedUser = userRepository.save(newManager);
+            log.info(">>> Auto-provisioned new Manager account: @{} ({}) for branch [{}]", username, email, branchCode);
+            return new ManagerProvisionResult(savedUser, username, rawPassword, true);
+        }
+
+        // Trường hợp 3: Có managerId dự phòng
+        if (request.getManagerId() != null) {
+            User existing = userRepository.findById(request.getManagerId()).orElse(null);
+            return new ManagerProvisionResult(existing, null, null, false);
+        }
+
+        return new ManagerProvisionResult(null, null, null, false);
+    }
+
+    private record ManagerProvisionResult(User user, String username, String rawPassword, boolean created) {}
 
     @Override
     @Transactional

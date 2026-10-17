@@ -127,22 +127,6 @@
     </div>
   </div>
 
-  <!-- Alert Messages -->
-  <c:if test="${not empty successMessage}">
-    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center shadow-sm mb-4" role="alert">
-      <i class="fa-solid fa-circle-check fs-5 me-2"></i>
-      <div>${successMessage}</div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  </c:if>
-  <c:if test="${not empty errorMessage}">
-    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center shadow-sm mb-4" role="alert">
-      <i class="fa-solid fa-circle-exclamation fs-5 me-2"></i>
-      <div>${errorMessage}</div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  </c:if>
-
   <!-- Banner Hướng Dẫn Nghiệp Vụ -->
   <div class="alert alert-info bg-primary bg-opacity-10 border-primary border-opacity-25 rounded-3 d-flex align-items-center mb-4 p-3">
     <i class="fa-solid fa-circle-info fs-3 text-primary me-3"></i>

@@ -91,15 +91,6 @@
     </div>
   </div>
 
-  <!-- Alert Error -->
-  <c:if test="${not empty errorMessage}">
-    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center shadow-sm mb-4" role="alert">
-      <i class="fa-solid fa-circle-exclamation fs-5 me-2"></i>
-      <div>${errorMessage}</div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  </c:if>
-
   <!-- Product Form -->
   <form id="productForm" 
         action="${isEdit ? pageContext.request.contextPath.concat('/admin/products/').concat(product.id).concat('/update') : pageContext.request.contextPath.concat('/admin/products/create')}" 

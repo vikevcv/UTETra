@@ -31,6 +31,11 @@ public class BranchResponse {
     private String managerFullName;
     private String managerPhone;
 
+    // Feedback 2: Cấp tài khoản tự động & bàn giao
+    private String generatedManagerUsername;
+    private String generatedManagerPassword;
+    private boolean managerAccountCreated;
+
     private long totalEmployees;
     private long totalActiveEmployees;
     private long totalPosAccounts;
