@@ -14,15 +14,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.security.SecureRandom;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
+import com.ute.trasua.entity.Order;
 
 @Service
 @Slf4j
 public class PromotionServiceImpl implements PromotionService {
+
+    private static final String RANDOM_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final PromotionRepository promotionRepository;
     private final BranchRepository branchRepository;
@@ -372,5 +379,101 @@ public class PromotionServiceImpl implements PromotionService {
                 .finalAmount(finalAmount)
                 .message("Áp dụng mã voucher thành công!")
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public Promotion createCompensationVoucher(Order order, BigDecimal rate, int expiryDays) {
+        if (order == null) {
+            throw new IllegalArgumentException("Không tìm thấy đơn hàng cần bồi hoàn voucher.");
+        }
+        if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
+            rate = new BigDecimal("0.80");
+        }
+        if (expiryDays <= 0) {
+            expiryDays = 30;
+        }
+
+        // 1. Tính toán số tiền bồi hoàn 80% (dựa trên finalAmount hoặc totalAmount)
+        BigDecimal baseAmount = order.getFinalAmount();
+        if (baseAmount == null || baseAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            baseAmount = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+        }
+        BigDecimal compensationAmount = baseAmount.multiply(rate).setScale(0, RoundingMode.HALF_UP);
+        if (compensationAmount.compareTo(BigDecimal.ZERO) < 0) {
+            compensationAmount = BigDecimal.ZERO;
+        }
+
+        // 2. Thử sinh mã ngẫu nhiên và lưu (tối đa 5 lượt nếu gặp Race Condition tại DB)
+        int retrySave = 0;
+        while (retrySave < 5) {
+            String candidateCode = generateUniqueVoucherCode(10);
+            try {
+                Promotion promo = Promotion.builder()
+                        .voucherCode(candidateCode)
+                        .title("Bồi Hoàn 80% Đơn #" + order.getOrderCode())
+                        .description("Voucher bồi hoàn 80% giá trị đơn hàng trực tuyến #" + order.getOrderCode() + ". Hạn dùng " + expiryDays + " ngày.")
+                        .discountType("FIXED_AMOUNT")
+                        .discountValue(compensationAmount)
+                        .maxDiscountAmount(compensationAmount)
+                        .minOrderAmount(BigDecimal.ZERO)
+                        .startDate(LocalDateTime.now())
+                        .endDate(LocalDateTime.now().plusDays(expiryDays))
+                        .totalUsageLimit(1)
+                        .usedCount(0)
+                        .usageLimitPerUser(1)
+                        .scope("GLOBAL")
+                        .branch(null)
+                        .status("ACTIVE")
+                        .build();
+
+                Promotion savedPromo = promotionRepository.save(promo);
+                log.info(">>> [UC28] Đã tạo thành công voucher bồi hoàn {} trị giá {}đ cho đơn hàng {}",
+                        savedPromo.getVoucherCode(), compensationAmount, order.getOrderCode());
+                return savedPromo;
+            } catch (DataIntegrityViolationException ex) {
+                log.warn(">>> [UC28] Trùng mã voucher tại DB (Race-Condition) với code {}. Đang thử lại lần {}...", candidateCode, retrySave + 1);
+                retrySave++;
+            }
+        }
+
+        throw new IllegalStateException("Không thể sinh mã voucher bồi hoàn độc nhất sau nhiều lần thử.");
+    }
+
+    private String generateUniqueVoucherCode(int length) {
+        String code;
+        int attempts = 0;
+        do {
+            StringBuilder sb = new StringBuilder(length);
+            for (int i = 0; i < length; i++) {
+                int idx = SECURE_RANDOM.nextInt(RANDOM_CHARSET.length());
+                sb.append(RANDOM_CHARSET.charAt(idx));
+            }
+            code = sb.toString();
+            attempts++;
+            if (attempts > 10) {
+                // Tăng độ dài nếu số lần thử vượt quá 10 để tránh va chạm tuyệt đối
+                length = 12;
+            }
+        } while (promotionRepository.existsByVoucherCode(code));
+
+        return code;
+    }
+
+    @Override
+    @Transactional
+    public void restoreVoucherUsage(String voucherCode) {
+        if (voucherCode == null || voucherCode.trim().isEmpty()) {
+            return;
+        }
+        String cleanCode = voucherCode.trim().toUpperCase();
+        promotionRepository.findByVoucherCode(cleanCode).ifPresent(promo -> {
+            if (promo.getUsedCount() != null && promo.getUsedCount() > 0) {
+                promo.setUsedCount(promo.getUsedCount() - 1);
+                promotionRepository.save(promo);
+                log.info(">>> [UC28] Phục hồi 1 lượt sử dụng cho voucher cũ: {} (usedCount hiện tại: {})",
+                        cleanCode, promo.getUsedCount());
+            }
+        });
     }
 }

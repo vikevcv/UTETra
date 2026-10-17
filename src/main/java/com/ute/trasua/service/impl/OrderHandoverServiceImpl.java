@@ -403,7 +403,8 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         }
 
         String note = (request != null && request.getNote() != null) ? request.getNote().trim() : "";
-        String failureSummary = "Sự cố (" + reasonCode + "): " + (note.isBlank() ? "Tài xế báo cáo sự cố" : note);
+        String reasonVi = formatFailureReasonVietnamese(reasonCode);
+        String failureSummary = reasonVi + (!note.isBlank() ? ": " + note : "");
 
         boolean isBeforePickup = ("OUT_FOR_DELIVERY".equals(currentStatus) || "READY_FOR_DELIVERY".equals(currentStatus))
                 && order.getPickupPhotoUrl() == null;
@@ -455,7 +456,7 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         try {
             if ("READY_FOR_DELIVERY".equals(saved.getStatus())) {
                 if (orderWebSocketPublisher != null) {
-                    orderWebSocketPublisher.broadcastDriverIncident(saved, reportingDriver, reasonCode, failureSummary);
+                    orderWebSocketPublisher.broadcastDriverIncident(saved, reportingDriver, reasonVi, note);
                 }
 
                 // TỰ ĐỘNG CHUYỂN ĐƠN CHO TÀI XẾ KHÁC
@@ -496,6 +497,32 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         }
         if (order.getBranch() != null && driver.getBranch() != null && !order.getBranch().getId().equals(driver.getBranch().getId())) {
             throw new org.springframework.security.access.AccessDeniedException("Đơn hàng không thuộc chi nhánh công tác của bạn.");
+        }
+    }
+
+    private String formatFailureReasonVietnamese(String reasonCode) {
+        if (reasonCode == null || reasonCode.isBlank()) {
+            return "Không liên lạc được với khách hàng";
+        }
+        switch (reasonCode.trim().toUpperCase()) {
+            case "KHONG_LIEN_LAC_DUOC":
+                return "Không liên lạc được với khách hàng";
+            case "KHACH_TU_CHOI":
+                return "Khách từ chối nhận trà / Đổi ý";
+            case "SAI_DIA_CHI":
+                return "Sai địa chỉ giao hàng";
+            case "XE_HONG":
+                return "Sự cố phương tiện giao thông trên đường";
+            case "SUC_KHOE":
+                return "Sự cố sức khỏe tài xế trên đường";
+            case "QUAN_HET_MON":
+                return "Quán tạm hết nguyên liệu pha chế";
+            case "DO_VO_HU_HONG":
+                return "Sự cố rơi đổ / hư hỏng trên đường giao";
+            case "THOI_TIET_XAU":
+                return "Thời tiết mưa bão nghiêm trọng";
+            default:
+                return reasonCode.replace("_", " ");
         }
     }
 

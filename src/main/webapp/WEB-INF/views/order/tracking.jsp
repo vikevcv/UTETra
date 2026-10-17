@@ -4,6 +4,7 @@
 
 <head>
   <title>${siteTitle}</title>
+  <meta name="context-path" content="${pageContext.request.contextPath}">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
@@ -214,6 +215,32 @@
       color: #FFFFFF;
     }
 
+    /* Status Message Box */
+    .status-msg-box {
+      background: #FAF8F5;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 20px;
+      border-left: 4px solid var(--tea-matcha);
+      transition: border-color 0.3s ease;
+    }
+    .status-msg-box.is-cancelled {
+      border-left-color: #EF4444;
+    }
+    .status-msg-box .status-title {
+      display: block;
+      font-size: 0.95rem;
+      color: var(--zen-sumi);
+    }
+    .status-msg-box.is-cancelled .status-title {
+      color: #991B1B;
+    }
+    .status-msg-box .status-desc {
+      font-size: 0.85rem;
+      color: var(--zen-sumi-light);
+      margin-top: 3px;
+    }
+
     /* Receipt Rows */
     .receipt-row {
       display: flex;
@@ -265,6 +292,19 @@
     }
     .recent-order-code:hover {
       color: var(--tea-matcha);
+    }
+
+    /* Nút Hủy Đơn Hàng (UC28) */
+    .btn-cancel-custom {
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.84rem;
+      padding: 6px 14px;
+      transition: all 0.2s ease;
+    }
+    .btn-cancel-disabled {
+      opacity: 0.5 !important;
+      cursor: not-allowed !important;
     }
   </style>
 </head>
@@ -398,10 +438,48 @@
                 </div>
 
                 <!-- Lời nhắn trạng thái -->
-                <div style="background:#FAF8F5; border-radius:8px; padding:12px 16px; margin-top:20px; border-left:4px solid var(--tea-matcha);">
-                  <strong style="display:block; font-size:0.95rem; color:var(--zen-sumi);" id="txtStatusTitle">${tracking.statusTitle}</strong>
-                  <div style="font-size:0.85rem; color:var(--zen-sumi-light); margin-top:3px;" id="txtStatusDesc">${tracking.statusDescription}</div>
+                <div id="boxStatusMessageWrapper" class="status-msg-box ${tracking.statusStep == -1 ? 'is-cancelled' : ''}">
+                  <strong class="status-title" id="txtStatusTitle">${tracking.statusTitle}</strong>
+                  <div class="status-desc" id="txtStatusDesc">${tracking.statusDescription}</div>
                 </div>
+
+                <!-- NÚT HỦY ĐƠN HÀNG (UC28) -->
+                <c:if test="${tracking.status != 'CANCELLED'}">
+                  <div id="cancelOrderActionWrapper" style="margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border-hairline); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <span id="cancelOrderHelpText" style="font-size:0.83rem; color:var(--zen-sumi-light);">
+                      <c:choose>
+                        <c:when test="${tracking.canCancel}">
+                          <i class="fa-solid fa-circle-info text-primary me-1"></i> Quán chưa bắt đầu pha chế. Bạn có thể hủy đơn và nhận lại mã giảm giá bồi hoàn 80%.
+                        </c:when>
+                        <c:otherwise>
+                          <i class="fa-solid fa-lock text-muted me-1"></i> Quầy đã bắt đầu pha chế, đơn hàng hiện không thể hủy.
+                        </c:otherwise>
+                      </c:choose>
+                    </span>
+                    <c:choose>
+                      <c:when test="${tracking.canCancel}">
+                        <button type="button" 
+                                class="btn btn-outline-danger btn-sm btn-cancel-custom" 
+                                id="btnOpenCancelModal" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#modalCancelOrder" 
+                                onclick="openCancelOrderModal()" 
+                                title="Hủy đơn hàng và nhận voucher bồi hoàn 80%">
+                          <i class="fa-solid fa-ban me-1"></i> Hủy Đơn Hàng
+                        </button>
+                      </c:when>
+                      <c:otherwise>
+                        <button type="button" 
+                                class="btn btn-outline-secondary btn-sm btn-cancel-custom btn-cancel-disabled" 
+                                id="btnOpenCancelModal" 
+                                disabled="disabled" 
+                                title="Quầy đã bắt đầu pha chế, không thể hủy đơn">
+                          <i class="fa-solid fa-ban me-1"></i> Hủy Đơn Hàng
+                        </button>
+                      </c:otherwise>
+                    </c:choose>
+                  </div>
+                </c:if>
               </div>
 
               <!-- THẺ TÀI XẾ (DRIVER CARD - HIỆN KHI ĐÃ CÓ TÀI XẾ) -->
@@ -659,6 +737,127 @@
         </c:otherwise>
       </c:choose>
 
+  <!-- MODAL XÁC NHẬN HỦY ĐƠN HÀNG (UC28) -->
+  <div class="modal fade" id="modalCancelOrder" tabindex="-1" aria-labelledby="modalCancelOrderLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:12px; border:none; box-shadow:0 10px 25px rgba(0,0,0,0.15);">
+        <div class="modal-header" style="border-bottom:1px solid var(--border-hairline); padding:16px 20px;">
+          <h5 class="modal-title" id="modalCancelOrderLabel" style="font-weight:700; color:var(--zen-sumi); font-size:1.1rem;">
+            <i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> Xác Nhận Hủy Đơn Hàng
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" style="padding:20px;">
+          <!-- Chính sách bồi hoàn -->
+          <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:12px 14px; margin-bottom:16px; font-size:0.86rem; color:#92400E;">
+            <div style="font-weight:700; margin-bottom:4px;">
+              <i class="fa-solid fa-gift me-1"></i> Chính Sách Bồi Hoàn Voucher (UC28):
+            </div>
+            <div>
+              Quầy chưa tiến hành pha chế. Khi xác nhận hủy đơn, bạn sẽ nhận được mã voucher <strong>bồi hoàn 80%</strong> giá trị đơn hàng (trừ 20% phí nguyên liệu/vận hành dự kiến), thời hạn dùng <strong>30 ngày</strong>.
+            </div>
+          </div>
+
+          <!-- Thông tin đơn -->
+          <div style="background:var(--zen-washi); border-radius:8px; padding:12px 14px; margin-bottom:16px; font-size:0.88rem;">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="text-muted">Mã đơn hàng:</span>
+              <strong style="font-family:monospace; color:var(--ceramic-bizen);">${tracking.orderCode}</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span class="text-muted">Giá trị đơn:</span>
+              <span><fmt:formatNumber value="${tracking.finalAmount}" pattern="#,###"/> đ</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Ước tính voucher bồi hoàn (80%):</span>
+              <strong style="color:var(--tea-matcha);">
+                <fmt:formatNumber value="${tracking.estimatedCompensationAmount}" pattern="#,###"/> đ
+              </strong>
+            </div>
+          </div>
+
+          <!-- Form lý do hủy -->
+          <div class="mb-3">
+            <label for="selectCancelReason" class="form-label" style="font-weight:600; font-size:0.88rem; color:var(--zen-sumi);">
+              Vui lòng chọn lý do hủy đơn: <span class="text-danger">*</span>
+            </label>
+            <select class="form-select" id="selectCancelReason" onchange="onReasonChange(this)" style="font-size:0.9rem;">
+              <option value="Đổi ý không muốn mua nữa">Đổi ý không muốn mua nữa</option>
+              <option value="Đặt nhầm món / nhầm kích cỡ">Đặt nhầm món / nhầm kích cỡ</option>
+              <option value="Muốn đổi địa chỉ giao hàng">Muốn đổi địa chỉ giao hàng</option>
+              <option value="Thời gian chờ lâu hơn dự kiến">Thời gian chờ lâu hơn dự kiến</option>
+              <option value="Khác">Lý do khác...</option>
+            </select>
+          </div>
+
+          <div class="mb-2" id="boxOtherReason" style="display:none;">
+            <label for="inputOtherReason" class="form-label" style="font-size:0.85rem; color:var(--zen-sumi-light);">Chi tiết lý do khác:</label>
+            <textarea class="form-control" id="inputOtherReason" rows="2" placeholder="Nhập lý do chi tiết..." style="font-size:0.88rem;"></textarea>
+          </div>
+
+          <div id="cancelOrderErrorMsg" class="text-danger" style="display:none; font-size:0.85rem; margin-top:10px;"></div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid var(--border-hairline); padding:12px 20px;">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="font-size:0.88rem;">Giữ Đơn Hàng</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmCancelOrder" onclick="submitCancelOrder()" style="font-size:0.88rem; font-weight:600;">
+            <span class="spinner-border spinner-border-sm me-1" id="cancelSpinner" style="display:none;"></span>
+            Xác Nhận Hủy Đơn
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL BỒI HOÀN VOUCHER THÀNH CÔNG (UC28) -->
+  <div class="modal fade" id="modalCancelSuccess" tabindex="-1" aria-labelledby="modalCancelSuccessLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:12px; border:none; box-shadow:0 15px 35px rgba(0,0,0,0.2);">
+        <div class="modal-body text-center" style="padding:32px 24px;">
+          <div style="width:68px; height:68px; border-radius:50%; background:var(--tea-matcha-soft); color:var(--tea-matcha); display:inline-flex; align-items:center; justify-content:center; font-size:2rem; margin-bottom:16px;">
+            <i class="fa-solid fa-gift"></i>
+          </div>
+          <h4 style="font-weight:700; color:var(--zen-sumi); margin-bottom:8px;">Hủy Đơn Hàng Thành Công</h4>
+          <p style="color:var(--zen-sumi-light); font-size:0.9rem; margin-bottom:20px;">
+            Hệ thống đã bồi hoàn 80% giá trị đơn hàng vào mã voucher bên dưới:
+          </p>
+
+          <!-- Hộp mã Voucher -->
+          <div style="background:#FAF8F5; border:2px dashed var(--tea-matcha); border-radius:10px; padding:16px; margin-bottom:20px; position:relative;">
+            <span style="font-size:0.75rem; text-transform:uppercase; color:var(--zen-sumi-light); letter-spacing:1px; display:block; margin-bottom:4px;">MÃ VOUCHER BỒI HOÀN</span>
+            <div id="displayVoucherCode" style="font-family:monospace; font-size:1.65rem; font-weight:800; color:var(--ceramic-bizen); letter-spacing:3px;">
+              ------
+            </div>
+            <div style="margin-top:10px;">
+              <button type="button" class="btn btn-sm btn-outline-success" id="btnCopyVoucher" onclick="copyVoucherToClipboard()" style="border-radius:6px; font-weight:600; font-size:0.82rem;">
+                <i class="fa-regular fa-copy me-1"></i> Sao Chép Mã
+              </button>
+            </div>
+          </div>
+
+          <!-- Chi tiết Voucher -->
+          <div style="text-align:left; background:#F8FAFC; border-radius:8px; padding:12px 14px; font-size:0.85rem; color:#475569; margin-bottom:20px;">
+            <div class="d-flex justify-content-between mb-1">
+              <span>Trị giá voucher:</span>
+              <strong class="text-success" id="displayVoucherAmount">0 đ</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Hạn sử dụng:</span>
+              <strong id="displayVoucherExpiry">30 ngày</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Phạm vi áp dụng:</span>
+              <strong>Toàn bộ hệ thống quán trà</strong>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-dark w-100" data-bs-dismiss="modal" style="background:var(--zen-sumi); border-radius:8px; padding:10px 0; font-weight:600;">
+            Đã Lưu Mã & Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
     </div>
   </section>
 
@@ -667,6 +866,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
   <!-- External Script -->
-  <script src="${pageContext.request.contextPath}/js/order-tracking.js"></script>
+  <script src="${pageContext.request.contextPath}/js/order-tracking.js?v=2.1"></script>
 </body>
 </html>

@@ -39,6 +39,7 @@ public class OrderTrackingDto implements Serializable {
     private Integer statusStep;
     private String statusTitle;
     private String statusDescription;
+    private Boolean canCancel;
 
     private String paymentMethod;
     private String paymentStatus;
@@ -75,6 +76,7 @@ public class OrderTrackingDto implements Serializable {
     private BigDecimal discountAmount;
     private String voucherCode;
     private BigDecimal finalAmount;
+    private BigDecimal estimatedCompensationAmount;
 
     @Builder.Default
     private List<OrderItemTrackingDto> items = new ArrayList<>();

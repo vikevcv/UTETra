@@ -36,4 +36,22 @@ public interface PromotionService {
     List<PromotionResponse> getAvailablePromotionsForStore(Long branchId);
 
     VoucherApplyResponse validateAndApplyVoucher(String voucherCode, Long branchId, BigDecimal orderSubtotal);
+
+    // ==================== UC28: BỒI HOÀN VOUCHER HỦY ĐƠN TRỰC TUYẾN ====================
+    /**
+     * Tự động sinh mã voucher bồi hoàn 80% (không có tiền tố cố định, 100% ngẫu nhiên, chống trùng lặp tuyệt đối).
+     *
+     * @param order Đơn hàng được hủy
+     * @param rate Tỷ lệ bồi hoàn (mặc định 0.80 cho 80%)
+     * @param expiryDays Thời hạn sử dụng voucher (30 ngày)
+     * @return Entity Promotion được tạo mới
+     */
+    com.ute.trasua.entity.Promotion createCompensationVoucher(com.ute.trasua.entity.Order order, BigDecimal rate, int expiryDays);
+
+    /**
+     * Phục hồi lượt sử dụng voucher cũ của đơn hàng khi hủy đơn thành công.
+     *
+     * @param voucherCode Mã voucher đã áp dụng trong đơn
+     */
+    void restoreVoucherUsage(String voucherCode);
 }

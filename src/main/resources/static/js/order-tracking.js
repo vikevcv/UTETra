@@ -15,6 +15,43 @@ let pollingInterval = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   initTrackingPage();
+
+  // Đảm bảo click nút Hủy Đơn Hàng luôn mở được modal và nút Xác Nhận Hủy luôn hoạt động
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("#btnOpenCancelModal");
+    if (btn && !btn.disabled) {
+      e.preventDefault();
+      openCancelOrderModal();
+    }
+
+    const confirmCancelBtn = e.target.closest("#btnConfirmCancelOrder");
+    if (confirmCancelBtn && !confirmCancelBtn.disabled) {
+      e.preventDefault();
+      submitCancelOrder();
+    }
+
+    const copyBtn = e.target.closest("#btnCopyVoucher");
+    if (copyBtn) {
+      e.preventDefault();
+      copyVoucherToClipboard();
+    }
+
+    const dismissBtn = e.target.closest('[data-bs-dismiss="modal"]');
+    if (dismissBtn) {
+      const parentModal = dismissBtn.closest('.modal');
+      if (parentModal) {
+        const bs = getBsModalInstance(parentModal);
+        if (bs) {
+          try { bs.hide(); } catch (err) {}
+        }
+        parentModal.classList.remove("show");
+        parentModal.style.display = "none";
+        const backdrop = document.getElementById("customCancelBackdrop");
+        if (backdrop) backdrop.remove();
+        document.querySelectorAll(".modal-backdrop").forEach(b => b.remove());
+      }
+    }
+  });
 });
 
 function getContextPath() {
@@ -174,25 +211,138 @@ function formatStatusLabel(status, statusLabel) {
   return map[(status || '').toUpperCase()] || status;
 }
 
+function cleanReasonText(raw) {
+  if (!raw) return "Đơn hàng chưa thể hoàn tất theo dự kiến.";
+  let text = String(raw).trim();
+
+  const map = {
+    "KHONG_LIEN_LAC_DUOC": "Không liên lạc được với khách hàng",
+    "KHACH_TU_CHOI": "Khách từ chối nhận trà / Đổi ý",
+    "SAI_DIA_CHI": "Sai địa chỉ giao hàng",
+    "XE_HONG": "Sự cố phương tiện giao thông trên đường",
+    "SUC_KHOE": "Sự cố sức khỏe tài xế trên đường",
+    "QUAN_HET_MON": "Quán tạm hết nguyên liệu pha chế",
+    "DO_VO_HU_HONG": "Sự cố rơi đổ / hư hỏng trên đường giao",
+    "THOI_TIET_XAU": "Thời tiết mưa bão nghiêm trọng"
+  };
+
+  for (const [code, label] of Object.entries(map)) {
+    text = text.replace(new RegExp(`Sự\\s*cố\\s*\\(${code}\\)\\s*:?\\s*`, 'gi'), label + ': ');
+    text = text.replace(new RegExp(`\\(${code}\\)`, 'gi'), label);
+    text = text.replace(new RegExp(`\\b${code}\\b`, 'gi'), label);
+  }
+
+  text = text.replace(/^(Sự cố:\s*)+/gi, '')
+             .replace(/^(Lý do:\s*)+/gi, '')
+             .replace(/:\s*:\s*/g, ': ')
+             .trim();
+
+  return text;
+}
+
 function handleOrderStatusEvent(event) {
   console.log(">>> [STOMP Event Nhận Được]:", event);
 
-  // 1. Cập nhật Badge Status và Title/Message
+  const step = event.statusStep !== undefined ? event.statusStep : 1;
+  const isCancelled = event.status === "CANCELLED" || 
+                      event.eventType === "CANCELLED" || 
+                      event.eventType === "DRIVER_INCIDENT" || 
+                      event.status === "DELIVERY_FAILED" || 
+                      step === -1;
+
   const badgeEl = document.getElementById("badgeStatus");
+  const titleEl = document.getElementById("txtStatusTitle");
+  const descEl = document.getElementById("txtStatusDesc");
+  const cancelWrapper = document.getElementById("cancelOrderActionWrapper");
+  const btnCancel = document.getElementById("btnOpenCancelModal");
+  const helpText = document.getElementById("cancelOrderHelpText");
+
+  if (isCancelled) {
+    if (badgeEl) {
+      badgeEl.innerText = "Đã Hủy";
+      badgeEl.style.background = "#FEE2E2";
+      badgeEl.style.color = "#991B1B";
+    }
+    const statusBox = document.getElementById("boxStatusMessageWrapper");
+    if (statusBox) {
+      statusBox.classList.add("is-cancelled");
+    }
+    if (titleEl) {
+      titleEl.innerText = "Đơn Hàng Đã Bị Hủy";
+    }
+    if (descEl) {
+      const rawReason = event.statusMessage || (event.eventType === "DRIVER_INCIDENT" ? "Tài xế báo cáo sự cố giao hàng bất khả kháng." : "Đơn hàng đã được ghi nhận hủy trên hệ thống.");
+      descEl.innerText = cleanReasonText(rawReason);
+    }
+
+    // Xóa bỏ hoàn toàn khối thông báo màu đỏ nếu có trong DOM theo yêu cầu giao diện
+    const cancelNotice = document.getElementById("boxOrderCancelledNotice");
+    if (cancelNotice) {
+      cancelNotice.remove();
+    }
+
+    if (cancelWrapper) {
+      cancelWrapper.style.display = "none";
+    }
+
+    updateStepperUI(-1);
+    playNotificationSound();
+    return;
+  }
+
+  // 1. Cập nhật Badge Status và Title/Message
+  const statusBox = document.getElementById("boxStatusMessageWrapper");
+  if (statusBox) {
+    statusBox.classList.remove("is-cancelled");
+  }
   if (badgeEl && (event.status || event.statusLabel)) {
     badgeEl.innerText = formatStatusLabel(event.status, event.statusLabel);
   }
-  const titleEl = document.getElementById("txtStatusTitle");
   if (titleEl && event.statusTitle) {
     titleEl.innerText = event.statusTitle;
   }
-  const descEl = document.getElementById("txtStatusDesc");
   if (descEl && event.statusMessage) {
     descEl.innerText = event.statusMessage;
   }
 
+  // 1.5. Cập nhật nút Hủy Đơn: Từ pha chế trở về sau thì làm mờ nút và không cho bấm
+  if (step >= 2) {
+    // Từ pha chế trở về sau (step >= 2): làm mờ nút, vô hiệu hóa click
+    if (cancelWrapper) cancelWrapper.style.display = "flex";
+    if (btnCancel) {
+      btnCancel.disabled = true;
+      btnCancel.removeAttribute("data-bs-toggle");
+      btnCancel.removeAttribute("data-bs-target");
+      btnCancel.removeAttribute("onclick");
+      btnCancel.classList.remove("btn-outline-danger");
+      btnCancel.classList.add("btn-outline-secondary");
+      btnCancel.style.opacity = "0.5";
+      btnCancel.style.cursor = "not-allowed";
+      btnCancel.title = "Quầy đã bắt đầu pha chế, không thể hủy đơn";
+    }
+    if (helpText) {
+      helpText.innerHTML = '<i class="fa-solid fa-lock text-muted me-1"></i> Quầy đã bắt đầu pha chế, đơn hàng hiện không thể hủy.';
+    }
+  } else {
+    // Đơn chưa pha chế (step == 1)
+    if (cancelWrapper) cancelWrapper.style.display = "flex";
+    if (btnCancel) {
+      btnCancel.disabled = false;
+      btnCancel.setAttribute("data-bs-toggle", "modal");
+      btnCancel.setAttribute("data-bs-target", "#modalCancelOrder");
+      btnCancel.setAttribute("onclick", "openCancelOrderModal()");
+      btnCancel.classList.remove("btn-outline-secondary");
+      btnCancel.classList.add("btn-outline-danger");
+      btnCancel.style.opacity = "1";
+      btnCancel.style.cursor = "pointer";
+      btnCancel.title = "Hủy đơn hàng và nhận voucher bồi hoàn 80%";
+    }
+    if (helpText) {
+      helpText.innerHTML = '<i class="fa-solid fa-circle-info text-primary me-1"></i> Quán chưa bắt đầu pha chế. Bạn có thể hủy đơn và nhận lại mã giảm giá bồi hoàn 80%.';
+    }
+  }
+
   // 2. Cập nhật Stepper
-  const step = event.statusStep || 1;
   updateStepperUI(step);
 
   // 3. Cập nhật Driver Card nếu có thông tin tài xế
@@ -321,3 +471,212 @@ async function onLookupSubmit() {
   // Mặc định thử tìm theo mã
   window.location.href = `${getContextPath()}/order/tracking?code=${encodeURIComponent(query)}`;
 }
+
+// ==================== UC28: HỦY ĐƠN HÀNG & NHẬN VOUCHER BỒI HOÀN ====================
+function getBsModalInstance(element) {
+  if (!element) return null;
+  if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+    try {
+      if (typeof bootstrap.Modal.getOrCreateInstance === 'function') {
+        return bootstrap.Modal.getOrCreateInstance(element);
+      }
+      return bootstrap.Modal.getInstance(element) || new bootstrap.Modal(element);
+    } catch (e) {
+      console.warn("Bootstrap Modal init warning:", e);
+    }
+  }
+  return null;
+}
+
+function openCancelOrderModal() {
+  const modalEl = document.getElementById("modalCancelOrder");
+  if (!modalEl) {
+    console.error("Không tìm thấy phần tử modalCancelOrder trong DOM");
+    return;
+  }
+  const errorMsg = document.getElementById("cancelOrderErrorMsg");
+  if (errorMsg) errorMsg.style.display = "none";
+  const selectReason = document.getElementById("selectCancelReason");
+  if (selectReason) selectReason.value = "Đổi ý không muốn mua nữa";
+  const boxOther = document.getElementById("boxOtherReason");
+  if (boxOther) boxOther.style.display = "none";
+  const inputOther = document.getElementById("inputOtherReason");
+  if (inputOther) inputOther.value = "";
+
+  const bs = getBsModalInstance(modalEl);
+  if (bs) {
+    bs.show();
+  } else {
+    modalEl.classList.add("show");
+    modalEl.style.display = "block";
+    let backdrop = document.getElementById("customCancelBackdrop");
+    if (!backdrop) {
+      backdrop = document.createElement("div");
+      backdrop.id = "customCancelBackdrop";
+      backdrop.className = "modal-backdrop fade show";
+      document.body.appendChild(backdrop);
+    }
+  }
+}
+
+function closeCancelOrderModal() {
+  const modalEl = document.getElementById("modalCancelOrder");
+  if (modalEl) {
+    const bs = getBsModalInstance(modalEl);
+    if (bs) {
+      try { bs.hide(); } catch (e) {}
+    }
+    modalEl.classList.remove("show");
+    modalEl.style.display = "none";
+  }
+  const backdrop = document.getElementById("customCancelBackdrop");
+  if (backdrop) backdrop.remove();
+  document.querySelectorAll(".modal-backdrop").forEach(b => b.remove());
+}
+
+function onReasonChange(selectEl) {
+  const otherBox = document.getElementById("boxOtherReason");
+  if (!otherBox) return;
+  if (selectEl.value === "Khác") {
+    otherBox.style.display = "block";
+  } else {
+    otherBox.style.display = "none";
+  }
+}
+
+async function submitCancelOrder() {
+  const codeEl = document.getElementById("wsOrderCode");
+  if (!codeEl || !codeEl.value.trim()) {
+    alert("Không tìm thấy mã đơn hàng.");
+    return;
+  }
+  const orderCode = codeEl.value.trim();
+
+  const selectReason = document.getElementById("selectCancelReason");
+  let reason = selectReason ? selectReason.value : "Đổi ý không muốn mua nữa";
+  if (reason === "Khác") {
+    const inputOther = document.getElementById("inputOtherReason");
+    reason = inputOther && inputOther.value.trim() ? inputOther.value.trim() : "Lý do khác";
+  }
+
+  const btnConfirm = document.getElementById("btnConfirmCancelOrder");
+  const spinner = document.getElementById("cancelSpinner");
+  const errorMsg = document.getElementById("cancelOrderErrorMsg");
+
+  if (btnConfirm) btnConfirm.disabled = true;
+  if (spinner) spinner.style.display = "inline-block";
+  if (errorMsg) errorMsg.style.display = "none";
+
+  console.log(">>> [UC28] Gửi yêu cầu hủy đơn hàng:", orderCode, "Lý do:", reason);
+
+  try {
+    const targetUrl = `${getContextPath()}/api/v1/orders/tracking/${encodeURIComponent(orderCode)}/cancel`;
+    console.log(">>> [UC28] Fetch URL:", targetUrl);
+    const response = await fetch(targetUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ reason: reason })
+    });
+
+    const data = await response.json();
+    console.log(">>> [UC28] Kết quả trả về:", response.status, data);
+    if (response.ok && data.success) {
+      // 1. Đóng modal xác nhận
+      closeCancelOrderModal();
+
+      // 2. Điền dữ liệu vào modal thành công
+      const codeDisplay = document.getElementById("displayVoucherCode");
+      const amountDisplay = document.getElementById("displayVoucherAmount");
+      const expiryDisplay = document.getElementById("displayVoucherExpiry");
+
+      if (codeDisplay) codeDisplay.innerText = data.compensationVoucherCode;
+      if (amountDisplay) amountDisplay.innerText = Number(data.compensationAmount).toLocaleString("vi-VN") + " đ";
+      if (expiryDisplay) expiryDisplay.innerText = data.expiryDateFormatted;
+
+      // 3. Mở modal thành công
+      const successModalEl = document.getElementById("modalCancelSuccess");
+      if (successModalEl) {
+        const bsSuccess = getBsModalInstance(successModalEl);
+        if (bsSuccess) {
+          bsSuccess.show();
+        } else {
+          successModalEl.classList.add("show");
+          successModalEl.style.display = "block";
+          let backdrop = document.getElementById("customCancelBackdrop");
+          if (!backdrop) {
+            backdrop = document.createElement("div");
+            backdrop.id = "customCancelBackdrop";
+            backdrop.className = "modal-backdrop fade show";
+            document.body.appendChild(backdrop);
+          }
+        }
+      }
+
+      // 4. Cập nhật giao diện đơn hàng
+      handleOrderStatusEvent({
+        eventType: "CANCELLED",
+        status: "CANCELLED",
+        statusLabel: "Đã Hủy",
+        statusStep: -1,
+        statusTitle: "Đơn Hàng Đã Bị Hủy",
+        statusMessage: `Đơn hàng đã được hủy. Quý khách đã nhận được mã voucher bồi hoàn 80% (${data.compensationVoucherCode}).`
+      });
+
+      // 5. Ẩn nút hủy đơn
+      const cancelWrapper = document.getElementById("cancelOrderActionWrapper");
+      if (cancelWrapper) cancelWrapper.style.display = "none";
+
+    } else {
+      if (errorMsg) {
+        errorMsg.innerText = data.message || "Không thể hủy đơn hàng vào lúc này.";
+        errorMsg.style.display = "block";
+      } else {
+        alert(data.message || "Không thể hủy đơn hàng.");
+      }
+    }
+  } catch (err) {
+    if (errorMsg) {
+      errorMsg.innerText = "Lỗi kết nối khi gửi yêu cầu hủy đơn: " + err.message;
+      errorMsg.style.display = "block";
+    } else {
+      alert("Lỗi kết nối: " + err.message);
+    }
+  } finally {
+    if (btnConfirm) btnConfirm.disabled = false;
+    if (spinner) spinner.style.display = "none";
+  }
+}
+
+function copyVoucherToClipboard() {
+  const codeEl = document.getElementById("displayVoucherCode");
+  if (!codeEl) return;
+  const code = codeEl.innerText.trim();
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById("btnCopyVoucher");
+    if (btn) {
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Đã Sao Chép!';
+      btn.classList.remove("btn-outline-success");
+      btn.classList.add("btn-success");
+      setTimeout(() => {
+        btn.innerHTML = origHtml;
+        btn.classList.remove("btn-success");
+        btn.classList.add("btn-outline-success");
+      }, 2500);
+    }
+  }).catch(() => {
+    prompt("Vui lòng sao chép mã voucher này:", code);
+  });
+}
+
+// Expose toàn cục để JSP và các module luôn gọi được
+window.getBsModalInstance = getBsModalInstance;
+window.openCancelOrderModal = openCancelOrderModal;
+window.closeCancelOrderModal = closeCancelOrderModal;
+window.onReasonChange = onReasonChange;
+window.submitCancelOrder = submitCancelOrder;
+window.copyVoucherToClipboard = copyVoucherToClipboard;
+window.handleOrderStatusEvent = handleOrderStatusEvent;
+window.applyStatusUpdate = handleOrderStatusEvent;

@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -172,9 +174,15 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
             case "FAILED":
             case "INCIDENT":
                 statusStep = -1;
-                statusLabel = "Đã Hủy / Sự Cố";
-                statusTitle = "Đơn Hàng Đã Bị Hủy / Sự Cố";
-                statusDesc = order.getNote() != null ? order.getNote() : "Đơn hàng chưa thể hoàn tất theo dự kiến.";
+                statusLabel = "Đã Hủy";
+                statusTitle = "Đơn Hàng Đã Bị Hủy";
+                if (order.getDeliveryNotes() != null && !order.getDeliveryNotes().isBlank()) {
+                    statusDesc = order.getDeliveryNotes();
+                } else if (order.getNote() != null && !order.getNote().isBlank()) {
+                    statusDesc = order.getNote();
+                } else {
+                    statusDesc = "Rất tiếc vì sự cố này. Đơn hàng đã được ghi nhận hủy trên hệ thống.";
+                }
                 break;
             default:
                 statusStep = 1;
@@ -242,6 +250,18 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                 ? order.getCreatedAt().format(TIME_FORMATTER)
                 : "";
 
+        boolean canCancel = "PENDING".equalsIgnoreCase(rawStatus)
+                || "AWAITING_PREPARATION".equalsIgnoreCase(rawStatus)
+                || "PAID".equalsIgnoreCase(rawStatus);
+
+        BigDecimal baseRefundAmount = order.getFinalAmount();
+        if (baseRefundAmount == null || baseRefundAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            baseRefundAmount = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+        }
+        BigDecimal estimatedCompensationAmount = baseRefundAmount != null && baseRefundAmount.compareTo(BigDecimal.ZERO) > 0
+                ? baseRefundAmount.multiply(new BigDecimal("0.80")).setScale(0, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
         return OrderTrackingDto.builder()
                 .orderId(order.getId())
                 .orderCode(order.getOrderCode())
@@ -252,6 +272,7 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                 .statusStep(statusStep)
                 .statusTitle(statusTitle)
                 .statusDescription(statusDesc)
+                .canCancel(canCancel)
                 .paymentMethod(order.getPaymentMethod())
                 .paymentStatus(order.getPaymentStatus())
                 .createdAt(formattedTime)
@@ -279,6 +300,7 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                 .discountAmount(order.getDiscountAmount())
                 .voucherCode(order.getVoucherCode())
                 .finalAmount(order.getFinalAmount())
+                .estimatedCompensationAmount(estimatedCompensationAmount)
                 .items(items)
                 .build();
     }
