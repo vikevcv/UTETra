@@ -176,6 +176,48 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
         sendToCustomer(order.getOrderCode(), event);
     }
 
+    @Override
+    public void broadcastDriverIncident(Order order, Driver driver, String reason, String note) {
+        if (order == null) return;
+        Long branchId = order.getBranch() != null ? order.getBranch().getId() : 1L;
+        String driverName = (driver != null && driver.getUser() != null) ? driver.getUser().getFullName() : "Tài xế";
+
+        OrderStatusEventDto event = OrderStatusEventDto.builder()
+                .eventType("DRIVER_INCIDENT")
+                .orderId(order.getId())
+                .orderCode(order.getOrderCode())
+                .branchId(branchId)
+                .branchName(order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh UTETra")
+                .dailyQueueNumber(order.getDailyQueueNumber())
+                .status(order.getStatus())
+                .statusStep(-1)
+                .statusTitle("Sự Cố Giao Hàng Bất Khả Kháng")
+                .statusMessage("Tài xế " + driverName + " báo cáo sự cố (" + reason + "): " + (note != null ? note : ""))
+                .driverId(driver != null ? driver.getId() : null)
+                .driverName(driverName)
+                .timestamp(LocalDateTime.now().format(TIME_FORMATTER))
+                .build();
+
+        sendToHandover(branchId, event);
+        if (driver != null) {
+            sendToShipper(driver.getId(), event);
+        }
+        sendToCustomer(order.getOrderCode(), event);
+    }
+
+    @Override
+    public void broadcastQueueUnassigned(Long branchId, int unassignedCount, java.util.List<String> orderCodes) {
+        OrderStatusEventDto event = OrderStatusEventDto.builder()
+                .eventType("UNASSIGNED_QUEUE")
+                .branchId(branchId != null ? branchId : 1L)
+                .statusTitle("Cảnh Báo: Đơn Chờ Điều Phối")
+                .statusMessage("Hiện có " + unassignedCount + " đơn hàng chưa được gán tài xế do hết tài xế khả dụng.")
+                .timestamp(LocalDateTime.now().format(TIME_FORMATTER))
+                .build();
+
+        sendToHandover(branchId != null ? branchId : 1L, event);
+    }
+
 
     private void sendToCustomer(String orderCode, OrderStatusEventDto event) {
         try {

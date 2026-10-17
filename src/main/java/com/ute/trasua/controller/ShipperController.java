@@ -43,6 +43,7 @@ public class ShipperController {
     private final DriverRepository driverRepository;
     private final OrderRepository orderRepository;
     private final BranchRepository branchRepository;
+    private final com.ute.trasua.service.DriverService driverService;
 
     /**
      * Màn hình chính bản đồ điều hướng của Tài xế giao hàng.
@@ -193,22 +194,24 @@ public class ShipperController {
             @RequestBody(required = false) Map<String, String> body,
             Authentication authentication,
             @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
-        String reason = "Sự cố giao hàng bất khả kháng";
+        String reasonCode = "XE_HONG";
+        String note = "";
         if (body != null) {
-            if (body.get("reason") != null && !body.get("reason").isBlank()) {
-                reason = body.get("reason");
-            } else if (body.get("reasonCode") != null && !body.get("reasonCode").isBlank()) {
-                reason = body.get("reasonCode");
-            } else if (body.get("note") != null && !body.get("note").isBlank()) {
-                reason = body.get("note");
+            if (body.get("reasonCode") != null && !body.get("reasonCode").isBlank()) {
+                reasonCode = body.get("reasonCode");
+            } else if (body.get("reason") != null && !body.get("reason").isBlank()) {
+                reasonCode = body.get("reason");
+            }
+            if (body.get("note") != null && !body.get("note").isBlank()) {
+                note = body.get("note");
             }
         }
         Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
-        Long driverId = (driver != null) ? driver.getId() : null;
-        HandoverOrderDto updated = orderHandoverService.updateDeliveryStatus(orderId, driverId, "INCIDENT", reason);
+        Long driverId = (driver != null) ? driver.getId() : 1L;
+        HandoverOrderDto updated = driverService.reportForceMajeureIncident(orderId, driverId, reasonCode, note);
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Đã ghi nhận sự cố và hoàn trả đơn về chi nhánh",
+                "message", "Đã ghi nhận sự cố bất khả kháng (" + reasonCode + ") và hoàn trả đơn về chi nhánh",
                 "order", updated
         ));
     }
@@ -341,41 +344,13 @@ public class ShipperController {
         boolean online = body != null && Boolean.TRUE.equals(body.get("online"));
         Driver driver = resolveCurrentDriver(authentication, null);
         if (driver != null) {
-            driver.setWorkingStatus(online ? "ONLINE" : "OFFLINE");
-            driverRepository.save(driver);
+            driverService.toggleDriverAvailability(driver.getId(), online);
         }
         log.info("Shipper cập nhật trạng thái hoạt động: {}", online ? "BẬT (Online)" : "TẮT (Offline)");
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "online", online,
                 "message", online ? "Đã bật ca trực, sẵn sàng tiếp nhận phân công đơn" : "Đã tắt ca trực, tạm ngưng nhận đơn"
-        ));
-    }
-
-    /**
-     * API báo cáo sự cố bất khả kháng để hoàn trả đơn hàng về cho quán điều phối lại (UC12 / UC14).
-     */
-    @PostMapping("/api/report-incident")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> reportIncident(
-            @RequestBody Map<String, String> body,
-            Authentication authentication) {
-        String orderCode = (body != null) ? body.getOrDefault("orderCode", "UT-90255") : "UT-90255";
-        String reasonCode = (body != null) ? body.getOrDefault("reasonCode", "xe_hong") : "xe_hong";
-        String note = (body != null) ? body.getOrDefault("note", "") : "";
-
-        orderRepository.findByOrderCode(orderCode).ifPresent(order -> {
-            Driver driver = resolveCurrentDriver(authentication, null);
-            Long driverId = (driver != null) ? driver.getId() : (order.getDriver() != null ? order.getDriver().getId() : null);
-            orderHandoverService.updateDeliveryStatus(order.getId(), driverId, "INCIDENT", reasonCode + ": " + note);
-        });
-
-        log.warn("Shipper báo cáo sự cố cho đơn {}: lý do = {}, ghi chú = {}", orderCode, reasonCode, note);
-
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "orderCode", orderCode,
-                "message", "Đã ghi nhận sự cố và hoàn trả đơn về chi nhánh để quản lý phân công lại cho tài xế khác."
         ));
     }
 

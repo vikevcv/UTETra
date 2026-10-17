@@ -19,6 +19,9 @@
   
   <!-- Bootstrap 5.3 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- SockJS & STOMP Client -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
   <style>
     :root {
@@ -1427,19 +1430,19 @@
 
           <div class="d-flex flex-column gap-2 mb-3">
             <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
-              <input type="radio" name="incidentReason" value="Xe hỏng / Thủng lốp / Sự cố phương tiện trên đường" checked>
+              <input type="radio" name="incidentReason" value="XE_HONG" checked>
               <span style="font-size: 0.88rem; font-weight: 600;">Xe hỏng / Thủng lốp / Sự cố phương tiện trên đường</span>
             </label>
             <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
-              <input type="radio" name="incidentReason" value="Tài xế gặp sự cố sức khỏe đột xuất trong ca">
+              <input type="radio" name="incidentReason" value="SUC_KHOE">
               <span style="font-size: 0.88rem; font-weight: 600;">Tài xế gặp sự cố sức khỏe đột xuất trong ca</span>
             </label>
             <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
-              <input type="radio" name="incidentReason" value="Kẹt cuốc đơn trước, không kịp giờ giao cam kết">
+              <input type="radio" name="incidentReason" value="KET_DON">
               <span style="font-size: 0.88rem; font-weight: 600;">Kẹt cuốc đơn trước, không kịp giờ giao cam kết</span>
             </label>
             <label class="p-3 border rounded-3 d-flex align-items-center gap-2 cursor-pointer" style="background: var(--bg-card-inner); cursor: pointer;">
-              <input type="radio" name="incidentReason" value="Khách hàng gọi báo hủy đơn trước khi xuất bến">
+              <input type="radio" name="incidentReason" value="KHACH_HUY">
               <span style="font-size: 0.88rem; font-weight: 600;">Khách hàng gọi báo hủy đơn trước khi xuất bến</span>
             </label>
           </div>
@@ -1613,6 +1616,9 @@
 
       // Bắt đầu chu trình Polling nhẹ nhàng mỗi 12 giây
       setInterval(pollActiveOrders, 12000);
+
+      // Kích hoạt kết nối WebSocket STOMP nhận thông báo phân công thời gian thực
+      initDriverWebSocket();
     });
 
     /* ========================================================
@@ -2376,9 +2382,8 @@
       const orderId = document.getElementById('incidentOrderId').value;
       const orderCode = document.getElementById('incidentOrderCode').value;
       const reasonRadio = document.querySelector('input[name="incidentReason"]:checked');
-      const reason = reasonRadio ? reasonRadio.value : 'Sự cố bất khả kháng';
+      const reasonCode = reasonRadio ? reasonRadio.value : 'XE_HONG';
       const detailNote = document.getElementById('incidentDetailNote').value;
-      const fullNote = detailNote ? (reason + ' (Ghi chú: ' + detailNote + ')') : reason;
 
       const btn = document.getElementById('btnSubmitIncident');
       if (btn) btn.disabled = true;
@@ -2386,13 +2391,39 @@
       fetch('${pageContext.request.contextPath}/shipper/api/orders/' + orderId + '/incident', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: fullNote, reasonCode: reason, note: detailNote })
+        body: JSON.stringify({ reasonCode: reasonCode, note: detailNote, reason: reasonCode })
       })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Mã phản hồi: ' + res.status);
+        return res.json();
+      })
       .then(data => {
         if (btn) btn.disabled = false;
         if (incidentModalInstance) incidentModalInstance.hide();
-        showZenToast('Đã ghi nhận sự cố cho đơn #' + orderCode + ' và hoàn trả về chi nhánh để quản lý phân công lại.', 'warning');
+        
+        if (reasonCode === 'KHACH_HUY') {
+          showZenToast('Đơn #' + orderCode + ' đã được hủy do khách yêu cầu hủy.', 'warning');
+        } else {
+          showZenToast('Đã ghi nhận sự cố cho đơn #' + orderCode + ' và hoàn trả về quầy chi nhánh.', 'warning');
+        }
+
+        // Tự động chuyển OFFLINE nếu gặp sự cố xe cộ hoặc sức khỏe
+        if (reasonCode === 'XE_HONG' || reasonCode === 'SUC_KHOE') {
+          isOnline = false;
+          const capsule = document.getElementById('topSwitchCapsule');
+          const label = document.getElementById('switchLabelStatus');
+          const knobIcon = document.getElementById('knobIcon');
+          const statusBoxText = document.getElementById('statusBoxText');
+          const statusBoxSub = document.getElementById('statusBoxSub');
+          if (capsule) capsule.classList.remove('online');
+          if (label) label.innerText = 'TẮT';
+          if (knobIcon) knobIcon.className = 'fa-solid fa-power-off';
+          if (statusBoxText) {
+            statusBoxText.innerText = 'Tạm Nghỉ Ca';
+            statusBoxText.style.color = 'var(--text-sepia)';
+          }
+          if (statusBoxSub) statusBoxSub.innerText = 'Tài xế tạm nghỉ do sự cố bất khả kháng';
+        }
         
         // Loại bỏ đơn khỏi queue và trượt đơn kế tiếp vào
         ordersQueue = ordersQueue.filter(function(o) { return o.orderId != orderId; });
@@ -2404,6 +2435,40 @@
         console.error(err);
         showZenToast('Lỗi khi gửi báo cáo sự cố', 'danger');
       });
+    }
+
+    /* ========================================================
+       8.1. KẾT NỐI WEBSOCKET STOMP CHO TÀI XẾ
+       ======================================================== */
+    let stompClient = null;
+    function initDriverWebSocket() {
+      try {
+        const socket = new SockJS('${pageContext.request.contextPath}/ws-kds');
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null; // Tắt debug spam console
+        stompClient.connect({}, function() {
+          console.log('Driver STOMP connected for driverId: ${driver.id}');
+          stompClient.subscribe('/topic/shipper/${driver.id}', function(message) {
+            try {
+              const eventData = JSON.parse(message.body);
+              console.log('Driver real-time notification received:', eventData);
+              playNotificationSound();
+              triggerPhoneVibration();
+              if (eventData.message) {
+                showZenToast(eventData.message, 'info');
+              }
+              refreshOrders(false);
+            } catch (err) {
+              console.error('Error parsing STOMP driver payload:', err);
+            }
+          });
+        }, function(err) {
+          console.warn('Driver STOMP reconnecting in 5s...', err);
+          setTimeout(initDriverWebSocket, 5000);
+        });
+      } catch (e) {
+        console.error('Driver WebSocket init error:', e);
+      }
     }
 
     /* ========================================================

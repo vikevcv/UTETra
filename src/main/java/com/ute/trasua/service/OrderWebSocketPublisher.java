@@ -43,4 +43,14 @@ public interface OrderWebSocketPublisher {
      * Broadcasts order cancellation to Customer, Kitchen, and Shipper.
      */
     void broadcastOrderCancelled(Order order, String reason);
+
+    /**
+     * Broadcasts driver force majeure incident to Store Manager, Shipper, and Customer (Module 9 - UC12).
+     */
+    void broadcastDriverIncident(Order order, Driver driver, String reason, String note);
+
+    /**
+     * Broadcasts alert when ready orders remain unassigned due to unavailable drivers.
+     */
+    void broadcastQueueUnassigned(Long branchId, int unassignedCount, java.util.List<String> orderCodes);
 }

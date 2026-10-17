@@ -92,6 +92,10 @@ public class Driver {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;

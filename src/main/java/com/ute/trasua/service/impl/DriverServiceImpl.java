@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,6 +37,8 @@ public class DriverServiceImpl implements DriverService {
     private final BranchRepository branchRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final com.ute.trasua.repository.OrderRepository orderRepository;
+    private final com.ute.trasua.service.DispatchNotifier dispatchNotifier;
 
     private static final String CHAR_LOWER = "abcdefghijklmnopqrstuvwxyz";
     private static final String CHAR_UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -249,5 +252,113 @@ public class DriverServiceImpl implements DriverService {
             array[j] = temp;
         }
         return new String(array);
+    }
+
+    @Override
+    @Transactional
+    public DriverResponse toggleDriverAvailability(Long driverId, Boolean isAvailable) {
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài xế ID: " + driverId));
+
+        boolean available = Boolean.TRUE.equals(isAvailable);
+        driver.setWorkingStatus(available ? "ONLINE" : "OFFLINE");
+        Driver saved = driverRepository.save(driver);
+
+        if (!available) {
+            long stillActive = orderRepository.countByDriverIdAndStatusIn(driverId, List.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED"));
+            if (stillActive > 0) {
+                log.warn(">>> CẢNH BÁO: Tài xế {} tắt ca trực nhưng vẫn còn {} đơn đang giao!", driverId, stillActive);
+            }
+        }
+
+        log.info(">>> Tài xế {} đã chuyển trạng thái trực ca: {}", driverId, saved.getWorkingStatus());
+        return DriverResponse.fromEntity(saved);
+    }
+
+    @Override
+    @Transactional
+    public com.ute.trasua.dto.handover.HandoverOrderDto reportForceMajeureIncident(Long orderId, Long driverId, String incidentReason, String note) {
+        String cleanReason = (incidentReason != null) ? incidentReason.trim().toUpperCase() : "";
+        Set<String> validReasons = Set.of("XE_HONG", "SUC_KHOE", "KET_DON", "KHACH_HUY");
+        if (!validReasons.contains(cleanReason)) {
+            throw new IllegalArgumentException("Mã lý do sự cố không hợp lệ: " + incidentReason);
+        }
+
+        com.ute.trasua.entity.Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
+
+        Driver assignedDriver = order.getDriver();
+        if (assignedDriver == null) {
+            throw new IllegalStateException("Đơn hàng " + order.getOrderCode() + " đã được giải phóng hoặc chưa được gán tài xế!");
+        }
+
+        if (!assignedDriver.getId().equals(driverId)) {
+            throw new IllegalStateException("Quyền truy cập bị từ chối: Bạn không phải tài xế được phân công phụ trách đơn hàng này!");
+        }
+
+        String currentStatus = (order.getStatus() != null) ? order.getStatus().toUpperCase() : "";
+        if (!Set.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED").contains(currentStatus)) {
+            throw new IllegalStateException("Đơn hàng " + order.getOrderCode() + " không ở trạng thái đang giao vận (Hiện tại: " + currentStatus + ") nên không thể báo sự cố!");
+        }
+
+        boolean isCustomerCancelled = "KHACH_HUY".equals(cleanReason);
+
+        order.setIncidentReason(cleanReason);
+        order.setIncidentNote(note != null && !note.isBlank() ? note.trim() : null);
+        order.setIncidentReportedAt(LocalDateTime.now());
+        order.setStatus(isCustomerCancelled ? "CANCELLED" : "READY_FOR_DELIVERY");
+        order.setDriver(null);
+
+        com.ute.trasua.entity.Order savedOrder = orderRepository.save(order);
+
+        // Cập nhật trạng thái tài xế
+        boolean mustOffline = "XE_HONG".equals(cleanReason) || "SUC_KHOE".equals(cleanReason);
+        if (mustOffline) {
+            assignedDriver.setWorkingStatus("OFFLINE");
+        } else {
+            long remaining = orderRepository.countByDriverIdAndStatusIn(assignedDriver.getId(), List.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED"));
+            assignedDriver.setWorkingStatus(remaining > 0 ? "DELIVERING" : "ONLINE");
+        }
+        driverRepository.save(assignedDriver);
+
+        // Bắn WebSocket thông báo tới Quản lý chi nhánh, Tài xế và Khách hàng
+        dispatchNotifier.notifyDriverIncident(savedOrder, assignedDriver, cleanReason, note);
+        if (isCustomerCancelled) {
+            dispatchNotifier.notifyOrderCancelled(savedOrder, note);
+        }
+
+        log.warn(">>> [FORCE MAJEURE] Tài xế {} báo sự cố {} cho đơn {}. Đơn chuyển sang: {}",
+                assignedDriver.getId(), cleanReason, savedOrder.getOrderCode(), savedOrder.getStatus());
+
+        return mapToHandoverDto(savedOrder);
+    }
+
+    private com.ute.trasua.dto.handover.HandoverOrderDto mapToHandoverDto(com.ute.trasua.entity.Order order) {
+        int totalCups = 0;
+        java.util.List<String> items = new java.util.ArrayList<>();
+        if (order.getOrderDetails() != null) {
+            for (com.ute.trasua.entity.OrderDetail d : order.getOrderDetails()) {
+                int q = (d.getQuantity() != null && d.getQuantity() > 0) ? d.getQuantity() : 1;
+                totalCups += q;
+                items.add(d.getProductName() + " x" + q);
+            }
+        }
+
+        return com.ute.trasua.dto.handover.HandoverOrderDto.builder()
+                .orderId(order.getId())
+                .orderCode(order.getOrderCode())
+                .dailyQueueNumber(order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : 1)
+                .orderType(order.getOrderType() != null ? order.getOrderType() : "DELIVERY")
+                .status(order.getStatus())
+                .customerName(order.getCustomerName() != null ? order.getCustomerName() : "Khách hàng")
+                .customerPhone(order.getCustomerPhone())
+                .deliveryAddress(order.getDeliveryAddress())
+                .cupCount(totalCups > 0 ? totalCups : 1)
+                .itemsSummary(String.join(", ", items))
+                .createdAt(order.getCreatedAt())
+                .incidentReason(order.getIncidentReason())
+                .incidentNote(order.getIncidentNote())
+                .incidentReportedAt(order.getIncidentReportedAt())
+                .build();
     }
 }

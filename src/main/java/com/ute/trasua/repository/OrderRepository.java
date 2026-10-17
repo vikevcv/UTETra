@@ -94,4 +94,26 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Object[]> findTopSellingProducts(@Param("branchId") Long branchId,
                                           @Param("start") LocalDateTime start,
                                           @Param("end") LocalDateTime end);
+
+    /** Hàng đợi điều phối: đơn sẵn sàng giao nhưng CHƯA gán tài xế. */
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "WHERE (:branchId IS NULL OR o.branch.id = :branchId OR (:branchId = 1L AND o.branch IS NULL)) " +
+           "AND o.status = 'READY_FOR_DELIVERY' AND o.driver IS NULL " +
+           "ORDER BY o.createdAt ASC")
+    List<Order> findUnassignedDeliveryQueue(@Param("branchId") Long branchId);
+
+    /** Đếm tải đang giao của nhiều tài xế trong 1 query (tránh N+1 khi chọn tài xế). */
+    @Query("SELECT o.driver.id, COUNT(o) FROM Order o " +
+           "WHERE o.driver.id IN :driverIds AND o.status IN :statuses " +
+           "GROUP BY o.driver.id")
+    List<Object[]> countActiveOrdersByDriverIds(@Param("driverIds") List<Long> driverIds,
+                                                @Param("statuses") List<String> statuses);
+
+    long countByDriverIdAndStatusIn(Long driverId, List<String> statuses);
+
+    /** Khóa bi quan dòng Order chống xung đột gán chồng đa luồng. */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Order o WHERE o.id = :id")
+    Optional<Order> findWithLockById(@Param("id") Long id);
 }
