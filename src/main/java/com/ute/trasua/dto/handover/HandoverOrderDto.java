@@ -22,6 +22,7 @@ public class HandoverOrderDto {
     private Integer dailyQueueNumber;
     private String orderType;
     private String status;
+    private String statusLabel;
     private String customerName;
     private String customerPhone;
     private String deliveryAddress;

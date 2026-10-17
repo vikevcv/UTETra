@@ -96,38 +96,74 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
         String statusTitle = "Đã Tiếp Nhận Đơn Hàng";
         String statusDesc = "Đơn hàng của bạn đã được ghi nhận vào hệ thống và đang chờ quầy xử lý.";
 
+        String statusLabel = "Đã Tiếp Nhận";
         switch (rawStatus) {
             case "PENDING":
+                statusStep = 1;
+                statusLabel = "Đã Tiếp Nhận";
+                statusTitle = "Đã Tiếp Nhận Đơn Hàng";
+                statusDesc = "Đơn hàng của bạn đã được ghi nhận vào hệ thống và đang chờ quầy xử lý.";
+                break;
             case "AWAITING_PREPARATION":
+                statusStep = 1;
+                statusLabel = "Chờ Pha Chế";
+                statusTitle = "Đang Chờ Quầy Pha Chế";
+                statusDesc = "Đơn hàng đã được xác nhận và xếp vào hàng đợi quầy pha chế.";
+                break;
             case "PAID":
                 statusStep = 1;
-                statusTitle = "Đã Tiếp Nhận Đơn Hàng";
+                statusLabel = "Đã Thanh Toán";
+                statusTitle = "Đã Thanh Toán Thành Công";
                 statusDesc = "Đơn hàng của bạn đã được ghi nhận. Số thứ tự lấy nước #" + (order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : "--");
                 break;
             case "PROCESSING":
             case "PREPARING":
                 statusStep = 2;
+                statusLabel = "Đang Pha Chế";
                 statusTitle = "Quầy Barista Đang Pha Chế";
                 statusDesc = "Nghệ nhân pha chế đang tùy biến đúng độ ngọt, đá và topping theo đơn của bạn.";
                 break;
             case "PREPARED":
+                statusStep = 2;
+                statusLabel = "Đã Pha Xong";
+                statusTitle = "Đã Pha Chế Xong — Chờ Bàn Giao";
+                statusDesc = "Phẩm trà đã hoàn thành và đóng gói cẩn thận, đang chờ bàn giao.";
+                break;
             case "READY_FOR_DELIVERY":
+                statusStep = 2;
+                statusLabel = "Chờ Bàn Giao Shipper";
+                statusTitle = "Đã Pha Xong — Chờ Bàn Giao Cho Tài Xế";
+                statusDesc = "Phẩm trà đã đóng gói nguyên vẹn tem niêm phong, đang chờ tài xế tiếp nhận giao hàng.";
+                break;
             case "READY_FOR_PICKUP":
                 statusStep = 2;
-                statusTitle = "Đã Pha Chế Xong — Chờ Bàn Giao";
-                statusDesc = "Phẩm trà đã hoàn thành và đóng gói cẩn thận, đang chờ bàn giao cho tài xế giao vận.";
+                statusLabel = "Sẵn Sàng Nhận Tại Quầy";
+                statusTitle = "Trà Đã Sẵn Sàng — Mời Quý Khách Nhận";
+                statusDesc = "Phẩm trà đã hoàn thành tại quầy. Mời bạn đọc số thứ tự #" + (order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : "--") + " để nhận nước.";
                 break;
             case "OUT_FOR_DELIVERY":
             case "DISPATCHED":
-            case "DELIVERING":
-            case "ARRIVED":
                 statusStep = 3;
+                statusLabel = "Đang Giao Hàng";
                 statusTitle = "Tài Xế Đang Trên Đường Giao";
                 statusDesc = "Tài xế đang di chuyển tới địa chỉ nhận. Vui lòng để ý điện thoại khi shipper đến.";
+                break;
+            case "DELIVERING":
+                statusStep = 3;
+                statusLabel = "Đang Giao Hàng";
+                statusTitle = "Tài Xế Đang Di Chuyển Tới Bạn";
+                statusDesc = "Tài xế đã xuất phát và đang trên đường giao hàng đến địa chỉ của bạn.";
+                break;
+            case "ARRIVED":
+                statusStep = 3;
+                statusLabel = "Tài Xế Đã Đến";
+                statusTitle = "Tài Xế Đã Đến Điểm Giao";
+                statusDesc = "Tài xế đã có mặt tại điểm giao hàng. Quý khách vui lòng để ý điện thoại và nhận trà!";
                 break;
             case "COMPLETED":
             case "DELIVERED":
                 statusStep = 4;
+                statusLabel = "Giao Thành Công";
                 statusTitle = "Đã Giao Hàng Thành Công";
                 statusDesc = "Đơn hàng đã hoàn tất. Cảm ơn quý khách đã thưởng thức trà tại UTETra Zen Gallery!";
                 break;
@@ -136,11 +172,13 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
             case "FAILED":
             case "INCIDENT":
                 statusStep = -1;
+                statusLabel = "Đã Hủy / Sự Cố";
                 statusTitle = "Đơn Hàng Đã Bị Hủy / Sự Cố";
                 statusDesc = order.getNote() != null ? order.getNote() : "Đơn hàng chưa thể hoàn tất theo dự kiến.";
                 break;
             default:
                 statusStep = 1;
+                statusLabel = "Đã Tiếp Nhận";
                 break;
         }
 
@@ -210,6 +248,7 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                 .dailyQueueNumber(order.getDailyQueueNumber())
                 .orderType(order.getOrderType())
                 .status(rawStatus)
+                .statusLabel(statusLabel)
                 .statusStep(statusStep)
                 .statusTitle(statusTitle)
                 .statusDescription(statusDesc)

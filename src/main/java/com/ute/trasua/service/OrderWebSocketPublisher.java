@@ -35,6 +35,11 @@ public interface OrderWebSocketPublisher {
     void broadcastOrderDelivering(Order order, Driver driver);
 
     /**
+     * Broadcasts arrived-at-destination status to Customer, Driver, and Handover.
+     */
+    void broadcastOrderArrived(Order order, Driver driver);
+
+    /**
      * Broadcasts delivery completed to Customer and Branch.
      */
     void broadcastOrderCompleted(Order order);
