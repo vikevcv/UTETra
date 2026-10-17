@@ -211,32 +211,102 @@ function formatStatusLabel(status, statusLabel) {
   return map[(status || '').toUpperCase()] || status;
 }
 
+function cleanReasonText(raw) {
+  if (!raw) return "Đơn hàng chưa thể hoàn tất theo dự kiến.";
+  let text = String(raw).trim();
+
+  const map = {
+    "KHONG_LIEN_LAC_DUOC": "Không liên lạc được với khách hàng",
+    "KHACH_TU_CHOI": "Khách từ chối nhận trà / Đổi ý",
+    "SAI_DIA_CHI": "Sai địa chỉ giao hàng",
+    "XE_HONG": "Sự cố phương tiện giao thông trên đường",
+    "SUC_KHOE": "Sự cố sức khỏe tài xế trên đường",
+    "QUAN_HET_MON": "Quán tạm hết nguyên liệu pha chế",
+    "DO_VO_HU_HONG": "Sự cố rơi đổ / hư hỏng trên đường giao",
+    "THOI_TIET_XAU": "Thời tiết mưa bão nghiêm trọng"
+  };
+
+  for (const [code, label] of Object.entries(map)) {
+    text = text.replace(new RegExp(`Sự\\s*cố\\s*\\(${code}\\)\\s*:?\\s*`, 'gi'), label + ': ');
+    text = text.replace(new RegExp(`\\(${code}\\)`, 'gi'), label);
+    text = text.replace(new RegExp(`\\b${code}\\b`, 'gi'), label);
+  }
+
+  text = text.replace(/^(Sự cố:\s*)+/gi, '')
+             .replace(/^(Lý do:\s*)+/gi, '')
+             .replace(/:\s*:\s*/g, ': ')
+             .trim();
+
+  return text;
+}
+
 function handleOrderStatusEvent(event) {
   console.log(">>> [STOMP Event Nhận Được]:", event);
 
-  // 1. Cập nhật Badge Status và Title/Message
+  const step = event.statusStep !== undefined ? event.statusStep : 1;
+  const isCancelled = event.status === "CANCELLED" || 
+                      event.eventType === "CANCELLED" || 
+                      event.eventType === "DRIVER_INCIDENT" || 
+                      event.status === "DELIVERY_FAILED" || 
+                      step === -1;
+
   const badgeEl = document.getElementById("badgeStatus");
+  const titleEl = document.getElementById("txtStatusTitle");
+  const descEl = document.getElementById("txtStatusDesc");
+  const cancelWrapper = document.getElementById("cancelOrderActionWrapper");
+  const btnCancel = document.getElementById("btnOpenCancelModal");
+  const helpText = document.getElementById("cancelOrderHelpText");
+
+  if (isCancelled) {
+    if (badgeEl) {
+      badgeEl.innerText = "Đã Hủy";
+      badgeEl.style.background = "#FEE2E2";
+      badgeEl.style.color = "#991B1B";
+    }
+    const statusBox = document.getElementById("boxStatusMessageWrapper");
+    if (statusBox) {
+      statusBox.classList.add("is-cancelled");
+    }
+    if (titleEl) {
+      titleEl.innerText = "Đơn Hàng Đã Bị Hủy";
+    }
+    if (descEl) {
+      const rawReason = event.statusMessage || (event.eventType === "DRIVER_INCIDENT" ? "Tài xế báo cáo sự cố giao hàng bất khả kháng." : "Đơn hàng đã được ghi nhận hủy trên hệ thống.");
+      descEl.innerText = cleanReasonText(rawReason);
+    }
+
+    // Xóa bỏ hoàn toàn khối thông báo màu đỏ nếu có trong DOM theo yêu cầu giao diện
+    const cancelNotice = document.getElementById("boxOrderCancelledNotice");
+    if (cancelNotice) {
+      cancelNotice.remove();
+    }
+
+    if (cancelWrapper) {
+      cancelWrapper.style.display = "none";
+    }
+
+    updateStepperUI(-1);
+    playNotificationSound();
+    return;
+  }
+
+  // 1. Cập nhật Badge Status và Title/Message
+  const statusBox = document.getElementById("boxStatusMessageWrapper");
+  if (statusBox) {
+    statusBox.classList.remove("is-cancelled");
+  }
   if (badgeEl && (event.status || event.statusLabel)) {
     badgeEl.innerText = formatStatusLabel(event.status, event.statusLabel);
   }
-  const titleEl = document.getElementById("txtStatusTitle");
   if (titleEl && event.statusTitle) {
     titleEl.innerText = event.statusTitle;
   }
-  const descEl = document.getElementById("txtStatusDesc");
   if (descEl && event.statusMessage) {
     descEl.innerText = event.statusMessage;
   }
 
   // 1.5. Cập nhật nút Hủy Đơn: Từ pha chế trở về sau thì làm mờ nút và không cho bấm
-  const step = event.statusStep || 1;
-  const cancelWrapper = document.getElementById("cancelOrderActionWrapper");
-  const btnCancel = document.getElementById("btnOpenCancelModal");
-  const helpText = document.getElementById("cancelOrderHelpText");
-
-  if (event.status === "CANCELLED" || event.eventType === "CANCELLED" || step === -1) {
-    if (cancelWrapper) cancelWrapper.style.display = "none";
-  } else if (step >= 2) {
+  if (step >= 2) {
     // Từ pha chế trở về sau (step >= 2): làm mờ nút, vô hiệu hóa click
     if (cancelWrapper) cancelWrapper.style.display = "flex";
     if (btnCancel) {
@@ -269,21 +339,6 @@ function handleOrderStatusEvent(event) {
     }
     if (helpText) {
       helpText.innerHTML = '<i class="fa-solid fa-circle-info text-primary me-1"></i> Quán chưa bắt đầu pha chế. Bạn có thể hủy đơn và nhận lại mã giảm giá bồi hoàn 80%.';
-    }
-  }
-
-  if (event.status === "CANCELLED" || event.eventType === "CANCELLED") {
-    let cancelNotice = document.getElementById("boxOrderCancelledNotice");
-    if (!cancelNotice) {
-      const descBox = document.getElementById("txtStatusDesc");
-      if (descBox && descBox.parentElement) {
-        cancelNotice = document.createElement("div");
-        cancelNotice.id = "boxOrderCancelledNotice";
-        cancelNotice.className = "alert alert-danger";
-        cancelNotice.style.cssText = "margin-top:16px; margin-bottom:0; border-radius:8px; font-size:0.86rem; background:#FEF2F2; border-color:#FCA5A5; color:#991B1B;";
-        cancelNotice.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Đơn hàng này đã được hủy. Hệ thống đã phát hành mã voucher bồi hoàn 80% cho quý khách.';
-        descBox.parentElement.parentElement.appendChild(cancelNotice);
-      }
     }
   }
 

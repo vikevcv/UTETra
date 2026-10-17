@@ -215,6 +215,32 @@
       color: #FFFFFF;
     }
 
+    /* Status Message Box */
+    .status-msg-box {
+      background: #FAF8F5;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 20px;
+      border-left: 4px solid var(--tea-matcha);
+      transition: border-color 0.3s ease;
+    }
+    .status-msg-box.is-cancelled {
+      border-left-color: #EF4444;
+    }
+    .status-msg-box .status-title {
+      display: block;
+      font-size: 0.95rem;
+      color: var(--zen-sumi);
+    }
+    .status-msg-box.is-cancelled .status-title {
+      color: #991B1B;
+    }
+    .status-msg-box .status-desc {
+      font-size: 0.85rem;
+      color: var(--zen-sumi-light);
+      margin-top: 3px;
+    }
+
     /* Receipt Rows */
     .receipt-row {
       display: flex;
@@ -412,9 +438,9 @@
                 </div>
 
                 <!-- Lời nhắn trạng thái -->
-                <div style="background:#FAF8F5; border-radius:8px; padding:12px 16px; margin-top:20px; border-left:4px solid var(--tea-matcha);">
-                  <strong style="display:block; font-size:0.95rem; color:var(--zen-sumi);" id="txtStatusTitle">${tracking.statusTitle}</strong>
-                  <div style="font-size:0.85rem; color:var(--zen-sumi-light); margin-top:3px;" id="txtStatusDesc">${tracking.statusDescription}</div>
+                <div id="boxStatusMessageWrapper" class="status-msg-box ${tracking.statusStep == -1 ? 'is-cancelled' : ''}">
+                  <strong class="status-title" id="txtStatusTitle">${tracking.statusTitle}</strong>
+                  <div class="status-desc" id="txtStatusDesc">${tracking.statusDescription}</div>
                 </div>
 
                 <!-- NÚT HỦY ĐƠN HÀNG (UC28) -->
@@ -452,12 +478,6 @@
                         </button>
                       </c:otherwise>
                     </c:choose>
-                  </div>
-                </c:if>
-
-                <c:if test="${tracking.status == 'CANCELLED'}">
-                  <div class="alert alert-danger" id="boxOrderCancelledNotice" style="margin-top:16px; margin-bottom:0; border-radius:8px; font-size:0.86rem; background:#FEF2F2; border-color:#FCA5A5; color:#991B1B;">
-                    <i class="fa-solid fa-circle-exclamation me-1"></i> Đơn hàng này đã được hủy. Hệ thống đã phát hành mã voucher bồi hoàn 80% cho quý khách.
                   </div>
                 </c:if>
               </div>

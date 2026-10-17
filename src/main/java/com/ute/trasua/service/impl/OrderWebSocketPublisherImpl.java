@@ -283,6 +283,10 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
         Long branchId = order.getBranch() != null ? order.getBranch().getId() : 1L;
         String driverName = (driver != null && driver.getUser() != null) ? driver.getUser().getFullName() : "Tài xế";
 
+        String reasonDisplay = (reason != null && !reason.isBlank()) ? reason : "Sự cố bất khả kháng";
+        String noteDisplay = (note != null && !note.isBlank()) ? ": " + note.trim() : "";
+        String statusMsg = "Tài xế " + driverName + " báo cáo sự cố: " + reasonDisplay + noteDisplay;
+
         OrderStatusEventDto event = OrderStatusEventDto.builder()
                 .eventType("DRIVER_INCIDENT")
                 .orderId(order.getId())
@@ -293,7 +297,7 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
                 .status(order.getStatus())
                 .statusStep(-1)
                 .statusTitle("Sự Cố Giao Hàng Bất Khả Kháng")
-                .statusMessage("Tài xế " + driverName + " báo cáo sự cố (" + reason + "): " + (note != null ? note : ""))
+                .statusMessage(statusMsg)
                 .driverId(driver != null ? driver.getId() : null)
                 .driverName(driverName)
                 .timestamp(LocalDateTime.now().format(TIME_FORMATTER))

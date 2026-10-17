@@ -174,9 +174,15 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
             case "FAILED":
             case "INCIDENT":
                 statusStep = -1;
-                statusLabel = "Đã Hủy / Sự Cố";
-                statusTitle = "Đơn Hàng Đã Bị Hủy / Sự Cố";
-                statusDesc = order.getNote() != null ? order.getNote() : "Đơn hàng chưa thể hoàn tất theo dự kiến.";
+                statusLabel = "Đã Hủy";
+                statusTitle = "Đơn Hàng Đã Bị Hủy";
+                if (order.getDeliveryNotes() != null && !order.getDeliveryNotes().isBlank()) {
+                    statusDesc = order.getDeliveryNotes();
+                } else if (order.getNote() != null && !order.getNote().isBlank()) {
+                    statusDesc = order.getNote();
+                } else {
+                    statusDesc = "Rất tiếc vì sự cố này. Đơn hàng đã được ghi nhận hủy trên hệ thống.";
+                }
                 break;
             default:
                 statusStep = 1;
