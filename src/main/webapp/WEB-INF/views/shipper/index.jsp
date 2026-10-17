@@ -222,88 +222,51 @@
 
     /* CÔNG TẮC GẠT ON / OFF CA TRỰC (SLIDER SWITCH) */
     .capsule-switch-wrap {
-      background: var(--bg-card-inner);
-      border: 1.5px solid var(--border-earth);
-      border-radius: 30px;
-      padding: 3px 4px 3px 10px;
-      display: flex;
+      background: transparent;
+      border: none;
+      padding: 0;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
       cursor: pointer;
       user-select: none;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      transition: transform 0.2s ease;
     }
 
     .capsule-switch-wrap:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transform: scale(1.05);
     }
 
     .capsule-switch-wrap.online {
-      background: #F0F9F4;
-      border-color: rgba(47, 106, 79, 0.4);
-      box-shadow: 0 4px 16px rgba(47, 106, 79, 0.15);
-    }
-
-    .switch-info-group {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .switch-indicator-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #9CA3AF;
-      transition: all 0.3s ease;
-    }
-
-    .capsule-switch-wrap.online .switch-indicator-dot {
-      background: var(--matcha-deep);
-      box-shadow: 0 0 10px rgba(47, 106, 79, 0.8);
-      animation: pulseMatcha 1.8s infinite;
-    }
-
-    @keyframes pulseMatcha {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.35); opacity: 0.65; }
-    }
-
-    .switch-label-status {
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--text-sepia);
-      letter-spacing: 0.3px;
-    }
-
-    .capsule-switch-wrap.online .switch-label-status {
-      color: var(--matcha-deep);
+      background: transparent;
+      border: none;
+      box-shadow: none;
     }
 
     .switch-track {
-      width: 52px;
-      height: 28px;
+      width: 58px;
+      height: 32px;
       background: #9CA3AF;
       border-radius: 20px;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 6px;
+      padding: 0 8px;
       transition: all 0.3s ease;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
     .capsule-switch-wrap.online .switch-track {
       background: var(--matcha-deep);
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 10px rgba(47, 106, 79, 0.4);
     }
 
     .track-tag {
-      font-size: 0.62rem;
+      font-size: 0.65rem;
       font-weight: 800;
       color: #FFFFFF;
       user-select: none;
+      letter-spacing: 0.5px;
     }
 
     .track-tag-on { display: none; }
@@ -313,8 +276,8 @@
     .capsule-switch-wrap.online .track-tag-off { display: none; }
 
     .switch-thumb-knob {
-      width: 22px;
-      height: 22px;
+      width: 26px;
+      height: 26px;
       background: #FFFFFF;
       border-radius: 50%;
       position: absolute;
@@ -326,11 +289,11 @@
       align-items: center;
       justify-content: center;
       color: #6B7280;
-      font-size: 0.7rem;
+      font-size: 0.75rem;
     }
 
     .capsule-switch-wrap.online .switch-thumb-knob {
-      transform: translateX(24px);
+      transform: translateX(26px);
       color: var(--matcha-deep);
     }
 
@@ -1777,24 +1740,18 @@
           <span class="avatar-status-dot ${isOnline ? 'online' : ''}" id="headerAvatarDot" title="${isOnline ? 'Đang trực' : 'Tạm nghỉ'}"></span>
         </div>
         <div class="brand-title-wrap" style="min-width: 0; overflow: hidden;">
-          <h1 class="text-truncate" style="font-size: 1.02rem; font-weight: 800; margin: 0; color: #0F172A; max-width: 135px;">${fullName}</h1>
-          <p class="sub text-truncate" style="font-size: 0.76rem; margin: 2px 0 0 0; color: #64748B; max-width: 135px;">
+          <h1 class="text-truncate" style="font-size: 1.02rem; font-weight: 800; margin: 0; color: #0F172A; max-width: 175px;">${fullName}</h1>
+          <p class="sub text-truncate" style="font-size: 0.76rem; margin: 2px 0 0 0; color: #64748B;">
             <span class="${isOnline ? 'text-success fw-bold' : 'text-secondary'}" id="headerOnlineTextWrap">
               <i class="fa-solid fa-circle" style="font-size: 0.55rem;"></i> <span id="headerOnlineText">${isOnline ? 'Đang trực' : 'Tạm nghỉ'}</span>
             </span>
-            <span style="opacity: 0.5;">·</span>
-            <span>${branchName}</span>
           </p>
         </div>
       </div>
 
       <div class="header-actions-section" style="flex-shrink: 0; display: flex; align-items: center; gap: 8px;">
-        <!-- Công Tắc BẬT / TẮT Ca Trực Của Tài Xế -->
-        <div class="capsule-switch-wrap ${isOnline ? 'online' : ''}" id="topSwitchCapsule" onclick="toggleShiftStatus()" title="Chạm để BẬT / TẮT ca trực nhận đơn">
-          <div class="switch-info-group">
-            <span class="switch-indicator-dot"></span>
-            <span class="switch-label-status" id="switchLabelStatus">${isOnline ? 'BẬT' : 'TẮT'}</span>
-          </div>
+        <!-- Công Tắc BẬT / TẮT Ca Trực Của Tài Xế (Chỉ hiển thị công tắc) -->
+        <div class="capsule-switch-wrap ${isOnline ? 'online' : ''}" id="topSwitchCapsule" onclick="toggleShiftStatus()" title="Chạm để BẬT / TẮT ca trực">
           <div class="switch-track">
             <span class="track-tag track-tag-on">ON</span>
             <span class="track-tag track-tag-off">OFF</span>
