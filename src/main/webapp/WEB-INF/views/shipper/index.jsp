@@ -224,11 +224,11 @@
     .capsule-switch-wrap {
       background: var(--bg-card-inner);
       border: 1.5px solid var(--border-earth);
-      border-radius: 40px;
-      padding: 5px 6px 5px 12px;
+      border-radius: 30px;
+      padding: 3px 4px 3px 10px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       cursor: pointer;
       user-select: none;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -248,12 +248,12 @@
     .switch-info-group {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
 
     .switch-indicator-dot {
-      width: 9px;
-      height: 9px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #9CA3AF;
       transition: all 0.3s ease;
@@ -271,7 +271,7 @@
     }
 
     .switch-label-status {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 700;
       color: var(--text-sepia);
       letter-spacing: 0.3px;
@@ -282,15 +282,15 @@
     }
 
     .switch-track {
-      width: 60px;
-      height: 32px;
+      width: 52px;
+      height: 28px;
       background: #9CA3AF;
       border-radius: 20px;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 8px;
+      padding: 0 6px;
       transition: all 0.3s ease;
     }
 
@@ -300,7 +300,7 @@
     }
 
     .track-tag {
-      font-size: 0.65rem;
+      font-size: 0.62rem;
       font-weight: 800;
       color: #FFFFFF;
       user-select: none;
@@ -313,8 +313,8 @@
     .capsule-switch-wrap.online .track-tag-off { display: none; }
 
     .switch-thumb-knob {
-      width: 26px;
-      height: 26px;
+      width: 22px;
+      height: 22px;
       background: #FFFFFF;
       border-radius: 50%;
       position: absolute;
@@ -326,11 +326,11 @@
       align-items: center;
       justify-content: center;
       color: #6B7280;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
     }
 
     .capsule-switch-wrap.online .switch-thumb-knob {
-      transform: translateX(28px);
+      transform: translateX(24px);
       color: var(--matcha-deep);
     }
 
@@ -1777,10 +1777,10 @@
           <span class="avatar-status-dot ${isOnline ? 'online' : ''}" id="headerAvatarDot" title="${isOnline ? 'Đang trực' : 'Tạm nghỉ'}"></span>
         </div>
         <div class="brand-title-wrap" style="min-width: 0; overflow: hidden;">
-          <h1 class="text-truncate" style="font-size: 1.02rem; font-weight: 800; margin: 0; color: #0F172A; max-width: 145px;">${fullName}</h1>
-          <p class="sub text-truncate" style="font-size: 0.76rem; margin: 2px 0 0 0; color: #64748B; max-width: 145px;">
-            <span class="${isOnline ? 'text-success fw-bold' : 'text-secondary'}">
-              <i class="fa-solid fa-circle" style="font-size: 0.55rem;"></i> ${isOnline ? 'Đang trực' : 'Tạm nghỉ'}
+          <h1 class="text-truncate" style="font-size: 1.02rem; font-weight: 800; margin: 0; color: #0F172A; max-width: 135px;">${fullName}</h1>
+          <p class="sub text-truncate" style="font-size: 0.76rem; margin: 2px 0 0 0; color: #64748B; max-width: 135px;">
+            <span class="${isOnline ? 'text-success fw-bold' : 'text-secondary'}" id="headerOnlineTextWrap">
+              <i class="fa-solid fa-circle" style="font-size: 0.55rem;"></i> <span id="headerOnlineText">${isOnline ? 'Đang trực' : 'Tạm nghỉ'}</span>
             </span>
             <span style="opacity: 0.5;">·</span>
             <span>${branchName}</span>
@@ -1788,7 +1788,22 @@
         </div>
       </div>
 
-      <div class="header-actions-section" style="flex-shrink: 0;">
+      <div class="header-actions-section" style="flex-shrink: 0; display: flex; align-items: center; gap: 8px;">
+        <!-- Công Tắc BẬT / TẮT Ca Trực Của Tài Xế -->
+        <div class="capsule-switch-wrap ${isOnline ? 'online' : ''}" id="topSwitchCapsule" onclick="toggleShiftStatus()" title="Chạm để BẬT / TẮT ca trực nhận đơn">
+          <div class="switch-info-group">
+            <span class="switch-indicator-dot"></span>
+            <span class="switch-label-status" id="switchLabelStatus">${isOnline ? 'BẬT' : 'TẮT'}</span>
+          </div>
+          <div class="switch-track">
+            <span class="track-tag track-tag-on">ON</span>
+            <span class="track-tag track-tag-off">OFF</span>
+            <div class="switch-thumb-knob">
+              <i class="fa-solid ${isOnline ? 'fa-check' : 'fa-power-off'}" id="knobIcon"></i>
+            </div>
+          </div>
+        </div>
+
         <!-- Nút Lịch Sử Giao Hàng Trên Header (Chạm để mở lịch sử và tổng số cuốc) -->
         <button type="button" class="btn-header-history" onclick="openProfileDrawer('tab-history')" title="Xem Tổng Số Cuốc & Lịch Sử Giao Hàng">
           <i class="fa-solid fa-clock-rotate-left"></i>
@@ -2215,12 +2230,28 @@
       autoAcceptOrderId = null;
     }
 
+    function cleanupModalBackdrop() {
+      // Xóa triệt để các phần tử backdrop che mờ màn hình còn sót lại
+      document.querySelectorAll('.modal-backdrop').forEach(function(el) { el.remove(); });
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+      const incidentEl = document.getElementById('incidentModal');
+      if (incidentEl) {
+        incidentEl.classList.remove('show');
+        incidentEl.style.display = 'none';
+        incidentEl.setAttribute('aria-hidden', 'true');
+        incidentEl.removeAttribute('aria-modal');
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       // Khởi tạo Bootstrap Modals
       const incidentEl = document.getElementById('incidentModal');
       if (incidentEl) {
         incidentModalInstance = new bootstrap.Modal(incidentEl);
         incidentEl.addEventListener('hidden.bs.modal', function() {
+          cleanupModalBackdrop();
           if (ordersQueue.length > 0) {
             const curr = ordersQueue[0];
             const step = orderSteps[curr.orderId] || 0;
@@ -2964,6 +2995,9 @@
       const capsule = document.getElementById('topSwitchCapsule');
       const label = document.getElementById('switchLabelStatus');
       const knobIcon = document.getElementById('knobIcon');
+      const avatarDot = document.getElementById('headerAvatarDot');
+      const onlineTextWrap = document.getElementById('headerOnlineTextWrap');
+      const onlineText = document.getElementById('headerOnlineText');
       const statusBoxText = document.getElementById('statusBoxText');
       const statusBoxSub = document.getElementById('statusBoxSub');
 
@@ -2971,6 +3005,9 @@
         if (capsule) capsule.classList.add('online');
         if (label) label.innerText = 'BẬT';
         if (knobIcon) knobIcon.className = 'fa-solid fa-check';
+        if (avatarDot) avatarDot.classList.add('online');
+        if (onlineTextWrap) onlineTextWrap.className = 'text-success fw-bold';
+        if (onlineText) onlineText.innerText = 'Đang trực';
         if (statusBoxText) {
           statusBoxText.innerText = 'Sẵn Sàng Nhận Đơn';
           statusBoxText.style.color = 'var(--matcha-deep)';
@@ -2985,6 +3022,9 @@
         if (capsule) capsule.classList.remove('online');
         if (label) label.innerText = 'TẮT';
         if (knobIcon) knobIcon.className = 'fa-solid fa-power-off';
+        if (avatarDot) avatarDot.classList.remove('online');
+        if (onlineTextWrap) onlineTextWrap.className = 'text-secondary';
+        if (onlineText) onlineText.innerText = 'Tạm nghỉ';
         if (statusBoxText) {
           statusBoxText.innerText = 'Tạm Nghỉ Ca';
           statusBoxText.style.color = 'var(--text-sepia)';
@@ -3218,7 +3258,13 @@
       })
       .then(data => {
         if (btn) btn.disabled = false;
-        if (incidentModalInstance) incidentModalInstance.hide();
+        if (incidentModalInstance) {
+          try {
+            incidentModalInstance.hide();
+          } catch(e) {}
+        }
+        cleanupModalBackdrop();
+        setTimeout(cleanupModalBackdrop, 350);
 
         if (window.Swal) {
           if (isAtStore) {
@@ -3226,14 +3272,20 @@
               icon: 'info',
               title: 'Đã Báo Cáo Sự Cố Tại Quán',
               text: 'Đơn hàng #' + orderCode + ' đã được chuyển giao lại cho quầy chi nhánh để phân công tài xế khác.',
-              confirmButtonColor: '#8C6D53'
+              confirmButtonColor: '#8C6D53',
+              didClose: () => {
+                cleanupModalBackdrop();
+              }
             });
           } else {
             Swal.fire({
               icon: 'warning',
               title: 'Hủy Đơn Tự Động Thành Công',
               text: 'Đơn hàng #' + orderCode + ' đã được chuyển sang trạng thái CANCELLED và ghi nhận hàng hoàn về hệ thống.',
-              confirmButtonColor: '#BA5D3F'
+              confirmButtonColor: '#BA5D3F',
+              didClose: () => {
+                cleanupModalBackdrop();
+              }
             });
           }
         } else {
@@ -3272,11 +3324,17 @@
           const capsule = document.getElementById('topSwitchCapsule');
           const label = document.getElementById('switchLabelStatus');
           const knobIcon = document.getElementById('knobIcon');
+          const avatarDot = document.getElementById('headerAvatarDot');
+          const onlineTextWrap = document.getElementById('headerOnlineTextWrap');
+          const onlineText = document.getElementById('headerOnlineText');
           const statusBoxText = document.getElementById('statusBoxText');
           const statusBoxSub = document.getElementById('statusBoxSub');
           if (capsule) capsule.classList.remove('online');
           if (label) label.innerText = 'TẮT';
           if (knobIcon) knobIcon.className = 'fa-solid fa-power-off';
+          if (avatarDot) avatarDot.classList.remove('online');
+          if (onlineTextWrap) onlineTextWrap.className = 'text-secondary';
+          if (onlineText) onlineText.innerText = 'Tạm nghỉ';
           if (statusBoxText) {
             statusBoxText.innerText = 'Tạm Nghỉ Ca';
             statusBoxText.style.color = 'var(--text-sepia)';
