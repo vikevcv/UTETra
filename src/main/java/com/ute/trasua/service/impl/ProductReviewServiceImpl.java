@@ -168,14 +168,82 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductReviewDto> getProductReviews(Long productId, int limit) {
+        return getProductReviews(productId, null, limit, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductReviewDto> getProductReviews(Long productId, Integer star, int limit, boolean all) {
         if (productId == null) {
             return Collections.emptyList();
         }
-        int pageSize = limit > 0 ? Math.min(limit, 50) : 10;
-        return productReviewRepository.findByProductIdAndIsHiddenFalseOrderByCreatedAtDesc(productId, PageRequest.of(0, pageSize))
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        int pageSize = all ? 1000 : (limit > 0 ? limit : 10);
+        PageRequest pageRequest = PageRequest.of(0, pageSize);
+
+        List<ProductReview> reviews;
+        if (star != null && star >= 1 && star <= 5) {
+            reviews = productReviewRepository.findByProductIdAndRatingAndIsHiddenFalseOrderByCreatedAtDesc(productId, star, pageRequest);
+        } else {
+            reviews = productReviewRepository.findByProductIdAndIsHiddenFalseOrderByCreatedAtDesc(productId, pageRequest);
+        }
+
+        return reviews.stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getProductReviewSummary(Long productId, Integer star, int limit, boolean all) {
+        if (productId == null) {
+            return Collections.emptyMap();
+        }
+
+        long totalCount = productReviewRepository.countByProductIdAndIsHiddenFalse(productId);
+        Double avgRating = productReviewRepository.calculateAverageRatingByProductId(productId);
+        double roundedAvg = (avgRating != null)
+                ? BigDecimal.valueOf(avgRating).setScale(1, RoundingMode.HALF_UP).doubleValue()
+                : 5.0;
+
+        // Group counts by star 1..5
+        Map<String, Long> starCounts = new LinkedHashMap<>();
+        for (int i = 5; i >= 1; i--) {
+            starCounts.put(String.valueOf(i), 0L);
+        }
+
+        List<Object[]> grouped = productReviewRepository.countReviewsGroupedByRating(productId);
+        if (grouped != null) {
+            for (Object[] row : grouped) {
+                if (row != null && row.length >= 2 && row[0] instanceof Number && row[1] instanceof Number) {
+                    int r = ((Number) row[0]).intValue();
+                    long c = ((Number) row[1]).longValue();
+                    if (r >= 1 && r <= 5) {
+                        starCounts.put(String.valueOf(r), c);
+                    }
+                }
+            }
+        }
+
+        long filteredCount = (star != null && star >= 1 && star <= 5)
+                ? starCounts.getOrDefault(String.valueOf(star), 0L)
+                : totalCount;
+
+        List<ProductReviewDto> reviews = getProductReviews(productId, star, limit, all);
+        boolean hasMore = !all && filteredCount > reviews.size();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("productId", productId);
+        result.put("averageRating", roundedAvg);
+        result.put("totalCount", totalCount);
+        result.put("filteredCount", filteredCount);
+        result.put("currentStar", star != null && star >= 1 && star <= 5 ? star : 0);
+        result.put("starCounts", starCounts);
+        result.put("star5Count", starCounts.getOrDefault("5", 0L));
+        result.put("star4Count", starCounts.getOrDefault("4", 0L));
+        result.put("star3Count", starCounts.getOrDefault("3", 0L));
+        result.put("star2Count", starCounts.getOrDefault("2", 0L));
+        result.put("star1Count", starCounts.getOrDefault("1", 0L));
+        result.put("reviews", reviews);
+        result.put("hasMore", hasMore);
+        return result;
     }
 
     @Override

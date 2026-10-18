@@ -21,7 +21,14 @@ public interface ProductReviewRepository extends JpaRepository<ProductReview, Lo
 
     List<ProductReview> findByProductIdAndIsHiddenFalseOrderByCreatedAtDesc(Long productId, Pageable pageable);
 
+    List<ProductReview> findByProductIdAndRatingAndIsHiddenFalseOrderByCreatedAtDesc(Long productId, Integer rating, Pageable pageable);
+
     long countByProductIdAndIsHiddenFalse(Long productId);
+
+    long countByProductIdAndRatingAndIsHiddenFalse(Long productId, Integer rating);
+
+    @Query("SELECT r.rating, COUNT(r) FROM ProductReview r WHERE r.product.id = :productId AND r.isHidden = false GROUP BY r.rating")
+    List<Object[]> countReviewsGroupedByRating(@Param("productId") Long productId);
 
     @Query("SELECT COALESCE(AVG(r.rating), 5.0) FROM ProductReview r WHERE r.product.id = :productId AND r.isHidden = false")
     Double calculateAverageRatingByProductId(@Param("productId") Long productId);

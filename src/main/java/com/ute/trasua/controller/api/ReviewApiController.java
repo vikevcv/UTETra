@@ -72,11 +72,14 @@ public class ReviewApiController {
     @GetMapping("/api/v1/products/{productId}/reviews")
     public ResponseEntity<?> getProductReviews(
             @PathVariable("productId") Long productId,
-            @RequestParam(value = "limit", defaultValue = "10") int limit) {
-        List<ProductReviewDto> list = productReviewService.getProductReviews(productId, limit);
+            @RequestParam(value = "star", required = false) Integer star,
+            @RequestParam(value = "limit", defaultValue = "10") int limit,
+            @RequestParam(value = "all", defaultValue = "false") boolean all) {
+
+        Map<String, Object> summary = productReviewService.getProductReviewSummary(productId, star, limit, all);
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "reviews", list
+                "data", summary
         ));
     }
 

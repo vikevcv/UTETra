@@ -14,6 +14,10 @@ public interface ProductReviewService {
 
     List<ProductReviewDto> getProductReviews(Long productId, int limit);
 
+    List<ProductReviewDto> getProductReviews(Long productId, Integer star, int limit, boolean all);
+
+    java.util.Map<String, Object> getProductReviewSummary(Long productId, Integer star, int limit, boolean all);
+
     List<ProductReviewDto> getAllReviews();
 
     void toggleHideReview(Long reviewId, boolean isHidden);

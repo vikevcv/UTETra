@@ -64,27 +64,33 @@
           <c:forEach items="${products}" var="p">
             <div class="reserve-card" data-product-id="${p.id}">
               <div class="reserve-media">
-                <c:choose>
-                  <c:when test="${not empty p.imageUrl}">
-                    <img src="${p.imageUrl}" alt="${p.name}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                    <svg width="60" height="70" viewBox="0 0 100 100" style="display:none;">
-                      <path d="M30 30C30 80 40 90 50 90C60 90 70 80 70 30H30Z" fill="#8C6D53"/>
-                    </svg>
-                  </c:when>
-                  <c:otherwise>
-                    <svg width="60" height="70" viewBox="0 0 100 100">
-                      <path d="M30 30C30 80 40 90 50 90C60 90 70 80 70 30H30Z" fill="#8C6D53"/>
-                    </svg>
-                  </c:otherwise>
-                </c:choose>
+                <a href="${pageContext.request.contextPath}/product/${p.id}" style="display:block; width:100%; height:100%;">
+                  <c:choose>
+                    <c:when test="${not empty p.imageUrl}">
+                      <img src="${p.imageUrl}" alt="${p.name}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                      <svg width="60" height="70" viewBox="0 0 100 100" style="display:none;">
+                        <path d="M30 30C30 80 40 90 50 90C60 90 70 80 70 30H30Z" fill="#8C6D53"/>
+                      </svg>
+                    </c:when>
+                    <c:otherwise>
+                      <svg width="60" height="70" viewBox="0 0 100 100">
+                        <path d="M30 30C30 80 40 90 50 90C60 90 70 80 70 30H30Z" fill="#8C6D53"/>
+                      </svg>
+                    </c:otherwise>
+                  </c:choose>
+                </a>
               </div>
               <div class="reserve-body">
-                <h4 class="reserve-item-title">${p.name}</h4>
+                <h4 class="reserve-item-title">
+                  <a href="${pageContext.request.contextPath}/product/${p.id}" style="text-decoration:none; color:inherit;">${p.name}</a>
+                </h4>
                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:0.82rem; color:var(--text-muted);">
                   <c:choose>
                     <c:when test="${p.reviewCount != null && p.reviewCount > 0}">
-                      <span style="color:#D97706; font-weight:700;">★ <fmt:formatNumber value="${p.averageRating}" pattern="0.0"/></span>
-                      <span>(${p.reviewCount})</span>
+                      <a href="${pageContext.request.contextPath}/product/${p.id}#reviewsSection" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:6px;">
+                        <span style="color:#D97706; font-weight:700;">★ <fmt:formatNumber value="${p.averageRating}" pattern="0.0"/></span>
+                        <span>(${p.reviewCount})</span>
+                      </a>
                     </c:when>
                     <c:otherwise>
                       <span style="color:var(--text-muted); font-size:0.8rem; font-style:italic;">Không có đánh giá</span>
