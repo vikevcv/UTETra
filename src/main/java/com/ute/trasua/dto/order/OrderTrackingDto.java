@@ -43,6 +43,7 @@ public class OrderTrackingDto implements Serializable {
 
     private String paymentMethod;
     private String paymentStatus;
+    private Boolean pendingPayment;
     private String createdAt;
 
     // Customer & destination

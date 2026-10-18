@@ -334,6 +334,12 @@
                 <i class="fa-solid fa-bolt text-warning"></i>
                 <span>⚡ Bỏ Qua Thanh Toán (Dev Test)</span>
               </button>
+
+              <a href="${pageContext.request.contextPath}/order/tracking/${order.orderCode}?paymentCancelled=true" 
+                 class="btn btn-link text-muted text-decoration-none mt-1" 
+                 style="font-size:0.85rem; text-align:center;">
+                <i class="fa-solid fa-arrow-left me-1"></i> Quay lại chi tiết đơn hàng
+              </a>
             </div>
 
           </div>
