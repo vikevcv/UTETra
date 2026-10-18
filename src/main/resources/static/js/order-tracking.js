@@ -285,6 +285,11 @@ function handleOrderStatusEvent(event) {
       cancelWrapper.style.display = "none";
     }
 
+    const pendingPaymentWrapper = document.getElementById("pendingPaymentActionWrapper");
+    if (pendingPaymentWrapper) {
+      pendingPaymentWrapper.style.display = "none";
+    }
+
     const boxActions = document.getElementById("boxCompletedOrderActions");
     if (boxActions) {
       boxActions.classList.add("zen-hidden");
@@ -309,6 +314,13 @@ function handleOrderStatusEvent(event) {
   }
   if (descEl && event.statusMessage) {
     descEl.innerText = event.statusMessage;
+  }
+
+  const pendingPaymentWrapper = document.getElementById("pendingPaymentActionWrapper");
+  if (pendingPaymentWrapper) {
+    if (event.paymentStatus === "PAID" || event.eventType === "PAYMENT_SUCCESS" || step >= 2) {
+      pendingPaymentWrapper.style.display = "none";
+    }
   }
 
   // 1.5. Cập nhật nút Hủy Đơn: Từ pha chế trở về sau thì làm mờ nút và không cho bấm

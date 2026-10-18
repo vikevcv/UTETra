@@ -105,6 +105,12 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
 
         String statusLabel = "Đã Tiếp Nhận";
         switch (rawStatus) {
+            case "AWAITING_PAYMENT":
+                statusStep = 1;
+                statusLabel = "Chờ Thanh Toán";
+                statusTitle = "Đang Chờ Quý Khách Thanh Toán";
+                statusDesc = "Vui lòng quét mã VietQR PayOS để hoàn tất thanh toán. Quán sẽ tự động tiếp nhận pha chế ngay khi chuyển khoản thành công.";
+                break;
             case "PENDING":
                 statusStep = 1;
                 statusLabel = "Đã Tiếp Nhận";
@@ -318,6 +324,11 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                 ? baseRefundAmount.multiply(new BigDecimal("0.80")).setScale(0, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
+        boolean pendingPayment = !"PAID".equalsIgnoreCase(order.getPaymentStatus())
+                && !"CANCELLED".equalsIgnoreCase(rawStatus)
+                && !"DELIVERY_FAILED".equalsIgnoreCase(rawStatus)
+                && !"FAILED".equalsIgnoreCase(rawStatus);
+
         return OrderTrackingDto.builder()
                 .orderId(order.getId())
                 .orderCode(order.getOrderCode())
@@ -331,6 +342,7 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                 .canCancel(canCancel)
                 .paymentMethod(order.getPaymentMethod())
                 .paymentStatus(order.getPaymentStatus())
+                .pendingPayment(pendingPayment)
                 .createdAt(formattedTime)
                 .customerName(order.getCustomerName())
                 .customerPhone(order.getCustomerPhone())

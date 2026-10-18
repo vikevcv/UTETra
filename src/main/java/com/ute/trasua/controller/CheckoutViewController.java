@@ -120,6 +120,11 @@ public class CheckoutViewController {
             return "redirect:/checkout/success?orderCode=" + canonicalOrderCode;
         }
 
+        if ("true".equalsIgnoreCase(cancel) || "CANCELLED".equalsIgnoreCase(status)) {
+            log.info(">>> PayOS Return với tín hiệu hủy cho đơn {}", canonicalOrderCode);
+            return "redirect:/order/tracking/" + canonicalOrderCode + "?paymentCancelled=true";
+        }
+
         return "redirect:/checkout/payment?orderCode=" + canonicalOrderCode;
     }
 
@@ -127,14 +132,18 @@ public class CheckoutViewController {
      * Xử lý khi khách bấm hủy giao dịch trên cổng PayOS.
      */
     @GetMapping("/checkout/payos/cancel")
-    public String checkoutPayOSCancel(@RequestParam(value = "orderCode", required = false) String orderCodeParam) {
-        log.info(">>> Khách hủy thanh toán PayOS cho đơn: {}", orderCodeParam);
+    public String checkoutPayOSCancel(@RequestParam(value = "orderCode", required = false) String orderCodeParam,
+                                      @RequestParam(value = "code", required = false) String code,
+                                      @RequestParam(value = "status", required = false) String status,
+                                      @RequestParam(value = "cancel", required = false) String cancel) {
+        log.info(">>> Khách hủy thanh toán PayOS cho đơn: {}, code={}, status={}, cancel={}",
+                orderCodeParam, code, status, cancel);
         if (orderCodeParam != null && !orderCodeParam.isBlank()) {
             Order order = resolveOrder(orderCodeParam);
             String target = order != null ? order.getOrderCode() : orderCodeParam.trim();
-            return "redirect:/checkout/payment?orderCode=" + target + "&cancelled=true";
+            return "redirect:/order/tracking/" + target + "?paymentCancelled=true";
         }
-        return "redirect:/";
+        return "redirect:/order/tracking";
     }
 
     @GetMapping("/checkout/success")

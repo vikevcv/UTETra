@@ -459,11 +459,41 @@
                   </div>
                 </div>
 
+                <!-- Banner thông báo khi khách vừa hủy trên PayOS -->
+                <c:if test="${param.paymentCancelled == 'true'}">
+                  <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" style="border-radius:10px; font-size:0.9rem;">
+                    <i class="fa-solid fa-triangle-exclamation text-warning fa-lg"></i>
+                    <div>
+                      <strong>Bạn đã hủy thao tác tại cổng PayOS.</strong> Đơn hàng vẫn được lưu ở trạng thái chờ thanh toán. Quý khách có thể bấm <strong>"Thanh Toán Ngay"</strong> bên dưới để hoàn tất đơn hàng bất cứ lúc nào.
+                    </div>
+                  </div>
+                </c:if>
+
                 <!-- Lời nhắn trạng thái -->
                 <div id="boxStatusMessageWrapper" class="status-msg-box ${tracking.statusStep == -1 ? 'is-cancelled' : ''}">
                   <strong class="status-title" id="txtStatusTitle">${tracking.statusTitle}</strong>
                   <div class="status-desc" id="txtStatusDesc">${tracking.statusDescription}</div>
                 </div>
+
+                <!-- NÚT THANH TOÁN PAYOS KHI ĐƠN CHỜ THANH TOÁN (UC06) -->
+                <c:if test="${tracking.paymentStatus != 'PAID' && tracking.status != 'CANCELLED' && tracking.status != 'DELIVERY_FAILED' && tracking.status != 'FAILED'}">
+                  <div id="pendingPaymentActionWrapper" class="alert alert-warning d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mt-3 p-3" style="border-radius:10px; border-left: 5px solid #d97706; background-color: #fffbeb;">
+                    <div>
+                      <div style="font-weight:700; color:#92400e; font-size:0.95rem;">
+                        <i class="fa-solid fa-clock text-warning me-1"></i> Đơn hàng đang chờ thanh toán
+                      </div>
+                      <div style="font-size:0.85rem; color:#b45309; margin-top:2px;">
+                        Vui lòng hoàn tất thanh toán trực tuyến VietQR. Quán sẽ tự động tiếp nhận pha chế ngay khi chuyển khoản thành công.
+                      </div>
+                    </div>
+                    <div>
+                      <a href="${pageContext.request.contextPath}/checkout/payment?orderCode=${tracking.orderCode}" 
+                         class="btn btn-warning text-dark fw-bold text-nowrap px-3 py-2 shadow-sm" style="border-radius:8px;">
+                        <i class="fa-solid fa-qrcode me-1"></i> Thanh Toán Ngay
+                      </a>
+                    </div>
+                  </div>
+                </c:if>
 
                 <!-- NÚT HỦY ĐƠN HÀNG (UC28) -->
                 <c:if test="${tracking.status != 'CANCELLED'}">
@@ -620,8 +650,13 @@
                 </div>
                 <div class="receipt-row">
                   <span class="receipt-label">Kênh thanh toán:</span>
-                  <span class="receipt-value" style="color:var(--tea-matcha); font-weight:700;">
+                  <span class="receipt-value" style="color:var(--tea-matcha); font-weight:700; display:inline-flex; align-items:center; gap:6px;">
                     ${tracking.paymentMethod} (${tracking.paymentStatus})
+                    <c:if test="${tracking.paymentStatus != 'PAID' && tracking.status != 'CANCELLED' && tracking.status != 'DELIVERY_FAILED' && tracking.status != 'FAILED'}">
+                      <a href="${pageContext.request.contextPath}/checkout/payment?orderCode=${tracking.orderCode}" class="badge bg-warning text-dark text-decoration-none py-1 px-2" style="font-size:0.75rem;">
+                        <i class="fa-solid fa-qrcode me-1"></i> Thanh toán
+                      </a>
+                    </c:if>
                   </span>
                 </div>
               </div>
@@ -733,8 +768,11 @@
                         </span>
 
                         <c:choose>
+                          <c:when test="${o.status == 'AWAITING_PAYMENT' || (o.paymentStatus != 'PAID' && o.status != 'CANCELLED' && o.status != 'DELIVERY_FAILED' && o.status != 'FAILED')}">
+                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Chờ Thanh Toán</span>
+                          </c:when>
                           <c:when test="${o.status == 'PENDING' || o.status == 'AWAITING_PREPARATION' || o.status == 'PAID'}">
-                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-receipt me-1"></i> Đã Tiếp Nhận</span>
+                            <span class="badge bg-info text-dark"><i class="fa-solid fa-receipt me-1"></i> Đã Tiếp Nhận</span>
                           </c:when>
                           <c:when test="${o.status == 'PREPARING' || o.status == 'PROCESSING'}">
                             <span class="badge bg-info text-dark"><i class="fa-solid fa-mug-hot me-1"></i> Đang Pha Chế</span>
@@ -775,9 +813,18 @@
                       <div style="font-size:1.2rem; font-weight:700; color:var(--ceramic-bizen); margin-bottom:8px;">
                         <fmt:formatNumber value="${o.finalAmount}" pattern="#,###"/> đ
                       </div>
-                      <a href="${pageContext.request.contextPath}/order/tracking?code=${o.orderCode}" class="btn btn-sm" style="background:var(--tea-matcha); color:#fff; border-radius:8px; padding:7px 18px; font-weight:600; text-decoration:none;">
-                        Xem Chi Tiết <i class="fa-solid fa-arrow-right ms-1"></i>
-                      </a>
+                      <div style="display:flex; gap:8px; justify-content:flex-end; align-items:center; flex-wrap:wrap;">
+                        <c:if test="${o.paymentStatus != 'PAID' && o.status != 'CANCELLED' && o.status != 'DELIVERY_FAILED' && o.status != 'FAILED'}">
+                          <a href="${pageContext.request.contextPath}/checkout/payment?orderCode=${o.orderCode}" 
+                             class="btn btn-sm btn-warning text-dark fw-bold" 
+                             style="border-radius:8px; padding:7px 14px; text-decoration:none;">
+                            <i class="fa-solid fa-qrcode me-1"></i> Thanh Toán
+                          </a>
+                        </c:if>
+                        <a href="${pageContext.request.contextPath}/order/tracking?code=${o.orderCode}" class="btn btn-sm" style="background:var(--tea-matcha); color:#fff; border-radius:8px; padding:7px 18px; font-weight:600; text-decoration:none;">
+                          Xem Chi Tiết <i class="fa-solid fa-arrow-right ms-1"></i>
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </c:forEach>
