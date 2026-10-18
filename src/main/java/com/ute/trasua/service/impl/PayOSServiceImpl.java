@@ -26,8 +26,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.*;
 
 /**
@@ -107,9 +107,9 @@ public class PayOSServiceImpl implements PayOSService {
             order.setPayosOrderCode(numericCode);
         }
 
-        // Thời hạn hiệu lực: 15 phút kể từ hiện tại
+        // Thời hạn hiệu lực: 15 phút kể từ hiện tại (sử dụng Instant để đảm bảo tính đúng đắn trên mọi múi giờ máy chủ UTC/UTC+7)
         LocalDateTime expiredAt = now.plusMinutes(15);
-        long expiredAtEpoch = expiredAt.toEpochSecond(ZoneOffset.ofHours(7)); // Múi giờ Việt Nam UTC+7
+        long expiredAtEpoch = Instant.now().plus(Duration.ofMinutes(15)).getEpochSecond();
 
         // 3. Kiểm tra xem người dùng đã cấu hình Client ID / API Key / Checksum Key chưa
         if (!payosProperties.isConfigured()) {
