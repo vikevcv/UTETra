@@ -34,4 +34,6 @@ public interface InventoryService {
     ImportReceiptResponse getReceiptById(Long id);
 
     ImportReceiptResponse getReceiptByCode(String receiptCode);
+
+    com.ute.trasua.entity.BranchInventory deductIngredientStock(Long branchId, Long ingredientId, BigDecimal quantity);
 }

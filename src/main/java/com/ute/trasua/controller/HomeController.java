@@ -1,8 +1,7 @@
 package com.ute.trasua.controller;
 
-import com.ute.trasua.repository.BranchRepository;
+import com.ute.trasua.service.BranchService;
 import com.ute.trasua.service.ProductService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,17 +11,21 @@ import org.springframework.web.bind.annotation.GetMapping;
  * Trả về view "home" được SiteMesh 3 Decorator bọc trong web.jsp.
  */
 @Controller
-@RequiredArgsConstructor
 public class HomeController {
 
     private final ProductService productService;
-    private final BranchRepository branchRepository;
+    private final BranchService branchService;
+
+    public HomeController(ProductService productService, BranchService branchService) {
+        this.productService = productService;
+        this.branchService = branchService;
+    }
 
     @GetMapping("/")
     public String home(Model model) {
         model.addAttribute("siteTitle", "UTETra — Modern Zen Wabi-Sabi & Haute Couture Tea Gallery");
         model.addAttribute("products", productService.getActiveProducts());
-        model.addAttribute("branches", branchRepository.findByActiveTrue());
+        model.addAttribute("branches", branchService.getAllActiveBranches());
         return "home";
     }
 

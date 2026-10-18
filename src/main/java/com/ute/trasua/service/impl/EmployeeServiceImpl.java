@@ -7,9 +7,11 @@ import com.ute.trasua.dto.PosAccountResponse;
 import com.ute.trasua.entity.Branch;
 import com.ute.trasua.entity.Employee;
 import com.ute.trasua.entity.PosAccount;
+import com.ute.trasua.entity.User;
 import com.ute.trasua.repository.BranchRepository;
 import com.ute.trasua.repository.EmployeeRepository;
 import com.ute.trasua.repository.PosAccountRepository;
+import com.ute.trasua.repository.UserRepository;
 import com.ute.trasua.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +21,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -33,6 +38,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final BranchRepository branchRepository;
     private final PosAccountRepository posAccountRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     // ==========================================
@@ -187,8 +193,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
 
         String username = request.getUsername().trim().toLowerCase();
-        if (posAccountRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("Username [" + username + "] is already in use!");
+        if (posAccountRepository.existsByUsername(username) || userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("Username [" + username + "] is already in use in the system!");
         }
 
         if (request.getBranchId() == null) {
@@ -200,18 +206,40 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         String rawPassword = request.getPassword() != null && !request.getPassword().trim().isEmpty()
                 ? request.getPassword().trim() : "Pos@123";
+        String encodedPassword = passwordEncoder.encode(rawPassword);
 
+        // 1. Tạo và đồng bộ bản ghi User trong bảng users để xác thực Spring Security
+        String email = username + "@pos.trasua.local";
+        if (userRepository.existsByEmail(email)) {
+            email = username + "." + branch.getId() + "@pos.trasua.local";
+        }
+
+        User user = User.builder()
+                .username(username)
+                .password(encodedPassword)
+                .fullName(request.getCounterName() != null ? request.getCounterName().trim() : "Quầy POS - " + branch.getName())
+                .email(email)
+                .phone(branch.getHotline())
+                .enabled(request.isActive())
+                .locked(!request.isActive())
+                .roles(new HashSet<>(Set.of("ROLE_STAFF", "ROLE_POS")))
+                .createdAt(LocalDateTime.now())
+                .build();
+        User savedUser = userRepository.save(user);
+
+        // 2. Tạo bản ghi PosAccount liên kết với User và Branch
         PosAccount pos = PosAccount.builder()
                 .counterName(request.getCounterName() != null ? request.getCounterName().trim() : "Counter POS")
                 .username(username)
-                .password(passwordEncoder.encode(rawPassword))
+                .password(encodedPassword)
                 .active(request.isActive())
                 .note(request.getNote() != null ? request.getNote().trim() : null)
                 .branch(branch)
+                .user(savedUser)
                 .build();
 
         PosAccount saved = posAccountRepository.save(pos);
-        log.info(">>> Configured POS account: [{}] for branch {}", saved.getUsername(), branch.getName());
+        log.info(">>> Configured POS account: [{}] for branch {} (Synchronized User ID: {})", saved.getUsername(), branch.getName(), savedUser.getId());
         return PosAccountResponse.fromEntity(saved);
     }
 
@@ -223,7 +251,16 @@ public class EmployeeServiceImpl implements EmployeeService {
         boolean newStatus = !pos.isActive();
         pos.setActive(newStatus);
         posAccountRepository.save(pos);
-        log.info(">>> Toggled POS account [{}] to: {}", pos.getUsername(), newStatus ? "Active" : "Locked");
+
+        // Đồng bộ trạng thái khóa/mở khóa sang bảng users
+        userRepository.findByUsername(pos.getUsername()).ifPresent(user -> {
+            user.setEnabled(newStatus);
+            user.setLocked(!newStatus);
+            user.setLockReason(!newStatus ? "Tạm khóa theo trạng thái máy POS chi nhánh" : null);
+            userRepository.save(user);
+        });
+
+        log.info(">>> Toggled POS account [{}] to: {} (Synced to users table)", pos.getUsername(), newStatus ? "Active" : "Locked");
         return newStatus;
     }
 
@@ -232,7 +269,15 @@ public class EmployeeServiceImpl implements EmployeeService {
     public void deletePosAccount(Long id) {
         PosAccount pos = posAccountRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("POS account not found with ID: " + id));
+        String username = pos.getUsername();
         posAccountRepository.delete(pos);
-        log.info(">>> Deleted POS account ID {}: [{}]", id, pos.getUsername());
+
+        // Xóa tài khoản tương ứng trong bảng users
+        userRepository.findByUsername(username).ifPresent(user -> {
+            userRepository.delete(user);
+            log.info(">>> Deleted corresponding User record: [{}]", username);
+        });
+
+        log.info(">>> Deleted POS account ID {}: [{}]", id, username);
     }
 }

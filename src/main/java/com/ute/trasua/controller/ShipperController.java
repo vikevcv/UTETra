@@ -4,25 +4,18 @@ import com.ute.trasua.dto.handover.HandoverOrderDto;
 import com.ute.trasua.entity.Branch;
 import com.ute.trasua.entity.Driver;
 import com.ute.trasua.entity.Order;
-import com.ute.trasua.entity.OrderDetail;
 import com.ute.trasua.entity.User;
-import com.ute.trasua.repository.BranchRepository;
-import com.ute.trasua.repository.DriverRepository;
-import com.ute.trasua.repository.OrderRepository;
-import com.ute.trasua.repository.UserRepository;
 import com.ute.trasua.service.DriverReportService;
+import com.ute.trasua.service.DriverService;
 import com.ute.trasua.service.OrderHandoverService;
-import lombok.RequiredArgsConstructor;
+import com.ute.trasua.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -38,27 +31,18 @@ import java.util.*;
 @Slf4j
 public class ShipperController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final OrderHandoverService orderHandoverService;
     private final DriverReportService driverReportService;
-    private final DriverRepository driverRepository;
-    private final OrderRepository orderRepository;
-    private final BranchRepository branchRepository;
-    private final com.ute.trasua.service.DriverService driverService;
+    private final DriverService driverService;
 
-    public ShipperController(UserRepository userRepository,
+    public ShipperController(UserService userService,
                              OrderHandoverService orderHandoverService,
                              DriverReportService driverReportService,
-                             DriverRepository driverRepository,
-                             OrderRepository orderRepository,
-                             BranchRepository branchRepository,
-                             com.ute.trasua.service.DriverService driverService) {
-        this.userRepository = userRepository;
+                             DriverService driverService) {
+        this.userService = userService;
         this.orderHandoverService = orderHandoverService;
         this.driverReportService = driverReportService;
-        this.driverRepository = driverRepository;
-        this.orderRepository = orderRepository;
-        this.branchRepository = branchRepository;
         this.driverService = driverService;
     }
 
@@ -71,19 +55,18 @@ public class ShipperController {
 
         User driverUser = (driver != null) ? driver.getUser() : null;
         if (driverUser == null && authentication != null) {
-            driverUser = userRepository.findByUsername(authentication.getName()).orElse(null);
+            driverUser = userService.findByUsername(authentication.getName()).orElse(null);
         }
 
         if (driver == null) {
-            // Mock object fallback để giao diện không bị null nếu chưa có tài xế trong CSDL
+            // Trường hợp tài khoản chưa được liên kết hồ sơ tài xế trong CSDL
             driver = Driver.builder()
-                    .id(1L)
                     .user(driverUser)
-                    .licensePlate("59X3-888.99")
+                    .licensePlate("Chưa đăng ký biển số")
                     .vehicleType("MOTORBIKE")
-                    .workingStatus("ONLINE")
+                    .workingStatus("OFFLINE")
                     .kpiScore(5.0)
-                    .completedOrders(9)
+                    .completedOrders(0)
                     .build();
         }
 
@@ -114,22 +97,22 @@ public class ShipperController {
         model.addAttribute("completedOrders", completedTrips);
         model.addAttribute("completedTrips", completedTrips);
         model.addAttribute("completedCount", completedCount);
-        model.addAttribute("todayCompletedCount", todayCompletedCount > 0 ? todayCompletedCount : 4);
-        model.addAttribute("yesterdayCompletedCount", yesterdayCompletedCount > 0 ? yesterdayCompletedCount : 2);
-        model.addAttribute("weekCompletedCount", weekCompletedCount > 0 ? weekCompletedCount : 7);
+        model.addAttribute("todayCompletedCount", todayCompletedCount);
+        model.addAttribute("yesterdayCompletedCount", yesterdayCompletedCount);
+        model.addAttribute("weekCompletedCount", weekCompletedCount);
 
-        String username = (driverUser != null) ? driverUser.getUsername() : "driver1";
+        String username = (driverUser != null) ? driverUser.getUsername() : (authentication != null ? authentication.getName() : "driver");
         model.addAttribute("username", username);
-        model.addAttribute("fullName", (driverUser != null && driverUser.getFullName() != null)
-                ? driverUser.getFullName() : "Nguyễn Ngọc Thoại");
-        model.addAttribute("phone", (driverUser != null && driverUser.getPhone() != null)
-                ? driverUser.getPhone() : "0987 654 321");
-        model.addAttribute("email", (driverUser != null && driverUser.getEmail() != null)
-                ? driverUser.getEmail() : "driver1@utetra.vn");
-        model.addAttribute("driverCode", "TX-" + String.format("%03d", driver.getId() != null ? driver.getId() : 1));
-        model.addAttribute("vehiclePlate", driver.getLicensePlate() != null ? driver.getLicensePlate() : "59X3-888.99");
+        model.addAttribute("fullName", (driverUser != null && driverUser.getFullName() != null && !driverUser.getFullName().isBlank())
+                ? driverUser.getFullName() : username);
+        model.addAttribute("phone", (driverUser != null && driverUser.getPhone() != null && !driverUser.getPhone().isBlank())
+                ? driverUser.getPhone() : "Chưa cập nhật SĐT");
+        model.addAttribute("email", (driverUser != null && driverUser.getEmail() != null && !driverUser.getEmail().isBlank())
+                ? driverUser.getEmail() : (username + "@utetra.vn"));
+        model.addAttribute("driverCode", (driver.getId() != null) ? ("TX-" + String.format("%03d", driver.getId())) : "TX-CHUA-DANG-KY");
+        model.addAttribute("vehiclePlate", (driver.getLicensePlate() != null && !driver.getLicensePlate().isBlank()) ? driver.getLicensePlate() : "Chưa đăng ký biển số");
         model.addAttribute("branchName", (driver.getBranch() != null && driver.getBranch().getName() != null)
-                ? driver.getBranch().getName() : "UTETra Cơ Sở 01 — 01 Võ Văn Ngân, Thủ Đức");
+                ? driver.getBranch().getName() : "Chưa phân công chi nhánh");
         model.addAttribute("isOnline", isOnline);
 
         return "shipper/index";
@@ -267,107 +250,14 @@ public class ShipperController {
      */
     @PostMapping("/api/seed-sample-order")
     @ResponseBody
-    @Transactional
     public ResponseEntity<Map<String, Object>> seedSampleOrder(
             Authentication authentication,
             @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
         Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
-        Branch branch = (driver != null) ? driver.getBranch() : null;
-        if (branch == null) {
-            branch = branchRepository.findAll().stream().findFirst().orElse(null);
-            if (branch == null) {
-                branch = branchRepository.save(Branch.builder()
-                        .branchCode("CN01")
-                        .name("UTETra Cơ Sở 01 — 01 Võ Văn Ngân, Thủ Đức")
-                        .address("01 Võ Văn Ngân, Linh Chiểu, Thủ Đức, TP.HCM")
-                        .hotline("1900 1234")
-                        .active(true)
-                        .build());
-            }
-        }
-
-        if (driver == null) {
-            String username = (authentication != null && authentication.isAuthenticated())
-                    ? authentication.getName()
-                    : "driver1";
-            User user = userRepository.findByUsername(username).orElse(null);
-            if (user == null) {
-                user = userRepository.save(User.builder()
-                        .username(username)
-                        .password("$2a$10$w8T.N0b3aQY/t94nB4.L3OBQ0mI7R6dFj2Z5mY6G3s7F2G5h1y8zK")
-                        .fullName("Nguyễn Ngọc Thoại")
-                        .phone("0987 654 321")
-                        .email(username + "@utetra.vn")
-                        .roles(new HashSet<>(List.of("ROLE_DRIVER")))
-                        .enabled(true)
-                        .locked(false)
-                        .build());
-            }
-            driver = driverRepository.save(Driver.builder()
-                    .user(user)
-                    .branch(branch)
-                    .licensePlate("59X3-888.99")
-                    .vehicleType("MOTORBIKE")
-                    .workingStatus("DELIVERING")
-                    .baseSalary(new BigDecimal("240000"))
-                    .kpiScore(5.0)
-                    .completedOrders(0)
-                    .build());
-        }
-
-        String orderCode = "DLV-" + (System.currentTimeMillis() % 1000000);
-        Order order = Order.builder()
-                .orderCode(orderCode)
-                .dailyQueueNumber(88)
-                .orderType("DELIVERY")
-                .status("OUT_FOR_DELIVERY")
-                .totalAmount(new BigDecimal("70000"))
-                .discountAmount(BigDecimal.ZERO)
-                .finalAmount(new BigDecimal("70000"))
-                .paymentMethod("VNPAY")
-                .paymentStatus("PAID")
-                .cashierUsername("pos_staff")
-                .branch(branch)
-                .customerName("Chị Bích Trâm")
-                .customerPhone("0909123456")
-                .deliveryAddress("15 Lê Văn Chí, Linh Trung, Thủ Đức")
-                .latitude(10.8522)
-                .longitude(106.7716)
-                .deliveryNotes("Giao cổng sau, gọi trước 5 phút khi tới")
-                .driver(driver)
-                .handedOverAt(LocalDateTime.now())
-                .build();
-
-        OrderDetail item1 = OrderDetail.builder()
-                .order(order)
-                .productName("Trà Sữa Oolong Nướng")
-                .sizeName("L")
-                .quantity(1)
-                .sugarLevel("70%")
-                .iceLevel("50%")
-                .unitPrice(new BigDecimal("35000"))
-                .subtotal(new BigDecimal("35000"))
-                .note("Ít ngọt")
-                .build();
-
-        OrderDetail item2 = OrderDetail.builder()
-                .order(order)
-                .productName("Trà Đào Cam Sả")
-                .sizeName("M")
-                .quantity(1)
-                .sugarLevel("100%")
-                .iceLevel("100%")
-                .unitPrice(new BigDecimal("35000"))
-                .subtotal(new BigDecimal("35000"))
-                .build();
-
-        order.setOrderDetails(new ArrayList<>(List.of(item1, item2)));
-        Order savedOrder = orderRepository.save(order);
-
-        driver.setWorkingStatus("DELIVERING");
-        driverRepository.save(driver);
-
-        log.info(">>> Đã tạo đơn hàng mẫu {} cho tài xế {}", savedOrder.getOrderCode(), driver.getId());
+        String username = (authentication != null && authentication.isAuthenticated())
+                ? authentication.getName()
+                : "driver1";
+        Order savedOrder = driverService.seedSampleDeliveryOrder(driver, username);
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
@@ -401,17 +291,6 @@ public class ShipperController {
     }
 
     private Driver resolveCurrentDriver(Authentication authentication, Long requestedDriverId) {
-        if (authentication != null && authentication.isAuthenticated()) {
-            String username = authentication.getName();
-            Optional<Driver> driverOpt = driverRepository.findByUserUsernameWithUserAndBranch(username);
-            if (driverOpt.isPresent()) {
-                // Chống IDOR: Nếu đã đăng nhập tài khoản tài xế, chỉ cho phép thao tác trên tài xế của chính mình
-                return driverOpt.get();
-            }
-        }
-        if (requestedDriverId != null) {
-            return driverRepository.findById(requestedDriverId).orElse(null);
-        }
-        return driverRepository.findAllWithUserAndBranch().stream().findFirst().orElse(null);
+        return driverService.resolveCurrentDriver(authentication, requestedDriverId);
     }
 }

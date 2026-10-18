@@ -5,11 +5,15 @@ import com.ute.trasua.dto.ProductBranchMatrixRow;
 import com.ute.trasua.dto.ProductResponse;
 import com.ute.trasua.dto.kitchen.BranchMenuStatusDto;
 import com.ute.trasua.entity.Branch;
+import com.ute.trasua.entity.BranchInventory;
 import com.ute.trasua.entity.BranchMenu;
+import com.ute.trasua.entity.Ingredient;
 import com.ute.trasua.entity.Product;
 import com.ute.trasua.entity.Topping;
+import com.ute.trasua.repository.BranchInventoryRepository;
 import com.ute.trasua.repository.BranchMenuRepository;
 import com.ute.trasua.repository.BranchRepository;
+import com.ute.trasua.repository.IngredientRepository;
 import com.ute.trasua.repository.ProductRepository;
 import com.ute.trasua.repository.ToppingRepository;
 import com.ute.trasua.service.BranchMenuService;
@@ -22,8 +26,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +42,8 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     private final BranchRepository branchRepository;
     private final ProductRepository productRepository;
     private final ToppingRepository toppingRepository;
+    private final BranchInventoryRepository branchInventoryRepository;
+    private final IngredientRepository ingredientRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     public BranchMenuServiceImpl(
@@ -44,23 +51,18 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             BranchRepository branchRepository,
             ProductRepository productRepository,
             ToppingRepository toppingRepository,
+            BranchInventoryRepository branchInventoryRepository,
+            IngredientRepository ingredientRepository,
             SimpMessagingTemplate messagingTemplate
     ) {
         this.branchMenuRepository = branchMenuRepository;
         this.branchRepository = branchRepository;
         this.productRepository = productRepository;
         this.toppingRepository = toppingRepository;
+        this.branchInventoryRepository = branchInventoryRepository;
+        this.ingredientRepository = ingredientRepository;
         this.messagingTemplate = messagingTemplate;
     }
-
-    // Lưu trữ tồn kho Món Nước theo Chi nhánh trong bộ nhớ: Map<branchId, Map<productId, stock>>
-    private static final ConcurrentHashMap<Long, ConcurrentHashMap<Long, Integer>> BRANCH_PRODUCT_STOCKS = new ConcurrentHashMap<>();
-
-    // Lưu trữ tồn kho Topping theo Chi nhánh trong bộ nhớ: Map<branchId, Map<toppingName, stock>>
-    private static final ConcurrentHashMap<Long, ConcurrentHashMap<String, Integer>> BRANCH_TOPPING_STOCKS = new ConcurrentHashMap<>();
-
-    // Lưu trữ tồn kho Ly theo Chi nhánh trong bộ nhớ: Map<branchId, Map<sizeName, stock>>
-    private static final ConcurrentHashMap<Long, ConcurrentHashMap<String, Integer>> BRANCH_CUP_STOCKS = new ConcurrentHashMap<>();
 
     // ==========================================
     // UC22: Branch Menu Management & Matrix
@@ -250,16 +252,39 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         Map<Long, Boolean> productAvailMap = branchMenus.stream()
                 .collect(Collectors.toMap(bm -> bm.getProduct().getId(), BranchMenu::isAvailable, (v1, v2) -> v1));
 
-        var prodStocks = BRANCH_PRODUCT_STOCKS.computeIfAbsent(targetBranchId, bId -> new ConcurrentHashMap<>());
-        var topStocks = BRANCH_TOPPING_STOCKS.computeIfAbsent(targetBranchId, bId -> new ConcurrentHashMap<>());
+        List<BranchInventory> inventories = branchInventoryRepository.findByBranchId(targetBranchId);
 
         List<BranchMenuStatusDto> list = new ArrayList<>();
 
         List<Product> products = productRepository.findAll();
         for (Product p : products) {
             boolean isDbAvail = productAvailMap.getOrDefault(p.getId(), true);
-            int defaultStock = (15 + (int)(p.getId() % 10) * 3);
-            int currentStock = prodStocks.computeIfAbsent(p.getId(), id -> defaultStock);
+            String prodName = p.getName() != null ? p.getName().toLowerCase() : "";
+
+            // Tính tồn kho ước tính dựa trên nguyên liệu trà trong kho chi nhánh (mỗi ly ~ 0.02 Kg trà)
+            BigDecimal mainTeaStock = BigDecimal.ZERO;
+            for (BranchInventory inv : inventories) {
+                if (inv.getIngredient() == null) continue;
+                String name = inv.getIngredient().getName() != null ? inv.getIngredient().getName().toLowerCase() : "";
+                String code = inv.getIngredient().getCode() != null ? inv.getIngredient().getCode().toUpperCase() : "";
+
+                if (prodName.contains("ô long") && (code.equals("NL003") || name.contains("ô long"))) {
+                    mainTeaStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                    break;
+                } else if ((prodName.contains("lục trà") || prodName.contains("nhài")) && (code.equals("NL002") || name.contains("lục trà"))) {
+                    mainTeaStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                    break;
+                } else if ((code.equals("NL001") || name.contains("trà đen")) && mainTeaStock.compareTo(BigDecimal.ZERO) == 0) {
+                    mainTeaStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                }
+            }
+
+            int estimatedCups = mainTeaStock.divide(BigDecimal.valueOf(0.02), 0, RoundingMode.FLOOR).intValue();
+            if (!inventories.isEmpty() && estimatedCups <= 0 && mainTeaStock.compareTo(BigDecimal.ZERO) == 0) {
+                // Nếu kho có nguyên liệu nhưng chưa gán trà riêng, lấy tồn kho ước tính từ nguyên liệu chung
+                estimatedCups = 50;
+            }
+            int currentStock = isDbAvail ? Math.max(0, estimatedCups) : 0;
             boolean isAvail = isDbAvail && (currentStock > 0);
 
             list.add(BranchMenuStatusDto.builder()
@@ -278,9 +303,37 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         List<Topping> toppings = toppingRepository.findAll();
         for (Topping t : toppings) {
             String topName = (t.getName() != null ? t.getName() : t.getToppingName());
+            String cleanTopName = topName.toLowerCase();
             boolean isDbAvail = "ACTIVE".equalsIgnoreCase(t.getStatus());
-            int defaultStock = (25 + (int)(t.getId() % 5) * 5);
-            int currentStock = topStocks.computeIfAbsent(topName, name -> defaultStock);
+
+            // Tính tồn kho ước tính dựa trên nguyên liệu topping trong kho chi nhánh (mỗi phần ~ 0.05 đơn vị)
+            BigDecimal toppingIngStock = BigDecimal.ZERO;
+            for (BranchInventory inv : inventories) {
+                if (inv.getIngredient() == null) continue;
+                String name = inv.getIngredient().getName() != null ? inv.getIngredient().getName().toLowerCase() : "";
+                String code = inv.getIngredient().getCode() != null ? inv.getIngredient().getCode().toUpperCase() : "";
+
+                if (cleanTopName.contains("trân châu") && (code.equals("NL008") || name.contains("trân châu"))) {
+                    toppingIngStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                    break;
+                } else if (cleanTopName.contains("sen") && (code.equals("NL005") || name.contains("sen"))) {
+                    toppingIngStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                    break;
+                } else if (cleanTopName.contains("sương sáo") && (code.equals("NL006") || name.contains("sương sáo"))) {
+                    toppingIngStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                    break;
+                } else if ((cleanTopName.contains("macchiato") || cleanTopName.contains("kem mây") || cleanTopName.contains("kem"))
+                        && (code.equals("NL007") || name.contains("kem"))) {
+                    toppingIngStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                    break;
+                }
+            }
+
+            int estimatedPortions = toppingIngStock.divide(BigDecimal.valueOf(0.05), 0, RoundingMode.FLOOR).intValue();
+            if (!inventories.isEmpty() && estimatedPortions <= 0 && toppingIngStock.compareTo(BigDecimal.ZERO) == 0) {
+                estimatedPortions = 40;
+            }
+            int currentStock = isDbAvail ? Math.max(0, estimatedPortions) : 0;
             boolean isAvail = isDbAvail && (currentStock > 0);
 
             list.add(BranchMenuStatusDto.builder()
@@ -376,17 +429,43 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Map<String, Integer> getBranchCupStocks(Long branchId) {
         Long targetBranchId = (branchId != null) ? branchId : 1L;
-        return BRANCH_CUP_STOCKS.computeIfAbsent(targetBranchId, bId -> {
-            ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
-            map.put("M", 80);
-            map.put("L", 50);
-            return map;
-        });
+        List<BranchInventory> inventories = branchInventoryRepository.findByBranchId(targetBranchId);
+
+        int cupM = 0;
+        int cupL = 0;
+
+        for (BranchInventory inv : inventories) {
+            if (inv.getIngredient() == null) continue;
+            String code = inv.getIngredient().getCode() != null ? inv.getIngredient().getCode().toUpperCase() : "";
+            String name = inv.getIngredient().getName() != null ? inv.getIngredient().getName().toLowerCase() : "";
+
+            BigDecimal qty = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+            boolean isCay = "cây".equalsIgnoreCase(inv.getIngredient().getUnit()) || "cay".equalsIgnoreCase(inv.getIngredient().getUnit());
+            int calculatedCups = isCay ? qty.multiply(BigDecimal.valueOf(50)).intValue() : qty.intValue();
+
+            if (code.equals("NL010") || name.contains("500ml") || name.contains("size m")) {
+                cupM = Math.max(0, calculatedCups);
+            } else if (code.equals("NL011") || name.contains("700ml") || name.contains("size l")) {
+                cupL = Math.max(0, calculatedCups);
+            }
+        }
+
+        if (cupM == 0 && cupL == 0 && !inventories.isEmpty()) {
+            cupM = 50;
+            cupL = 30;
+        }
+
+        Map<String, Integer> map = new HashMap<>();
+        map.put("M", cupM);
+        map.put("L", cupL);
+        return map;
     }
 
     @Override
+    @Transactional
     public void deductCupStock(Long branchId, String sizeName, int quantity) {
         if (sizeName == null || quantity <= 0) return;
         Long targetBranchId = (branchId != null) ? branchId : 1L;
@@ -395,25 +474,54 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             cleanSize = cleanSize.contains("L") ? "L" : "M";
         }
 
-        ConcurrentHashMap<String, Integer> stocks = BRANCH_CUP_STOCKS.computeIfAbsent(targetBranchId, bId -> {
-            ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
-            map.put("M", 80);
-            map.put("L", 50);
-            return map;
-        });
+        List<BranchInventory> inventories = branchInventoryRepository.findByBranchId(targetBranchId);
+        BranchInventory targetInv = null;
 
-        int current = stocks.getOrDefault(cleanSize, 50);
-        int updated = Math.max(0, current - quantity);
-        stocks.put(cleanSize, updated);
-        log.info(">>> [CUP INVENTORY] Chi nhánh {} đã trừ {} ly Size {}. Tồn kho còn lại: {}", targetBranchId, quantity, cleanSize, updated);
+        for (BranchInventory inv : inventories) {
+            if (inv.getIngredient() == null) continue;
+            String code = inv.getIngredient().getCode() != null ? inv.getIngredient().getCode().toUpperCase() : "";
+            String name = inv.getIngredient().getName() != null ? inv.getIngredient().getName().toLowerCase() : "";
+
+            if (cleanSize.equals("M") && (code.equals("NL010") || name.contains("500ml") || name.contains("size m"))) {
+                targetInv = inv;
+                break;
+            } else if (cleanSize.equals("L") && (code.equals("NL011") || name.contains("700ml") || name.contains("size l"))) {
+                targetInv = inv;
+                break;
+            }
+        }
+
+        int remainingCups = 0;
+        if (targetInv != null) {
+            boolean isCay = "cây".equalsIgnoreCase(targetInv.getIngredient().getUnit()) || "cay".equalsIgnoreCase(targetInv.getIngredient().getUnit());
+            BigDecimal deductQty = isCay
+                    ? BigDecimal.valueOf(quantity).divide(BigDecimal.valueOf(50), 4, RoundingMode.HALF_UP)
+                    : BigDecimal.valueOf(quantity);
+
+            BigDecimal currentStock = targetInv.getStockQuantity() != null ? targetInv.getStockQuantity() : BigDecimal.ZERO;
+            BigDecimal updatedStock = currentStock.subtract(deductQty);
+            if (updatedStock.compareTo(BigDecimal.ZERO) < 0) {
+                updatedStock = BigDecimal.ZERO;
+            }
+
+            targetInv.setStockQuantity(updatedStock);
+            targetInv.setUpdatedAt(LocalDateTime.now());
+            branchInventoryRepository.save(targetInv);
+
+            remainingCups = isCay ? updatedStock.multiply(BigDecimal.valueOf(50)).intValue() : updatedStock.intValue();
+            log.info(">>> [DB INVENTORY] Chi nhánh {} đã trừ {} ly Size {}. Tồn kho CSDL còn lại: {} ly ({} {})",
+                    targetBranchId, quantity, cleanSize, remainingCups, updatedStock, targetInv.getIngredient().getUnit());
+        } else {
+            log.warn("Không tìm thấy bản ghi tồn kho Ly Size {} cho chi nhánh {}", cleanSize, targetBranchId);
+        }
 
         try {
             Map<String, Object> payload = Map.of(
                     "type", "CUP_STOCK_UPDATED",
                     "branchId", targetBranchId,
                     "size", cleanSize,
-                    "remainingStock", updated,
-                    "isAvailable", updated > 0
+                    "remainingStock", remainingCups,
+                    "isAvailable", remainingCups > 0
             );
             messagingTemplate.convertAndSend("/topic/kitchen/" + targetBranchId, (Object) payload);
             messagingTemplate.convertAndSend("/topic/menu/" + targetBranchId, (Object) payload);
@@ -423,21 +531,75 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     }
 
     @Override
+    @Transactional
     public void deductProductStock(Long branchId, Long productId, int quantity) {
         if (productId == null || quantity <= 0) return;
         Long targetBranchId = (branchId != null) ? branchId : 1L;
 
-        var prodStocks = BRANCH_PRODUCT_STOCKS.computeIfAbsent(targetBranchId, bId -> new ConcurrentHashMap<>());
-        int defaultStock = (15 + (int)(productId % 10) * 3);
-        int current = prodStocks.computeIfAbsent(productId, id -> defaultStock);
-        int updated = Math.max(0, current - quantity);
-        prodStocks.put(productId, updated);
+        Product product = productRepository.findById(productId).orElse(null);
+        if (product == null) return;
 
-        log.info(">>> [PRODUCT INVENTORY] Chi nhánh {} đã trừ {} ly sản phẩm ID {}. Tồn kho còn: {}",
-                targetBranchId, quantity, productId, updated);
+        List<BranchInventory> inventories = branchInventoryRepository.findByBranchId(targetBranchId);
+        String prodName = product.getName() != null ? product.getName().toLowerCase() : "";
+        String catName = product.getCategory() != null ? product.getCategory().getName().toLowerCase() : "";
 
-        if (updated == 0) {
+        BranchInventory teaInv = null;
+        BranchInventory milkInv = null;
+
+        for (BranchInventory inv : inventories) {
+            if (inv.getIngredient() == null) continue;
+            String code = inv.getIngredient().getCode() != null ? inv.getIngredient().getCode().toUpperCase() : "";
+            String name = inv.getIngredient().getName() != null ? inv.getIngredient().getName().toLowerCase() : "";
+
+            if (prodName.contains("ô long") && (code.equals("NL003") || name.contains("ô long"))) {
+                teaInv = inv;
+            } else if ((prodName.contains("lục trà") || prodName.contains("nhài")) && (code.equals("NL002") || name.contains("lục trà"))) {
+                teaInv = inv;
+            } else if ((code.equals("NL001") || name.contains("trà đen")) && teaInv == null) {
+                teaInv = inv;
+            }
+
+            if (catName.contains("trà sữa") && (code.equals("NL004") || name.contains("sữa tươi"))) {
+                milkInv = inv;
+            }
+        }
+
+        boolean outOfStock = false;
+
+        // Trừ trà: 0.02 Kg / ly
+        if (teaInv != null) {
+            BigDecimal teaDeduct = BigDecimal.valueOf(0.02).multiply(BigDecimal.valueOf(quantity));
+            BigDecimal current = teaInv.getStockQuantity() != null ? teaInv.getStockQuantity() : BigDecimal.ZERO;
+            BigDecimal updated = current.subtract(teaDeduct);
+            if (updated.compareTo(BigDecimal.ZERO) <= 0) {
+                updated = BigDecimal.ZERO;
+                outOfStock = true;
+            }
+            teaInv.setStockQuantity(updated);
+            teaInv.setUpdatedAt(LocalDateTime.now());
+            branchInventoryRepository.save(teaInv);
+            log.info(">>> [DB INVENTORY] Chi nhánh {} đã trừ {} Kg trà '{}'. Tồn CSDL còn: {}", targetBranchId, teaDeduct, teaInv.getIngredient().getName(), updated);
+        }
+
+        // Trừ sữa tươi: 0.10 Lít / ly
+        if (milkInv != null) {
+            BigDecimal milkDeduct = BigDecimal.valueOf(0.10).multiply(BigDecimal.valueOf(quantity));
+            BigDecimal current = milkInv.getStockQuantity() != null ? milkInv.getStockQuantity() : BigDecimal.ZERO;
+            BigDecimal updated = current.subtract(milkDeduct);
+            if (updated.compareTo(BigDecimal.ZERO) <= 0) {
+                updated = BigDecimal.ZERO;
+                outOfStock = true;
+            }
+            milkInv.setStockQuantity(updated);
+            milkInv.setUpdatedAt(LocalDateTime.now());
+            branchInventoryRepository.save(milkInv);
+            log.info(">>> [DB INVENTORY] Chi nhánh {} đã trừ {} Lít sữa tươi. Tồn CSDL còn: {}", targetBranchId, milkDeduct, updated);
+        }
+
+        // Tự động tắt món khi nguyên liệu hết
+        if (outOfStock) {
             toggleProductAvailability(targetBranchId, productId, false);
+            log.warn(">>> [AUTO OUT-OF-STOCK] Đã tự động TẮT BÁN món '{}' tại chi nhánh {} do nguyên liệu đã cạn kiệt!", product.getName(), targetBranchId);
         }
 
         try {
@@ -445,8 +607,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
                     "type", "PRODUCT_STOCK_UPDATED",
                     "branchId", targetBranchId,
                     "productId", productId,
-                    "remainingStock", updated,
-                    "isAvailable", updated > 0
+                    "isAvailable", !outOfStock
             );
             messagingTemplate.convertAndSend("/topic/kitchen/" + targetBranchId, (Object) payload);
             messagingTemplate.convertAndSend("/topic/menu/" + targetBranchId, (Object) payload);
@@ -456,27 +617,69 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     }
 
     @Override
+    @Transactional
     public void deductToppingStock(Long branchId, String toppingName, int quantity) {
         if (toppingName == null || toppingName.isBlank() || quantity <= 0) return;
         Long targetBranchId = (branchId != null) ? branchId : 1L;
-        String cleanTopName = toppingName.trim();
+        String cleanTopName = toppingName.trim().toLowerCase();
 
-        var topStocks = BRANCH_TOPPING_STOCKS.computeIfAbsent(targetBranchId, bId -> new ConcurrentHashMap<>());
-        int defaultStock = 25;
-        int current = topStocks.computeIfAbsent(cleanTopName, name -> defaultStock);
-        int updated = Math.max(0, current - quantity);
-        topStocks.put(cleanTopName, updated);
+        List<BranchInventory> inventories = branchInventoryRepository.findByBranchId(targetBranchId);
+        BranchInventory targetInv = null;
 
-        log.info(">>> [TOPPING INVENTORY] Chi nhánh {} đã trừ {} phần Topping '{}'. Tồn kho còn: {}",
-                targetBranchId, quantity, cleanTopName, updated);
+        for (BranchInventory inv : inventories) {
+            if (inv.getIngredient() == null) continue;
+            String name = inv.getIngredient().getName() != null ? inv.getIngredient().getName().toLowerCase() : "";
+            String code = inv.getIngredient().getCode() != null ? inv.getIngredient().getCode().toUpperCase() : "";
+
+            if (cleanTopName.contains("trân châu") && (code.equals("NL008") || name.contains("trân châu"))) {
+                targetInv = inv;
+                break;
+            } else if (cleanTopName.contains("sen") && (code.equals("NL005") || name.contains("sen"))) {
+                targetInv = inv;
+                break;
+            } else if (cleanTopName.contains("sương sáo") && (code.equals("NL006") || name.contains("sương sáo"))) {
+                targetInv = inv;
+                break;
+            } else if ((cleanTopName.contains("macchiato") || cleanTopName.contains("kem mây") || cleanTopName.contains("kem"))
+                    && (code.equals("NL007") || name.contains("kem"))) {
+                targetInv = inv;
+                break;
+            }
+        }
+
+        boolean outOfStock = false;
+        if (targetInv != null) {
+            BigDecimal deductQty = BigDecimal.valueOf(0.05).multiply(BigDecimal.valueOf(quantity));
+            BigDecimal current = targetInv.getStockQuantity() != null ? targetInv.getStockQuantity() : BigDecimal.ZERO;
+            BigDecimal updated = current.subtract(deductQty);
+            if (updated.compareTo(BigDecimal.ZERO) <= 0) {
+                updated = BigDecimal.ZERO;
+                outOfStock = true;
+            }
+            targetInv.setStockQuantity(updated);
+            targetInv.setUpdatedAt(LocalDateTime.now());
+            branchInventoryRepository.save(targetInv);
+
+            log.info(">>> [DB INVENTORY] Chi nhánh {} đã trừ {} phần topping '{}' ({} {}). Tồn CSDL còn: {}",
+                    targetBranchId, quantity, toppingName, deductQty, targetInv.getIngredient().getUnit(), updated);
+
+            if (outOfStock) {
+                toppingRepository.findAll().stream()
+                        .filter(t -> t.getName() != null && t.getName().toLowerCase().contains(cleanTopName))
+                        .forEach(t -> {
+                            t.setStatus("INACTIVE");
+                            toppingRepository.save(t);
+                            log.warn(">>> [AUTO OUT-OF-STOCK] Topping '{}' đã tự động đổi sang INACTIVE do hết hàng trong kho!", t.getName());
+                        });
+            }
+        }
 
         try {
             Map<String, Object> payload = Map.of(
                     "type", "TOPPING_STOCK_UPDATED",
                     "branchId", targetBranchId,
-                    "toppingName", cleanTopName,
-                    "remainingStock", updated,
-                    "isAvailable", updated > 0
+                    "toppingName", toppingName,
+                    "isAvailable", !outOfStock
             );
             messagingTemplate.convertAndSend("/topic/kitchen/" + targetBranchId, (Object) payload);
             messagingTemplate.convertAndSend("/topic/menu/" + targetBranchId, (Object) payload);

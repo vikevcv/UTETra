@@ -473,7 +473,7 @@
             </div>
 
             <form action="${pageContext.request.contextPath}/branch/employees/pos/create" method="post">
-              <input type="hidden" name="branchId" value="${branchId}" />
+              <input type="hidden" name="branchId" value="${not empty branchId ? branchId : (not empty currentBranch ? currentBranch.id : '')}" />
 
               <div class="form-group" style="margin-bottom: 14px;">
                 <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 4px;">Tên Quầy / Vị

@@ -68,6 +68,8 @@ public class AuthController {
                             return "redirect:/branch/employees";
                         } else if (user.getRoles().contains("ROLE_DRIVER")) {
                             return "redirect:/shipper";
+                        } else if (user.getRoles().contains("ROLE_STAFF") || user.getRoles().contains("ROLE_POS")) {
+                            return "redirect:/pos";
                         }
                     }
                     return "redirect:/";

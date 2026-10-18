@@ -82,6 +82,21 @@ public class DataInitializer implements CommandLineRunner {
             }
             posAccountRepository.save(pos);
             log.info(">>> Đã cập nhật tài khoản POS chi nhánh {}: username={} / password=123123", b.getName(), finalUser);
+
+            if (!userRepository.existsByUsername(finalUser)) {
+                userRepository.save(User.builder()
+                        .username(finalUser)
+                        .password(passwordEncoder.encode("123123"))
+                        .email(finalUser + "@pos.trasua.local")
+                        .fullName(shortName)
+                        .phone(b.getHotline())
+                        .enabled(true)
+                        .locked(false)
+                        .roles(Set.of("ROLE_STAFF", "ROLE_POS"))
+                        .createdAt(LocalDateTime.now().minusDays(10))
+                        .build());
+                log.info(">>> Đã đồng bộ tài khoản POS [{}] vào bảng users", finalUser);
+            }
         });
 
         if (!userRepository.existsByUsername("admin")) {
@@ -311,6 +326,20 @@ public class DataInitializer implements CommandLineRunner {
                         .branch(cnThuDuc)
                         .build());
             }
+            if (!userRepository.existsByUsername("pos_td01")) {
+                userRepository.save(User.builder()
+                        .username("pos_td01")
+                        .password(passwordEncoder.encode("Pos@123"))
+                        .email("pos_td01@pos.trasua.local")
+                        .fullName("Quầy Thu Ngân 01 - Thủ Đức")
+                        .phone(cnThuDuc.getHotline())
+                        .enabled(true)
+                        .locked(false)
+                        .roles(Set.of("ROLE_STAFF", "ROLE_POS"))
+                        .createdAt(LocalDateTime.now().minusDays(15))
+                        .build());
+                log.info(">>> Đã đồng bộ tài khoản POS [pos_td01] vào bảng users");
+            }
         }
 
         if (!branchRepository.existsByBranchCode("CN-Q01")) {
@@ -340,6 +369,20 @@ public class DataInitializer implements CommandLineRunner {
                         .note("Máy POS quầy sảnh tầng trệt")
                         .branch(cnQuan1)
                         .build());
+            }
+            if (!userRepository.existsByUsername("pos_q101")) {
+                userRepository.save(User.builder()
+                        .username("pos_q101")
+                        .password(passwordEncoder.encode("Pos@123"))
+                        .email("pos_q101@pos.trasua.local")
+                        .fullName("Quầy Thu Ngân 01 - Quận 1")
+                        .phone(cnQuan1.getHotline())
+                        .enabled(true)
+                        .locked(false)
+                        .roles(Set.of("ROLE_STAFF", "ROLE_POS"))
+                        .createdAt(LocalDateTime.now().minusDays(15))
+                        .build());
+                log.info(">>> Đã đồng bộ tài khoản POS [pos_q101] vào bảng users");
             }
         }
 
@@ -744,32 +787,45 @@ public class DataInitializer implements CommandLineRunner {
                     .build(),
                 com.ute.trasua.entity.Ingredient.builder()
                     .code("NL010")
-                    .name("Ly Giấy Tráng Men Sinh Học 500ml")
+                    .name("Ly Giấy Tráng Men Sinh Học 500ml (Size M)")
                     .unit("Cây")
                     .referencePrice(new java.math.BigDecimal("75000"))
-                    .description("Cây 50 ly giấy cao cấp thân thiện môi trường")
+                    .description("Cây 50 ly giấy cao cấp size vừa 500ml")
+                    .status("ACTIVE")
+                    .build(),
+                com.ute.trasua.entity.Ingredient.builder()
+                    .code("NL011")
+                    .name("Ly Giấy Tráng Men Sinh Học 700ml (Size L)")
+                    .unit("Cây")
+                    .referencePrice(new java.math.BigDecimal("85000"))
+                    .description("Cây 50 ly giấy cao cấp size lớn 700ml")
                     .status("ACTIVE")
                     .build()
             );
             ingredientRepository.saveAll(rawMaterials);
-            log.info(">>> Đã khởi tạo 10 danh mục nguyên liệu pha chế & bao bì chuẩn chuỗi!");
+            log.info(">>> Đã khởi tạo 11 danh mục nguyên liệu pha chế & bao bì chuẩn chuỗi!");
 
-            // Khởi tạo tồn kho ban đầu cho chi nhánh Thủ Đức (CN-TD01)
+            // Khởi tạo tồn kho ban đầu cho tất cả các chi nhánh trong hệ thống
+            java.util.List<com.ute.trasua.entity.Branch> allBranches = branchRepository.findAll();
+            for (com.ute.trasua.entity.Branch b : allBranches) {
+                if (branchInventoryRepository.findByBranchId(b.getId()).isEmpty()) {
+                    java.util.List<com.ute.trasua.entity.BranchInventory> stockList = new java.util.ArrayList<>();
+                    for (com.ute.trasua.entity.Ingredient ing : ingredientRepository.findAll()) {
+                        stockList.add(com.ute.trasua.entity.BranchInventory.builder()
+                            .branch(b)
+                            .ingredient(ing)
+                            .stockQuantity(new java.math.BigDecimal("50.00"))
+                            .minThreshold(new java.math.BigDecimal("10.00"))
+                            .updatedAt(LocalDateTime.now())
+                            .build());
+                    }
+                    branchInventoryRepository.saveAll(stockList);
+                    log.info(">>> Đã khởi tạo tồn kho nguyên liệu ban đầu cho chi nhánh: {}!", b.getName());
+                }
+            }
+
             com.ute.trasua.entity.Branch tdBranch = branchRepository.findByBranchCode("CN-TD01").orElse(null);
             if (tdBranch != null) {
-                java.util.List<com.ute.trasua.entity.BranchInventory> stockList = new java.util.ArrayList<>();
-                for (com.ute.trasua.entity.Ingredient ing : rawMaterials) {
-                    stockList.add(com.ute.trasua.entity.BranchInventory.builder()
-                        .branch(tdBranch)
-                        .ingredient(ing)
-                        .stockQuantity(new java.math.BigDecimal("45.00"))
-                        .minThreshold(new java.math.BigDecimal("10.00"))
-                        .updatedAt(LocalDateTime.now())
-                        .build());
-                }
-                branchInventoryRepository.saveAll(stockList);
-                log.info(">>> Đã khởi tạo tồn kho nguyên liệu ban đầu cho CN-TD01!");
-
                 // Tạo 1 Phiếu nhập kho mẫu BM2 (QLCN_BM2)
                 if (importReceiptRepository.count() == 0) {
                     User manager = userRepository.findByUsername("manager1").orElse(null);
@@ -818,6 +874,31 @@ public class DataInitializer implements CommandLineRunner {
                     log.info(">>> Đã khởi tạo phiếu nhập kho mẫu BM2: {}", receipt.getReceiptCode());
                 }
             }
+        }
+
+        // Đảm bảo nguyên liệu Ly Size L (NL011) và tồn kho cho các chi nhánh
+        if (!ingredientRepository.existsByCode("NL011")) {
+            com.ute.trasua.entity.Ingredient nl011 = ingredientRepository.save(com.ute.trasua.entity.Ingredient.builder()
+                .code("NL011")
+                .name("Ly Giấy Tráng Men Sinh Học 700ml (Size L)")
+                .unit("Cây")
+                .referencePrice(new java.math.BigDecimal("85000"))
+                .description("Cây 50 ly giấy cao cấp size lớn 700ml")
+                .status("ACTIVE")
+                .build());
+
+            for (com.ute.trasua.entity.Branch b : branchRepository.findAll()) {
+                if (!branchInventoryRepository.existsByBranchIdAndIngredientId(b.getId(), nl011.getId())) {
+                    branchInventoryRepository.save(com.ute.trasua.entity.BranchInventory.builder()
+                        .branch(b)
+                        .ingredient(nl011)
+                        .stockQuantity(new java.math.BigDecimal("45.00"))
+                        .minThreshold(new java.math.BigDecimal("10.00"))
+                        .updatedAt(LocalDateTime.now())
+                        .build());
+                }
+            }
+            log.info(">>> Đã khởi tạo bổ sung nguyên liệu NL011 (Ly Size L) và tồn kho ban đầu!");
         }
 
         // Khởi tạo các đơn hàng mẫu phục vụ báo cáo doanh thu & biểu đồ Chart.js (Module 15 / UC19, UC26)

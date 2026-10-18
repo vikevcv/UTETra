@@ -69,6 +69,18 @@ public class BranchServiceImpl implements BranchService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Branch> getAllBranchEntities() {
+        return branchRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Branch> getActiveBranchEntities() {
+        return branchRepository.findByActiveTrue();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<BranchResponse> searchBranches(String keyword, Boolean active, Pageable pageable) {
         Page<Branch> page = branchRepository.searchBranches(keyword, active, pageable);
         return page.map(this::enrichToResponse);
@@ -86,6 +98,23 @@ public class BranchServiceImpl implements BranchService {
     public Branch getBranchEntityById(Long id) {
         return branchRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Branch not found with ID: " + id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Branch> findBranchEntityById(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return branchRepository.findById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Branch getDefaultBranch() {
+        return branchRepository.findByActiveTrue().stream().findFirst()
+                .or(() -> branchRepository.findAll().stream().findFirst())
+                .orElse(null);
     }
 
     @Override

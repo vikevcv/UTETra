@@ -4,16 +4,13 @@ import com.ute.trasua.dto.pos.*;
 import com.ute.trasua.entity.Branch;
 import com.ute.trasua.entity.PosAccount;
 import com.ute.trasua.entity.User;
-import com.ute.trasua.repository.BranchRepository;
-import com.ute.trasua.repository.PosAccountRepository;
-import com.ute.trasua.repository.UserRepository;
+import com.ute.trasua.service.BranchService;
 import com.ute.trasua.service.PosService;
 import com.ute.trasua.service.ReceiptService;
+import com.ute.trasua.service.UserService;
 import jakarta.servlet.http.HttpSession;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,16 +20,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Controller
-@RequiredArgsConstructor
 @Slf4j
 public class PosController {
 
     private final PosService posService;
     private final ReceiptService receiptService;
-    private final BranchRepository branchRepository;
-    private final UserRepository userRepository;
-    private final PosAccountRepository posAccountRepository;
+    private final BranchService branchService;
+    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+
+    public PosController(PosService posService,
+                         ReceiptService receiptService,
+                         BranchService branchService,
+                         UserService userService,
+                         PasswordEncoder passwordEncoder) {
+        this.posService = posService;
+        this.receiptService = receiptService;
+        this.branchService = branchService;
+        this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     /**
      * Màn hình đăng nhập tài khoản máy POS quầy thu ngân.
@@ -53,7 +60,7 @@ public class PosController {
                                   @RequestParam("password") String password,
                                   HttpSession session,
                                   Model model) {
-        PosAccount posAccount = posAccountRepository.findByUsername(username).orElse(null);
+        PosAccount posAccount = posService.findPosAccountByUsername(username).orElse(null);
         if (posAccount != null && posAccount.isActive() && passwordEncoder.matches(password, posAccount.getPassword())) {
             session.setAttribute("POS_ACCOUNT", posAccount);
             session.setAttribute("POS_BRANCH_ID", posAccount.getBranch() != null ? posAccount.getBranch().getId() : 1L);
@@ -62,19 +69,16 @@ public class PosController {
             return "redirect:/pos";
         }
 
-        // Hỗ trợ đăng nhập bằng tài khoản ADMIN / MANAGER
-        User user = userRepository.findByUsername(username).orElse(null);
-        if (user != null && passwordEncoder.matches(password, user.getPassword())) {
-            Branch defaultBranch = branchRepository.findAll().stream().findFirst().orElse(null);
-            PosAccount virtualAccount = PosAccount.builder()
-                    .username(user.getUsername())
-                    .counterName(user.getFullName() + " (Quản Trị)")
-                    .branch(defaultBranch)
-                    .active(true)
-                    .build();
-            session.setAttribute("POS_ACCOUNT", virtualAccount);
-            session.setAttribute("POS_BRANCH_ID", defaultBranch != null ? defaultBranch.getId() : 1L);
-            session.setAttribute("POS_COUNTER_NAME", virtualAccount.getCounterName());
+        // Hỗ trợ đăng nhập bằng tài khoản người dùng hệ thống (STAFF / POS / ADMIN / MANAGER)
+        User user = userService.findByUsername(username).orElse(null);
+        if (user != null && user.isEnabled() && !user.isLocked() && passwordEncoder.matches(password, user.getPassword())) {
+            Branch defaultBranch = branchService.getDefaultBranch();
+            PosAccount accountToUse = posService.resolvePosAccountForUser(user, defaultBranch);
+
+            session.setAttribute("POS_ACCOUNT", accountToUse);
+            session.setAttribute("POS_BRANCH_ID", accountToUse.getBranch() != null ? accountToUse.getBranch().getId() : (defaultBranch != null ? defaultBranch.getId() : 1L));
+            session.setAttribute("POS_COUNTER_NAME", accountToUse.getCounterName());
+            log.info(">>> Đăng nhập quầy POS thành công qua tài khoản người dùng: {} ({})", accountToUse.getCounterName(), user.getUsername());
             return "redirect:/pos";
         }
 
@@ -100,14 +104,14 @@ public class PosController {
     public String posCounterView(@RequestParam(value = "branchId", required = false) Long branchId,
                                  HttpSession session,
                                  Model model) {
-        List<Branch> branches = branchRepository.findAll();
+        List<Branch> branches = branchService.getAllBranchEntities();
         Branch currentBranch = null;
         if (branchId != null) {
-            currentBranch = branchRepository.findById(branchId).orElse(null);
+            currentBranch = branchService.findBranchEntityById(branchId).orElse(null);
         } else {
             Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
             if (sessionBranchId != null) {
-                currentBranch = branchRepository.findById(sessionBranchId).orElse(null);
+                currentBranch = branchService.findBranchEntityById(sessionBranchId).orElse(null);
             }
         }
         if (currentBranch == null && !branches.isEmpty()) {
@@ -117,27 +121,22 @@ public class PosController {
         Long activeBranchId = (currentBranch != null) ? currentBranch.getId() : 1L;
         session.setAttribute("POS_BRANCH_ID", activeBranchId);
 
-        // Tự động nhận diện nếu đã đăng nhập tài khoản ADMIN hoặc MANAGER qua hệ thống web
+        // Tự động nhận diện nếu đã đăng nhập tài khoản ADMIN, MANAGER hoặc STAFF/POS qua hệ thống web
         if (session.getAttribute("POS_ACCOUNT") == null) {
-            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
-                User user = userRepository.findByUsername(auth.getName()).orElse(null);
-                if (user != null && user.getRoles() != null && (user.getRoles().contains("ROLE_ADMIN") || user.getRoles().contains("ROLE_MANAGER"))) {
-                    PosAccount virtualAccount = PosAccount.builder()
-                            .username(user.getUsername())
-                            .counterName(user.getFullName() + " (Quản Trị)")
-                            .branch(currentBranch)
-                            .active(true)
-                            .build();
-                    session.setAttribute("POS_ACCOUNT", virtualAccount);
-                    session.setAttribute("POS_COUNTER_NAME", virtualAccount.getCounterName());
-                }
+            User user = userService.getCurrentAuthenticatedUser();
+            if (user != null && user.getRoles() != null && 
+                (user.getRoles().contains("ROLE_ADMIN") || user.getRoles().contains("ROLE_MANAGER") || user.getRoles().contains("ROLE_STAFF") || user.getRoles().contains("ROLE_POS"))) {
+                
+                PosAccount accountToUse = posService.resolvePosAccountForUser(user, currentBranch);
+                session.setAttribute("POS_ACCOUNT", accountToUse);
+                session.setAttribute("POS_BRANCH_ID", accountToUse.getBranch() != null ? accountToUse.getBranch().getId() : activeBranchId);
+                session.setAttribute("POS_COUNTER_NAME", accountToUse.getCounterName());
             }
         }
 
         // Cố định phiên làm việc máy POS theo chi nhánh (Kiosk mode) - Tự động liên kết tài khoản quầy của chi nhánh
         if (session.getAttribute("POS_ACCOUNT") == null) {
-            List<PosAccount> branchAccounts = posAccountRepository.findByBranchIdAndActiveTrue(activeBranchId);
+            List<PosAccount> branchAccounts = posService.getActivePosAccountsByBranch(activeBranchId);
             PosAccount posAcc = (!branchAccounts.isEmpty()) ? branchAccounts.get(0) : null;
             if (posAcc == null) {
                 posAcc = PosAccount.builder()
@@ -180,14 +179,14 @@ public class PosController {
     public String posHandoverView(@RequestParam(value = "branchId", required = false) Long branchId,
                                  HttpSession session,
                                  Model model) {
-        List<Branch> branches = branchRepository.findAll();
+        List<Branch> branches = branchService.getAllBranchEntities();
         Branch currentBranch = null;
         if (branchId != null) {
-            currentBranch = branchRepository.findById(branchId).orElse(null);
+            currentBranch = branchService.findBranchEntityById(branchId).orElse(null);
         } else {
             Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
             if (sessionBranchId != null) {
-                currentBranch = branchRepository.findById(sessionBranchId).orElse(null);
+                currentBranch = branchService.findBranchEntityById(sessionBranchId).orElse(null);
             }
         }
         if (currentBranch == null && !branches.isEmpty()) {

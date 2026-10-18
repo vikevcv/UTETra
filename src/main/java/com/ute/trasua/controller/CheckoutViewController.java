@@ -3,13 +3,13 @@ package com.ute.trasua.controller;
 import com.ute.trasua.entity.Branch;
 import com.ute.trasua.entity.Order;
 import com.ute.trasua.entity.User;
-import com.ute.trasua.repository.BranchRepository;
-import com.ute.trasua.repository.UserRepository;
+import com.ute.trasua.entity.Branch;
+import com.ute.trasua.entity.Order;
+import com.ute.trasua.entity.User;
+import com.ute.trasua.service.BranchService;
 import com.ute.trasua.service.OnlineOrderService;
-import lombok.RequiredArgsConstructor;
+import com.ute.trasua.service.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,20 +21,27 @@ import java.util.List;
  * Controller for rendering Online Checkout & Success views (Module 3 - UC05).
  */
 @Controller
-@RequiredArgsConstructor
 @Slf4j
 public class CheckoutViewController {
 
-    private final BranchRepository branchRepository;
-    private final UserRepository userRepository;
+    private final BranchService branchService;
+    private final UserService userService;
     private final OnlineOrderService onlineOrderService;
+
+    public CheckoutViewController(BranchService branchService,
+                                  UserService userService,
+                                  OnlineOrderService onlineOrderService) {
+        this.branchService = branchService;
+        this.userService = userService;
+        this.onlineOrderService = onlineOrderService;
+    }
 
     @GetMapping("/checkout")
     public String checkoutPage(Model model) {
-        List<Branch> activeBranches = branchRepository.findByActiveTrue();
+        List<Branch> activeBranches = branchService.getActiveBranchEntities();
         model.addAttribute("branches", activeBranches);
 
-        User currentUser = resolveCurrentUser();
+        User currentUser = userService.getCurrentAuthenticatedUser();
         if (currentUser != null) {
             model.addAttribute("currentUser", currentUser);
             model.addAttribute("defaultCustomerName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
@@ -57,13 +64,5 @@ public class CheckoutViewController {
             log.error("Không tìm thấy đơn hàng #{}: {}", orderCode, e.getMessage());
             return "redirect:/cart?error=order_not_found";
         }
-    }
-
-    private User resolveCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            return userRepository.findByUsername(auth.getName()).orElse(null);
-        }
-        return null;
     }
 }
