@@ -115,6 +115,13 @@
               <span>Khuyến Mãi Chi Nhánh</span>
             </a>
           </li>
+          <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/branch/complaints${branchQuery}" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/complaints') ? 'active' : ''}">
+              <i class="fa-solid fa-headset text-danger"></i>
+              <span>Khiếu Nại Đơn Hàng</span>
+            </a>
+          </li>
         </ul>
 
         <!-- Lối tắt Khách Hàng -->

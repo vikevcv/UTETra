@@ -22,6 +22,7 @@ public class OrderComplaintDto implements Serializable {
     private String orderCode;
     private String customerName;
     private String customerPhone;
+    private Long branchId;
     private String branchName;
     private String complaintType;
     private String complaintTypeLabel;

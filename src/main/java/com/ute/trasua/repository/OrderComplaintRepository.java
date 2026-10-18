@@ -19,4 +19,8 @@ public interface OrderComplaintRepository extends JpaRepository<OrderComplaint, 
     List<OrderComplaint> findAllByOrderByCreatedAtDesc();
 
     List<OrderComplaint> findByStatusOrderByCreatedAtDesc(String status);
+
+    List<OrderComplaint> findByOrder_Branch_IdOrderByCreatedAtDesc(Long branchId);
+
+    List<OrderComplaint> findByOrder_Branch_IdAndStatusOrderByCreatedAtDesc(Long branchId, String status);
 }

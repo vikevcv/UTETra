@@ -15,5 +15,7 @@ public interface OrderComplaintService {
 
     List<OrderComplaintDto> getAllComplaints(String status);
 
+    List<OrderComplaintDto> getComplaintsByBranch(Long branchId, String status);
+
     OrderComplaintDto resolveComplaint(Long complaintId, ComplaintResolveRequest request, User adminUser);
 }

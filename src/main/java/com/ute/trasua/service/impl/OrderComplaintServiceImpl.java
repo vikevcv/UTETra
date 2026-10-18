@@ -30,6 +30,7 @@ public class OrderComplaintServiceImpl implements OrderComplaintService {
 
     private final OrderComplaintRepository orderComplaintRepository;
     private final OrderRepository orderRepository;
+    private final com.ute.trasua.repository.BranchRepository branchRepository;
     private final PromotionService promotionService;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -120,6 +121,21 @@ public class OrderComplaintServiceImpl implements OrderComplaintService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<OrderComplaintDto> getComplaintsByBranch(Long branchId, String status) {
+        if (branchId == null) {
+            return Collections.emptyList();
+        }
+        List<OrderComplaint> list;
+        if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
+            list = orderComplaintRepository.findByOrder_Branch_IdAndStatusOrderByCreatedAtDesc(branchId, status.trim().toUpperCase());
+        } else {
+            list = orderComplaintRepository.findByOrder_Branch_IdOrderByCreatedAtDesc(branchId);
+        }
+        return list.stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public OrderComplaintDto resolveComplaint(Long complaintId, ComplaintResolveRequest request, User adminUser) {
         if (complaintId == null) {
@@ -134,6 +150,24 @@ public class OrderComplaintServiceImpl implements OrderComplaintService {
 
         if (!"PENDING".equalsIgnoreCase(complaint.getStatus())) {
             throw new IllegalStateException("Khiếu nại này đã được xử lý trước đó (trạng thái hiện tại: " + complaint.getStatus() + ").");
+        }
+
+        // Kiểm tra quyền hạn nếu là Quản lý chi nhánh (không phải ADMIN)
+        if (adminUser != null && adminUser.getRoles() != null) {
+            boolean isAdmin = adminUser.getRoles().stream()
+                    .anyMatch(r -> "ADMIN".equalsIgnoreCase(r) || "ROLE_ADMIN".equalsIgnoreCase(r));
+            if (!isAdmin) {
+                var branchOpt = branchRepository.findFirstByManagerUsername(adminUser.getUsername());
+                if (branchOpt.isPresent()) {
+                    Long managerBranchId = branchOpt.get().getId();
+                    Long complaintBranchId = (complaint.getOrder() != null && complaint.getOrder().getBranch() != null)
+                            ? complaint.getOrder().getBranch().getId()
+                            : null;
+                    if (complaintBranchId == null || !complaintBranchId.equals(managerBranchId)) {
+                        throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền xử lý khiếu nại của chi nhánh khác.");
+                    }
+                }
+            }
         }
 
         String action = request.getAction().trim().toUpperCase();
@@ -182,6 +216,7 @@ public class OrderComplaintServiceImpl implements OrderComplaintService {
                 .orderCode(order != null ? order.getOrderCode() : "")
                 .customerName(complaint.getCustomerName())
                 .customerPhone(complaint.getCustomerPhone())
+                .branchId(order != null && order.getBranch() != null ? order.getBranch().getId() : null)
                 .branchName(order != null && order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh UTETra")
                 .complaintType(complaint.getComplaintType())
                 .complaintTypeLabel(typeLabel)
