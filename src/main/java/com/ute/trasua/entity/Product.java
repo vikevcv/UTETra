@@ -44,6 +44,14 @@ public class Product {
     @Builder.Default
     private String status = "ACTIVE";
 
+    @Column(name = "average_rating")
+    @Builder.Default
+    private Double averageRating = 5.0;
+
+    @Column(name = "review_count")
+    @Builder.Default
+    private Integer reviewCount = 0;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

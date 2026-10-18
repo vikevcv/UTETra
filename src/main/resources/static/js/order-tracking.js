@@ -285,6 +285,12 @@ function handleOrderStatusEvent(event) {
       cancelWrapper.style.display = "none";
     }
 
+    const boxActions = document.getElementById("boxCompletedOrderActions");
+    if (boxActions) {
+      boxActions.classList.add("zen-hidden");
+      boxActions.style.display = "none";
+    }
+
     updateStepperUI(-1);
     playNotificationSound();
     return;
@@ -344,6 +350,14 @@ function handleOrderStatusEvent(event) {
 
   // 2. Cập nhật Stepper
   updateStepperUI(step);
+
+  // 2.5. Hiển thị khu vực Đánh Giá & Khiếu Nại khi đơn đã hoàn tất
+  const boxActions = document.getElementById("boxCompletedOrderActions");
+  if (boxActions && (step === 4 || event.status === "COMPLETED" || event.status === "DELIVERED")) {
+    boxActions.classList.remove("zen-hidden");
+    boxActions.style.display = "block";
+    if (cancelWrapper) cancelWrapper.style.display = "none";
+  }
 
   // 3. Cập nhật Driver Card nếu có thông tin tài xế
   if (event.driverName) {
@@ -671,6 +685,241 @@ function copyVoucherToClipboard() {
   });
 }
 
+// ==================== UC07: ĐÁNH GIÁ SẢN PHẨM & KHIẾU NẠI ĐƠN HÀNG ====================
+
+function setStarRating(detailId, val) {
+  const ratingInput = document.getElementById("ratingInput_" + detailId);
+  if (ratingInput) {
+    ratingInput.value = val;
+  }
+  const group = document.querySelector(`.star-rating-group[data-detail-id="${detailId}"]`);
+  if (group) {
+    const stars = group.querySelectorAll(".star-icon");
+    stars.forEach(star => {
+      const starVal = parseInt(star.getAttribute("data-val"), 10);
+      if (starVal <= val) {
+        star.classList.add("active");
+      } else {
+        star.classList.remove("active");
+      }
+    });
+  }
+}
+
+function openProductReviewModal() {
+  const modalEl = document.getElementById("modalProductReview");
+  if (!modalEl) return;
+  const errorMsg = document.getElementById("reviewErrorMsg");
+  if (errorMsg) {
+    errorMsg.innerText = "";
+    errorMsg.style.display = "none";
+  }
+  const bs = getBsModalInstance(modalEl);
+  if (bs) bs.show();
+}
+
+async function submitProductReviews() {
+  const codeEl = document.getElementById("wsOrderCode");
+  const orderCode = codeEl ? codeEl.value.trim() : "";
+  if (!orderCode) {
+    alert("Không tìm thấy thông tin đơn hàng.");
+    return;
+  }
+
+  const reviewCards = document.querySelectorAll(".review-item-card");
+  if (!reviewCards || reviewCards.length === 0) return;
+
+  const items = [];
+  reviewCards.forEach(card => {
+    const detailId = card.getAttribute("data-detail-id");
+    const productId = card.getAttribute("data-product-id");
+    const ratingInput = document.getElementById("ratingInput_" + detailId);
+    const commentInput = document.getElementById("commentInput_" + detailId);
+
+    if (ratingInput && commentInput && !commentInput.disabled) {
+      items.push({
+        orderDetailId: parseInt(detailId, 10),
+        productId: parseInt(productId, 10),
+        rating: parseInt(ratingInput.value || "5", 10),
+        comment: commentInput.value.trim()
+      });
+    }
+  });
+
+  if (items.length === 0) {
+    alert("Tất cả phẩm trà trong đơn đã được đánh giá.");
+    return;
+  }
+
+  const btnSubmit = document.getElementById("btnSubmitReviews");
+  const errorMsg = document.getElementById("reviewErrorMsg");
+  if (btnSubmit) btnSubmit.disabled = true;
+  if (errorMsg) errorMsg.style.display = "none";
+
+  try {
+    const res = await fetch(`${getContextPath()}/api/v1/orders/${encodeURIComponent(orderCode)}/reviews`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reviews: items, items: items })
+    });
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = { success: false, message: text || "Phản hồi không hợp lệ từ máy chủ." };
+    }
+    if (res.ok && data.success) {
+      const modalEl = document.getElementById("modalProductReview");
+      const bs = getBsModalInstance(modalEl);
+      if (bs) bs.hide();
+
+      const btnOpen = document.getElementById("btnOpenReviewModal");
+      if (btnOpen) {
+        btnOpen.innerHTML = '<i class="fa-solid fa-star text-warning me-1"></i> Xem Đánh Giá';
+      }
+      if (btnSubmit) btnSubmit.style.display = "none";
+
+      reviewCards.forEach(card => {
+        const detailId = card.getAttribute("data-detail-id");
+        const commentInput = document.getElementById("commentInput_" + detailId);
+        if (commentInput) commentInput.disabled = true;
+      });
+
+      alert("Cảm ơn bạn đã gửi đánh giá phẩm trà!");
+    } else {
+      if (errorMsg) {
+        errorMsg.innerText = data.message || "Không thể gửi đánh giá lúc này.";
+        errorMsg.style.display = "block";
+      } else {
+        alert(data.message || "Gửi đánh giá thất bại.");
+      }
+    }
+  } catch (err) {
+    if (errorMsg) {
+      errorMsg.innerText = "Lỗi kết nối: " + err.message;
+      errorMsg.style.display = "block";
+    } else {
+      alert("Lỗi kết nối: " + err.message);
+    }
+  } finally {
+    if (btnSubmit) btnSubmit.disabled = false;
+  }
+}
+
+function openOrderComplaintModal() {
+  const modalEl = document.getElementById("modalOrderComplaint");
+  if (!modalEl) return;
+  const errorMsg = document.getElementById("complaintErrorMsg");
+  if (errorMsg) {
+    errorMsg.innerText = "";
+    errorMsg.style.display = "none";
+  }
+  const textDesc = document.getElementById("textComplaintDesc");
+  if (textDesc) textDesc.value = "";
+  const bs = getBsModalInstance(modalEl);
+  if (bs) bs.show();
+}
+
+async function submitOrderComplaint() {
+  const codeEl = document.getElementById("wsOrderCode");
+  const orderCode = codeEl ? codeEl.value.trim() : "";
+  if (!orderCode) {
+    alert("Không tìm thấy thông tin đơn hàng.");
+    return;
+  }
+
+  const selectType = document.getElementById("selectComplaintType");
+  const textDesc = document.getElementById("textComplaintDesc");
+  const complaintType = selectType ? selectType.value : "KHAC";
+  const description = textDesc ? textDesc.value.trim() : "";
+
+  const errorMsg = document.getElementById("complaintErrorMsg");
+  if (!description) {
+    if (errorMsg) {
+      errorMsg.innerText = "Vui lòng mô tả ngắn gọn sự cố bạn gặp phải.";
+      errorMsg.style.display = "block";
+    } else {
+      alert("Vui lòng mô tả sự cố gặp phải.");
+    }
+    return;
+  }
+
+  const btnSubmit = document.getElementById("btnSubmitComplaint");
+  if (btnSubmit) btnSubmit.disabled = true;
+  if (errorMsg) errorMsg.style.display = "none";
+
+  try {
+    const res = await fetch(`${getContextPath()}/api/v1/orders/${encodeURIComponent(orderCode)}/complaints`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ complaintType: complaintType, description: description })
+    });
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = { success: false, message: text || "Phản hồi không hợp lệ từ máy chủ." };
+    }
+    if (res.ok && data.success) {
+      const modalEl = document.getElementById("modalOrderComplaint");
+      const bs = getBsModalInstance(modalEl);
+      if (bs) bs.hide();
+
+      const btnOpen = document.getElementById("btnOpenComplaintModal");
+      if (btnOpen) btnOpen.style.display = "none";
+
+      const noticeWrapper = document.getElementById("boxComplaintNoticeWrapper");
+      if (noticeWrapper) {
+        noticeWrapper.innerHTML = `
+          <div class="alert alert-warning py-2 px-3 mt-3 d-flex align-items-center justify-content-between mb-0" style="border-radius:8px; font-size:0.86rem;">
+            <div><i class="fa-solid fa-clock-rotate-left me-1"></i> Khiếu nại đang chờ xử lý: <strong>${data.complaint ? data.complaint.typeLabel : "Đang xử lý"}</strong></div>
+          </div>
+        `;
+        noticeWrapper.style.display = "block";
+      }
+
+      alert("Khiếu nại của bạn đã được gửi tới Quản lý. Chúng tôi sẽ kiểm tra và phản hồi sớm nhất!");
+    } else {
+      if (errorMsg) {
+        errorMsg.innerText = data.message || "Không thể gửi khiếu nại lúc này.";
+        errorMsg.style.display = "block";
+      } else {
+        alert(data.message || "Gửi khiếu nại thất bại.");
+      }
+    }
+  } catch (err) {
+    if (errorMsg) {
+      errorMsg.innerText = "Lỗi kết nối: " + err.message;
+      errorMsg.style.display = "block";
+    } else {
+      alert("Lỗi kết nối: " + err.message);
+    }
+  } finally {
+    if (btnSubmit) btnSubmit.disabled = false;
+  }
+}
+
+function onStarClick(starEl) {
+  if (!starEl) return;
+  const group = starEl.closest(".star-rating-group");
+  if (!group) return;
+  const detailId = group.getAttribute("data-detail-id");
+  const val = parseInt(starEl.getAttribute("data-val") || "5", 10);
+  setStarRating(detailId, val);
+}
+
+function copyComplaintVoucher(btnEl) {
+  const voucher = btnEl ? btnEl.getAttribute("data-voucher") : "";
+  if (!voucher) return;
+  navigator.clipboard.writeText(voucher).then(() => {
+    alert("Đã sao chép mã voucher bồi hoàn: " + voucher);
+  }).catch(() => {
+    prompt("Mã voucher bồi hoàn của bạn:", voucher);
+  });
+}
+
 // Expose toàn cục để JSP và các module luôn gọi được
 window.getBsModalInstance = getBsModalInstance;
 window.openCancelOrderModal = openCancelOrderModal;
@@ -680,3 +929,11 @@ window.submitCancelOrder = submitCancelOrder;
 window.copyVoucherToClipboard = copyVoucherToClipboard;
 window.handleOrderStatusEvent = handleOrderStatusEvent;
 window.applyStatusUpdate = handleOrderStatusEvent;
+window.setStarRating = setStarRating;
+window.onStarClick = onStarClick;
+window.copyComplaintVoucher = copyComplaintVoucher;
+window.openProductReviewModal = openProductReviewModal;
+window.submitProductReviews = submitProductReviews;
+window.openOrderComplaintModal = openOrderComplaintModal;
+window.submitOrderComplaint = submitOrderComplaint;
+

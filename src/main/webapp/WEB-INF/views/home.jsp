@@ -80,6 +80,17 @@
               </div>
               <div class="reserve-body">
                 <h4 class="reserve-item-title">${p.name}</h4>
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:0.82rem; color:var(--text-muted);">
+                  <c:choose>
+                    <c:when test="${p.reviewCount != null && p.reviewCount > 0}">
+                      <span style="color:#D97706; font-weight:700;">★ <fmt:formatNumber value="${p.averageRating}" pattern="0.0"/></span>
+                      <span>(${p.reviewCount})</span>
+                    </c:when>
+                    <c:otherwise>
+                      <span style="color:var(--text-muted); font-size:0.8rem; font-style:italic;">Không có đánh giá</span>
+                    </c:otherwise>
+                  </c:choose>
+                </div>
                 <p class="reserve-desc">${p.description}</p>
                 <div class="reserve-foot">
                   <span class="reserve-price"><fmt:formatNumber value="${p.basePrice}" pattern="#,###"/> đ</span>

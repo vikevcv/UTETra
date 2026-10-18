@@ -408,11 +408,12 @@ public class PromotionServiceImpl implements PromotionService {
         int retrySave = 0;
         while (retrySave < 5) {
             String candidateCode = generateUniqueVoucherCode(10);
+            int percent = rate.multiply(new BigDecimal("100")).setScale(0, RoundingMode.HALF_UP).intValue();
             try {
                 Promotion promo = Promotion.builder()
                         .voucherCode(candidateCode)
-                        .title("Bồi Hoàn 80% Đơn #" + order.getOrderCode())
-                        .description("Voucher bồi hoàn 80% giá trị đơn hàng trực tuyến #" + order.getOrderCode() + ". Hạn dùng " + expiryDays + " ngày.")
+                        .title("Bồi Hoàn " + percent + "% Đơn #" + order.getOrderCode())
+                        .description("Voucher bồi hoàn " + percent + "% giá trị đơn hàng trực tuyến #" + order.getOrderCode() + ". Hạn dùng " + expiryDays + " ngày.")
                         .discountType("FIXED_AMOUNT")
                         .discountValue(compensationAmount)
                         .maxDiscountAmount(compensationAmount)

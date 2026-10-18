@@ -241,6 +241,25 @@
       margin-top: 3px;
     }
 
+    /* Star Rating Box (UC07) */
+    .star-rating-group {
+      display: inline-flex;
+      gap: 3px;
+      font-size: 1.35rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .star-rating-group .star-icon {
+      color: #D1D5DB;
+      transition: color 0.15s ease, transform 0.1s ease;
+    }
+    .star-rating-group .star-icon:hover {
+      transform: scale(1.15);
+    }
+    .star-rating-group .star-icon.active {
+      color: #F59E0B;
+    }
+
     /* Receipt Rows */
     .receipt-row {
       display: flex;
@@ -305,6 +324,9 @@
     .btn-cancel-disabled {
       opacity: 0.5 !important;
       cursor: not-allowed !important;
+    }
+    .zen-hidden {
+      display: none !important;
     }
   </style>
 </head>
@@ -480,6 +502,50 @@
                     </c:choose>
                   </div>
                 </c:if>
+
+                <!-- KHU VỰC ĐÁNH GIÁ & KHIẾU NẠI KHI ĐƠN HOÀN TẤT -->
+                <div id="boxCompletedOrderActions" class="${(tracking.status == 'COMPLETED' || tracking.status == 'DELIVERED') ? '' : 'zen-hidden'}">
+                  <!-- Banner Trạng Thái Khiếu Nại (nếu có) -->
+                  <div id="boxComplaintNoticeWrapper" class="${tracking.hasComplaint ? '' : 'zen-hidden'}">
+                    <c:choose>
+                      <c:when test="${tracking.complaintStatus == 'PENDING'}">
+                        <div class="alert alert-warning py-2 px-3 mt-3 d-flex align-items-center justify-content-between mb-0" style="border-radius:8px; font-size:0.86rem;">
+                          <div><i class="fa-solid fa-clock-rotate-left me-1"></i> Khiếu nại đang chờ xử lý: <strong>${tracking.complaintTypeLabel}</strong></div>
+                        </div>
+                      </c:when>
+                      <c:when test="${tracking.complaintStatus == 'RESOLVED'}">
+                        <div class="alert alert-success py-2 px-3 mt-3 mb-0" style="border-radius:8px; font-size:0.86rem;">
+                          <div class="d-flex justify-content-between align-items-center">
+                            <div><i class="fa-solid fa-circle-check me-1"></i> Khiếu nại đã giải quyết: Tặng voucher <strong>${tracking.complaintVoucherCode}</strong></div>
+                            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" data-voucher="${tracking.complaintVoucherCode}" onclick="copyComplaintVoucher(this)">Sao Chép</button>
+                          </div>
+                          <c:if test="${not empty tracking.complaintAdminResponse}">
+                            <div class="small mt-1 text-muted">${tracking.complaintAdminResponse}</div>
+                          </c:if>
+                        </div>
+                      </c:when>
+                      <c:when test="${tracking.complaintStatus == 'REJECTED'}">
+                        <div class="alert alert-secondary py-2 px-3 mt-3 mb-0" style="border-radius:8px; font-size:0.86rem;">
+                          <i class="fa-solid fa-circle-xmark text-danger me-1"></i> Khiếu nại đã đóng: ${not empty tracking.complaintAdminResponse ? tracking.complaintAdminResponse : 'Không đủ điều kiện bồi hoàn'}
+                        </div>
+                      </c:when>
+                    </c:choose>
+                  </div>
+
+                  <!-- 2 Nút Đánh Giá & Khiếu Nại Tối Giản -->
+                  <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border-hairline); display:flex; justify-content:flex-end; gap:8px;">
+                    <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold" 
+                            id="btnOpenReviewModal" 
+                            onclick="openProductReviewModal()">
+                      <i class="fa-solid fa-star text-warning me-1"></i> ${tracking.allReviewed ? 'Xem Đánh Giá' : 'Đánh Giá'}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ${tracking.hasComplaint ? 'zen-hidden' : ''}" 
+                            id="btnOpenComplaintModal" 
+                            onclick="openOrderComplaintModal()">
+                      <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> Khiếu Nại
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <!-- THẺ TÀI XẾ (DRIVER CARD - HIỆN KHI ĐÃ CÓ TÀI XẾ) -->
@@ -852,6 +918,99 @@
 
           <button type="button" class="btn btn-dark w-100" data-bs-dismiss="modal" style="background:var(--zen-sumi); border-radius:8px; padding:10px 0; font-weight:600;">
             Đã Lưu Mã & Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ĐÁNH GIÁ SẢN PHẨM (UC07) -->
+  <div class="modal fade" id="modalProductReview" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:12px; border:none; box-shadow:0 12px 35px rgba(0,0,0,0.18);">
+        <div class="modal-header" style="border-bottom:1px solid var(--border-hairline); padding:16px 20px;">
+          <h5 class="modal-title fw-bold" style="color:var(--zen-sumi);">
+            <i class="fa-solid fa-star text-warning me-2"></i>Đánh Giá Phẩm Trà
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" style="padding:20px; max-height:480px; overflow-y:auto;">
+          <div id="reviewItemsContainer">
+            <c:forEach var="item" items="${tracking.items}">
+              <div class="review-item-card p-3 mb-3" style="background:#FAF8F5; border-radius:8px;" data-detail-id="${item.id}" data-product-id="${item.productId}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <strong style="color:var(--zen-sumi); font-size:0.95rem;">${item.productName}</strong>
+                  <span class="small text-muted">${item.sizeName}</span>
+                </div>
+                <!-- 5 sao vàng tương tác -->
+                <div class="mb-2">
+                  <label class="small text-muted me-2">Chấm điểm:</label>
+                  <c:set var="uRating" value="${item.userRating != null ? item.userRating : 5}" />
+                  <div class="star-rating-group" data-detail-id="${item.id}">
+                    <span class="star-icon ${uRating >= 1 ? 'active' : ''}" data-val="1" onclick="onStarClick(this)">★</span>
+                    <span class="star-icon ${uRating >= 2 ? 'active' : ''}" data-val="2" onclick="onStarClick(this)">★</span>
+                    <span class="star-icon ${uRating >= 3 ? 'active' : ''}" data-val="3" onclick="onStarClick(this)">★</span>
+                    <span class="star-icon ${uRating >= 4 ? 'active' : ''}" data-val="4" onclick="onStarClick(this)">★</span>
+                    <span class="star-icon ${uRating >= 5 ? 'active' : ''}" data-val="5" onclick="onStarClick(this)">★</span>
+                  </div>
+                  <input type="hidden" id="ratingInput_${item.id}" value="${uRating}">
+                </div>
+                <!-- Nhận xét ngắn -->
+                <div>
+                  <input type="text" class="form-control form-control-sm" id="commentInput_${item.id}" 
+                         value="${item.userComment != null ? item.userComment : ''}" 
+                         <c:if test="${item.isReviewed}">disabled="disabled"</c:if>
+                         placeholder="Nhận xét về hương vị (tùy chọn)..." style="font-size:0.85rem; border-radius:6px;">
+                </div>
+              </div>
+            </c:forEach>
+          </div>
+          <div id="reviewErrorMsg" class="text-danger small" style="display:none;"></div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid var(--border-hairline); padding:12px 20px;">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Đóng</button>
+          <c:if test="${!tracking.allReviewed}">
+            <button type="button" class="btn btn-sm btn-dark" id="btnSubmitReviews" onclick="submitProductReviews()" style="background:var(--zen-sumi); font-weight:600;">
+              Gửi Đánh Giá
+            </button>
+          </c:if>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL KHIẾU NẠI ĐƠN HÀNG -->
+  <div class="modal fade" id="modalOrderComplaint" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:12px; border:none; box-shadow:0 12px 35px rgba(0,0,0,0.18);">
+        <div class="modal-header" style="border-bottom:1px solid var(--border-hairline); padding:16px 20px;">
+          <h5 class="modal-title fw-bold" style="color:var(--zen-sumi);">
+            <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Khiếu Nại Đơn Hàng
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" style="padding:20px;">
+          <div class="mb-3">
+            <label class="form-label small fw-bold" style="color:var(--zen-sumi);">Loại sự cố:</label>
+            <select class="form-select form-select-sm" id="selectComplaintType" style="border-radius:6px; font-size:0.88rem;">
+              <option value="SAI_MON">Giao sai món / Sai đường đá</option>
+              <option value="THIEU_MON">Thiếu món / Thiếu topping</option>
+              <option value="HU_HAI">Ly trà bị đổ vỡ / Hư hỏng khi vận chuyển</option>
+              <option value="CHAT_LUONG">Chất lượng phẩm trà không đạt</option>
+              <option value="THAI_DO">Thái độ phục vụ của tài xế hoặc quầy</option>
+              <option value="KHAC">Sự cố khác</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold" style="color:var(--zen-sumi);">Mô tả sự cố:</label>
+            <textarea class="form-control" id="textComplaintDesc" rows="3" placeholder="Vui lòng mô tả ngắn gọn vấn đề bạn gặp phải..." style="font-size:0.88rem; border-radius:6px;"></textarea>
+          </div>
+          <div id="complaintErrorMsg" class="text-danger small" style="display:none;"></div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid var(--border-hairline); padding:12px 20px;">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-sm btn-danger" id="btnSubmitComplaint" onclick="submitOrderComplaint()" style="font-weight:600;">
+            Gửi Khiếu Nại
           </button>
         </div>
       </div>

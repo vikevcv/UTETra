@@ -111,10 +111,17 @@
             </a>
           </li>
           <li class="sidebar-item">
-            <a href="${pageContext.request.contextPath}/admin/reports" 
-               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/reports') ? 'active' : ''}">
-              <i class="fa-solid fa-file-excel"></i>
-              <span>Báo Cáo Doanh Thu</span>
+            <a href="${pageContext.request.contextPath}/admin/complaints" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/complaints') ? 'active' : ''}">
+              <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+              <span>Khiếu Nại Đơn Hàng</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/admin/reviews" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/reviews') ? 'active' : ''}">
+              <i class="fa-solid fa-star text-warning"></i>
+              <span>Đánh Giá Phẩm Trà</span>
             </a>
           </li>
         </ul>
