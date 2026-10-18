@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,6 +76,55 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.findByCategoryId(categoryId).stream()
                 .map(ProductResponse::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductResponse> filterProducts(String keyword, Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, String sortBy) {
+        String kw = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        List<Product> products = productRepository.filterActiveProducts(kw, categoryId, minPrice, maxPrice);
+
+        List<ProductResponse> responses = products.stream()
+                .map(ProductResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        if (sortBy != null && !sortBy.trim().isEmpty()) {
+            switch (sortBy.toLowerCase().trim()) {
+                case "price_asc":
+                    responses.sort(Comparator.comparing(ProductResponse::getBasePrice, Comparator.nullsLast(BigDecimal::compareTo)));
+                    break;
+                case "price_desc":
+                    responses.sort(Comparator.comparing(ProductResponse::getBasePrice, Comparator.nullsLast(BigDecimal::compareTo)).reversed());
+                    break;
+                case "rating":
+                    responses.sort((p1, p2) -> {
+                        int c1 = p1.getReviewCount() != null ? p1.getReviewCount() : 0;
+                        int c2 = p2.getReviewCount() != null ? p2.getReviewCount() : 0;
+                        boolean hasReviews1 = c1 > 0;
+                        boolean hasReviews2 = c2 > 0;
+
+                        // Sản phẩm có đánh giá luôn xếp trước sản phẩm không có đánh giá
+                        if (hasReviews1 && !hasReviews2) return -1;
+                        if (!hasReviews1 && hasReviews2) return 1;
+                        if (!hasReviews1 && !hasReviews2) return 0;
+
+                        // Cả hai đều có đánh giá: so sánh số sao trung bình giảm dần
+                        double r1 = p1.getAverageRating() != null ? p1.getAverageRating() : 0.0;
+                        double r2 = p2.getAverageRating() != null ? p2.getAverageRating() : 0.0;
+                        int comp = Double.compare(r2, r1);
+                        if (comp != 0) return comp;
+
+                        // Nếu bằng sao: món có nhiều lượt đánh giá hơn xếp trước
+                        return Integer.compare(c2, c1);
+                    });
+                    break;
+                default:
+                    // Giữ thứ tự ưu tiên mặc định từ query
+                    break;
+            }
+        }
+
+        return responses;
     }
 
     @Override

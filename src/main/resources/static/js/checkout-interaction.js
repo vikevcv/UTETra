@@ -403,8 +403,9 @@ async function submitOnlineOrder() {
     clearStoredCart();
     removeStoredVoucher();
 
-    // Chuyển hướng sang trang xác nhận đơn
-    window.location.href = `${getContextPath()}/checkout/success?orderCode=${data.orderCode}`;
+    // Chuyển hướng sang trang chờ thanh toán VietQR PayOS (UC06)
+    const targetUrl = data.paymentUrl ? `${getContextPath()}${data.paymentUrl}` : `${getContextPath()}/checkout/payment?orderCode=${data.orderCode}`;
+    window.location.href = targetUrl;
 
   } catch (err) {
     alert("Không thể hoàn tất đơn hàng: " + err.message);

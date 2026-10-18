@@ -137,6 +137,31 @@ public class Order {
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
+    // Các trường phục vụ thanh toán PayOS VietQR (UC06)
+    @Column(name = "payos_order_code", unique = true)
+    private Long payosOrderCode;
+
+    @Column(name = "payos_payment_link_id", length = 100)
+    private String payosPaymentLinkId;
+
+    @Column(name = "payos_checkout_url", columnDefinition = "TEXT")
+    private String payosCheckoutUrl;
+
+    @Column(name = "payos_qr_code", columnDefinition = "TEXT")
+    private String payosQrCode;
+
+    @Column(name = "payos_account_number", length = 50)
+    private String payosAccountNumber;
+
+    @Column(name = "payos_account_name", length = 150)
+    private String payosAccountName;
+
+    @Column(name = "payos_bin", length = 20)
+    private String payosBin;
+
+    @Column(name = "payment_expired_at")
+    private LocalDateTime paymentExpiredAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

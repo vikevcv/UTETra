@@ -37,4 +37,9 @@ public class OrderItemTrackingDto implements Serializable {
     private BigDecimal unitPrice;
     private BigDecimal subtotal;
     private String note;
+
+    @Builder.Default
+    private Boolean isReviewed = false;
+    private Integer userRating;
+    private String userComment;
 }

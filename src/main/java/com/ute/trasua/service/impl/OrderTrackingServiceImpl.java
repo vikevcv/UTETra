@@ -14,7 +14,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -27,6 +30,8 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
 
     private final OrderRepository orderRepository;
     private final com.ute.trasua.repository.UserRepository userRepository;
+    private final com.ute.trasua.repository.ProductReviewRepository productReviewRepository;
+    private final com.ute.trasua.repository.OrderComplaintRepository orderComplaintRepository;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss - dd/MM/yyyy");
 
@@ -217,6 +222,20 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
 
         // Items breakdown
         List<OrderItemTrackingDto> items = new ArrayList<>();
+        Map<Long, com.ute.trasua.entity.ProductReview> reviewMap = new HashMap<>();
+        try {
+            if (productReviewRepository != null && order.getId() != null) {
+                List<com.ute.trasua.entity.ProductReview> revList = productReviewRepository.findByOrderId(order.getId());
+                for (com.ute.trasua.entity.ProductReview r : revList) {
+                    if (r.getOrderDetail() != null) {
+                        reviewMap.put(r.getOrderDetail().getId(), r);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi tải đánh giá đơn {}: {}", order.getOrderCode(), e.getMessage());
+        }
+
         if (order.getOrderDetails() != null) {
             for (OrderDetail d : order.getOrderDetails()) {
                 List<String> topNames = new ArrayList<>();
@@ -228,6 +247,9 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
 
                 String imgUrl = (d.getProduct() != null && d.getProduct().getImageUrl() != null)
                         ? d.getProduct().getImageUrl() : null;
+
+                com.ute.trasua.entity.ProductReview rev = reviewMap.get(d.getId());
+                boolean isRev = (rev != null);
 
                 items.add(OrderItemTrackingDto.builder()
                         .id(d.getId())
@@ -242,8 +264,42 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                         .unitPrice(d.getUnitPrice())
                         .subtotal(d.getSubtotal())
                         .note(d.getNote())
+                        .isReviewed(isRev)
+                        .userRating(rev != null ? rev.getRating() : null)
+                        .userComment(rev != null ? rev.getComment() : null)
                         .build());
             }
+        }
+
+        boolean allReviewed = !items.isEmpty() && items.stream().allMatch(it -> Boolean.TRUE.equals(it.getIsReviewed()));
+
+        // Complaint breakdown
+        boolean hasComplaint = false;
+        String complaintStatus = null;
+        String complaintType = null;
+        String complaintTypeLabel = null;
+        String complaintDescription = null;
+        String complaintVoucherCode = null;
+        BigDecimal complaintCompensationAmount = null;
+        String complaintAdminResponse = null;
+
+        try {
+            if (orderComplaintRepository != null && order.getId() != null) {
+                Optional<com.ute.trasua.entity.OrderComplaint> cOpt = orderComplaintRepository.findByOrderId(order.getId());
+                if (cOpt.isPresent()) {
+                    com.ute.trasua.entity.OrderComplaint c = cOpt.get();
+                    hasComplaint = true;
+                    complaintStatus = c.getStatus();
+                    complaintType = c.getComplaintType();
+                    complaintTypeLabel = mapComplaintTypeLabel(c.getComplaintType());
+                    complaintDescription = c.getDescription();
+                    complaintVoucherCode = c.getCompensationVoucherCode();
+                    complaintCompensationAmount = c.getCompensationAmount();
+                    complaintAdminResponse = c.getAdminResponse();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi tải khiếu nại đơn {}: {}", order.getOrderCode(), e.getMessage());
         }
 
         String formattedTime = order.getCreatedAt() != null
@@ -302,6 +358,27 @@ public class OrderTrackingServiceImpl implements OrderTrackingService {
                 .finalAmount(order.getFinalAmount())
                 .estimatedCompensationAmount(estimatedCompensationAmount)
                 .items(items)
+                .allReviewed(allReviewed)
+                .hasComplaint(hasComplaint)
+                .complaintStatus(complaintStatus)
+                .complaintType(complaintType)
+                .complaintTypeLabel(complaintTypeLabel)
+                .complaintDescription(complaintDescription)
+                .complaintVoucherCode(complaintVoucherCode)
+                .complaintCompensationAmount(complaintCompensationAmount)
+                .complaintAdminResponse(complaintAdminResponse)
                 .build();
+    }
+
+    private String mapComplaintTypeLabel(String type) {
+        if (type == null) return "Sự cố khác";
+        switch (type.toUpperCase()) {
+            case "SAI_MON": return "Giao sai món / Sai đường đá";
+            case "THIEU_MON": return "Thiếu món / Thiếu topping";
+            case "HU_HAI": return "Ly trà bị đổ vỡ / Hư hỏng";
+            case "CHAT_LUONG": return "Chất lượng không đạt";
+            case "THAI_DO": return "Thái độ phục vụ";
+            default: return "Lý do khác";
+        }
     }
 }

@@ -323,6 +323,56 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
         sendToHandover(branchId != null ? branchId : 1L, event);
     }
 
+    @Override
+    public void broadcastOnlineOrderPaid(Order order) {
+        if (order == null) return;
+        Long branchId = order.getBranch() != null ? order.getBranch().getId() : 1L;
+
+        OrderStatusEventDto event = OrderStatusEventDto.builder()
+                .eventType("PAYMENT_SUCCESS")
+                .orderId(order.getId())
+                .orderCode(order.getOrderCode())
+                .branchId(branchId)
+                .branchName(order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh UTETra")
+                .dailyQueueNumber(order.getDailyQueueNumber())
+                .status(order.getStatus())
+                .statusLabel("Đã Thanh Toán — Chờ Pha Chế")
+                .statusStep(1)
+                .statusTitle("Thanh Toán Trực Tuyến Thành Công")
+                .statusMessage("Đơn hàng đã được thanh toán 100% qua PayOS và đang chuyển đến quầy pha chế.")
+                .timestamp(LocalDateTime.now().format(TIME_FORMATTER))
+                .build();
+
+        // 1. Gửi tới kênh riêng của khách hàng (/topic/order/{orderCode})
+        sendToCustomer(order.getOrderCode(), event);
+
+        // 2. Gửi tín hiệu thông báo có đơn mới tới KDS quầy pha chế Barista
+        sendToKitchen(branchId, event);
+
+        // 3. Gửi tín hiệu thông báo quầy POS (/topic/pos/{branchId})
+        sendToPos(branchId, order, event);
+    }
+
+    private void sendToPos(Long branchId, Order order, OrderStatusEventDto event) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("type", "ONLINE_ORDER_PAID");
+            payload.put("branchId", branchId);
+            payload.put("orderId", order.getId());
+            payload.put("orderCode", order.getOrderCode());
+            payload.put("queueNumber", order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : 1);
+            payload.put("customerName", order.getCustomerName());
+            payload.put("customerPhone", order.getCustomerPhone());
+            payload.put("finalAmount", order.getFinalAmount());
+            payload.put("paymentMethod", order.getPaymentMethod());
+            payload.put("timestamp", event.getTimestamp());
+            messagingTemplate.convertAndSend("/topic/pos/" + branchId, (Object) payload);
+            log.info(">>> [WebSocket] Phát sự kiện ONLINE_ORDER_PAID tới /topic/pos/{}", branchId);
+        } catch (Exception e) {
+            log.warn("Lỗi phát WebSocket tới /topic/pos/{}: {}", branchId, e.getMessage());
+        }
+    }
+
 
     private void sendToCustomer(String orderCode, OrderStatusEventDto event) {
         try {

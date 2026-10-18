@@ -42,4 +42,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                  @Param("categoryId") Long categoryId,
                                  @Param("status") String status,
                                  Pageable pageable);
+
+    @Query("SELECT p FROM Product p " +
+           "LEFT JOIN FETCH p.category c " +
+           "WHERE p.status = 'ACTIVE' AND " +
+           "(:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(p.productCode) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:categoryId IS NULL OR p.category.id = :categoryId) AND " +
+           "(:minPrice IS NULL OR p.basePrice >= :minPrice) AND " +
+           "(:maxPrice IS NULL OR p.basePrice <= :maxPrice)")
+    List<Product> filterActiveProducts(@Param("keyword") String keyword,
+                                       @Param("categoryId") Long categoryId,
+                                       @Param("minPrice") java.math.BigDecimal minPrice,
+                                       @Param("maxPrice") java.math.BigDecimal maxPrice);
 }

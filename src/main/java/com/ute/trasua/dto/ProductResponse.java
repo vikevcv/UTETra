@@ -26,6 +26,8 @@ public class ProductResponse {
     private String imageUrl;
     private String description;
     private String status;
+    private Double averageRating;
+    private Integer reviewCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -56,6 +58,8 @@ public class ProductResponse {
                 .imageUrl(p.getImageUrl())
                 .description(p.getDescription())
                 .status(p.getStatus())
+                .averageRating(p.getAverageRating() != null ? p.getAverageRating() : 5.0)
+                .reviewCount(p.getReviewCount() != null ? p.getReviewCount() : 0)
                 .createdAt(p.getCreatedAt())
                 .updatedAt(p.getUpdatedAt())
                 .build();

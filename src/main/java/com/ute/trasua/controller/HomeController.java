@@ -1,10 +1,14 @@
 package com.ute.trasua.controller;
 
 import com.ute.trasua.service.BranchService;
+import com.ute.trasua.service.CategoryService;
 import com.ute.trasua.service.ProductService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.math.BigDecimal;
 
 /**
  * Controller chính xử lý điều hướng trang chủ UTETra.
@@ -14,18 +18,34 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class HomeController {
 
     private final ProductService productService;
+    private final CategoryService categoryService;
     private final BranchService branchService;
 
-    public HomeController(ProductService productService, BranchService branchService) {
+    public HomeController(ProductService productService, CategoryService categoryService, BranchService branchService) {
         this.productService = productService;
+        this.categoryService = categoryService;
         this.branchService = branchService;
     }
 
     @GetMapping("/")
-    public String home(Model model) {
+    public String home(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
+            @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
+            @RequestParam(value = "sort", required = false, defaultValue = "default") String sort,
+            Model model) {
+
         model.addAttribute("siteTitle", "UTETra — Modern Zen Wabi-Sabi & Haute Couture Tea Gallery");
-        model.addAttribute("products", productService.getActiveProducts());
+        model.addAttribute("products", productService.filterProducts(keyword, categoryId, minPrice, maxPrice, sort));
+        model.addAttribute("categories", categoryService.getActiveCategories());
         model.addAttribute("branches", branchService.getAllActiveBranches());
+
+        model.addAttribute("selectedKeyword", keyword);
+        model.addAttribute("selectedCategoryId", categoryId);
+        model.addAttribute("selectedMinPrice", minPrice);
+        model.addAttribute("selectedMaxPrice", maxPrice);
+        model.addAttribute("selectedSort", sort);
         return "home";
     }
 

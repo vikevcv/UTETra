@@ -80,4 +80,17 @@ public class OrderTrackingDto implements Serializable {
 
     @Builder.Default
     private List<OrderItemTrackingDto> items = new ArrayList<>();
+
+    // Review & Complaint tracking info
+    @Builder.Default
+    private Boolean allReviewed = false;
+    @Builder.Default
+    private Boolean hasComplaint = false;
+    private String complaintStatus;
+    private String complaintType;
+    private String complaintTypeLabel;
+    private String complaintDescription;
+    private String complaintVoucherCode;
+    private BigDecimal complaintCompensationAmount;
+    private String complaintAdminResponse;
 }

@@ -14,6 +14,8 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByOrderCode(String orderCode);
 
+    Optional<Order> findByPayosOrderCode(Long payosOrderCode);
+
     @Query("SELECT DISTINCT o FROM Order o " +
            "LEFT JOIN FETCH o.branch " +
            "LEFT JOIN FETCH o.orderDetails " +

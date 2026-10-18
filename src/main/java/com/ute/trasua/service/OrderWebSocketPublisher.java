@@ -58,4 +58,12 @@ public interface OrderWebSocketPublisher {
      * Broadcasts alert when ready orders remain unassigned due to unavailable drivers.
      */
     void broadcastQueueUnassigned(Long branchId, int unassignedCount, java.util.List<String> orderCodes);
+
+    /**
+     * Kích hoạt sự kiện WebSocket STOMP khi đơn hàng trực tuyến thanh toán thành công (UC06):
+     * - Báo quầy POS (/topic/pos/{branchId})
+     * - Báo Bếp KDS (/topic/kitchen/{branchId})
+     * - Báo trình duyệt khách hàng (/topic/order/{orderCode})
+     */
+    void broadcastOnlineOrderPaid(Order order);
 }

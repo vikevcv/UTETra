@@ -19,7 +19,6 @@ import java.util.Set;
  * Đảm bảo luôn có tài khoản Chủ chuỗi (ADMIN), Quản lý chi nhánh (MANAGER), Tài xế (DRIVER) và Khách hàng (CUSTOMER).
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class DataInitializer implements CommandLineRunner {
 
@@ -38,8 +37,49 @@ public class DataInitializer implements CommandLineRunner {
     private final com.ute.trasua.repository.ImportReceiptRepository importReceiptRepository;
     private final com.ute.trasua.repository.OrderRepository orderRepository;
     private final com.ute.trasua.repository.PromotionRepository promotionRepository;
+    private final com.ute.trasua.repository.BranchMenuRepository branchMenuRepository;
     private final PasswordEncoder passwordEncoder;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    public DataInitializer(
+            UserRepository userRepository,
+            com.ute.trasua.repository.BranchRepository branchRepository,
+            com.ute.trasua.repository.EmployeeRepository employeeRepository,
+            com.ute.trasua.repository.PosAccountRepository posAccountRepository,
+            com.ute.trasua.repository.CategoryRepository categoryRepository,
+            com.ute.trasua.repository.ProductRepository productRepository,
+            com.ute.trasua.repository.SizeRepository sizeRepository,
+            com.ute.trasua.repository.ProductSizeRepository productSizeRepository,
+            com.ute.trasua.repository.ToppingRepository toppingRepository,
+            com.ute.trasua.repository.DriverRepository driverRepository,
+            com.ute.trasua.repository.IngredientRepository ingredientRepository,
+            com.ute.trasua.repository.BranchInventoryRepository branchInventoryRepository,
+            com.ute.trasua.repository.ImportReceiptRepository importReceiptRepository,
+            com.ute.trasua.repository.OrderRepository orderRepository,
+            com.ute.trasua.repository.PromotionRepository promotionRepository,
+            com.ute.trasua.repository.BranchMenuRepository branchMenuRepository,
+            PasswordEncoder passwordEncoder,
+            org.springframework.jdbc.core.JdbcTemplate jdbcTemplate
+    ) {
+        this.userRepository = userRepository;
+        this.branchRepository = branchRepository;
+        this.employeeRepository = employeeRepository;
+        this.posAccountRepository = posAccountRepository;
+        this.categoryRepository = categoryRepository;
+        this.productRepository = productRepository;
+        this.sizeRepository = sizeRepository;
+        this.productSizeRepository = productSizeRepository;
+        this.toppingRepository = toppingRepository;
+        this.driverRepository = driverRepository;
+        this.ingredientRepository = ingredientRepository;
+        this.branchInventoryRepository = branchInventoryRepository;
+        this.importReceiptRepository = importReceiptRepository;
+        this.orderRepository = orderRepository;
+        this.promotionRepository = promotionRepository;
+        this.branchMenuRepository = branchMenuRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @Override
     public void run(String... args) {
@@ -709,6 +749,39 @@ public class DataInitializer implements CommandLineRunner {
             productRepository.save(p);
         }
         log.info(">>> Đã đồng bộ 100% tên món trà và topping khớp với giao diện Storefront HTML!");
+
+        // Khởi tạo sản phẩm kiểm thử thanh toán PayOS giá tối thiểu 2.000 VNĐ (theo hạn mức Napas247 / PayOS)
+        com.ute.trasua.entity.Product testProd = productRepository.findByProductCode("SP-TEST-PAYOS").orElse(null);
+        if (testProd == null) {
+            com.ute.trasua.entity.Category defaultCat = cats.isEmpty() ? null : cats.get(0);
+            testProd = productRepository.save(com.ute.trasua.entity.Product.builder()
+                    .productCode("SP-TEST-PAYOS")
+                    .name("Trà Thử Nghiệm PayOS (2.000đ)")
+                    .category(defaultCat)
+                    .basePrice(new java.math.BigDecimal("2000"))
+                    .imageUrl("https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500")
+                    .description("Phẩm trà dùng để kiểm thử thanh toán trực tuyến PayOS Napas247 với mức phí tối thiểu 2.000 VNĐ.")
+                    .status("ACTIVE")
+                    .build());
+            log.info(">>> Đã khởi tạo phẩm trà kiểm thử PayOS (2.000đ): SP-TEST-PAYOS");
+        } else {
+            testProd.setBasePrice(new java.math.BigDecimal("2000"));
+            testProd.setStatus("ACTIVE");
+            productRepository.save(testProd);
+        }
+
+        // Đảm bảo món test luôn khả dụng (available = true) tại tất cả các chi nhánh
+        final com.ute.trasua.entity.Product finalTestProd = testProd;
+        branchRepository.findAll().forEach(b -> {
+            if (!branchMenuRepository.existsByBranchIdAndProductId(b.getId(), finalTestProd.getId())) {
+                branchMenuRepository.save(com.ute.trasua.entity.BranchMenu.builder()
+                        .branch(b)
+                        .product(finalTestProd)
+                        .available(true)
+                        .createdAt(java.time.LocalDateTime.now())
+                        .build());
+            }
+        });
 
         // Khởi tạo Danh mục nguyên liệu pha chế & bao bì (Task 4.1 / Module 14)
         if (ingredientRepository.count() == 0) {
