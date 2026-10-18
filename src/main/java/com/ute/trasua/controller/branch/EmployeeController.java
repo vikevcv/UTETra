@@ -233,9 +233,16 @@ public class EmployeeController {
     @PostMapping("/pos/create")
     public String createPosAccount(
             @ModelAttribute PosAccountRequest request,
+            Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
         try {
+            if (request.getBranchId() == null) {
+                BranchResponse currentBranch = resolveCurrentBranch(null, authentication);
+                if (currentBranch != null) {
+                    request.setBranchId(currentBranch.getId());
+                }
+            }
             PosAccountResponse created = employeeService.createPosAccount(request);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã thiết lập tài khoản quầy POS thành công: " + created.getUsername());

@@ -17,11 +17,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final JwtAuthenticationEntryPoint entryPoint;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, JwtAuthenticationEntryPoint entryPoint) {
+        this.jwtAuthFilter = jwtAuthFilter;
+        this.entryPoint = entryPoint;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

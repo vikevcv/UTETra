@@ -34,6 +34,7 @@ public class PosServiceImpl implements PosService {
     private final PaymentRepository paymentRepository;
     private final EmployeeRepository employeeRepository;
     private final BranchMenuRepository branchMenuRepository;
+    private final PosAccountRepository posAccountRepository;
     private final com.ute.trasua.service.BranchMenuService branchMenuService;
     private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
 
@@ -48,6 +49,7 @@ public class PosServiceImpl implements PosService {
             PaymentRepository paymentRepository,
             EmployeeRepository employeeRepository,
             BranchMenuRepository branchMenuRepository,
+            PosAccountRepository posAccountRepository,
             com.ute.trasua.service.BranchMenuService branchMenuService,
             org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate
     ) {
@@ -61,6 +63,7 @@ public class PosServiceImpl implements PosService {
         this.paymentRepository = paymentRepository;
         this.employeeRepository = employeeRepository;
         this.branchMenuRepository = branchMenuRepository;
+        this.posAccountRepository = posAccountRepository;
         this.branchMenuService = branchMenuService;
         this.messagingTemplate = messagingTemplate;
     }
@@ -103,6 +106,11 @@ public class PosServiceImpl implements PosService {
             });
         }
 
+        java.util.List<com.ute.trasua.dto.kitchen.BranchMenuStatusDto> menuStatuses = branchMenuService.getBranchMenuStatus(targetBranchId);
+        java.util.Map<Long, Integer> productStockMap = menuStatuses.stream()
+                .filter(dto -> "PRODUCT".equalsIgnoreCase(dto.getItemType()) && dto.getId() != null)
+                .collect(Collectors.toMap(com.ute.trasua.dto.kitchen.BranchMenuStatusDto::getId, dto -> dto.getStockEstimate() != null ? dto.getStockEstimate() : 0, (v1, v2) -> v1));
+
         List<PosMenuResponse.ProductDto> products = productRepository.findByStatusOrderByNameAsc("ACTIVE")
                 .stream()
                 .map(p -> {
@@ -115,7 +123,7 @@ public class PosServiceImpl implements PosService {
                             price = bm.getCustomPrice();
                         }
                     }
-                    int stock = isAvail ? (15 + (int)(p.getId() % 10) * 3) : 0;
+                    int stock = isAvail ? productStockMap.getOrDefault(p.getId(), 0) : 0;
                     return PosMenuResponse.ProductDto.builder()
                             .id(p.getId())
                             .productCode(p.getProductCode())
@@ -408,31 +416,9 @@ public class PosServiceImpl implements PosService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ShiftEmployeeDto> getBranchEmployees(Long branchId) {
         Long targetBranchId = (branchId != null) ? branchId : 1L;
-        Branch branch = branchRepository.findById(targetBranchId).orElse(null);
-        if (branch != null) {
-            if (!employeeRepository.existsByEmployeeCode("NV005")) {
-                employeeRepository.save(Employee.builder()
-                        .employeeCode("NV005")
-                        .fullName("Phạm Gia Hân")
-                        .phone("0955667788")
-                        .status("ACTIVE")
-                        .branch(branch)
-                        .build());
-            }
-            if (!employeeRepository.existsByEmployeeCode("NV006")) {
-                employeeRepository.save(Employee.builder()
-                        .employeeCode("NV006")
-                        .fullName("Đỗ Hoàng Long")
-                        .phone("0966778899")
-                        .status("ACTIVE")
-                        .branch(branch)
-                        .build());
-            }
-        }
-
         List<Employee> employees = employeeRepository.findByBranchIdAndStatus(targetBranchId, "ACTIVE");
         if (employees.isEmpty()) {
             // Fallback lấy toàn bộ nhân viên active nếu chi nhánh chưa có nhân viên riêng
@@ -504,5 +490,41 @@ public class PosServiceImpl implements PosService {
                 .cashierUsername(order.getCashierUsername())
                 .createdAt(order.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Optional<PosAccount> findPosAccountByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        return posAccountRepository.findByUsername(username);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PosAccount resolvePosAccountForUser(User user, Branch defaultBranch) {
+        if (user == null) {
+            return null;
+        }
+        PosAccount existingPos = posAccountRepository.findByUsername(user.getUsername()).orElse(null);
+        if (existingPos != null) {
+            return existingPos;
+        }
+        return PosAccount.builder()
+                .username(user.getUsername())
+                .counterName(user.getFullName() != null ? user.getFullName() : (user.getUsername() + " (Quầy POS)"))
+                .branch(defaultBranch)
+                .active(true)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PosAccount> getActivePosAccountsByBranch(Long branchId) {
+        if (branchId == null) {
+            return java.util.Collections.emptyList();
+        }
+        return posAccountRepository.findByBranchIdAndActiveTrue(branchId);
     }
 }

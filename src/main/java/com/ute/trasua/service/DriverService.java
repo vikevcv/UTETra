@@ -26,4 +26,8 @@ public interface DriverService {
     com.ute.trasua.dto.DriverResponse toggleDriverAvailability(Long driverId, Boolean isAvailable);
 
     com.ute.trasua.dto.handover.HandoverOrderDto reportForceMajeureIncident(Long orderId, Long driverId, String incidentReason, String note);
+
+    com.ute.trasua.entity.Driver resolveCurrentDriver(org.springframework.security.core.Authentication authentication, Long requestedDriverId);
+
+    com.ute.trasua.entity.Order seedSampleDeliveryOrder(com.ute.trasua.entity.Driver driver, String fallbackUsername);
 }

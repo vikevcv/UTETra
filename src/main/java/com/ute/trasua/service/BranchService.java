@@ -19,11 +19,19 @@ public interface BranchService {
 
     List<BranchResponse> getAllActiveBranches();
 
+    List<Branch> getAllBranchEntities();
+
+    List<Branch> getActiveBranchEntities();
+
     Page<BranchResponse> searchBranches(String keyword, Boolean active, Pageable pageable);
 
     BranchResponse getBranchById(Long id);
 
     Branch getBranchEntityById(Long id);
+
+    Optional<Branch> findBranchEntityById(Long id);
+
+    Branch getDefaultBranch();
 
     BranchResponse getBranchByCode(String branchCode);
 

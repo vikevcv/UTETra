@@ -253,4 +253,86 @@ public class InventoryServiceImpl implements InventoryService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu nhập kho có mã: " + receiptCode));
         return ImportReceiptResponse.fromEntity(receipt);
     }
+
+    @Override
+    @Transactional
+    public BranchInventory deductIngredientStock(Long branchId, Long ingredientId, BigDecimal quantity) {
+        if (branchId == null || ingredientId == null || quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+
+        BranchInventory inventory = branchInventoryRepository.findByBranchIdAndIngredientId(branchId, ingredientId)
+                .orElse(null);
+
+        if (inventory == null) {
+            log.warn("Không tìm thấy tồn kho cho chi nhánh ID: {} và nguyên liệu ID: {}", branchId, ingredientId);
+            return null;
+        }
+
+        BigDecimal current = inventory.getStockQuantity() != null ? inventory.getStockQuantity() : BigDecimal.ZERO;
+        BigDecimal updated = current.subtract(quantity);
+        if (updated.compareTo(BigDecimal.ZERO) < 0) {
+            updated = BigDecimal.ZERO;
+        }
+
+        inventory.setStockQuantity(updated);
+        inventory.setUpdatedAt(LocalDateTime.now());
+        BranchInventory saved = branchInventoryRepository.save(inventory);
+
+        log.info(">>> [DB INVENTORY] Chi nhánh #{} đã trừ {} {} nguyên liệu '{}'. Tồn kho CSDL còn lại: {}",
+                branchId, quantity, saved.getIngredient().getUnit(), saved.getIngredient().getName(), updated);
+
+        // Tự động tắt món khi nguyên liệu hết (stockQuantity <= 0)
+        if (updated.compareTo(BigDecimal.ZERO) <= 0) {
+            autoDisableBranchMenuWhenOutOfIngredient(branchId, saved.getIngredient());
+        }
+
+        return saved;
+    }
+
+    /**
+     * Tự động tắt bán các món nước phụ thuộc khi nguyên liệu kho đã cạn kiệt (Task 4.2 / UC29).
+     */
+    private void autoDisableBranchMenuWhenOutOfIngredient(Long branchId, Ingredient ingredient) {
+        if (ingredient == null) return;
+        try {
+            String ingName = ingredient.getName().toLowerCase();
+            List<BranchMenu> availableMenus = branchMenuRepository.findByBranchId(branchId).stream()
+                    .filter(BranchMenu::isAvailable)
+                    .collect(Collectors.toList());
+
+            for (BranchMenu bm : availableMenus) {
+                if (bm.getProduct() == null) continue;
+                String prodName = bm.getProduct().getName().toLowerCase();
+                String catName = bm.getProduct().getCategory() != null ? bm.getProduct().getCategory().getName().toLowerCase() : "";
+
+                boolean shouldDisable = false;
+                // Nếu hết Trà Đen -> tắt các món trà đen, trà sữa truyền thống
+                if (ingName.contains("trà đen") && (prodName.contains("trà đen") || prodName.contains("truyền thống") || catName.contains("trà sữa"))) {
+                    shouldDisable = true;
+                }
+                // Nếu hết Lục Trà -> tắt các món lục trà, trà nhài
+                else if (ingName.contains("lục trà") && (prodName.contains("lục trà") || prodName.contains("nhài") || prodName.contains("hoa nhài"))) {
+                    shouldDisable = true;
+                }
+                // Nếu hết Trà Ô Long -> tắt các món ô long
+                else if (ingName.contains("ô long") && prodName.contains("ô long")) {
+                    shouldDisable = true;
+                }
+                // Nếu hết Sữa Tươi -> tắt tất cả các món thuộc danh mục Trà sữa
+                else if (ingName.contains("sữa tươi") && catName.contains("trà sữa")) {
+                    shouldDisable = true;
+                }
+
+                if (shouldDisable) {
+                    bm.setAvailable(false);
+                    branchMenuRepository.save(bm);
+                    log.warn(">>> [AUTO OUT-OF-STOCK] Đã tự động TẮT BÁN món '{}' tại chi nhánh #{} do cạn kiệt nguyên liệu '{}'",
+                            bm.getProduct().getName(), branchId, ingredient.getName());
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Lưu ý: Lỗi khi tự động tắt món theo nguyên liệu hết: {}", ex.getMessage());
+        }
+    }
 }

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class DriverServiceImpl implements DriverService {
 
@@ -39,6 +38,24 @@ public class DriverServiceImpl implements DriverService {
     private final PasswordEncoder passwordEncoder;
     private final com.ute.trasua.repository.OrderRepository orderRepository;
     private final com.ute.trasua.service.DispatchNotifier dispatchNotifier;
+
+    public DriverServiceImpl(
+            DriverRepository driverRepository,
+            UserRepository userRepository,
+            BranchRepository branchRepository,
+            EmailService emailService,
+            PasswordEncoder passwordEncoder,
+            com.ute.trasua.repository.OrderRepository orderRepository,
+            com.ute.trasua.service.DispatchNotifier dispatchNotifier
+    ) {
+        this.driverRepository = driverRepository;
+        this.userRepository = userRepository;
+        this.branchRepository = branchRepository;
+        this.emailService = emailService;
+        this.passwordEncoder = passwordEncoder;
+        this.orderRepository = orderRepository;
+        this.dispatchNotifier = dispatchNotifier;
+    }
 
     private static final String CHAR_LOWER = "abcdefghijklmnopqrstuvwxyz";
     private static final String CHAR_UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -360,5 +377,121 @@ public class DriverServiceImpl implements DriverService {
                 .incidentNote(order.getIncidentNote())
                 .incidentReportedAt(order.getIncidentReportedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Driver resolveCurrentDriver(org.springframework.security.core.Authentication authentication, Long requestedDriverId) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            String username = authentication.getName();
+            java.util.Optional<Driver> driverOpt = driverRepository.findByUserUsernameWithUserAndBranch(username);
+            if (driverOpt.isPresent()) {
+                return driverOpt.get();
+            }
+        }
+        if (requestedDriverId != null) {
+            return driverRepository.findById(requestedDriverId).orElse(null);
+        }
+        return driverRepository.findAllWithUserAndBranch().stream().findFirst().orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public com.ute.trasua.entity.Order seedSampleDeliveryOrder(Driver driver, String fallbackUsername) {
+        Branch branch = (driver != null) ? driver.getBranch() : null;
+        if (branch == null) {
+            branch = branchRepository.findAll().stream().findFirst().orElse(null);
+            if (branch == null) {
+                branch = branchRepository.save(Branch.builder()
+                        .branchCode("CN01")
+                        .name("UTETra Cơ Sở 01 — 01 Võ Văn Ngân, Thủ Đức")
+                        .address("01 Võ Văn Ngân, Linh Chiểu, Thủ Đức, TP.HCM")
+                        .hotline("1900 1234")
+                        .active(true)
+                        .build());
+            }
+        }
+
+        if (driver == null) {
+            String username = (fallbackUsername != null && !fallbackUsername.isBlank()) ? fallbackUsername : "driver1";
+            User user = userRepository.findByUsername(username).orElse(null);
+            if (user == null) {
+                user = userRepository.save(User.builder()
+                        .username(username)
+                        .password(passwordEncoder.encode("123123"))
+                        .fullName("Nguyễn Ngọc Thoại")
+                        .phone("0987 654 321")
+                        .email(username + "@utetra.vn")
+                        .roles(new java.util.HashSet<>(List.of("ROLE_DRIVER")))
+                        .enabled(true)
+                        .locked(false)
+                        .build());
+            }
+            driver = driverRepository.save(Driver.builder()
+                    .user(user)
+                    .branch(branch)
+                    .licensePlate("59X3-888.99")
+                    .vehicleType("MOTORBIKE")
+                    .workingStatus("DELIVERING")
+                    .baseSalary(new BigDecimal("240000"))
+                    .kpiScore(5.0)
+                    .completedOrders(0)
+                    .build());
+        }
+
+        String orderCode = "DLV-" + (System.currentTimeMillis() % 1000000);
+        com.ute.trasua.entity.Order order = com.ute.trasua.entity.Order.builder()
+                .orderCode(orderCode)
+                .dailyQueueNumber(88)
+                .orderType("DELIVERY")
+                .status("OUT_FOR_DELIVERY")
+                .totalAmount(new BigDecimal("70000"))
+                .discountAmount(BigDecimal.ZERO)
+                .finalAmount(new BigDecimal("70000"))
+                .paymentMethod("VNPAY")
+                .paymentStatus("PAID")
+                .cashierUsername("pos_staff")
+                .branch(branch)
+                .customerName("Chị Bích Trâm")
+                .customerPhone("0909123456")
+                .deliveryAddress("15 Lê Văn Chí, Linh Trung, Thủ Đức")
+                .latitude(10.8522)
+                .longitude(106.7716)
+                .deliveryNotes("Giao cổng sau, gọi trước 5 phút khi tới")
+                .driver(driver)
+                .handedOverAt(LocalDateTime.now())
+                .build();
+
+        com.ute.trasua.entity.OrderDetail item1 = com.ute.trasua.entity.OrderDetail.builder()
+                .order(order)
+                .productName("Trà Sữa Oolong Nướng")
+                .sizeName("L")
+                .quantity(1)
+                .sugarLevel("70%")
+                .iceLevel("50%")
+                .unitPrice(new BigDecimal("35000"))
+                .subtotal(new BigDecimal("35000"))
+                .note("Ít ngọt")
+                .build();
+
+        com.ute.trasua.entity.OrderDetail item2 = com.ute.trasua.entity.OrderDetail.builder()
+                .order(order)
+                .productName("Trà Đào Cam Sả")
+                .sizeName("M")
+                .quantity(1)
+                .sugarLevel("100%")
+                .iceLevel("100%")
+                .unitPrice(new BigDecimal("35000"))
+                .subtotal(new BigDecimal("35000"))
+                .build();
+
+        order.setOrderDetails(new java.util.ArrayList<>(List.of(item1, item2)));
+        com.ute.trasua.entity.Order savedOrder = orderRepository.save(order);
+
+        driver.setWorkingStatus("DELIVERING");
+        driverRepository.save(driver);
+
+        log.info(">>> Đã tạo đơn hàng mẫu {} cho tài xế {}", savedOrder.getOrderCode(), driver.getId());
+        return savedOrder;
     }
 }

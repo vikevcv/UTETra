@@ -46,4 +46,19 @@ public interface PosService {
      * Tính toán và trả về trạng thái trực ca của chi nhánh dựa trên danh sách nhân viên đang tick.
      */
     com.ute.trasua.dto.pos.ShiftAttendanceResponse getShiftStatus(Long branchId, java.util.List<Long> activeEmployeeIds);
+
+    /**
+     * Tìm kiếm tài khoản POS theo tên tài khoản.
+     */
+    java.util.Optional<com.ute.trasua.entity.PosAccount> findPosAccountByUsername(String username);
+
+    /**
+     * Xác định hoặc khởi tạo PosAccount tương ứng cho User đăng nhập.
+     */
+    com.ute.trasua.entity.PosAccount resolvePosAccountForUser(com.ute.trasua.entity.User user, com.ute.trasua.entity.Branch defaultBranch);
+
+    /**
+     * Lấy danh sách tài khoản POS đang kích hoạt theo chi nhánh.
+     */
+    java.util.List<com.ute.trasua.entity.PosAccount> getActivePosAccountsByBranch(Long branchId);
 }
