@@ -129,7 +129,7 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
                 .orderCode(orderCode)
                 .dailyQueueNumber(queueNumber)
                 .orderType("ONLINE_DELIVERY")
-                .status("AWAITING_PREPARATION")
+                .status("AWAITING_PAYMENT")
                 .paymentStatus("UNPAID")
                 .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "PAYOS")
                 .branch(branch)
@@ -230,7 +230,7 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
                 .finalAmount(savedOrder.getFinalAmount())
                 .paymentMethod(savedOrder.getPaymentMethod())
                 .paymentStatus(savedOrder.getPaymentStatus())
-                .paymentUrl("/checkout/success?orderCode=" + savedOrder.getOrderCode())
+                .paymentUrl("/checkout/payment?orderCode=" + savedOrder.getOrderCode())
                 .build();
     }
 

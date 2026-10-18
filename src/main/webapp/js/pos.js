@@ -1154,11 +1154,63 @@ document.addEventListener("DOMContentLoaded", () => {
                         console.error("Lỗi xử lý WebSocket menu event:", e);
                     }
                 });
+
+                // Lắng nghe thông báo đơn hàng trực tuyến đã thanh toán tới quầy POS (UC06)
+                stompClient.subscribe(`/topic/pos/${currentBranchId}`, (message) => {
+                    try {
+                        const event = JSON.parse(message.body);
+                        console.log(">>> [POS] Nhận thông báo đơn online mới:", event);
+                        if (event.type === "ONLINE_ORDER_PAID") {
+                            playPosChime();
+                            const queueText = event.queueNumber ? `STT #${event.queueNumber}` : '';
+                            const amountText = event.finalAmount ? formatCurrency(event.finalAmount) : '';
+                            const msg = `🎉 Có đơn online mới: ${event.orderCode} (${queueText}) - ${amountText}!`;
+                            showPosZenToast(msg, "success", 5000);
+                        }
+                    } catch (e) {
+                        console.error("Lỗi xử lý WebSocket POS order event:", e);
+                    }
+                });
             }, (err) => {
                 console.warn("POS WebSocket disconnected, fallback mode:", err);
             });
         } catch (err) {
             console.warn("POS Realtime sync init error:", err);
+        }
+    }
+
+    // Âm thanh chuông báo Ding-Dong quầy POS qua Web Audio API (chuẩn browser, không phụ thuộc file mp3 ngoài)
+    function playPosChime() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+
+            // Note 1 (Ding)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = "sine";
+            osc1.frequency.setValueAtTime(587.33, ctx.currentTime);
+            gain1.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(ctx.currentTime);
+            osc1.stop(ctx.currentTime + 0.6);
+
+            // Note 2 (Dong)
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = "sine";
+            osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
+            gain2.gain.setValueAtTime(0.25, ctx.currentTime + 0.15);
+            gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(ctx.currentTime + 0.15);
+            osc2.stop(ctx.currentTime + 0.9);
+        } catch (e) {
+            console.warn("Không thể phát âm thanh chuông POS:", e);
         }
     }
 
