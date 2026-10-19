@@ -481,6 +481,12 @@ async function submitOnlineOrder() {
       body: JSON.stringify(payload)
     });
 
+    if (resp.status === 401) {
+      alert("Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục đặt hàng.");
+      window.location.href = `${getContextPath()}/auth/login?redirect=/checkout`;
+      return;
+    }
+
     const data = await resp.json();
     if (!resp.ok || !data.success) {
       throw new Error(data.message || "Đặt hàng không thành công");

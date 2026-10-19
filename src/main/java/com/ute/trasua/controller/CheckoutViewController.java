@@ -52,17 +52,19 @@ public class CheckoutViewController {
         model.addAttribute("branches", activeBranches);
 
         User currentUser = userService.getCurrentAuthenticatedUser();
-        if (currentUser != null) {
-            model.addAttribute("currentUser", currentUser);
-            model.addAttribute("defaultCustomerName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
-            model.addAttribute("defaultCustomerPhone", currentUser.getPhone() != null ? currentUser.getPhone() : "");
-            model.addAttribute("defaultCustomerEmail", currentUser.getEmail() != null ? currentUser.getEmail() : "");
-
-            List<UserAddressDto> addresses = userAddressService.getAddressesByUserId(currentUser.getId());
-            model.addAttribute("userAddresses", addresses);
-            UserAddressDto defaultAddress = userAddressService.getDefaultAddress(currentUser.getId());
-            model.addAttribute("defaultAddress", defaultAddress);
+        if (currentUser == null) {
+            return "redirect:/auth/login?redirect=/checkout";
         }
+
+        model.addAttribute("currentUser", currentUser);
+        model.addAttribute("defaultCustomerName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
+        model.addAttribute("defaultCustomerPhone", currentUser.getPhone() != null ? currentUser.getPhone() : "");
+        model.addAttribute("defaultCustomerEmail", currentUser.getEmail() != null ? currentUser.getEmail() : "");
+
+        List<UserAddressDto> addresses = userAddressService.getAddressesByUserId(currentUser.getId());
+        model.addAttribute("userAddresses", addresses);
+        UserAddressDto defaultAddress = userAddressService.getDefaultAddress(currentUser.getId());
+        model.addAttribute("defaultAddress", defaultAddress);
 
         model.addAttribute("siteTitle", "Thanh Toán & Đặt Hàng Trực Tuyến — UTETra Zen Gallery");
         return "checkout/index";

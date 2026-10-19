@@ -29,8 +29,15 @@ public class OnlineOrderApiController {
      * Creates an authoritative online delivery order.
      */
     @PostMapping("/checkout")
-    public ResponseEntity<CheckoutResponse> checkout(@Valid @RequestBody CheckoutRequest request) {
+    public ResponseEntity<?> checkout(@Valid @RequestBody CheckoutRequest request) {
         User currentUser = resolveCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                    .body(java.util.Map.of(
+                            "success", false,
+                            "message", "Vui lòng đăng nhập tài khoản để xác nhận đặt hàng và theo dõi đơn."
+                    ));
+        }
         CheckoutResponse response = onlineOrderService.createOnlineOrder(request, currentUser);
         return ResponseEntity.ok(response);
     }
