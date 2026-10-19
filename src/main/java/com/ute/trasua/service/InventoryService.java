@@ -21,6 +21,8 @@ public interface InventoryService {
 
     BranchInventoryResponse updateMinThreshold(Long branchId, Long ingredientId, BigDecimal minThreshold);
 
+    BranchInventoryResponse updateStockQuantity(Long branchId, Long ingredientId, BigDecimal stockQuantity, String reason);
+
     long countLowStock(Long branchId);
 
     long countOutOfStock(Long branchId);

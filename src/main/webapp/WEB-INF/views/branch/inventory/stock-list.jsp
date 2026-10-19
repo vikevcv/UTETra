@@ -302,7 +302,7 @@
                     <th style="width: 140px;" class="text-center">Ngưỡng Cảnh Báo</th>
                     <th style="width: 160px;" class="text-center">Trạng Thái Tồn</th>
                     <th style="width: 160px;">Cập Nhật Lúc</th>
-                    <th style="width: 120px;" class="text-center">Thao Tác</th>
+                    <th style="width: 200px;" class="text-center">Thao Tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -386,12 +386,28 @@
                             </small>
                           </td>
                           <td class="text-center">
-                            <button type="button" class="btn btn-outline-primary btn-sm px-2"
-                              title="Điều chỉnh ngưỡng tối thiểu" data-id="${item.ingredientId}"
-                              data-name="${fn:escapeXml(item.ingredientName)}" data-threshold="${item.minThreshold}"
-                              data-unit="${fn:escapeXml(item.unit)}" onclick="openThresholdModal(this)">
-                              <i class="fa-solid fa-sliders"></i> Ngưỡng
-                            </button>
+                            <div class="d-flex align-items-center justify-content-center gap-1">
+                              <!-- Nút Kiểm kê tồn kho thực tế (Dành riêng cho Quản lý chi nhánh) -->
+                              <c:if test="${pageContext.request.isUserInRole('MANAGER') || pageContext.request.isUserInRole('ROLE_MANAGER')}">
+                                <button type="button" class="btn btn-warning btn-sm px-2 text-dark fw-bold"
+                                  title="Kiểm kê & cập nhật số lượng tồn thực tế"
+                                  data-id="${item.ingredientId}"
+                                  data-name="${fn:escapeXml(item.ingredientName)}"
+                                  data-quantity="${item.stockQuantity}"
+                                  data-unit="${fn:escapeXml(item.unit)}"
+                                  onclick="openStockUpdateModal(this)">
+                                  <i class="fa-solid fa-pen-to-square"></i> Kiểm Kê
+                                </button>
+                              </c:if>
+
+                              <!-- Nút Điều chỉnh ngưỡng cảnh báo -->
+                              <button type="button" class="btn btn-outline-primary btn-sm px-2"
+                                title="Điều chỉnh ngưỡng tối thiểu" data-id="${item.ingredientId}"
+                                data-name="${fn:escapeXml(item.ingredientName)}" data-threshold="${item.minThreshold}"
+                                data-unit="${fn:escapeXml(item.unit)}" onclick="openThresholdModal(this)">
+                                <i class="fa-solid fa-sliders"></i> Ngưỡng
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       </c:forEach>
@@ -479,6 +495,65 @@
           </div>
         </div>
 
+        <!-- ==================== MODAL KIỂM KÊ CẬP NHẬT TỒN KHO THỰC TẾ ==================== -->
+        <div class="modal fade" id="stockUpdateModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+              <form method="POST" action="${pageContext.request.contextPath}/branch/inventory/stock/update-quantity">
+                <input type="hidden" name="branchId" value="${currentBranch.id}" />
+                <input type="hidden" id="modalStockIngredientId" name="ingredientId" />
+
+                <div class="modal-header bg-warning bg-opacity-10 border-bottom border-warning border-opacity-25">
+                  <h5 class="modal-title fw-bold fs-6 text-dark d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-boxes-packing text-warning"></i>
+                    <span>Kiểm Kê & Cập Nhật Tồn Kho Thực Tế</span>
+                  </h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                  <div class="mb-3 p-3 bg-light rounded-3 border">
+                    <div class="text-muted small fw-semibold">Nguyên Vật Liệu Kiểm Kê:</div>
+                    <div id="modalStockIngredientName" class="fw-bold fs-5 text-dark mt-1"></div>
+                    <div class="d-flex align-items-center gap-3 mt-2 text-muted small">
+                      <span>Đơn vị tính: <strong id="modalStockUnit" class="text-dark"></strong></span>
+                      <span>•</span>
+                      <span>Tồn kho hiện ghi nhận: <strong id="modalStockCurrentQty" class="text-primary"></strong></span>
+                    </div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label fw-bold">
+                      Số Lượng Thực Tế Sau Kiểm Kê (<span id="modalStockInputUnit"></span>) <span class="text-danger">*</span>
+                    </label>
+                    <input type="number" step="0.01" min="0" id="modalStockNewQuantity" name="stockQuantity"
+                      class="form-control form-control-lg fw-bold text-success" required />
+                    <small class="text-muted d-block mt-1">
+                      Nhập số lượng thực tế đếm được tại quầy/kho. Số liệu này sẽ lập tức được cập nhật vào hệ thống để Admin và Báo cáo theo dõi.
+                    </small>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small text-muted">
+                      Lý Do / Ghi Chú Kiểm Kê
+                    </label>
+                    <input type="text" name="reason" class="form-control"
+                      placeholder="Ví dụ: Kiểm kê định kỳ cuối ca, cân đo thực tế, trừ hao hụt..."
+                      value="Kiểm kê định kỳ thực tế" />
+                  </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                  <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Hủy</button>
+                  <button type="submit" class="btn btn-warning px-4 fw-bold text-dark">
+                    <i class="fa-solid fa-check me-1"></i> Xác Nhận Cập Nhật
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
         <script>
           function openThresholdModal(btnOrId, name, threshold, unit) {
             let id = btnOrId;
@@ -494,6 +569,25 @@
             document.getElementById('modalUnit').innerText = unit;
 
             const modal = new bootstrap.Modal(document.getElementById('thresholdModal'));
+            modal.show();
+          }
+
+          function openStockUpdateModal(btnOrId, name, quantity, unit) {
+            let id = btnOrId;
+            if (typeof btnOrId === 'object' && btnOrId !== null) {
+              id = btnOrId.getAttribute('data-id');
+              name = btnOrId.getAttribute('data-name');
+              quantity = btnOrId.getAttribute('data-quantity');
+              unit = btnOrId.getAttribute('data-unit');
+            }
+            document.getElementById('modalStockIngredientId').value = id;
+            document.getElementById('modalStockIngredientName').innerText = name;
+            document.getElementById('modalStockCurrentQty').innerText = quantity + ' ' + unit;
+            document.getElementById('modalStockNewQuantity').value = quantity;
+            document.getElementById('modalStockUnit').innerText = unit;
+            document.getElementById('modalStockInputUnit').innerText = unit;
+
+            const modal = new bootstrap.Modal(document.getElementById('stockUpdateModal'));
             modal.show();
           }
 

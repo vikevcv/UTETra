@@ -96,6 +96,37 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
+    @Transactional
+    public BranchInventoryResponse updateStockQuantity(Long branchId, Long ingredientId, BigDecimal stockQuantity, String reason) {
+        if (stockQuantity == null || stockQuantity.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Số lượng tồn kho kiểm kê không được âm!");
+        }
+
+        BranchInventory inventory = branchInventoryRepository.findByBranchIdAndIngredientId(branchId, ingredientId)
+                .orElseGet(() -> {
+                    Branch branch = branchRepository.findById(branchId)
+                            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh: " + branchId));
+                    Ingredient ingredient = ingredientRepository.findById(ingredientId)
+                            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nguyên liệu: " + ingredientId));
+                    return BranchInventory.builder()
+                            .branch(branch)
+                            .ingredient(ingredient)
+                            .stockQuantity(BigDecimal.ZERO)
+                            .minThreshold(new BigDecimal("10.00"))
+                            .build();
+                });
+
+        BigDecimal oldQty = inventory.getStockQuantity();
+        inventory.setStockQuantity(stockQuantity);
+        inventory.setUpdatedAt(LocalDateTime.now());
+        BranchInventory saved = branchInventoryRepository.save(inventory);
+        log.info(">>> [KIỂM KÊ TỒN KHO] Chi nhánh {}: nguyên liệu {} ({}) cập nhật từ {} -> {}. Lý do: {}",
+                branchId, ingredientId, inventory.getIngredient() != null ? inventory.getIngredient().getName() : "",
+                oldQty, stockQuantity, reason);
+        return BranchInventoryResponse.fromEntity(saved);
+    }
+
+    @Override
     public long countLowStock(Long branchId) {
         return branchInventoryRepository.countLowStockByBranch(branchId);
     }
