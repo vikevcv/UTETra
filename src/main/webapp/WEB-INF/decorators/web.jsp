@@ -98,6 +98,105 @@
       background-color: var(--border-hairline);
       margin: 6px 0 10px;
     }
+
+    /* Badge bounce micro-animation */
+    @keyframes badgeBounce {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.4); }
+      60% { transform: scale(0.9); }
+      100% { transform: scale(1); }
+    }
+    .badge-bounce {
+      animation: badgeBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* Zen Toast Notification */
+    .zen-toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-hairline);
+      border-left: 4px solid var(--celadon-green);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12), 0 3px 10px rgba(0, 0, 0, 0.05);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 1060;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px) scale(0.96);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 420px;
+    }
+    .zen-toast.zen-toast-show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+    .zen-toast.zen-toast-hide {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(12px) scale(0.96);
+    }
+    .zen-toast-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #ECFDF5;
+      color: #059669;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+    .zen-toast-body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex-grow: 1;
+    }
+    .zen-toast-body strong {
+      font-size: 0.9rem;
+      color: var(--text-main);
+      font-weight: 700;
+    }
+    .zen-toast-body span {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+    .zen-toast-action {
+      background: var(--text-main);
+      color: #FFFFFF;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 7px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .zen-toast-action:hover {
+      background: var(--celadon-green);
+    }
+    .zen-toast-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.15rem;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      transition: color 0.2s ease;
+    }
+    .zen-toast-close:hover {
+      color: var(--text-main);
+    }
   </style>
 
   <%="<sitemesh:write property='head'/>"%>
@@ -269,13 +368,10 @@
         <span>Thanh toán:</span>
         <span id="zenTotal" style="color:var(--ceramic-bizen);">0 đ</span>
       </div>
-      <div style="display:flex; gap:8px; margin-top:14px;">
-        <a href="${pageContext.request.contextPath}/cart" class="btn-zen-outline" style="flex:1; text-align:center; text-decoration:none; padding:10px 0; font-size:0.88rem;">
-          <i class="fa-solid fa-cart-shopping me-1"></i> Xem Giỏ Hàng
+      <div style="margin-top:14px;">
+        <a href="${pageContext.request.contextPath}/cart" class="btn-zen-primary" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; text-align:center; text-decoration:none; padding:12px 0; font-size:0.95rem; font-weight:700;">
+          <i class="fa-solid fa-cart-shopping"></i> Xem Giỏ Hàng
         </a>
-        <button class="btn-zen-primary" style="flex:1; padding:10px 0; font-size:0.88rem;" onclick="proceedToCheckout()" type="button">
-          Thanh Toán <i class="fa-solid fa-arrow-right ms-1"></i>
-        </button>
       </div>
       <div style="text-align:center; margin-top:10px;">
         <a href="${pageContext.request.contextPath}/order/tracking" style="font-size:0.82rem; color:var(--text-muted); text-decoration:none;">
@@ -366,10 +462,23 @@
     </div>
   </div>
 
+  <!-- Zen Toast Notification for Add to Cart Feedback -->
+  <div id="zenToast" class="zen-toast" role="status" aria-live="polite">
+    <div class="zen-toast-icon">
+      <i class="fa-solid fa-check"></i>
+    </div>
+    <div class="zen-toast-body">
+      <strong id="zenToastTitle">Đã thêm vào Khay Trà</strong>
+      <span id="zenToastMsg">Phẩm trà đã được chọn thành công.</span>
+    </div>
+    <button type="button" class="zen-toast-action" onclick="toggleZenDrawer(true)">Xem Khay</button>
+    <button type="button" class="zen-toast-close" onclick="hideZenToast()" aria-label="Đóng thông báo">✕</button>
+  </div>
+
   <!-- Bootstrap 5.3 Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <!-- Zen Interaction JS -->
-  <script src="${pageContext.request.contextPath}/js/zen-interaction.js"></script>
+  <script src="${pageContext.request.contextPath}/js/zen-interaction.js?v=2.0"></script>
 </body>
 </html>
