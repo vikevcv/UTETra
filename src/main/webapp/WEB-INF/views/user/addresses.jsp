@@ -382,9 +382,24 @@
 
           <!-- Địa chỉ chi tiết -->
           <div class="mb-3">
-            <label class="form-label fw-bold text-muted" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;" for="modalAddressDetail">Địa chỉ chi tiết *</label>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label fw-bold text-muted mb-0" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;" for="modalAddressDetail">Địa chỉ chi tiết *</label>
+              <span id="geocodeStatus" style="font-size:0.75rem; color:var(--text-muted);"></span>
+            </div>
             <textarea class="form-control" id="modalAddressDetail" name="addressDetail" rows="2" required 
-                      placeholder="Số nhà, tên đường, phường/xã, quận/huyện..." style="border-radius:var(--radius-sm);"></textarea>
+                      placeholder="Số nhà, tên đường, phường/xã, quận/huyện, TP.HCM..." 
+                      style="border-radius:var(--radius-sm);"
+                      oninput="onAddressDetailInput(this.value)"
+                      onblur="triggerForwardGeocode(this.value)"></textarea>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+              <small class="text-muted" style="font-size:0.75rem;">
+                <i class="fa-solid fa-lightbulb me-1 text-warning"></i> Nhập địa chỉ, vị trí trên bản đồ sẽ tự động cập nhật theo.
+              </small>
+              <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-success fw-bold" 
+                      style="font-size:0.75rem;" onclick="triggerForwardGeocode(document.getElementById('modalAddressDetail').value)">
+                <i class="fa-solid fa-magnifying-glass-location me-1"></i> Định Vị Theo Địa Chỉ Này
+              </button>
+            </div>
           </div>
 
           <!-- Đặt làm mặc định checkbox -->
@@ -478,6 +493,60 @@
     modal.show();
   }
 
+  let geocodeDebounceTimer = null;
+  let isReverseGeocoding = false;
+
+  function onAddressDetailInput(val) {
+    if (isReverseGeocoding) return;
+    clearTimeout(geocodeDebounceTimer);
+    const statusEl = document.getElementById("geocodeStatus");
+    if (statusEl && val && val.trim().length >= 4) {
+      statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-primary"></i> Đang tìm toạ độ...`;
+    }
+    geocodeDebounceTimer = setTimeout(() => {
+      triggerForwardGeocode(val);
+    }, 700);
+  }
+
+  async function triggerForwardGeocode(val) {
+    if (!val || val.trim().length < 4 || isReverseGeocoding) return;
+    const statusEl = document.getElementById("geocodeStatus");
+    if (statusEl) {
+      statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-primary"></i> Đang tìm toạ độ...`;
+    }
+
+    try {
+      let query = val.trim();
+      // Nếu địa chỉ chưa có tên TP/tỉnh, thêm TP. Hồ Chí Minh để ưu tiên tìm kiếm chính xác
+      if (!query.toLowerCase().includes('hồ chí minh') && !query.toLowerCase().includes('hcm') && !query.toLowerCase().includes('thủ đức')) {
+        query += ', TP. Hồ Chí Minh';
+      }
+
+      const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1&countrycodes=vn';
+      const res = await fetch(url, { headers: { 'Accept-Language': 'vi-VN, vi, en' } });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lng = parseFloat(data[0].lon);
+          setModalCoords(lat, lng, true);
+          if (statusEl) {
+            statusEl.innerHTML = `<span class="text-success"><i class="fa-solid fa-circle-check"></i> Đã định vị toạ độ!</span>`;
+            setTimeout(() => { if (statusEl) statusEl.innerHTML = ''; }, 3000);
+          }
+          return;
+        }
+      }
+      if (statusEl) {
+        statusEl.innerHTML = `<span class="text-muted"><i class="fa-solid fa-circle-info"></i> Bạn có thể click hoặc kéo ghim trên bản đồ</span>`;
+        setTimeout(() => { if (statusEl) statusEl.innerHTML = ''; }, 4000);
+      }
+    } catch (e) {
+      console.warn("Geocode error:", e);
+      if (statusEl) statusEl.innerHTML = '';
+    }
+  }
+
   function initOrRefreshModalMap() {
     const lat = parseFloat(document.getElementById("modalLat").value) || 10.85072;
     const lng = parseFloat(document.getElementById("modalLng").value) || 106.77196;
@@ -492,10 +561,12 @@
         const cLat = e.latlng.lat;
         const cLng = e.latlng.lng;
         setModalCoords(cLat, cLng, true);
+        isReverseGeocoding = true;
         const addr = await reverseGeocodeModal(cLat, cLng);
         if (addr) {
           document.getElementById("modalAddressDetail").value = addr;
         }
+        setTimeout(() => { isReverseGeocoding = false; }, 300);
       });
     } else {
       modalMap.invalidateSize();
@@ -510,7 +581,17 @@
       modalMap.removeLayer(modalMarker);
     }
     if (modalMap) {
-      modalMarker = L.marker([lat, lng]).addTo(modalMap);
+      modalMarker = L.marker([lat, lng], { draggable: true }).addTo(modalMap);
+      modalMarker.on('dragend', async function(e) {
+        const pos = modalMarker.getLatLng();
+        setModalCoords(pos.lat, pos.lng, false);
+        isReverseGeocoding = true;
+        const addr = await reverseGeocodeModal(pos.lat, pos.lng);
+        if (addr) {
+          document.getElementById("modalAddressDetail").value = addr;
+        }
+        setTimeout(() => { isReverseGeocoding = false; }, 300);
+      });
     }
   }
 
