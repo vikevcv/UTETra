@@ -2013,7 +2013,7 @@
           <c:choose>
             <c:when test="${not empty completedOrders}">
               <c:forEach items="${completedOrders}" var="co" varStatus="loop">
-                <c:set var="itemPeriod" value="${co.periodCategory != null ? co.periodCategory : (loop.index < 4 ? 'TODAY' : (loop.index < 6 ? 'YESTERDAY' : 'WEEK'))}" />
+                <c:set var="itemPeriod" value="${co.periodCategory != null ? co.periodCategory : 'TODAY'}" />
                 <div class="history-order-item p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center gap-2 shadow-sm"
                      data-period="${itemPeriod}"
                      style="overflow: hidden; display: ${itemPeriod eq 'TODAY' ? 'flex' : 'none'};">
@@ -2051,11 +2051,7 @@
                             ${co.deliveredDateFormatted} · ${co.deliveredTimeFormatted}
                           </c:when>
                           <c:otherwise>
-                            <c:choose>
-                              <c:when test="${loop.index < 4}">Hôm nay · 16:3${loop.index}</c:when>
-                              <c:when test="${loop.index < 6}">Hôm qua · 15:2${loop.index}</c:when>
-                              <c:otherwise>15/10/2026 · 11:45</c:otherwise>
-                            </c:choose>
+                            Chưa có thời gian giao
                           </c:otherwise>
                         </c:choose>
                       </div>

@@ -48,8 +48,12 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
 
         String currentStatus = (order.getStatus() != null) ? order.getStatus().toUpperCase() : "";
-        if (!"READY_FOR_DELIVERY".equals(currentStatus) && !"PAID".equals(currentStatus) && !"AWAITING_PREPARATION".equals(currentStatus)) {
-            throw new IllegalStateException("Đơn hàng " + order.getOrderCode() + " không ở trạng thái sẵn sàng điều phối (Hiện tại: " + currentStatus + ")");
+        String orderType = (order.getOrderType() != null) ? order.getOrderType().toUpperCase() : "";
+        if ("POS_WALK_IN".equals(orderType) || "PICKUP".equals(orderType)) {
+            throw new IllegalStateException("Counter orders cannot be assigned to a driver!");
+        }
+        if (!"READY_FOR_DELIVERY".equals(currentStatus)) {
+            throw new IllegalStateException("Order " + order.getOrderCode() + " is not ready for delivery (current: " + currentStatus + ")");
         }
         if (order.getDriver() != null) {
             throw new IllegalStateException("Đơn hàng " + order.getOrderCode() + " đã được phân công cho tài xế #" + order.getDriver().getId());

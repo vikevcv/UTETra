@@ -2,8 +2,10 @@ package com.ute.trasua.controller.branch;
 
 import com.ute.trasua.dto.pos.*;
 import com.ute.trasua.entity.Branch;
+import com.ute.trasua.entity.Order;
 import com.ute.trasua.entity.PosAccount;
 import com.ute.trasua.entity.User;
+import com.ute.trasua.repository.OrderRepository;
 import com.ute.trasua.service.BranchService;
 import com.ute.trasua.service.PosService;
 import com.ute.trasua.service.ReceiptService;
@@ -31,17 +33,20 @@ public class PosController {
     private final BranchService branchService;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final OrderRepository orderRepository;
 
     public PosController(PosService posService,
                          ReceiptService receiptService,
                          BranchService branchService,
                          UserService userService,
-                         PasswordEncoder passwordEncoder) {
+                         PasswordEncoder passwordEncoder,
+                         OrderRepository orderRepository) {
         this.posService = posService;
         this.receiptService = receiptService;
         this.branchService = branchService;
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.orderRepository = orderRepository;
     }
 
     /**
@@ -298,6 +303,11 @@ public class PosController {
                 request.setCashierUsername(activeCashiers);
             }
         }
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        if (sessionBranchId == null) {
+            throw new IllegalStateException("POS session expired or no active shift!");
+        }
+        request.setBranchId(sessionBranchId);
         PosOrderResponse response = posService.createPosOrder(request);
         return ResponseEntity.ok(response);
     }
@@ -309,7 +319,16 @@ public class PosController {
     @ResponseBody
     public ResponseEntity<PosOrderResponse> processPosPayment(
             @PathVariable Long orderId,
-            @RequestBody PosPaymentRequest request) {
+            @RequestBody PosPaymentRequest request,
+            HttpSession session) {
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        if (sessionBranchId == null) {
+            throw new IllegalStateException("POS session expired or no active shift!");
+        }
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getBranch() == null || !sessionBranchId.equals(order.getBranch().getId())) {
+            throw new IllegalStateException("Order does not belong to the current POS branch!");
+        }
         request.setOrderId(orderId);
         PosOrderResponse response = posService.processPosPayment(request);
         return ResponseEntity.ok(response);
@@ -340,6 +359,13 @@ public class PosController {
                     request.getOrder().setCashierUsername(activeCashiers);
                 }
             }
+        }
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        if (sessionBranchId == null) {
+            throw new IllegalStateException("POS session expired or no active shift!");
+        }
+        if (request.getOrder() != null) {
+            request.getOrder().setBranchId(sessionBranchId);
         }
         PosOrderResponse response = posService.checkoutCashOrder(
                 request.getOrder(),

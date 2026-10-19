@@ -52,6 +52,9 @@ public class ShipperController {
     @GetMapping({"", "/", "/dashboard"})
     public String shipperDashboard(Authentication authentication, Model model) {
         Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return "redirect:/?accessDenied=true";
+        }
 
         User driverUser = (driver != null) ? driver.getUser() : null;
         if (driverUser == null && authentication != null) {
@@ -124,9 +127,11 @@ public class ShipperController {
     @GetMapping("/api/active-orders")
     @ResponseBody
     public ResponseEntity<List<HandoverOrderDto>> getActiveOrders(
-            Authentication authentication,
-            @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
-        Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
+            Authentication authentication) {
+        Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         if (driver == null || driver.getId() == null) {
             return ResponseEntity.ok(Collections.emptyList());
         }
@@ -141,9 +146,11 @@ public class ShipperController {
     @GetMapping("/api/trips")
     @ResponseBody
     public ResponseEntity<List<com.ute.trasua.dto.driver.DriverTripHistoryDto>> getCompletedTrips(
-            Authentication authentication,
-            @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
-        Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
+            Authentication authentication) {
+        Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         if (driver == null || driver.getId() == null) {
             return ResponseEntity.ok(Collections.emptyList());
         }
@@ -159,9 +166,11 @@ public class ShipperController {
     public ResponseEntity<Map<String, Object>> pickupOrder(
             @PathVariable Long orderId,
             @RequestBody(required = false) com.ute.trasua.dto.handover.DeliveryActionRequest request,
-            Authentication authentication,
-            @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
-        Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
+            Authentication authentication) {
+        Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         Long driverId = (driver != null) ? driver.getId() : null;
         if (request == null) {
             request = new com.ute.trasua.dto.handover.DeliveryActionRequest();
@@ -181,9 +190,11 @@ public class ShipperController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> arrivedOrder(
             @PathVariable Long orderId,
-            Authentication authentication,
-            @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
-        Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
+            Authentication authentication) {
+        Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         Long driverId = (driver != null) ? driver.getId() : null;
         HandoverOrderDto updated = orderHandoverService.confirmArrivedAtCustomer(orderId, driverId);
         return ResponseEntity.ok(Map.of(
@@ -201,9 +212,11 @@ public class ShipperController {
     public ResponseEntity<Map<String, Object>> completeOrder(
             @PathVariable Long orderId,
             @RequestBody(required = false) com.ute.trasua.dto.handover.DeliveryActionRequest request,
-            Authentication authentication,
-            @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
-        Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
+            Authentication authentication) {
+        Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         Long driverId = (driver != null) ? driver.getId() : null;
         if (request == null) {
             request = new com.ute.trasua.dto.handover.DeliveryActionRequest();
@@ -224,9 +237,11 @@ public class ShipperController {
     public ResponseEntity<Map<String, Object>> reportOrderIncident(
             @PathVariable Long orderId,
             @RequestBody(required = false) com.ute.trasua.dto.handover.DeliveryFailureRequest request,
-            Authentication authentication,
-            @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
-        Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
+            Authentication authentication) {
+        Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         Long driverId = (driver != null) ? driver.getId() : null;
 
         if (request == null) {
@@ -251,9 +266,11 @@ public class ShipperController {
     @PostMapping("/api/seed-sample-order")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> seedSampleOrder(
-            Authentication authentication,
-            @RequestParam(value = "driverId", required = false) Long requestedDriverId) {
-        Driver driver = resolveCurrentDriver(authentication, requestedDriverId);
+            Authentication authentication) {
+        Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         String username = (authentication != null && authentication.isAuthenticated())
                 ? authentication.getName()
                 : "driver1";
@@ -279,6 +296,9 @@ public class ShipperController {
             Authentication authentication) {
         boolean online = body != null && Boolean.TRUE.equals(body.get("online"));
         Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         if (driver != null) {
             driverService.toggleDriverAvailability(driver.getId(), online);
         }
@@ -292,5 +312,11 @@ public class ShipperController {
 
     private Driver resolveCurrentDriver(Authentication authentication, Long requestedDriverId) {
         return driverService.resolveCurrentDriver(authentication, requestedDriverId);
+    }
+
+    private boolean isOwnDriver(Authentication authentication, Driver driver) {
+        return driver != null && driver.getUser() != null && authentication != null
+                && authentication.getName() != null
+                && authentication.getName().equals(driver.getUser().getUsername());
     }
 }

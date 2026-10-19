@@ -52,6 +52,8 @@ public interface BranchMenuService {
 
     boolean toggleToppingAvailability(Long branchId, Long toppingId, Boolean isAvailable);
 
+    boolean isToppingAvailableAtBranch(Long branchId, Long toppingId);
+
     boolean isProductAvailable(Long branchId, Long productId);
 
     Map<String, Integer> getBranchCupStocks(Long branchId);

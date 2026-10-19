@@ -7,11 +7,13 @@ import com.ute.trasua.dto.kitchen.BranchMenuStatusDto;
 import com.ute.trasua.entity.Branch;
 import com.ute.trasua.entity.BranchInventory;
 import com.ute.trasua.entity.BranchMenu;
+import com.ute.trasua.entity.BranchTopping;
 import com.ute.trasua.entity.Ingredient;
 import com.ute.trasua.entity.Product;
 import com.ute.trasua.entity.Topping;
 import com.ute.trasua.repository.BranchInventoryRepository;
 import com.ute.trasua.repository.BranchMenuRepository;
+import com.ute.trasua.repository.BranchToppingRepository;
 import com.ute.trasua.repository.BranchRepository;
 import com.ute.trasua.repository.IngredientRepository;
 import com.ute.trasua.repository.ProductRepository;
@@ -42,6 +44,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     private final BranchRepository branchRepository;
     private final ProductRepository productRepository;
     private final ToppingRepository toppingRepository;
+    private final BranchToppingRepository branchToppingRepository;
     private final BranchInventoryRepository branchInventoryRepository;
     private final IngredientRepository ingredientRepository;
     private final SimpMessagingTemplate messagingTemplate;
@@ -51,6 +54,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             BranchRepository branchRepository,
             ProductRepository productRepository,
             ToppingRepository toppingRepository,
+            BranchToppingRepository branchToppingRepository,
             BranchInventoryRepository branchInventoryRepository,
             IngredientRepository ingredientRepository,
             SimpMessagingTemplate messagingTemplate
@@ -59,6 +63,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         this.branchRepository = branchRepository;
         this.productRepository = productRepository;
         this.toppingRepository = toppingRepository;
+        this.branchToppingRepository = branchToppingRepository;
         this.branchInventoryRepository = branchInventoryRepository;
         this.ingredientRepository = ingredientRepository;
         this.messagingTemplate = messagingTemplate;
@@ -304,7 +309,8 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         for (Topping t : toppings) {
             String topName = (t.getName() != null ? t.getName() : t.getToppingName());
             String cleanTopName = topName.toLowerCase();
-            boolean isDbAvail = "ACTIVE".equalsIgnoreCase(t.getStatus());
+            boolean isDbAvail = "ACTIVE".equalsIgnoreCase(t.getStatus())
+                    && isToppingAvailableAtBranch(targetBranchId, t.getId());
 
             // Tính tồn kho ước tính dựa trên nguyên liệu topping trong kho chi nhánh (mỗi phần ~ 0.05 đơn vị)
             BigDecimal toppingIngStock = BigDecimal.ZERO;
@@ -415,9 +421,11 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         Topping topping = toppingRepository.findById(toppingId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy Topping ID: " + toppingId));
 
-        boolean newStatus = (isAvailable != null) ? isAvailable : !"ACTIVE".equalsIgnoreCase(topping.getStatus());
-        topping.setStatus(newStatus ? "ACTIVE" : "INACTIVE");
-        toppingRepository.save(topping);
+        boolean newStatus = (isAvailable != null) ? isAvailable : !isToppingAvailableAtBranch(targetBranchId, toppingId);
+        BranchTopping row = branchToppingRepository.findByBranchIdAndToppingId(targetBranchId, toppingId)
+                .orElse(BranchTopping.builder().branchId(targetBranchId).toppingId(toppingId).isAvailable(true).build());
+        row.setIsAvailable(newStatus);
+        branchToppingRepository.save(row);
 
         String toppingName = topping.getName() != null ? topping.getName() : topping.getToppingName();
         log.info(">>> Đã cập nhật trạng thái Topping '{}': {}", toppingName, newStatus ? "CÒN HÀNG" : "TẠM HẾT");
@@ -673,16 +681,6 @@ public class BranchMenuServiceImpl implements BranchMenuService {
 
             log.info(">>> [DB INVENTORY] Chi nhánh {} đã trừ {} phần topping '{}' ({} {}). Tồn CSDL còn: {}",
                     targetBranchId, quantity, toppingName, deductQty, targetInv.getIngredient().getUnit(), updated);
-
-            if (outOfStock) {
-                toppingRepository.findAll().stream()
-                        .filter(t -> t.getName() != null && t.getName().toLowerCase().contains(cleanTopName))
-                        .forEach(t -> {
-                            t.setStatus("INACTIVE");
-                            toppingRepository.save(t);
-                            log.warn(">>> [AUTO OUT-OF-STOCK] Topping '{}' đã tự động đổi sang INACTIVE do hết hàng trong kho!", t.getName());
-                        });
-            }
         }
 
         try {
@@ -705,6 +703,15 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         if (branchId == null || productId == null) return true;
         return branchMenuRepository.findByBranchIdAndProductId(branchId, productId)
                 .map(BranchMenu::isAvailable)
+                .orElse(true);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isToppingAvailableAtBranch(Long branchId, Long toppingId) {
+        if (branchId == null || toppingId == null) return true;
+        return branchToppingRepository.findByBranchIdAndToppingId(branchId, toppingId)
+                .map(BranchTopping::getIsAvailable)
                 .orElse(true);
     }
 }
