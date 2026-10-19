@@ -23,6 +23,7 @@ public class ReviewApiController {
 
     private final ProductReviewService productReviewService;
     private final UserRepository userRepository;
+    private final com.ute.trasua.service.OrderSecurityService orderSecurityService;
 
     @PostMapping("/api/v1/orders/{orderCode}/reviews")
     public ResponseEntity<?> submitReviews(
@@ -39,6 +40,20 @@ public class ReviewApiController {
         }
 
         User currentUser = resolveCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "Vui lòng đăng nhập để gửi đánh giá sản phẩm."
+            ));
+        }
+
+        if (!orderSecurityService.canAccessOrder(orderCode, currentUser)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Bạn không có quyền đánh giá đơn hàng này."
+            ));
+        }
+
         try {
             List<ProductReviewDto> result = productReviewService.submitOrderReviews(orderCode, request, currentUser);
             return ResponseEntity.ok(Map.of(
@@ -62,6 +77,21 @@ public class ReviewApiController {
 
     @GetMapping("/api/v1/orders/{orderCode}/reviews")
     public ResponseEntity<?> getOrderReviews(@PathVariable("orderCode") String orderCode) {
+        User currentUser = resolveCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "Vui lòng đăng nhập để xem đánh giá đơn hàng."
+            ));
+        }
+
+        if (!orderSecurityService.canAccessOrder(orderCode, currentUser)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Bạn không có quyền xem đánh giá của đơn hàng này."
+            ));
+        }
+
         List<ProductReviewDto> list = productReviewService.getOrderReviews(orderCode);
         return ResponseEntity.ok(Map.of(
                 "success", true,

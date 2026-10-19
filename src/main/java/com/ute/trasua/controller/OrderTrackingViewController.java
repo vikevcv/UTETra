@@ -23,6 +23,8 @@ import java.util.List;
 public class OrderTrackingViewController {
 
     private final OrderTrackingService orderTrackingService;
+    private final com.ute.trasua.service.OrderSecurityService orderSecurityService;
+    private final com.ute.trasua.repository.UserRepository userRepository;
 
     @GetMapping("/order/tracking")
     public String orderTrackingPage(
@@ -30,31 +32,45 @@ public class OrderTrackingViewController {
             Model model) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal()))
-                ? auth.getName()
-                : null;
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            String redirectUrl = "/order/tracking";
+            if (code != null && !code.trim().isEmpty()) {
+                redirectUrl += "?code=" + code.trim();
+            }
+            return "redirect:/auth/login?redirect=" + redirectUrl;
+        }
+
+        String username = auth.getName();
+        com.ute.trasua.entity.User currentUser = userRepository.findByUsername(username).orElse(null);
 
         if (code != null && !code.trim().isEmpty()) {
-            try {
-                OrderTrackingDto tracking = orderTrackingService.getTrackingDetails(code.trim());
-                model.addAttribute("tracking", tracking);
-                model.addAttribute("orderCode", tracking.getOrderCode());
-                model.addAttribute("siteTitle", "Theo Dõi Đơn Hàng #" + tracking.getOrderCode() + " — UTETra Zen Gallery");
-            } catch (Exception e) {
-                log.warn("Không tìm thấy đơn hàng khi tra cứu code {}: {}", code, e.getMessage());
-                model.addAttribute("searchError", "Không tìm thấy thông tin cho mã đơn: " + code);
+            String cleanCode = code.trim().toUpperCase();
+            boolean canAccess = orderSecurityService.canAccessOrder(cleanCode, currentUser);
+
+            if (!canAccess) {
+                log.warn(">>> [SECURITY ACCESS DENIED] User '{}' bị chặn khi tra cứu đơn '{}'", username, cleanCode);
+                model.addAttribute("searchError", "Bạn không có quyền truy cập thông tin đơn hàng này hoặc đơn hàng không tồn tại.");
                 model.addAttribute("siteTitle", "Tra Cứu Tiến Trình Đơn Hàng — UTETra Zen Gallery");
+            } else {
+                try {
+                    OrderTrackingDto tracking = orderTrackingService.getTrackingDetails(cleanCode);
+                    model.addAttribute("tracking", tracking);
+                    model.addAttribute("orderCode", tracking.getOrderCode());
+                    model.addAttribute("siteTitle", "Theo Dõi Đơn Hàng #" + tracking.getOrderCode() + " — UTETra Zen Gallery");
+                } catch (Exception e) {
+                    log.warn("Không tìm thấy đơn hàng khi tra cứu code {}: {}", cleanCode, e.getMessage());
+                    model.addAttribute("searchError", "Không tìm thấy thông tin cho mã đơn: " + cleanCode);
+                    model.addAttribute("siteTitle", "Tra Cứu Tiến Trình Đơn Hàng — UTETra Zen Gallery");
+                }
             }
         } else {
             model.addAttribute("siteTitle", "Tra Cứu Tiến Trình Đơn Hàng — UTETra Zen Gallery");
         }
 
         // Tải danh sách đơn hàng đã đặt của người dùng hiện tại
-        if (username != null) {
-            List<OrderTrackingDto> recentOrders = orderTrackingService.getRecentOrdersForUsername(username);
-            model.addAttribute("recentOrders", recentOrders);
-            model.addAttribute("currentUsername", username);
-        }
+        List<OrderTrackingDto> recentOrders = orderTrackingService.getRecentOrdersForUsername(username);
+        model.addAttribute("recentOrders", recentOrders);
+        model.addAttribute("currentUsername", username);
 
         return "order/tracking";
     }

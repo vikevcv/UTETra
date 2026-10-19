@@ -31,19 +31,22 @@ public class CheckoutViewController {
     private final OnlineOrderService onlineOrderService;
     private final PayOSService payosService;
     private final OrderRepository orderRepository;
+    private final com.ute.trasua.service.OrderSecurityService orderSecurityService;
 
     public CheckoutViewController(BranchService branchService,
                                   UserService userService,
                                   UserAddressService userAddressService,
                                   OnlineOrderService onlineOrderService,
                                   PayOSService payosService,
-                                  OrderRepository orderRepository) {
+                                  OrderRepository orderRepository,
+                                  com.ute.trasua.service.OrderSecurityService orderSecurityService) {
         this.branchService = branchService;
         this.userService = userService;
         this.userAddressService = userAddressService;
         this.onlineOrderService = onlineOrderService;
         this.payosService = payosService;
         this.orderRepository = orderRepository;
+        this.orderSecurityService = orderSecurityService;
     }
 
     @GetMapping("/checkout")
@@ -75,10 +78,21 @@ public class CheckoutViewController {
      */
     @GetMapping("/checkout/payment")
     public String checkoutPaymentPage(@RequestParam("orderCode") String orderCodeParam, Model model) {
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        if (currentUser == null) {
+            return "redirect:/auth/login?redirect=/checkout/payment?orderCode=" + orderCodeParam;
+        }
+
         try {
             Order order = resolveOrder(orderCodeParam);
             if (order == null) {
                 return "redirect:/cart?error=order_not_found";
+            }
+
+            if (!orderSecurityService.canAccessOrder(order, currentUser)) {
+                log.warn(">>> [SECURITY ACCESS DENIED] User '{}' không có quyền truy cập thanh toán đơn '{}'",
+                        currentUser.getUsername(), order.getOrderCode());
+                return "redirect:/?accessDenied=true";
             }
 
             // Nếu đơn đã thanh toán xong từ trước, chuyển ngay sang trang thành công
@@ -159,11 +173,23 @@ public class CheckoutViewController {
 
     @GetMapping("/checkout/success")
     public String checkoutSuccessPage(@RequestParam("orderCode") String orderCodeParam, Model model) {
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        if (currentUser == null) {
+            return "redirect:/auth/login?redirect=/checkout/success?orderCode=" + orderCodeParam;
+        }
+
         try {
             Order order = resolveOrder(orderCodeParam);
             if (order == null) {
                 return "redirect:/cart?error=order_not_found";
             }
+
+            if (!orderSecurityService.canAccessOrder(order, currentUser)) {
+                log.warn(">>> [SECURITY ACCESS DENIED] User '{}' không có quyền xem biên nhận đơn '{}'",
+                        currentUser.getUsername(), order.getOrderCode());
+                return "redirect:/?accessDenied=true";
+            }
+
             model.addAttribute("order", order);
             model.addAttribute("siteTitle", "Đặt Hàng Thành Công #" + order.getOrderCode() + " — UTETra");
             return "checkout/success";
