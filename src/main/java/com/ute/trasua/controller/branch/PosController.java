@@ -8,9 +8,12 @@ import com.ute.trasua.service.BranchService;
 import com.ute.trasua.service.PosService;
 import com.ute.trasua.service.ReceiptService;
 import com.ute.trasua.service.UserService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -87,73 +90,71 @@ public class PosController {
     }
 
     /**
-     * Đăng xuất ca trực quầy POS.
+     * Đăng xuất ca trực quầy POS -> Xóa session, cookie và chuyển hướng về /pos/login.
      */
     @GetMapping("/pos/logout")
-    public String posLogout(HttpSession session) {
-        session.removeAttribute("POS_ACCOUNT");
-        session.removeAttribute("POS_BRANCH_ID");
-        session.removeAttribute("POS_COUNTER_NAME");
+    public String posLogout(HttpSession session, HttpServletResponse response) {
+        if (session != null) {
+            session.removeAttribute("POS_ACCOUNT");
+            session.removeAttribute("POS_BRANCH_ID");
+            session.removeAttribute("POS_COUNTER_NAME");
+            session.removeAttribute("POS_ACTIVE_CASHIERS_NAME");
+            session.removeAttribute("POS_ACTIVE_CASHIERS_IDS");
+            session.invalidate();
+        }
+
+        Cookie cookie = new Cookie("UTETRA_JWT", "");
+        cookie.setMaxAge(0);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        response.addCookie(cookie);
+
+        SecurityContextHolder.clearContext();
+        log.info(">>> Đăng xuất khỏi quầy POS thành công. Chuyển hướng về /pos/login.");
         return "redirect:/pos/login";
     }
 
     /**
-     * Giao diện màn hình Web POS bán lẻ cảm ứng toàn màn hình tại quầy thu ngân (Cố định theo chi nhánh, không cần đăng nhập).
+     * Giao diện màn hình Web POS bán lẻ cảm ứng toàn màn hình tại quầy thu ngân (Cố định theo chi nhánh đã đăng nhập).
      */
     @GetMapping({"/pos", "/branch/pos"})
     public String posCounterView(@RequestParam(value = "branchId", required = false) Long branchId,
                                  HttpSession session,
                                  Model model) {
-        List<Branch> branches = branchService.getAllBranchEntities();
-        Branch currentBranch = null;
-        if (branchId != null) {
-            currentBranch = branchService.findBranchEntityById(branchId).orElse(null);
-        } else {
+        // Nếu chưa có tài khoản quầy trong session
+        if (session.getAttribute("POS_ACCOUNT") == null) {
+            // Tự động nhận diện nếu đã đăng nhập tài khoản ADMIN, MANAGER hoặc STAFF/POS qua hệ thống web
+            User user = userService.getCurrentAuthenticatedUser();
+            if (user != null && user.getRoles() != null && 
+                (user.getRoles().contains("ROLE_ADMIN") || user.getRoles().contains("ROLE_MANAGER") || user.getRoles().contains("ROLE_STAFF") || user.getRoles().contains("ROLE_POS"))) {
+                Branch defaultBranch = branchService.getDefaultBranch();
+                PosAccount accountToUse = posService.resolvePosAccountForUser(user, defaultBranch);
+                session.setAttribute("POS_ACCOUNT", accountToUse);
+                session.setAttribute("POS_BRANCH_ID", accountToUse.getBranch() != null ? accountToUse.getBranch().getId() : (defaultBranch != null ? defaultBranch.getId() : 1L));
+                session.setAttribute("POS_COUNTER_NAME", accountToUse.getCounterName());
+            } else {
+                // Bắt buộc chuyển về màn hình đăng nhập quầy POS
+                return "redirect:/pos/login";
+            }
+        }
+
+        PosAccount posAcc = (PosAccount) session.getAttribute("POS_ACCOUNT");
+        Branch currentBranch = (posAcc != null && posAcc.getBranch() != null) ? posAcc.getBranch() : null;
+        if (currentBranch == null) {
             Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
             if (sessionBranchId != null) {
                 currentBranch = branchService.findBranchEntityById(sessionBranchId).orElse(null);
             }
         }
-        if (currentBranch == null && !branches.isEmpty()) {
-            currentBranch = branches.get(0);
+        if (currentBranch == null) {
+            currentBranch = branchService.getDefaultBranch();
         }
 
         Long activeBranchId = (currentBranch != null) ? currentBranch.getId() : 1L;
         session.setAttribute("POS_BRANCH_ID", activeBranchId);
 
-        // Tự động nhận diện nếu đã đăng nhập tài khoản ADMIN, MANAGER hoặc STAFF/POS qua hệ thống web
-        if (session.getAttribute("POS_ACCOUNT") == null) {
-            User user = userService.getCurrentAuthenticatedUser();
-            if (user != null && user.getRoles() != null && 
-                (user.getRoles().contains("ROLE_ADMIN") || user.getRoles().contains("ROLE_MANAGER") || user.getRoles().contains("ROLE_STAFF") || user.getRoles().contains("ROLE_POS"))) {
-                
-                PosAccount accountToUse = posService.resolvePosAccountForUser(user, currentBranch);
-                session.setAttribute("POS_ACCOUNT", accountToUse);
-                session.setAttribute("POS_BRANCH_ID", accountToUse.getBranch() != null ? accountToUse.getBranch().getId() : activeBranchId);
-                session.setAttribute("POS_COUNTER_NAME", accountToUse.getCounterName());
-            }
-        }
-
-        // Cố định phiên làm việc máy POS theo chi nhánh (Kiosk mode) - Tự động liên kết tài khoản quầy của chi nhánh
-        if (session.getAttribute("POS_ACCOUNT") == null) {
-            List<PosAccount> branchAccounts = posService.getActivePosAccountsByBranch(activeBranchId);
-            PosAccount posAcc = (!branchAccounts.isEmpty()) ? branchAccounts.get(0) : null;
-            if (posAcc == null) {
-                posAcc = PosAccount.builder()
-                        .username("pos_branch_" + activeBranchId)
-                        .counterName("Quầy Thu Ngân " + (currentBranch != null ? currentBranch.getName() : "UTETra"))
-                        .branch(currentBranch)
-                        .active(true)
-                        .build();
-            }
-            session.setAttribute("POS_ACCOUNT", posAcc);
-            session.setAttribute("POS_COUNTER_NAME", posAcc.getCounterName());
-            log.info(">>> Tự động kích hoạt phiên quầy POS cố định chi nhánh #{}: {}", activeBranchId, posAcc.getCounterName());
-        }
-
         String activeCashiers = (String) session.getAttribute("POS_ACTIVE_CASHIERS_NAME");
         if (activeCashiers == null || activeCashiers.isBlank()) {
-            PosAccount posAcc = (PosAccount) session.getAttribute("POS_ACCOUNT");
             if (posAcc != null && posAcc.getCounterName() != null) {
                 activeCashiers = posAcc.getCounterName();
             } else {
@@ -166,38 +167,36 @@ public class PosController {
         model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("branchId", activeBranchId);
         model.addAttribute("branchName", currentBranch != null ? currentBranch.getName() : "UTETra Flagship Thủ Đức");
-        model.addAttribute("branches", branches);
 
         return "pos/index";
     }
 
     /**
      * Giao diện màn hình Bàn Giao Đơn Quầy (Module 8 - UC09, UC18).
-     * Màn hình vận hành điểm bán, đồng bộ trạng thái như KDS Barista (không bắt buộc redirect login).
+     * Màn hình vận hành điểm bán cố định theo chi nhánh quầy.
      */
     @GetMapping({"/pos/handover", "/branch/handover"})
     public String posHandoverView(@RequestParam(value = "branchId", required = false) Long branchId,
                                  HttpSession session,
                                  Model model) {
-        List<Branch> branches = branchService.getAllBranchEntities();
         Branch currentBranch = null;
-        if (branchId != null) {
-            currentBranch = branchService.findBranchEntityById(branchId).orElse(null);
+        PosAccount posAcc = (PosAccount) session.getAttribute("POS_ACCOUNT");
+        if (posAcc != null && posAcc.getBranch() != null) {
+            currentBranch = posAcc.getBranch();
         } else {
             Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
             if (sessionBranchId != null) {
                 currentBranch = branchService.findBranchEntityById(sessionBranchId).orElse(null);
             }
         }
-        if (currentBranch == null && !branches.isEmpty()) {
-            currentBranch = branches.get(0);
+        if (currentBranch == null) {
+            currentBranch = branchService.getDefaultBranch();
         }
         Long activeBranchId = (currentBranch != null) ? currentBranch.getId() : 1L;
         session.setAttribute("POS_BRANCH_ID", activeBranchId);
 
         String activeCashiers = (String) session.getAttribute("POS_ACTIVE_CASHIERS_NAME");
         if (activeCashiers == null || activeCashiers.isBlank()) {
-            PosAccount posAcc = (PosAccount) session.getAttribute("POS_ACCOUNT");
             if (posAcc != null && posAcc.getCounterName() != null) {
                 activeCashiers = posAcc.getCounterName();
             } else {
@@ -210,7 +209,6 @@ public class PosController {
         model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("branchId", activeBranchId);
         model.addAttribute("branchName", currentBranch != null ? currentBranch.getName() : "UTETra Flagship Thủ Đức");
-        model.addAttribute("branches", branches);
 
         return "pos/handover";
     }

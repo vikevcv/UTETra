@@ -91,7 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
         filtered.forEach(p => {
             const card = document.createElement("div");
             card.className = "pos-product-card position-relative";
-            const imgUrl = p.imageUrl || "https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500";
+            const fallbackImg = "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500";
+            const imgUrl = p.imageUrl || fallbackImg;
             const isAvail = (p.isAvailable !== false);
 
             if (!isAvail) {
@@ -103,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             card.innerHTML = `
                 ${!isAvail ? '<span class="badge bg-danger position-absolute top-0 end-0 m-2 px-2 py-1 shadow-sm" style="font-size:0.7rem; z-index:2;">TẠM HẾT</span>' : ''}
-                <img src="${imgUrl}" alt="${p.name}" class="pos-product-img" onerror="this.src='https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500'">
+                <img src="${imgUrl}" alt="${p.name}" class="pos-product-img" onerror="this.onerror=null; this.src='${fallbackImg}';">
                 <div class="pos-product-body">
                     <div class="pos-product-title">${p.name}</div>
                     <div class="pos-product-price">${formatCurrency(p.basePrice)}</div>
@@ -126,10 +127,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Open Drink Customizer Modal
     function openCustomizer(product) {
+        if (!shiftState.active) {
+            showPosZenToast("Quầy chưa có nhân viên đứng ca! Vui lòng chọn người đứng quầy để bán hàng.", "warning", 3000);
+            openShiftModal(true);
+            return;
+        }
         currentCustomizingProduct = product;
         document.getElementById("modalProdName").textContent = product.name;
         document.getElementById("modalProdPrice").textContent = formatCurrency(product.basePrice);
-        document.getElementById("modalProdImg").src = product.imageUrl || "https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500";
+        const modalImg = document.getElementById("modalProdImg");
+        if (modalImg) {
+            modalImg.onerror = function() { this.onerror = null; this.src = "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500"; };
+            modalImg.src = product.imageUrl || "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500";
+        }
         document.getElementById("modalItemNote").value = "";
         document.getElementById("modalItemQty").textContent = "1";
 
@@ -471,6 +481,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Cash Checkout Flow (Không tạo đơn trước, chỉ tạo khi thu ngân xác nhận tiền)
     document.getElementById("btnCheckoutCash")?.addEventListener("click", () => {
+        if (!shiftState.active) {
+            showPosZenToast("Quầy chưa có nhân viên đứng ca! Vui lòng chọn người đứng quầy để bán hàng.", "warning", 3000);
+            openShiftModal(true);
+            return;
+        }
         if (cart.length === 0) {
             showPosZenToast("Vui lòng chọn món trước khi thanh toán!", "warning", 2200);
             return;
@@ -611,6 +626,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // VietQR Checkout Flow (Tái sử dụng đơn nếu giỏ hàng không đổi, tránh spam ID)
     document.getElementById("btnCheckoutQr")?.addEventListener("click", async () => {
+        if (!shiftState.active) {
+            showPosZenToast("Quầy chưa có nhân viên đứng ca! Vui lòng chọn người đứng quầy để bán hàng.", "warning", 3000);
+            openShiftModal(true);
+            return;
+        }
         if (cart.length === 0) {
             showPosZenToast("Vui lòng chọn món trước khi thanh toán!", "warning", 2200);
             return;
@@ -888,9 +908,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json();
             updateShiftUI(data);
 
-            // Hiệu ứng chào đón nhẹ nhàng, êm dịu khi mở quầy POS (Không bật popup chặn màn hình)
-            const cashierTitle = data.shiftActive ? data.activeCashiersSummary : "Quầy Bán Lẻ Thu Ngân";
-            showPosZenToast(`Máy POS Đã Sẵn Sàng Phục Vụ • ${cashierTitle}`, "success", 2200);
+            if (data.shiftActive) {
+                showPosZenToast(`Máy POS Đã Sẵn Sàng Phục Vụ • ${data.activeCashiersSummary}`, "success", 2200);
+            } else {
+                showPosZenToast(`Quầy chưa có người đứng ca! Vui lòng chọn nhân viên trực quầy để mở bán.`, "warning", 3200);
+            }
         } catch (err) {
             console.error("Lỗi kiểm tra ca trực:", err);
         }
@@ -916,25 +938,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 dot.textContent = `ON (${data.activeCount})`;
             }
             if (summaryText) {
-                summaryText.textContent = `🟢 ${data.activeCashiersSummary}`;
+                summaryText.textContent = data.activeCashiersSummary;
                 summaryText.title = data.activeCashiersSummary;
             }
             if (lockOverlay) lockOverlay.style.display = "none";
             if (btnCheckout) btnCheckout.style.display = "block";
             window.POS_CASHIER_USERNAME = data.activeCashiersSummary;
         } else {
-            // Máy POS luôn ở trạng thái SẴN SÀNG BÁN HÀNG theo tài khoản chi nhánh, không khóa màn hình
+            // Khi không có người đứng quầy: Hiện màn hình hơi mờ (blur lock) và bắt buộc chọn người đứng quầy mới cho bán
             if (dot) {
-                dot.className = "badge bg-success-subtle text-success border border-success rounded-pill px-2 py-1";
-                dot.textContent = "READY";
+                dot.className = "badge bg-danger rounded-pill px-2 py-1";
+                dot.textContent = "OFF";
             }
             if (summaryText) {
-                summaryText.textContent = "🟢 Quầy Sẵn Sàng Bán";
-                summaryText.title = "Máy POS đang mở bán • Bấm để chọn danh sách nhân viên trực ca";
+                summaryText.textContent = "Chưa có người đứng quầy";
+                summaryText.title = "Vui lòng chọn nhân viên đứng quầy để bắt đầu bán hàng";
             }
-            if (lockOverlay) lockOverlay.style.display = "none";
+            if (lockOverlay) lockOverlay.style.display = "flex";
             if (btnCheckout) btnCheckout.style.display = "none";
-            window.POS_CASHIER_USERNAME = "Quầy Thu Ngân Chi Nhánh";
+            window.POS_CASHIER_USERNAME = "";
         }
     }
 
@@ -1031,6 +1053,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Đóng modal điểm danh
     document.getElementById("closeShiftModal")?.addEventListener("click", () => {
         document.getElementById("shiftModalBackdrop").style.display = "none";
+        if (!shiftState.active) {
+            const lockOverlay = document.getElementById("posLockOverlay");
+            if (lockOverlay) lockOverlay.style.display = "flex";
+        }
     });
 
     // Xác nhận vào ca & mở bán máy POS

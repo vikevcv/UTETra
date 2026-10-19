@@ -216,21 +216,31 @@
             align-items: center;
             justify-content: center;
             gap: 0.65rem;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
             transition: all 0.2s ease;
         }
 
-        .btn-finish-order:hover {
+        .btn-finish-order.disabled {
+            background: #252830;
+            color: #6B7280;
+            cursor: not-allowed;
+            box-shadow: none;
+            border: 1px dashed #3F4452;
+            opacity: 0.65;
+            transform: none !important;
+        }
+
+        .btn-finish-order:not(.disabled):hover {
             background: #059669;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.55);
         }
 
         .btn-print-workbench {
-            flex: 1;
+            flex: 1.2;
             background: #2D3240;
             color: #F3F4F6;
-            font-size: 1rem;
+            font-size: 1.05rem;
             font-weight: 700;
             border: 1.5px solid #4B5268;
             border-radius: 12px;
@@ -238,13 +248,41 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.65rem;
             transition: all 0.2s ease;
         }
 
-        .btn-print-workbench:hover {
-            background: #3B4255;
-            color: #FFFFFF;
+        /* Khi chưa in: Nút In Tem sáng rực rỡ (Amber/Gold) để thu hút thao tác trước */
+        .btn-print-workbench.highlight {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            color: #111827;
+            border-color: #FBBF24;
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.45);
+            font-weight: 800;
+            animation: pulse-print 2s infinite ease-in-out;
+        }
+
+        .btn-print-workbench.highlight:hover {
+            background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 0 22px rgba(245, 158, 11, 0.65);
+        }
+
+        /* Khi đã in: Chuyển về trạng thái đã hoàn thành (Xanh / Neutral có tick) */
+        .btn-print-workbench.printed {
+            background: #1C242B;
+            color: #38BDF8;
+            border-color: #0284C7;
+        }
+
+        .btn-print-workbench.printed:hover {
+            background: #24303B;
+            color: #7DD3FC;
+        }
+
+        @keyframes pulse-print {
+            0%, 100% { box-shadow: 0 0 12px rgba(245, 158, 11, 0.35); }
+            50% { box-shadow: 0 0 22px rgba(245, 158, 11, 0.7); }
         }
 
         /* Thẻ Đơn Hàng Game-like */
@@ -469,26 +507,62 @@
             color: #4B5563;
         }
 
-        /* Định dạng In Nhiệt Máy Tem Cup (50x30mm hoặc 60x40mm) */
+        /* Định dạng In Nhiệt Máy Tem Cup (50x30mm hoặc K80) */
         @media print {
-            body * { visibility: hidden !important; }
-            #printableStickersArea, #printableStickersArea * { visibility: visible !important; }
-            #printableStickersArea {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
+            @page {
+                size: auto;
+                margin: 0;
+            }
+            html, body, body.kds-body {
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
                 background: #FFFFFF !important;
+                margin: 0 !important;
                 padding: 0 !important;
+            }
+            body * {
+                visibility: hidden !important;
+            }
+            #printableStickersArea, #printableStickersArea * {
+                visibility: visible !important;
+            }
+            #printableStickersArea {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                background: #FFFFFF !important;
+                padding: 2mm !important;
                 margin: 0 !important;
             }
             .cup-sticker-preview {
                 width: 100% !important;
-                border: none !important;
+                max-width: 320px !important;
+                border: 1px solid #000000 !important;
                 box-shadow: none !important;
                 page-break-after: always;
-                margin: 0 0 10mm 0 !important;
-                padding: 4mm !important;
+                break-after: page;
+                margin: 0 auto 6mm auto !important;
+                padding: 3mm !important;
+                background: #FFFFFF !important;
+                color: #000000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .cup-sticker-preview .badge {
+                border: 1px solid #000 !important;
+                color: #000 !important;
+                background: transparent !important;
+            }
+            .cup-sticker-preview .sticker-specs {
+                background: #F3F4F6 !important;
+                border: 1px solid #999 !important;
+                color: #000 !important;
+            }
+            .cup-sticker-preview .d-print-none {
+                display: none !important;
             }
         }
     </style>
@@ -500,69 +574,33 @@
         <div class="pos-brand">
             <div class="pos-brand-enso">円</div>
             <span>UTETRA KDS</span>
-            <span class="badge bg-warning text-dark ms-2" style="font-size: 0.75rem; font-weight: 700;">Màn Hình Barista</span>
         </div>
 
         <!-- Navigation Tabs Chuyển Đổi Nhanh -->
         <div class="pos-nav-tabs d-none d-lg-flex">
-            <a href="<c:url value='/pos?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-cash-register me-1"></i>Bán Lẻ POS
-            </a>
-            <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab active">
-                <i class="fa-solid fa-mug-hot me-1"></i>Pha Chế KDS
-            </a>
-            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-box-open me-1"></i>Bàn Giao Đơn
-            </a>
-            <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-list-check me-1"></i>Thực Đơn Chi Nhánh
-            </a>
+            <a href="<c:url value='/pos?branchId=${branchId}'/>" class="pos-nav-tab">Bán Lẻ POS</a>
+            <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab active">Pha Chế KDS</a>
+            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab">Bàn Giao Đơn</a>
+            <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab">Thực Đơn Chi Nhánh</a>
         </div>
 
         <!-- Header Info & Actions -->
-        <div class="d-flex align-items-center gap-3">
-            <button id="btnSoundToggle" class="btn btn-outline-warning btn-sm d-flex align-items-center gap-2" title="Bật/Tắt chuông báo đơn mới">
+        <div class="pos-header-info">
+            <button id="btnSoundToggle" class="btn-sound-toggle" title="Chuông báo đơn mới: ĐANG BẬT (Bấm để tắt)">
                 <i class="fa-solid fa-bell" id="soundIcon"></i>
-                <span id="soundText" class="d-none d-md-inline">Chuông Báo: BẬT</span>
             </button>
 
-            <div class="pos-badge">
-                <i class="fa-solid fa-store text-warning"></i>
-                <select id="kdsBranchSelect" class="form-select form-select-sm bg-transparent text-white border-0 py-0 pe-4" style="cursor: pointer; width: auto; font-weight: 600;">
-                    <c:forEach var="b" items="${branches}">
-                        <option value="${b.id}" class="text-dark" ${b.id == branchId ? 'selected' : ''}>${b.name}</option>
-                    </c:forEach>
-                    <c:if test="${empty branches}">
-                        <option value="1" class="text-dark" selected>UTETra Chi Nhánh Thủ Đức</option>
-                    </c:if>
-                </select>
+            <div class="pos-badge" title="Cơ sở chi nhánh cố định của quầy KDS">
+                <span class="fw-bold text-white">${branchName}</span>
             </div>
 
-            <div class="d-flex align-items-center gap-2 bg-dark px-2 py-1 rounded" style="font-size: 0.8rem; border: 1px solid var(--kds-border);">
-                <span class="badge bg-success rounded-circle p-1" id="liveWsDot"></span>
-                <span id="liveStatusText" class="text-muted">Realtime KDS</span>
-            </div>
+            <div class="pos-clock" id="posClock">00:00:00</div>
 
-            <a href="<c:url value='/pos'/>" class="btn btn-outline-light btn-sm" title="Về màn hình bán lẻ POS">
-                <i class="fa-solid fa-arrow-left me-1"></i>Quầy POS
+            <a href="<c:url value='/pos/logout'/>" class="btn-pos-logout" title="Đăng xuất quầy pha chế KDS">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
             </a>
         </div>
     </header>
-
-    <!-- Inventory Ticker Bar (Tồn kho Ly và Vật Tư) -->
-    <div class="kds-inventory-ticker" id="kdsInventoryTicker">
-        <div class="d-flex align-items-center gap-3">
-            <span class="ticker-title"><i class="fa-solid fa-boxes-stacked me-1 text-warning"></i>VẬT TƯ TIÊU HAO:</span>
-            <div class="d-flex align-items-center gap-2" id="cupStockPills">
-                <span class="stock-pill" id="stockPillM"><i class="fa-solid fa-whiskey-glass me-1"></i>Ly M: <strong id="stockValM">--</strong></span>
-                <span class="stock-pill" id="stockPillL"><i class="fa-solid fa-glass-water me-1"></i>Ly L: <strong id="stockValL">--</strong></span>
-            </div>
-        </div>
-        <div class="d-flex align-items-center gap-2 text-muted small">
-            <i class="fa-solid fa-circle-info text-info"></i>
-            <span>Tự động trừ kho khi hoàn tất pha chế</span>
-        </div>
-    </div>
 
     <!-- Main Container: Focus Mode Workbench & Queue Bar -->
     <main class="kds-focus-layout">
@@ -597,7 +635,10 @@
         </div>
     </main>
 
-    <!-- Modal In Tem Ly Biểu Mẫu QLPC_BM1 -->
+    <!-- Vùng In Tem Ly Chuẩn Máy In Nhiệt (@media print) -->
+    <div id="printableStickersArea" style="display: none;"></div>
+
+    <!-- Modal Xem Trước & In Lại Tem Ly Biểu Mẫu QLPC_BM1 -->
     <div class="modal fade" id="stickerModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content bg-dark text-white border-secondary">
@@ -611,18 +652,18 @@
                 <div class="modal-body py-4" style="max-height: 75vh; overflow-y: auto;">
                     <div class="alert alert-dark border-secondary d-flex justify-content-between align-items-center py-2 px-3 mb-3">
                         <span class="small text-muted"><i class="fa-solid fa-info-circle me-1"></i>Chuẩn in nhiệt máy dán ly K80/50x30mm. Bấm In Tất Cả để in toàn bộ lô tem.</span>
-                        <button class="btn btn-warning btn-sm fw-bold px-3" onclick="window.print()">
+                        <button class="btn btn-warning btn-sm fw-bold px-3" onclick="triggerPrintStickers()">
                             <i class="fa-solid fa-print me-1"></i>In Tất Cả Tem
                         </button>
                     </div>
 
-                    <div id="printableStickersArea" class="d-flex flex-column align-items-center gap-3">
-                        <!-- Stickers render dynamically here -->
+                    <div id="previewStickersContainer" class="d-flex flex-column align-items-center gap-3">
+                        <!-- Stickers render preview here -->
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
-                    <button type="button" class="btn btn-warning btn-sm fw-bold px-3" onclick="window.print()">
+                    <button type="button" class="btn btn-warning btn-sm fw-bold px-3" onclick="triggerPrintStickers()">
                         <i class="fa-solid fa-print me-1"></i>In Nhiệt Toàn Bộ
                     </button>
                 </div>
@@ -643,33 +684,47 @@
         let kdsOrders = [];
         let stompClient = null;
         let stickerModalInstance = null;
+        let currentStickerOrderId = null;
+        let currentTopOrder = null;
+        const printedOrders = new Set(JSON.parse(sessionStorage.getItem("kds_printed_orders") || "[]"));
+
+        function isOrderPrinted(orderId) {
+            return printedOrders.has(String(orderId));
+        }
+
+        function markOrderAsPrinted(orderId) {
+            if (!orderId) return;
+            printedOrders.add(String(orderId));
+            sessionStorage.setItem("kds_printed_orders", JSON.stringify(Array.from(printedOrders)));
+            if (kdsOrders && kdsOrders.length > 0) {
+                renderFocusWorkbench(kdsOrders);
+            }
+        }
+
+        function triggerPrintStickers() {
+            window.print();
+            if (currentStickerOrderId) {
+                markOrderAsPrinted(currentStickerOrderId);
+            }
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
             stickerModalInstance = new bootstrap.Modal(document.getElementById("stickerModal"));
 
-            // Branch selector
-            const branchSelect = document.getElementById("kdsBranchSelect");
-            if (branchSelect) {
-                branchSelect.addEventListener("change", (e) => {
-                    window.location.href = "<c:url value='/pos/kitchen'/>?branchId=" + e.target.value;
-                });
-            }
-
             // Sound Toggle
             const soundBtn = document.getElementById("btnSoundToggle");
             const soundIcon = document.getElementById("soundIcon");
-            const soundText = document.getElementById("soundText");
             soundBtn.addEventListener("click", () => {
                 soundEnabled = !soundEnabled;
                 if (soundEnabled) {
                     soundIcon.className = "fa-solid fa-bell";
-                    soundBtn.className = "btn btn-outline-warning btn-sm d-flex align-items-center gap-2";
-                    soundText.textContent = "Chuông Báo: BẬT";
+                    soundBtn.className = "btn-sound-toggle";
+                    soundBtn.title = "Chuông báo đơn mới: ĐANG BẬT (Bấm để tắt)";
                     playZenBellSound();
                 } else {
                     soundIcon.className = "fa-solid fa-bell-slash";
-                    soundBtn.className = "btn btn-outline-secondary btn-sm d-flex align-items-center gap-2";
-                    soundText.textContent = "Chuông Báo: TẮT";
+                    soundBtn.className = "btn-sound-toggle muted";
+                    soundBtn.title = "Chuông báo đơn mới: ĐÃ TẮT (Bấm để bật)";
                 }
             });
 
@@ -679,6 +734,17 @@
 
             // Fallback polling every 6 seconds
             setInterval(fetchKitchenOrders, 6000);
+
+            // Realtime Clock
+            const clockEl = document.getElementById("posClock");
+            if (clockEl) {
+                const updateClock = () => {
+                    const now = new Date();
+                    clockEl.textContent = now.toLocaleTimeString('vi-VN', { hour12: false });
+                };
+                updateClock();
+                setInterval(updateClock, 1000);
+            }
         });
 
         // Web Audio API Zen Synth Bell Sound
@@ -717,8 +783,10 @@
                 stompClient.debug = null; // Tắt log rác
 
                 stompClient.connect({}, (frame) => {
-                    document.getElementById("liveWsDot").className = "badge bg-success rounded-circle p-1";
-                    document.getElementById("liveStatusText").textContent = "Realtime KDS: Online";
+                    const dot = document.getElementById("liveWsDot");
+                    if (dot) dot.className = "badge bg-success rounded-circle p-1";
+                    const txt = document.getElementById("liveStatusText");
+                    if (txt) txt.textContent = "Realtime KDS: Online";
 
                     // Đăng ký nhận thông báo cho chi nhánh hiện tại
                     stompClient.subscribe("/topic/kitchen/" + window.KDS_BRANCH_ID, (message) => {
@@ -732,42 +800,19 @@
                     });
                 }, (error) => {
                     console.warn("WebSocket disconnect, relying on polling:", error);
-                    document.getElementById("liveWsDot").className = "badge bg-warning rounded-circle p-1";
-                    document.getElementById("liveStatusText").textContent = "Polling Mode (5s)";
+                    const dot = document.getElementById("liveWsDot");
+                    if (dot) dot.className = "badge bg-warning rounded-circle p-1";
+                    const txt = document.getElementById("liveStatusText");
+                    if (txt) txt.textContent = "Polling Mode (5s)";
                 });
             } catch (err) {
                 console.warn("WebSocket init error:", err);
             }
         }
 
-        // Fetch Cup Stocks via REST API
-        async function fetchCupStocks() {
-            try {
-                const res = await fetch("<c:url value='/api/kitchen/cups'/>?branchId=" + window.KDS_BRANCH_ID);
-                if (!res.ok) return;
-                const stocks = await res.json();
-                const m = stocks.M !== undefined ? stocks.M : 0;
-                const l = stocks.L !== undefined ? stocks.L : 0;
-
-                const valM = document.getElementById("stockValM");
-                const valL = document.getElementById("stockValL");
-                const pillM = document.getElementById("stockPillM");
-                const pillL = document.getElementById("stockPillL");
-
-                if (valM) valM.textContent = m + " ly";
-                if (valL) valL.textContent = l + " ly";
-
-                if (pillM) pillM.classList.toggle("low", m <= 5);
-                if (pillL) pillL.classList.toggle("low", l <= 5);
-            } catch (e) {
-                console.error("Lỗi tải tồn kho ly:", e);
-            }
-        }
-
         // Fetch Kitchen Orders via REST API
         async function fetchKitchenOrders() {
             try {
-                fetchCupStocks();
                 const res = await fetch("<c:url value='/api/kitchen/orders'/>?branchId=" + window.KDS_BRANCH_ID);
                 if (!res.ok) return;
                 const orders = await res.json();
@@ -870,7 +915,18 @@
                 `;
             });
 
-            const completeBtnText = `<i class="fa-solid fa-circle-check me-2"></i>ĐÃ XONG`;
+            currentTopOrder = topOrder;
+            const hasPrinted = isOrderPrinted(topOrder.orderId);
+
+            const finishButtonHtml = hasPrinted ? `
+                <button class="btn-finish-order animate__animated animate__fadeIn" onclick="completeOrder(\${topOrder.orderId})">
+                    <i class="fa-solid fa-circle-check me-2"></i>ĐÃ XONG
+                </button>
+            ` : `
+                <button class="btn-finish-order disabled" onclick="completeOrder(\${topOrder.orderId})" title="Vui lòng bấm In Tem Ly trước khi hoàn tất">
+                    <i class="fa-solid fa-circle-check me-2"></i>ĐÃ XONG
+                </button>
+            `;
 
             workbench.innerHTML = `
                 <div class="workbench-header">
@@ -897,12 +953,12 @@
                 </div>
 
                 <div class="workbench-footer">
-                    <button class="btn-print-workbench" onclick="openStickerModal(\${topOrder.orderId})">
-                        <i class="fa-solid fa-print"></i>In Tem Ly BM1
+                    <button class="btn-print-workbench \${hasPrinted ? 'printed' : 'highlight'}" onclick="openStickerModal(\${topOrder.orderId})">
+                        <i class="fa-solid fa-print me-2 fs-5"></i>
+                        <span>\${hasPrinted ? 'In Lại Tem Ly BM1' : 'In Tem Ly BM1'}</span>
+                        \${hasPrinted ? '<span class="badge bg-success ms-2 py-1"><i class="fa-solid fa-check me-1"></i>Đã in</span>' : ''}
                     </button>
-                    <button class="btn-finish-order" onclick="completeOrder(\${topOrder.orderId})">
-                        \${completeBtnText}
-                    </button>
+                    \${finishButtonHtml}
                 </div>
             `;
         }
@@ -942,6 +998,20 @@
 
         // Action: Hoàn tất pha chế (UC08)
         async function completeOrder(orderId) {
+            if (!isOrderPrinted(orderId)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Chưa In Tem Ly',
+                    text: 'Bắt buộc phải in tem dán cốc trước khi bấm ĐÃ XONG để dán cốc bàn giao!',
+                    confirmButtonColor: '#8C6D53',
+                    confirmButtonText: 'In Tem Ngay'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        openStickerModal(orderId);
+                    }
+                });
+                return;
+            }
             try {
                 const res = await fetch(`<c:url value='/api/kitchen/orders/'/>\${orderId}/complete`, { method: "POST" });
                 if (res.ok) {
@@ -968,54 +1038,77 @@
             }
         }
 
-        // Action: Mở Modal In Tem Ly Biểu Mẫu QLPC_BM1 (UC09)
+        // Hàm sinh HTML tem ly chuẩn Biểu mẫu QLPC_BM1
+        function buildSingleStickerHtml(stk, orderId, isReprint = false) {
+            return `
+                <div class="cup-sticker-preview">
+                    <div class="sticker-header">
+                        <span class="sticker-title">UTETra Zen Tea</span>
+                        <span class="badge bg-dark text-white fw-bold">STT #\${stk.dailyQueueNumber}</span>
+                    </div>
+                    <div class="sticker-info-row">
+                        <span>Mã Đơn: \${stk.orderCode}</span>
+                        <span class="text-danger fw-bolder">Ly: \${stk.cupIndex} / \${stk.totalCups}</span>
+                    </div>
+                    <div class="sticker-info-row text-muted" style="font-size: 0.72rem;">
+                        <span>Chi Nhánh: \${stk.branchName}</span>
+                        \${stk.isReprint || isReprint ? '<span class="text-danger fw-bold">[IN LẠI]</span>' : ''}
+                    </div>
+                    <div class="sticker-prod-name">\${stk.productName}</div>
+                    <div class="sticker-specs">
+                        [ \${stk.sizeName} ] • Đường: \${stk.sugarLevel} • Đá: \${stk.iceLevel}
+                    </div>
+                    <div class="sticker-toppings">
+                        <i class="fa-solid fa-plus me-1"></i>Topping: \${stk.toppingsSummary}
+                    </div>
+                    \${stk.customerNote ? `<div class="small fst-italic text-secondary mb-1">Ghi chú: \${stk.customerNote}</div>` : ''}
+                    <div class="sticker-footer">
+                        <span>Biểu mẫu QLPC_BM1</span>
+                        <span>Giờ in: \${stk.printedAt}</span>
+                    </div>
+                    <div class="text-end mt-2 d-print-none">
+                        <button class="btn btn-outline-secondary btn-sm py-0" style="font-size: 0.7rem;" onclick="reprintSingleSticker(\${orderId}, \${stk.cupIndex})">
+                            <i class="fa-solid fa-redo me-1"></i>In Lại Ly Này
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Action: Bấm In Tem Ly -> Gọi máy in trình duyệt ngay lập tức giống POS
         async function openStickerModal(orderId) {
             try {
                 const res = await fetch(`<c:url value='/api/kitchen/orders/'/>\${orderId}/stickers`);
-                if (!res.ok) return;
+                if (!res.ok) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Không Thể Tải Tem',
+                        text: 'Không tìm thấy dữ liệu tem ly cho đơn hàng này!',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    return;
+                }
+                currentStickerOrderId = orderId;
                 const stickers = await res.json();
 
-                const container = document.getElementById("printableStickersArea");
-                container.innerHTML = "";
-
+                // Nạp tem vào cả vùng in nhiệt độc lập (#printableStickersArea) và modal preview
+                const printContainer = document.getElementById("printableStickersArea");
+                const previewContainer = document.getElementById("previewStickersContainer");
+                
+                let stickersHtml = "";
                 stickers.forEach(stk => {
-                    const card = document.createElement("div");
-                    card.className = "cup-sticker-preview";
-                    card.innerHTML = `
-                        <div class="sticker-header">
-                            <span class="sticker-title">UTETra Zen Tea</span>
-                            <span class="badge bg-dark text-white fw-bold">STT #\${stk.dailyQueueNumber}</span>
-                        </div>
-                        <div class="sticker-info-row">
-                            <span>Mã Đơn: \${stk.orderCode}</span>
-                            <span class="text-danger fw-bolder">Ly: \${stk.cupIndex} / \${stk.totalCups}</span>
-                        </div>
-                        <div class="sticker-info-row text-muted" style="font-size: 0.72rem;">
-                            <span>Chi Nhánh: \${stk.branchName}</span>
-                            \${stk.isReprint ? '<span class="text-danger fw-bold">[IN LẠI]</span>' : ''}
-                        </div>
-                        <div class="sticker-prod-name">\${stk.productName}</div>
-                        <div class="sticker-specs">
-                            [ \${stk.sizeName} ] • Đường: \${stk.sugarLevel} • Đá: \${stk.iceLevel}
-                        </div>
-                        <div class="sticker-toppings">
-                            <i class="fa-solid fa-plus me-1"></i>Topping: \${stk.toppingsSummary}
-                        </div>
-                        \${stk.customerNote ? `<div class="small fst-italic text-secondary mb-1">Ghi chú: \${stk.customerNote}</div>` : ''}
-                        <div class="sticker-footer">
-                            <span>Biểu mẫu QLPC_BM1</span>
-                            <span>Giờ in: \${stk.printedAt}</span>
-                        </div>
-                        <div class="text-end mt-2 d-print-none">
-                            <button class="btn btn-outline-secondary btn-sm py-0" style="font-size: 0.7rem;" onclick="reprintSingleSticker(\${orderId}, \${stk.cupIndex})">
-                                <i class="fa-solid fa-redo me-1"></i>In Lại Ly Này
-                            </button>
-                        </div>
-                    `;
-                    container.appendChild(card);
+                    stickersHtml += buildSingleStickerHtml(stk, orderId);
                 });
 
-                stickerModalInstance.show();
+                if (printContainer) printContainer.innerHTML = stickersHtml;
+                if (previewContainer) previewContainer.innerHTML = stickersHtml;
+
+                // Kích hoạt hộp thoại in của hệ thống ngay lập tức giống POS
+                window.print();
+
+                // Đánh dấu đã in tem -> Nút ĐÃ XONG lập tức sáng xanh
+                markOrderAsPrinted(orderId);
             } catch (e) {
                 console.error("Lỗi lấy dữ liệu tem ly:", e);
             }
@@ -1027,15 +1120,14 @@
                 const res = await fetch(`<c:url value='/api/kitchen/orders/'/>\${orderId}/stickers/\${cupIndex}`);
                 if (!res.ok) return;
                 const stk = await res.json();
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'info',
-                    title: `Đang in lại tem ly \${stk.cupIndex}/\${stk.totalCups} (\${stk.orderCode})`,
-                    showConfirmButton: false,
-                    timer: 1800
-                });
+                
+                const printContainer = document.getElementById("printableStickersArea");
+                if (printContainer) {
+                    printContainer.innerHTML = buildSingleStickerHtml(stk, orderId, true);
+                }
+
                 window.print();
+                markOrderAsPrinted(orderId);
             } catch (e) {
                 console.error(e);
             }

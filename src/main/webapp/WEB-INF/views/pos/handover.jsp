@@ -35,47 +35,25 @@
         <div class="pos-brand">
             <div class="pos-brand-enso">円</div>
             <span>UTETRA POS</span>
-            <span class="badge bg-primary ms-2" style="font-size: 0.75rem; font-weight: 700; background-color: #8C6D53 !important;">Quầy Bàn Giao</span>
         </div>
 
         <!-- Navigation Tabs Chuyển Đổi Nhanh -->
         <div class="pos-nav-tabs d-none d-lg-flex">
-            <a href="<c:url value='/pos?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-cash-register me-1"></i>Bán Lẻ POS
-            </a>
-            <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-mug-hot me-1"></i>Pha Chế KDS
-            </a>
-            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab active">
-                <i class="fa-solid fa-box-open me-1"></i>Bàn Giao Đơn
-            </a>
-            <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-list-check me-1"></i>Thực Đơn Chi Nhánh
-            </a>
+            <a href="<c:url value='/pos?branchId=${branchId}'/>" class="pos-nav-tab">Bán Lẻ POS</a>
+            <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab">Pha Chế KDS</a>
+            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab active">Bàn Giao Đơn</a>
+            <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab">Thực Đơn Chi Nhánh</a>
         </div>
 
         <!-- Header Info & Actions -->
         <div class="pos-header-info">
-            <div class="pos-badge">
-                <i class="fa-solid fa-store text-warning"></i>
-                <select id="branchSelect" class="form-select form-select-sm bg-transparent text-white border-0 py-0 pe-4" style="cursor: pointer; width: auto; font-weight: 500;" onchange="changeBranch(this.value)">
-                    <c:forEach var="b" items="${branches}">
-                        <option value="${b.id}" class="text-dark" ${b.id == branchId ? 'selected' : ''}>${b.name}</option>
-                    </c:forEach>
-                    <c:if test="${empty branches}">
-                        <option value="1" class="text-dark" selected>UTETra Flagship Thủ Đức</option>
-                    </c:if>
-                </select>
-            </div>
-
-            <div class="pos-badge" title="Nhân viên trực quầy bàn giao">
-                <i class="fa-solid fa-circle-user text-warning"></i>
-                <span class="fw-bold" style="max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${cashierName}</span>
+            <div class="pos-badge" title="Cơ sở chi nhánh cố định của quầy bàn giao">
+                <span class="fw-bold text-white">${branchName}</span>
             </div>
 
             <div class="pos-clock" id="posClock">00:00:00</div>
 
-            <a href="<c:url value='/portal'/>" class="btn btn-outline-light btn-sm" title="Quay về trung tâm điều hành">
+            <a href="<c:url value='/pos/logout'/>" class="btn-pos-logout" title="Đăng xuất quầy bàn giao">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
             </a>
         </div>
@@ -434,11 +412,6 @@
             }
             update();
             setInterval(update, 1000);
-        }
-
-        // Chuyển Đổi Chi Nhánh
-        function changeBranch(newBranchId) {
-            window.location.href = '<c:url value="/pos/handover"/>?branchId=' + newBranchId;
         }
 
         // Tải Danh Sách Đơn Chờ Bàn Giao

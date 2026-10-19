@@ -29,13 +29,11 @@ public class KitchenController {
         List<Branch> branches = branchRepository.findAll();
         Branch currentBranch = null;
 
-        if (branchId != null) {
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        if (sessionBranchId != null) {
+            currentBranch = branchRepository.findById(sessionBranchId).orElse(null);
+        } else if (branchId != null) {
             currentBranch = branchRepository.findById(branchId).orElse(null);
-        } else {
-            Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-            if (sessionBranchId != null) {
-                currentBranch = branchRepository.findById(sessionBranchId).orElse(null);
-            }
         }
 
         if (currentBranch == null && !branches.isEmpty()) {

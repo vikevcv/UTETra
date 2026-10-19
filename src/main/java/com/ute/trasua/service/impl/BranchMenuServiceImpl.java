@@ -336,6 +336,17 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             int currentStock = isDbAvail ? Math.max(0, estimatedPortions) : 0;
             boolean isAvail = isDbAvail && (currentStock > 0);
 
+            String topImg = "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500";
+            if (cleanTopName.contains("hạt sen") || cleanTopName.contains("sen")) {
+                topImg = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500";
+            } else if (cleanTopName.contains("sương sáo") || cleanTopName.contains("thạch")) {
+                topImg = "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500";
+            } else if (cleanTopName.contains("kem mây") || cleanTopName.contains("kem") || cleanTopName.contains("macchiato")) {
+                topImg = "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=500";
+            } else if (cleanTopName.contains("trân châu")) {
+                topImg = "https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500";
+            }
+
             list.add(BranchMenuStatusDto.builder()
                     .id(t.getId())
                     .itemType("TOPPING")
@@ -343,7 +354,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
                     .name(topName)
                     .categoryName("Topping Thêm")
                     .price(t.getPrice())
-                    .imageUrl("")
+                    .imageUrl(topImg)
                     .isAvailable(isAvail)
                     .stockEstimate(currentStock)
                     .build());
