@@ -21,12 +21,12 @@
                 Tổng quan hoạt động kinh doanh, nhân sự và điều phối hệ thống chuỗi trà sữa UTETra
               </p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex flex-wrap gap-2">
               <a href="${pageContext.request.contextPath}/admin/dashboard" class="btn btn-zen-light">
                 <i class="fa-solid fa-arrows-rotate me-1"></i> Cập Nhật
               </a>
-              <a href="${pageContext.request.contextPath}/admin/reports" class="btn btn-zen-primary">
-                <i class="fa-solid fa-file-excel me-1"></i> Báo Cáo Doanh Thu
+              <a href="${pageContext.request.contextPath}/admin/reports" class="btn btn-success text-white fw-bold shadow-sm" style="background-color: #059669; border-color: #059669;">
+                <i class="fa-solid fa-chart-line me-1"></i> Báo Cáo Doanh Thu
               </a>
             </div>
           </div>
@@ -86,30 +86,33 @@
 
             <!-- Revenue Today -->
             <div class="col-12 col-sm-6 col-xl-3">
-              <div class="kpi-card">
-                <div class="kpi-icon-box kpi-icon-rose">
-                  <i class="fa-solid fa-coins"></i>
-                </div>
-                <div>
-                  <div class="kpi-label">Doanh Thu Hôm Nay</div>
-                  <div class="kpi-value text-danger" style="font-size: 1.35rem;">${todayReport.formattedTotalNetRevenue
-                    != null ? todayReport.formattedTotalNetRevenue : '0 đ'}</div>
-                  <div class="text-muted small mt-1">
-                    <span class="text-success fw-bold"><i class="fa-solid fa-receipt"></i> ${todayReport.completedOrders
-                      != null ? todayReport.completedOrders : 0}</span> đơn hoàn thành
+              <a href="${pageContext.request.contextPath}/admin/reports" class="text-decoration-none">
+                <div class="kpi-card shadow-sm" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                  <div class="kpi-icon-box kpi-icon-rose">
+                    <i class="fa-solid fa-coins"></i>
+                  </div>
+                  <div>
+                    <div class="kpi-label">Doanh Thu Hôm Nay <i class="fa-solid fa-arrow-up-right-from-square ms-1 text-muted" style="font-size: 0.75rem;"></i></div>
+                    <div class="kpi-value text-danger" style="font-size: 1.35rem;">${todayReport.formattedTotalNetRevenue != null ? todayReport.formattedTotalNetRevenue : '0 đ'}</div>
+                    <div class="text-muted small mt-1">
+                      <span class="text-success fw-bold"><i class="fa-solid fa-receipt"></i> ${todayReport.completedOrders != null ? todayReport.completedOrders : 0}</span> đơn hoàn thành
+                    </div>
                   </div>
                 </div>
-              </div>
+              </a>
             </div>
           </div>
 
           <!-- Quick Action Navigation Bar -->
           <div class="zen-card mb-4 p-3">
             <div class="row g-2 align-items-center">
-              <div class="col-12 col-md-2 fw-bold text-dark small text-uppercase">
+              <div class="col-12 col-md-auto fw-bold text-dark small text-uppercase pe-3">
                 <i class="fa-solid fa-bolt text-warning me-1"></i> Thao Tác Nhanh:
               </div>
-              <div class="col-12 col-md-10 d-flex flex-wrap gap-2">
+              <div class="col-12 col-md d-flex flex-wrap gap-2">
+                <a href="${pageContext.request.contextPath}/admin/reports" class="btn btn-sm btn-success text-white fw-semibold shadow-sm" style="background-color: #059669; border-color: #059669;">
+                  <i class="fa-solid fa-chart-line me-1"></i> Báo Cáo Doanh Thu
+                </a>
                 <a href="${pageContext.request.contextPath}/admin/users" class="btn btn-sm btn-zen-light">
                   <i class="fa-solid fa-user-plus text-primary me-1"></i> Quản Lý Người Dùng
                 </a>
@@ -121,9 +124,6 @@
                 </a>
                 <a href="${pageContext.request.contextPath}/admin/products" class="btn btn-sm btn-zen-light">
                   <i class="fa-solid fa-mug-hot text-danger me-1"></i> Quản Lý Thực Đơn
-                </a>
-                <a href="${pageContext.request.contextPath}/admin/reports" class="btn btn-sm btn-zen-light">
-                  <i class="fa-solid fa-file-excel text-success me-1"></i> Báo Cáo Doanh Thu
                 </a>
               </div>
             </div>

@@ -61,6 +61,13 @@
         <div class="sidebar-heading">QUẢN TRỊ TOÀN CHUỖI</div>
         <ul class="sidebar-menu">
           <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/admin/reports" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/reports') ? 'active' : ''}">
+              <i class="fa-solid fa-chart-line text-success"></i>
+              <span>Báo Cáo Doanh Thu</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
             <a href="${pageContext.request.contextPath}/admin/users" 
                class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/users') ? 'active' : ''}">
               <i class="fa-solid fa-users-gear"></i>
