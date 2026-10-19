@@ -1,13 +1,14 @@
 package com.ute.trasua.controller;
 
+import com.ute.trasua.dto.user.UserAddressDto;
 import com.ute.trasua.entity.Branch;
 import com.ute.trasua.entity.Order;
 import com.ute.trasua.entity.User;
-import com.ute.trasua.entity.Branch;
-import com.ute.trasua.entity.Order;
-import com.ute.trasua.entity.User;
+import com.ute.trasua.repository.OrderRepository;
 import com.ute.trasua.service.BranchService;
 import com.ute.trasua.service.OnlineOrderService;
+import com.ute.trasua.service.PayOSService;
+import com.ute.trasua.service.UserAddressService;
 import com.ute.trasua.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -26,20 +27,26 @@ public class CheckoutViewController {
 
     private final BranchService branchService;
     private final UserService userService;
+    private final UserAddressService userAddressService;
     private final OnlineOrderService onlineOrderService;
-    private final com.ute.trasua.service.PayOSService payosService;
-    private final com.ute.trasua.repository.OrderRepository orderRepository;
+    private final PayOSService payosService;
+    private final OrderRepository orderRepository;
+    private final com.ute.trasua.service.OrderSecurityService orderSecurityService;
 
     public CheckoutViewController(BranchService branchService,
                                   UserService userService,
+                                  UserAddressService userAddressService,
                                   OnlineOrderService onlineOrderService,
-                                  com.ute.trasua.service.PayOSService payosService,
-                                  com.ute.trasua.repository.OrderRepository orderRepository) {
+                                  PayOSService payosService,
+                                  OrderRepository orderRepository,
+                                  com.ute.trasua.service.OrderSecurityService orderSecurityService) {
         this.branchService = branchService;
         this.userService = userService;
+        this.userAddressService = userAddressService;
         this.onlineOrderService = onlineOrderService;
         this.payosService = payosService;
         this.orderRepository = orderRepository;
+        this.orderSecurityService = orderSecurityService;
     }
 
     @GetMapping("/checkout")
@@ -48,12 +55,19 @@ public class CheckoutViewController {
         model.addAttribute("branches", activeBranches);
 
         User currentUser = userService.getCurrentAuthenticatedUser();
-        if (currentUser != null) {
-            model.addAttribute("currentUser", currentUser);
-            model.addAttribute("defaultCustomerName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
-            model.addAttribute("defaultCustomerPhone", currentUser.getPhone() != null ? currentUser.getPhone() : "");
-            model.addAttribute("defaultCustomerEmail", currentUser.getEmail() != null ? currentUser.getEmail() : "");
+        if (currentUser == null) {
+            return "redirect:/auth/login?redirect=/checkout";
         }
+
+        model.addAttribute("currentUser", currentUser);
+        model.addAttribute("defaultCustomerName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
+        model.addAttribute("defaultCustomerPhone", currentUser.getPhone() != null ? currentUser.getPhone() : "");
+        model.addAttribute("defaultCustomerEmail", currentUser.getEmail() != null ? currentUser.getEmail() : "");
+
+        List<UserAddressDto> addresses = userAddressService.getAddressesByUserId(currentUser.getId());
+        model.addAttribute("userAddresses", addresses);
+        UserAddressDto defaultAddress = userAddressService.getDefaultAddress(currentUser.getId());
+        model.addAttribute("defaultAddress", defaultAddress);
 
         model.addAttribute("siteTitle", "Thanh Toán & Đặt Hàng Trực Tuyến — UTETra Zen Gallery");
         return "checkout/index";
@@ -64,10 +78,21 @@ public class CheckoutViewController {
      */
     @GetMapping("/checkout/payment")
     public String checkoutPaymentPage(@RequestParam("orderCode") String orderCodeParam, Model model) {
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        if (currentUser == null) {
+            return "redirect:/auth/login?redirect=/checkout/payment?orderCode=" + orderCodeParam;
+        }
+
         try {
             Order order = resolveOrder(orderCodeParam);
             if (order == null) {
                 return "redirect:/cart?error=order_not_found";
+            }
+
+            if (!orderSecurityService.canAccessOrder(order, currentUser)) {
+                log.warn(">>> [SECURITY ACCESS DENIED] User '{}' không có quyền truy cập thanh toán đơn '{}'",
+                        currentUser.getUsername(), order.getOrderCode());
+                return "redirect:/?accessDenied=true";
             }
 
             // Nếu đơn đã thanh toán xong từ trước, chuyển ngay sang trang thành công
@@ -148,11 +173,23 @@ public class CheckoutViewController {
 
     @GetMapping("/checkout/success")
     public String checkoutSuccessPage(@RequestParam("orderCode") String orderCodeParam, Model model) {
+        User currentUser = userService.getCurrentAuthenticatedUser();
+        if (currentUser == null) {
+            return "redirect:/auth/login?redirect=/checkout/success?orderCode=" + orderCodeParam;
+        }
+
         try {
             Order order = resolveOrder(orderCodeParam);
             if (order == null) {
                 return "redirect:/cart?error=order_not_found";
             }
+
+            if (!orderSecurityService.canAccessOrder(order, currentUser)) {
+                log.warn(">>> [SECURITY ACCESS DENIED] User '{}' không có quyền xem biên nhận đơn '{}'",
+                        currentUser.getUsername(), order.getOrderCode());
+                return "redirect:/?accessDenied=true";
+            }
+
             model.addAttribute("order", order);
             model.addAttribute("siteTitle", "Đặt Hàng Thành Công #" + order.getOrderCode() + " — UTETra");
             return "checkout/success";

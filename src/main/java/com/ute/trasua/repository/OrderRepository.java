@@ -39,7 +39,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "ORDER BY o.createdAt DESC")
     List<Order> findTop20ByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.user.id = :userId " +
+           "AND UPPER(o.voucherCode) = UPPER(:voucherCode) " +
+           "AND o.status <> 'CANCELLED'")
+    long countUsedVoucherByUser(@Param("userId") Long userId, @Param("voucherCode") String voucherCode);
+
     List<Order> findByBranchIdAndCreatedAtBetweenOrderByCreatedAtDesc(Long branchId, LocalDateTime start, LocalDateTime end);
+
     long countByBranchIdAndCreatedAtBetween(Long branchId, LocalDateTime start, LocalDateTime end);
     List<Order> findTop20ByBranchIdOrderByCreatedAtDesc(Long branchId);
 

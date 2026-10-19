@@ -25,13 +25,32 @@ import java.util.Map;
 public class PayOSPaymentApiController {
 
     private final PayOSService payosService;
+    private final com.ute.trasua.repository.UserRepository userRepository;
+    private final com.ute.trasua.service.OrderSecurityService orderSecurityService;
 
     /**
      * Khởi tạo hoặc lấy lại link thanh toán PayOS còn hạn của đơn hàng.
      */
     @PostMapping("/payos/create-link")
-    public ResponseEntity<PayOSCreatePaymentResponse> createOrGetPaymentLink(@RequestParam("orderCode") String orderCode) {
+    public ResponseEntity<?> createOrGetPaymentLink(
+            @RequestParam("orderCode") String orderCode,
+            org.springframework.security.core.Authentication authentication) {
         log.info(">>> API yêu cầu tạo/lấy link thanh toán PayOS cho đơn: {}", orderCode);
+        com.ute.trasua.entity.User currentUser = resolveCurrentUser(authentication);
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "Vui lòng đăng nhập để thực hiện thanh toán."
+            ));
+        }
+
+        if (!orderSecurityService.canAccessOrder(orderCode, currentUser)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Bạn không có quyền thanh toán đơn hàng này."
+            ));
+        }
+
         PayOSCreatePaymentResponse response = payosService.createOrGetPaymentLink(orderCode);
         return ResponseEntity.ok(response);
     }
@@ -40,7 +59,24 @@ public class PayOSPaymentApiController {
      * API Polling kiểm tra trạng thái thanh toán (đặc biệt hữu dụng khi máy user bị lag / mất mạng).
      */
     @GetMapping("/status/{orderCode}")
-    public ResponseEntity<Map<String, Object>> checkPaymentStatus(@PathVariable("orderCode") String orderCode) {
+    public ResponseEntity<?> checkPaymentStatus(
+            @PathVariable("orderCode") String orderCode,
+            org.springframework.security.core.Authentication authentication) {
+        com.ute.trasua.entity.User currentUser = resolveCurrentUser(authentication);
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "Vui lòng đăng nhập."
+            ));
+        }
+
+        if (!orderSecurityService.canAccessOrder(orderCode, currentUser)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Bạn không có quyền xem trạng thái đơn hàng này."
+            ));
+        }
+
         boolean isPaid = payosService.checkPaymentStatus(orderCode);
         Map<String, Object> result = new HashMap<>();
         result.put("orderCode", orderCode);
@@ -53,10 +89,34 @@ public class PayOSPaymentApiController {
      * Nút Bỏ Qua Thanh Toán (Dev Test) để kiểm thử toàn diện luồng sau thanh toán.
      */
     @PostMapping("/dev-skip")
-    public ResponseEntity<PayOSCreatePaymentResponse> skipPaymentForTesting(@RequestParam("orderCode") String orderCode) {
+    public ResponseEntity<?> skipPaymentForTesting(
+            @RequestParam("orderCode") String orderCode,
+            org.springframework.security.core.Authentication authentication) {
         log.info(">>> API kích hoạt Dev Test Skip Payment cho đơn: {}", orderCode);
+        com.ute.trasua.entity.User currentUser = resolveCurrentUser(authentication);
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "Vui lòng đăng nhập."
+            ));
+        }
+
+        if (!orderSecurityService.canAccessOrder(orderCode, currentUser)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Bạn không có quyền thao tác trên đơn hàng này."
+            ));
+        }
+
         PayOSCreatePaymentResponse response = payosService.skipPaymentForTesting(orderCode);
         return ResponseEntity.ok(response);
+    }
+
+    private com.ute.trasua.entity.User resolveCurrentUser(org.springframework.security.core.Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
+            return userRepository.findByUsername(authentication.getName()).orElse(null);
+        }
+        return null;
     }
 
     /**

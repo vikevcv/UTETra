@@ -26,9 +26,18 @@
       <c:if test="${not empty successMessage}">
         <div class="auth-alert auth-alert-success">${successMessage}</div>
       </c:if>
+      <c:if test="${not empty redirectUrl}">
+        <div class="auth-alert" style="background:#FFFBEB; border:1px solid #FDE68A; color:#92400E; margin-bottom:16px; border-radius:8px; padding:12px 14px; font-size:0.88rem; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-circle-info fa-lg" style="color:#D97706;"></i>
+          <span>Vui lòng đăng nhập tài khoản để tiếp tục đặt hàng và theo dõi đơn hàng của bạn.</span>
+        </div>
+      </c:if>
 
       <form:form action="${pageContext.request.contextPath}/auth/login"
                  method="post" modelAttribute="loginRequest" cssClass="auth-form">
+        <c:if test="${not empty redirectUrl}">
+          <input type="hidden" name="redirectUrl" value="<c:out value='${redirectUrl}'/>">
+        </c:if>
         <div class="auth-field">
           <label for="username">Tên Đăng Nhập</label>
           <form:input path="username" id="username" cssClass="auth-input"

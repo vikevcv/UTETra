@@ -390,11 +390,59 @@ function confirmAddZen() {
     currentModalCup.note = noteInput.value.trim();
   }
 
-  // Thêm vào giỏ
-  addCupToCart(JSON.parse(JSON.stringify(currentModalCup)));
+  const addedCup = JSON.parse(JSON.stringify(currentModalCup));
 
+  // Thêm vào giỏ hàng local
+  addCupToCart(addedCup);
+
+  // Đóng modal tùy chỉnh
   closeZenModal();
-  toggleZenDrawer(true); // Tự động mở drawer sau khi thêm
+
+  // TẮT TỰ ĐỘNG MỞ DRAWER — Thay bằng Toast thông báo tinh tế và nảy badge số lượng
+  showZenToast(addedCup.productName, addedCup.sizeCode, addedCup.quantity);
+}
+
+// ==================== THÔNG BÁO ZEN TOAST (PHẢN HỒI TINH TẾ) ====================
+let zenToastTimeout = null;
+
+function showZenToast(productName, sizeCode, quantity) {
+  const toast = document.getElementById("zenToast");
+  if (!toast) return;
+
+  const titleEl = document.getElementById("zenToastTitle");
+  const msgEl = document.getElementById("zenToastMsg");
+
+  if (titleEl) {
+    titleEl.innerText = "Đã thêm vào Khay Trà";
+  }
+  if (msgEl) {
+    const qty = quantity || 1;
+    const sizeStr = sizeCode ? ` (Size ${sizeCode})` : "";
+    msgEl.innerText = `${productName}${sizeStr} x${qty}`;
+  }
+
+  // Hủy timeout cũ nếu khách thêm nhiều món liên tục
+  if (zenToastTimeout) {
+    clearTimeout(zenToastTimeout);
+  }
+
+  toast.classList.remove("zen-toast-hide");
+  toast.classList.add("zen-toast-show");
+
+  zenToastTimeout = setTimeout(() => {
+    hideZenToast();
+  }, 3500);
+}
+
+function hideZenToast() {
+  const toast = document.getElementById("zenToast");
+  if (!toast) return;
+  toast.classList.remove("zen-toast-show");
+  toast.classList.add("zen-toast-hide");
+  if (zenToastTimeout) {
+    clearTimeout(zenToastTimeout);
+    zenToastTimeout = null;
+  }
 }
 
 // ==================== QUẢN LÝ KHAY TRÀ (DRAWER & BADGE) ====================
@@ -402,6 +450,11 @@ function toggleZenDrawer(forceOpen) {
   const drawer = document.getElementById("zenDrawer");
   const backdrop = document.getElementById("zenBackdrop");
   if (!drawer) return;
+
+  // Nếu mở drawer thì ẩn toast
+  if (forceOpen === true || (!drawer.classList.contains("open") && forceOpen === undefined)) {
+    hideZenToast();
+  }
 
   if (forceOpen === true) {
     drawer.classList.add("open");
@@ -420,9 +473,14 @@ function updateCartUI() {
   const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
 
-  // 1. Cập nhật Badge số lượng ở Header
+  // 1. Cập nhật Badge số lượng ở Header kèm hiệu ứng nảy nhẹ (Micro-bounce)
   const badge = document.getElementById("trayCount");
-  if (badge) badge.innerText = totalQty;
+  if (badge) {
+    badge.innerText = totalQty;
+    badge.classList.remove("badge-bounce");
+    void badge.offsetWidth; // Trigger reflow để chạy lại animation
+    badge.classList.add("badge-bounce");
+  }
 
   const drawerCount = document.getElementById("zenTrayCount");
   if (drawerCount) drawerCount.innerText = totalQty;

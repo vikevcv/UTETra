@@ -22,6 +22,7 @@ public class ComplaintApiController {
 
     private final OrderComplaintService orderComplaintService;
     private final UserRepository userRepository;
+    private final com.ute.trasua.service.OrderSecurityService orderSecurityService;
 
     @PostMapping("/api/v1/orders/{orderCode}/complaints")
     public ResponseEntity<?> submitComplaint(
@@ -38,6 +39,20 @@ public class ComplaintApiController {
         }
 
         User currentUser = resolveCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "Vui lòng đăng nhập để gửi khiếu nại."
+            ));
+        }
+
+        if (!orderSecurityService.canAccessOrder(orderCode, currentUser)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Bạn không có quyền khiếu nại đơn hàng này."
+            ));
+        }
+
         try {
             OrderComplaintDto result = orderComplaintService.submitComplaint(orderCode, request, currentUser);
             return ResponseEntity.ok(Map.of(
@@ -61,6 +76,21 @@ public class ComplaintApiController {
 
     @GetMapping("/api/v1/orders/{orderCode}/complaints")
     public ResponseEntity<?> getComplaint(@PathVariable("orderCode") String orderCode) {
+        User currentUser = resolveCurrentUser();
+        if (currentUser == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "Vui lòng đăng nhập để xem thông tin khiếu nại."
+            ));
+        }
+
+        if (!orderSecurityService.canAccessOrder(orderCode, currentUser)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "Bạn không có quyền xem thông tin khiếu nại đơn hàng này."
+            ));
+        }
+
         OrderComplaintDto dto = orderComplaintService.getComplaintByOrderCode(orderCode);
         return ResponseEntity.ok(Map.of(
                 "success", true,

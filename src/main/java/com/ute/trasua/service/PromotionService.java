@@ -37,6 +37,16 @@ public interface PromotionService {
 
     VoucherApplyResponse validateAndApplyVoucher(String voucherCode, Long branchId, BigDecimal orderSubtotal);
 
+    VoucherApplyResponse validateAndApplyVoucher(String voucherCode, Long branchId, BigDecimal orderSubtotal, com.ute.trasua.entity.User currentUser);
+
+    /**
+     * Tiêu thụ 1 lượt sử dụng voucher khi đặt hàng thành công (Atomic Safe).
+     *
+     * @param voucherCode Mã voucher đã áp dụng
+     * @return true nếu tiêu thụ thành công, false nếu voucher đã hết lượt trước đó
+     */
+    boolean consumeVoucherUsage(String voucherCode);
+
     // ==================== UC28: BỒI HOÀN VOUCHER HỦY ĐƠN TRỰC TUYẾN ====================
     /**
      * Tự động sinh mã voucher bồi hoàn 80% (không có tiền tố cố định, 100% ngẫu nhiên, chống trùng lặp tuyệt đối).
@@ -55,3 +65,4 @@ public interface PromotionService {
      */
     void restoreVoucherUsage(String voucherCode);
 }
+

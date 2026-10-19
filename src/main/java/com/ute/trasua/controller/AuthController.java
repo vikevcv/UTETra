@@ -29,9 +29,13 @@ public class AuthController {
     // LOGIN
     @GetMapping("/login")
     public String loginPage(@RequestParam(value = "error", required = false) String error,
+                            @RequestParam(value = "redirect", required = false) String redirect,
                             Model model) {
         if (error != null) {
             model.addAttribute("errorMessage", "Sai tài khoản hoặc mật khẩu");
+        }
+        if (redirect != null && !redirect.isBlank() && redirect.startsWith("/")) {
+            model.addAttribute("redirectUrl", redirect);
         }
         model.addAttribute("loginRequest", new LoginRequest());
         return "auth/login";
@@ -40,6 +44,7 @@ public class AuthController {
     @PostMapping("/login")
     public String login(@Valid @ModelAttribute LoginRequest request,
                         BindingResult result,
+                        @RequestParam(value = "redirectUrl", required = false) String redirectUrl,
                         HttpServletResponse response,
                         RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
@@ -50,10 +55,17 @@ public class AuthController {
             String token = authService.login(request);
             addJwtCookie(response, token);
 
+            if (redirectUrl != null && !redirectUrl.isBlank() && redirectUrl.startsWith("/")) {
+                return "redirect:" + redirectUrl;
+            }
+
             // Điều hướng tự động theo vai trò (Role-based redirect)
             return redirectByRole(request.getUsername());
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            if (redirectUrl != null && !redirectUrl.isBlank() && redirectUrl.startsWith("/")) {
+                redirectAttributes.addAttribute("redirect", redirectUrl);
+            }
             return "redirect:/auth/login";
         }
     }

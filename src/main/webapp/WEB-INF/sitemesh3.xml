@@ -31,5 +31,8 @@
     <mapping path="/branch/**" decorator="/WEB-INF/decorators/branch.jsp"/>
 
     <!-- Áp dụng decorator web.jsp cho toàn bộ giao diện phía khách hàng -->
+    <mapping path="/user/*" decorator="/WEB-INF/decorators/web.jsp"/>
+    <mapping path="/user/**" decorator="/WEB-INF/decorators/web.jsp"/>
     <mapping path="/*" decorator="/WEB-INF/decorators/web.jsp"/>
+    <mapping path="/**" decorator="/WEB-INF/decorators/web.jsp"/>
 </sitemesh>
