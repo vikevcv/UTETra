@@ -133,6 +133,43 @@ public class BranchInventoryController {
     }
 
     /**
+     * Cập nhật số lượng tồn kho thực tế qua kiểm kê (Dành riêng cho Quản lý chi nhánh).
+     */
+    @PostMapping("/stock/update-quantity")
+    public String updateQuantity(
+            @RequestParam("branchId") Long branchId,
+            @RequestParam("ingredientId") Long ingredientId,
+            @RequestParam("stockQuantity") BigDecimal stockQuantity,
+            @RequestParam(value = "reason", required = false, defaultValue = "Kiểm kê định kỳ thực tế") String reason,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes
+    ) {
+        BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
+        Long effectiveBranchId = (currentBranch != null) ? currentBranch.getId() : branchId;
+
+        // Chỉ Quản lý chi nhánh được thực hiện kiểm kê cập nhật tồn kho tại quán
+        boolean isManager = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_MANAGER".equalsIgnoreCase(a.getAuthority()) || "MANAGER".equalsIgnoreCase(a.getAuthority()));
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+
+        if (!isManager && !isAdmin) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Chức năng kiểm kê tồn kho chỉ dành riêng cho Quản lý chi nhánh!");
+            return "redirect:/branch/inventory/stock";
+        }
+
+        try {
+            inventoryService.updateStockQuantity(effectiveBranchId, ingredientId, stockQuantity, reason);
+            redirectAttributes.addFlashAttribute("successMessage", 
+                    "Đã cập nhật số lượng tồn kho kiểm kê thực tế thành công (" + stockQuantity + ")!");
+        } catch (Exception e) {
+            log.error("Lỗi cập nhật số lượng tồn kho kiểm kê: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/branch/inventory/stock" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");
+    }
+
+    /**
      * Show import receipt creation form following BM2 standard (UC29).
      */
     @GetMapping("/import")

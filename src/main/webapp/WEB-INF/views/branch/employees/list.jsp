@@ -126,7 +126,8 @@
           </div>
 
           <!-- Dropdown chuyển đổi xem chi nhánh khác (Chỉ dành cho Quản trị viên hệ thống) -->
-          <c:if test="${fn:length(allBranches) > 1 && (pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN'))}">
+          <c:if
+            test="${fn:length(allBranches) > 1 && (pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN'))}">
             <form action="${pageContext.request.contextPath}/branch/employees" method="get"
               style="display: flex; align-items: center; gap: 8px; margin: 0;">
               <label style="font-size: 0.85rem; color: var(--zen-text-muted); font-weight: 500;">Chuyển Cơ Sở:</label>
@@ -388,7 +389,7 @@
               <h3
                 style="font-size: 1.05rem; font-weight: 700; color: var(--zen-text-main); margin: 0; display: flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-cash-register" style="color: #2563eb;"></i>
-                Thiết Lập Tài Khoản Quầy Thu Ngân / Bán Lẻ POS (UC16)
+                Thiết Lập Tài Khoản Quầy Thu Ngân / Bán Lẻ POS
               </h3>
               <p style="font-size: 0.825rem; color: var(--zen-text-muted); margin: 4px 0 0 0;">
                 Tài khoản dùng chung đăng nhập máy POS cảm ứng tại quầy thu ngân cho nhân viên trực ca thực hiện order
@@ -475,7 +476,8 @@
             </div>
 
             <form action="${pageContext.request.contextPath}/branch/employees/pos/create" method="post">
-              <input type="hidden" name="branchId" value="${not empty branchId ? branchId : (not empty currentBranch ? currentBranch.id : '')}" />
+              <input type="hidden" name="branchId"
+                value="${not empty branchId ? branchId : (not empty currentBranch ? currentBranch.id : '')}" />
 
               <div class="form-group" style="margin-bottom: 14px;">
                 <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 4px;">Tên Quầy / Vị
