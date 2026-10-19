@@ -266,9 +266,13 @@
       background: var(--tea-matcha);
       box-shadow: 0 6px 20px rgba(45,90,39,0.25);
     }
-    .btn-checkout-submit:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    .btn-checkout-submit:disabled, .btn-checkout-submit.btn-dimmed {
+      opacity: 0.35 !important;
+      cursor: not-allowed !important;
+      background: #78716C !important;
+      box-shadow: none !important;
+      transform: none !important;
+      pointer-events: none !important;
     }
 
     .cup-mini-row {
@@ -562,10 +566,11 @@
             </div>
 
             <!-- Nút xác nhận đặt hàng -->
-            <button type="button" class="btn-checkout-submit" id="btnSubmitOrder" onclick="submitOnlineOrder()">
+            <button type="button" class="btn-checkout-submit" id="btnSubmitOrder" onclick="submitOnlineOrder()" disabled>
               <span>Xác Nhận Đặt Hàng</span>
               <i class="fa-solid fa-arrow-right"></i>
             </button>
+            <div id="checkoutValidateHint" style="display:none; font-size:0.8rem; color:#DC2626; text-align:center; margin-top:8px; font-weight:600;"></div>
 
             <div style="text-align:center; margin-top:14px;">
               <a href="${pageContext.request.contextPath}/cart" style="font-size:0.85rem; color:var(--zen-sumi-light); text-decoration:none;">
