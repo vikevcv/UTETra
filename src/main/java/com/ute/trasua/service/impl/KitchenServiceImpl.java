@@ -49,7 +49,8 @@ public class KitchenServiceImpl implements KitchenService {
         // Auto-advance logic: Đơn hàng đầu tiên cần pha chế tự động chuyển sang PREPARING nếu đang ở trạng thái PAID / AWAITING_PREPARATION / PENDING
         for (Order o : orders) {
             String st = (o.getStatus() != null) ? o.getStatus().toUpperCase() : "";
-            if ("PAID".equals(st) || "AWAITING_PREPARATION".equals(st) || "PENDING".equals(st)) {
+            boolean paid = "PAID".equalsIgnoreCase(o.getPaymentStatus());
+            if (paid && ("PAID".equals(st) || "AWAITING_PREPARATION".equals(st))) {
                 o.setStatus("PREPARING");
                 orderRepository.save(o);
                 log.info(">>> [KDS AUTO-ADVANCE] Đơn hàng đầu tiên {} (STT #{}) tự động chuyển sang PREPARING", o.getOrderCode(), o.getDailyQueueNumber());
@@ -81,6 +82,10 @@ public class KitchenServiceImpl implements KitchenService {
             throw new IllegalStateException("Không thể tiếp nhận pha chế đơn hàng đã ở trạng thái: " + currentStatus);
         }
 
+        if (!"PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+            throw new IllegalStateException("Cannot start preparation for an unpaid order!");
+        }
+
         order.setStatus("PREPARING");
         Order saved = orderRepository.save(order);
 
@@ -106,8 +111,8 @@ public class KitchenServiceImpl implements KitchenService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
 
         String currentStatus = (order.getStatus() != null) ? order.getStatus().toUpperCase() : "";
-        if ("CANCELLED".equals(currentStatus) || "COMPLETED".equals(currentStatus) || "DELIVERED".equals(currentStatus)) {
-            throw new IllegalStateException("Đơn hàng không ở trạng thái hợp lệ để hoàn tất pha chế: " + currentStatus);
+        if (!"PREPARING".equals(currentStatus)) {
+            throw new IllegalStateException("Order " + order.getOrderCode() + " is not in PREPARING state (current: " + currentStatus + ")");
         }
 
         Long targetBranchId = (order.getBranch() != null) ? order.getBranch().getId() : 1L;
@@ -162,11 +167,13 @@ public class KitchenServiceImpl implements KitchenService {
             log.warn("Lỗi phát WebSocket sự kiện pha chế xong: {}", e.getMessage());
         }
 
-        // TỰ ĐỘNG CHUYỂN ĐƠN KẾ TIẾP TRONG QUEUE SANG PREPARING:
+        // TỰ ĐỘNG CHUYỂN ĐƠN KẾ TIẾP TRONG QUEUE SANG PREPARING (chỉ đơn đã thanh toán):
         List<Order> remainingWaiting = orderRepository.findByBranchIdAndStatusInOrderByCreatedAtAsc(
                 targetBranchId, List.of("PENDING", "AWAITING_PREPARATION", "PAID"));
-        if (!remainingWaiting.isEmpty()) {
-            Order nextOrder = remainingWaiting.get(0);
+        Order nextOrder = remainingWaiting.stream()
+                .filter(o -> "PAID".equalsIgnoreCase(o.getPaymentStatus()))
+                .findFirst().orElse(null);
+        if (nextOrder != null) {
             nextOrder.setStatus("PREPARING");
             Order savedNext = orderRepository.save(nextOrder);
             log.info(">>> [KDS AUTO-NEXT] Đơn tiếp theo {} (STT #{}) tự động chuyển sang PREPARING",

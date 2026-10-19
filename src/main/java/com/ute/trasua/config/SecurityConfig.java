@@ -21,10 +21,14 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final JwtAuthenticationEntryPoint entryPoint;
+    private final PosOrStaffAuthorizationManager posOrStaffAuthorizationManager;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, JwtAuthenticationEntryPoint entryPoint) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter,
+                          JwtAuthenticationEntryPoint entryPoint,
+                          PosOrStaffAuthorizationManager posOrStaffAuthorizationManager) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.entryPoint = entryPoint;
+        this.posOrStaffAuthorizationManager = posOrStaffAuthorizationManager;
     }
 
     @Bean
@@ -79,10 +83,6 @@ public class SecurityConfig {
                     "/branch/menu-status", "/branch/menu-status/**",
                     "/api/pos/**",
                     "/api/kitchen/**",
-                    "/api/handover/**",
-                    "/api/dispatch/**",
-                    "/api/branch-menu/**",
-                    "/shipper", "/shipper/**",
                     "/ws-kds/**",
                     "/ws-kds-native/**",
                     "/css/**", "/js/**", "/images/**", "/favicon.ico",
@@ -91,6 +91,9 @@ public class SecurityConfig {
                 ).permitAll()
                 // 3. Phân quyền chặt chẽ theo vai trò
                 .requestMatchers("/admin", "/admin/**").hasRole("ADMIN")
+                .requestMatchers("/shipper", "/shipper/**").hasRole("DRIVER")
+                .requestMatchers("/api/dispatch/**").hasAnyRole("ADMIN", "MANAGER", "STAFF")
+                .requestMatchers("/api/handover/**", "/api/branch-menu/**").access(posOrStaffAuthorizationManager)
                 .requestMatchers("/branch", "/branch/**").hasAnyRole("ADMIN", "MANAGER")
                 .anyRequest().authenticated())
             .csrf(csrf -> csrf.disable())

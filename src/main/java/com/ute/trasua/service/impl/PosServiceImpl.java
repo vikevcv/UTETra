@@ -161,7 +161,8 @@ public class PosServiceImpl implements PosService {
         List<PosMenuResponse.ToppingDto> toppings = toppingRepository.findByStatusOrderByNameAsc("ACTIVE")
                 .stream()
                 .map(t -> {
-                    boolean isAvail = "ACTIVE".equalsIgnoreCase(t.getStatus());
+                    boolean isAvail = "ACTIVE".equalsIgnoreCase(t.getStatus())
+                            && branchMenuService.isToppingAvailableAtBranch(targetBranchId, t.getId());
                     int stock = isAvail ? (25 + (int)(t.getId() % 5) * 5) : 0;
                     return PosMenuResponse.ToppingDto.builder()
                             .id(t.getId())
@@ -185,13 +186,11 @@ public class PosServiceImpl implements PosService {
     @Override
     @Transactional
     public PosOrderResponse createPosOrder(PosOrderRequest request) {
-        Branch branch = null;
-        if (request.getBranchId() != null) {
-            branch = branchRepository.findById(request.getBranchId()).orElse(null);
+        if (request.getBranchId() == null) {
+            throw new IllegalStateException("Missing POS branch id!");
         }
-        if (branch == null) {
-            branch = branchRepository.findAll().stream().findFirst().orElse(null);
-        }
+        Branch branch = branchRepository.findById(request.getBranchId())
+                .orElseThrow(() -> new IllegalArgumentException("POS branch not found!"));
 
         // Tính STT lấy nước trong ngày của chi nhánh
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
@@ -202,13 +201,18 @@ public class PosServiceImpl implements PosService {
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
         String orderCode = String.format("ORD-POS-%s-%04d", dateStr, queueNumber);
 
+        String cashierUsername = request.getCashierUsername() != null ? request.getCashierUsername().trim() : "pos_cashier";
+        if (cashierUsername.length() > 50) {
+            cashierUsername = cashierUsername.substring(0, 47) + "...";
+        }
+
         Order order = Order.builder()
                 .orderCode(orderCode)
                 .dailyQueueNumber(queueNumber)
                 .orderType("POS_WALK_IN")
                 .status("PENDING")
                 .paymentStatus("UNPAID")
-                .cashierUsername(request.getCashierUsername() != null ? request.getCashierUsername() : "pos_cashier")
+                .cashierUsername(cashierUsername)
                 .branch(branch)
                 .note(request.getNote())
                 .orderDetails(new ArrayList<>())
@@ -220,6 +224,10 @@ public class PosServiceImpl implements PosService {
             for (PosOrderItemRequest itemReq : request.getItems()) {
                 Product product = productRepository.findById(itemReq.getProductId())
                         .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm với ID: " + itemReq.getProductId()));
+
+                if (!branchMenuService.isProductAvailable(branch.getId(), product.getId())) {
+                    throw new IllegalStateException("Product [" + product.getName() + "] is currently out of stock at this branch!");
+                }
 
                 Size size = null;
                 if (itemReq.getSizeId() != null) {
@@ -468,6 +476,9 @@ public class PosServiceImpl implements PosService {
 
     private String generateVietQrUrl(String orderCode, BigDecimal amount) {
         long amountLong = (amount != null) ? amount.longValue() : 0L;
+        if (amountLong < 1000L) {
+            return "";
+        }
         String encodedOrderCode = URLEncoder.encode(orderCode, StandardCharsets.UTF_8);
         String encodedName = URLEncoder.encode(accountName != null ? accountName : "UTETRA TEA GALLERY", StandardCharsets.UTF_8);
         return String.format("https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s&accountName=%s",

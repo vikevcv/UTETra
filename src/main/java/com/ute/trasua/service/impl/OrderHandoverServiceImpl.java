@@ -58,7 +58,7 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
     public List<HandoverOrderDto> getPendingHandovers(Long branchId) {
         Long targetBranchId = (branchId != null) ? branchId : 1L;
 
-        List<String> readyStatuses = List.of("READY_FOR_DELIVERY", "READY_FOR_PICKUP", "PAID");
+        List<String> readyStatuses = List.of("READY_FOR_DELIVERY", "READY_FOR_PICKUP");
         List<Order> orders = orderRepository.findByBranchIdAndStatusInOrderByCreatedAtAsc(targetBranchId, readyStatuses);
 
         return orders.stream()
@@ -89,6 +89,11 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         String currentStatus = (order.getStatus() != null) ? order.getStatus().toUpperCase() : "";
         if ("CANCELLED".equals(currentStatus) || "COMPLETED".equals(currentStatus)) {
             throw new IllegalStateException("Đơn hàng không ở trạng thái hợp lệ để bàn giao cho khách: " + currentStatus);
+        }
+
+        String type = order.getOrderType();
+        if (!"POS_WALK_IN".equalsIgnoreCase(type) && !"PICKUP".equalsIgnoreCase(type)) {
+            throw new IllegalStateException("Delivery orders cannot be handed over directly at the counter!");
         }
 
         order.setStatus("COMPLETED");
@@ -260,9 +265,10 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
             throw new IllegalStateException("Đơn hàng không ở trạng thái sẵn sàng lấy hàng (hiện tại: " + order.getStatus() + ")");
         }
 
-        if (request == null || request.getPhotoData() == null || request.getPhotoData().isBlank()) {
-            throw new IllegalArgumentException("Bắt buộc phải chụp ảnh ly nước của quán trước khi xác nhận nhận hàng!");
+        if (request == null) {
+            request = new com.ute.trasua.dto.handover.DeliveryActionRequest();
         }
+        validateProofPhoto(request.getPhotoData());
 
         String photoUrl = (cloudinaryService != null)
                 ? cloudinaryService.uploadBase64Image(request.getPhotoData(), "deliveries/pickup")
@@ -338,9 +344,10 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
             throw new IllegalStateException("Đơn hàng chưa ở trạng thái Đã tới điểm giao, không thể hoàn tất.");
         }
 
-        if (request == null || request.getPhotoData() == null || request.getPhotoData().isBlank()) {
-            throw new IllegalArgumentException("Bắt buộc phải chụp ảnh bàn giao ly nước cho khách trước khi kết thúc chuyến!");
+        if (request == null) {
+            request = new com.ute.trasua.dto.handover.DeliveryActionRequest();
         }
+        validateProofPhoto(request.getPhotoData());
 
         String photoUrl = (cloudinaryService != null)
                 ? cloudinaryService.uploadBase64Image(request.getPhotoData(), "deliveries/delivery")
@@ -394,6 +401,11 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         String reasonCode = (request != null && request.getReasonCode() != null && !request.getReasonCode().isBlank())
                 ? request.getReasonCode().trim()
                 : "KHONG_LIEN_LAC_DUOC";
+
+        if (request == null || request.getProofPhotoData() == null) {
+            throw new IllegalArgumentException("A verification photo is required before advancing the step!");
+        }
+        validateProofPhoto(request.getProofPhotoData());
 
         String proofUrl = null;
         if (request != null && request.getProofPhotoData() != null && !request.getProofPhotoData().isBlank()) {
@@ -483,6 +495,15 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         }
 
         return mapToHandoverOrderDto(saved);
+    }
+
+    private void validateProofPhoto(String photoData) {
+        if (photoData == null || photoData.isBlank() || photoData.length() < 100) {
+            throw new IllegalArgumentException("A verification photo is required before advancing the step!");
+        }
+        if (photoData.length() > 7_000_000) {
+            throw new IllegalArgumentException("Photo exceeds the allowed size (max 5MB)!");
+        }
     }
 
     private void assertDriverOwnershipAndBranch(Order order, Long driverId) {

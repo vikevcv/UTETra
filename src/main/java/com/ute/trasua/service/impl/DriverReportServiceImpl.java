@@ -35,34 +35,30 @@ public class DriverReportServiceImpl implements DriverReportService {
 
     @Override
     public List<DriverTripHistoryDto> getDriverCompletedTrips(Long driverId) {
-        List<String> statuses = List.of("COMPLETED", "CANCELLED");
+        List<String> statuses = List.of("COMPLETED", "DELIVERED");
         List<Order> orders = orderRepository.findByDriverIdAndStatusInOrderByCreatedAtDesc(driverId, statuses);
 
         LocalDate today = LocalDate.now();
-        LocalDate earlierThisWeek = today.minusDays(2);
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
         List<DriverTripHistoryDto> result = new ArrayList<>();
-        for (int i = 0; i < orders.size(); i++) {
-            DriverTripHistoryDto dto = mapToTripHistoryDto(orders.get(i));
-            // Phân bổ hợp lý để demo bộ lọc hoạt động chuẩn: Hôm nay (4 đơn), Hôm qua (2 đơn), Theo tuần (toàn bộ)
-            if (orders.size() >= 3) {
-                if (i < 4) {
-                    dto.setPeriodCategory("TODAY");
-                    dto.setDeliveredDateFormatted("Hôm nay");
-                } else if (i < 6) {
-                    dto.setPeriodCategory("YESTERDAY");
-                    dto.setDeliveredDateFormatted("Hôm qua");
-                } else {
-                    dto.setPeriodCategory("WEEK");
-                    dto.setDeliveredDateFormatted(earlierThisWeek.format(dateFmt));
-                }
-            } else {
+        for (Order order : orders) {
+            DriverTripHistoryDto dto = mapToTripHistoryDto(order);
+            LocalDate deliveredDate = (order.getDeliveredAt() != null)
+                    ? order.getDeliveredAt().toLocalDate()
+                    : (order.getCreatedAt() != null ? order.getCreatedAt().toLocalDate() : today);
+            if (deliveredDate.isEqual(today)) {
                 dto.setPeriodCategory("TODAY");
                 dto.setDeliveredDateFormatted("Hôm nay");
-            }
-            if (dto.getDeliveredTimeFormatted() == null) {
-                dto.setDeliveredTimeFormatted(String.format("1%d:%02d", 4 + (i % 5), 10 * (i + 1) % 60));
+            } else if (deliveredDate.isEqual(today.minusDays(1))) {
+                dto.setPeriodCategory("YESTERDAY");
+                dto.setDeliveredDateFormatted("Hôm qua");
+            } else if (deliveredDate.isAfter(today.minusDays(7))) {
+                dto.setPeriodCategory("WEEK");
+                dto.setDeliveredDateFormatted(deliveredDate.format(dateFmt));
+            } else {
+                dto.setPeriodCategory("OLDER");
+                dto.setDeliveredDateFormatted(deliveredDate.format(dateFmt));
             }
             result.add(dto);
         }
