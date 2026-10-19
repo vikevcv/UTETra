@@ -34,6 +34,8 @@ public class CartServiceImpl implements CartService {
     private final ToppingRepository toppingRepository;
     private final BranchMenuService branchMenuService;
     private final PromotionService promotionService;
+    private final com.ute.trasua.repository.UserRepository userRepository;
+
 
     // Helper records lưu trữ kết quả phân giải nhỏ gọn, immutable
     private record CartLookupContext(Map<Long, Product> productMap,
@@ -365,7 +367,8 @@ public class CartServiceImpl implements CartService {
 
         String cleanCode = voucherCode.trim().toUpperCase();
         try {
-            VoucherApplyResponse resp = promotionService.validateAndApplyVoucher(cleanCode, branchId, subtotal);
+            com.ute.trasua.entity.User currentUser = resolveCurrentUser();
+            VoucherApplyResponse resp = promotionService.validateAndApplyVoucher(cleanCode, branchId, subtotal, currentUser);
             if (resp.isValid()) {
                 BigDecimal discount = resp.getDiscountAmount() != null ? resp.getDiscountAmount() : BigDecimal.ZERO;
                 return new VoucherDiscountResult(cleanCode, discount);
@@ -379,4 +382,13 @@ public class CartServiceImpl implements CartService {
 
         return new VoucherDiscountResult(null, BigDecimal.ZERO);
     }
+
+    private com.ute.trasua.entity.User resolveCurrentUser() {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            return userRepository.findByUsername(auth.getName()).orElse(null);
+        }
+        return null;
+    }
 }
+

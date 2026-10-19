@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import com.ute.trasua.entity.Order;
+import com.ute.trasua.entity.User;
 
 @Service
 @Slf4j
@@ -33,11 +34,16 @@ public class PromotionServiceImpl implements PromotionService {
 
     private final PromotionRepository promotionRepository;
     private final BranchRepository branchRepository;
+    private final com.ute.trasua.repository.OrderRepository orderRepository;
 
-    public PromotionServiceImpl(PromotionRepository promotionRepository, BranchRepository branchRepository) {
+    public PromotionServiceImpl(PromotionRepository promotionRepository,
+                                BranchRepository branchRepository,
+                                com.ute.trasua.repository.OrderRepository orderRepository) {
         this.promotionRepository = promotionRepository;
         this.branchRepository = branchRepository;
+        this.orderRepository = orderRepository;
     }
+
 
     // ==================== UC24: ADMIN TOÀN CHUỖI ====================
 
@@ -294,6 +300,12 @@ public class PromotionServiceImpl implements PromotionService {
     @Override
     @Transactional(readOnly = true)
     public VoucherApplyResponse validateAndApplyVoucher(String voucherCode, Long branchId, BigDecimal orderSubtotal) {
+        return validateAndApplyVoucher(voucherCode, branchId, orderSubtotal, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VoucherApplyResponse validateAndApplyVoucher(String voucherCode, Long branchId, BigDecimal orderSubtotal, User currentUser) {
         if (voucherCode == null || voucherCode.isBlank()) {
             return VoucherApplyResponse.builder()
                     .valid(false)
@@ -341,8 +353,21 @@ public class PromotionServiceImpl implements PromotionService {
             return VoucherApplyResponse.builder()
                     .valid(false)
                     .voucherCode(cleanCode)
-                    .message("Mã voucher đã hết lượt sử dụng.")
+                    .message("Mã voucher đã hết lượt sử dụng trên toàn hệ thống.")
                     .build();
+        }
+
+        // Kiểm tra giới hạn số lần sử dụng của riêng từng tài khoản (usageLimitPerUser)
+        if (currentUser != null && currentUser.getId() != null
+                && promotion.getUsageLimitPerUser() != null && promotion.getUsageLimitPerUser() > 0) {
+            long userUsedCount = orderRepository.countUsedVoucherByUser(currentUser.getId(), cleanCode);
+            if (userUsedCount >= promotion.getUsageLimitPerUser()) {
+                return VoucherApplyResponse.builder()
+                        .valid(false)
+                        .voucherCode(cleanCode)
+                        .message("Bạn đã sử dụng hết số lượt cho phép của mã voucher này (" + promotion.getUsageLimitPerUser() + " lần/tài khoản).")
+                        .build();
+            }
         }
 
         // Kiểm tra phạm vi chi nhánh
@@ -380,6 +405,24 @@ public class PromotionServiceImpl implements PromotionService {
                 .message("Áp dụng mã voucher thành công!")
                 .build();
     }
+
+    @Override
+    @Transactional
+    public boolean consumeVoucherUsage(String voucherCode) {
+        if (voucherCode == null || voucherCode.trim().isEmpty()) {
+            return false;
+        }
+        String cleanCode = voucherCode.trim().toUpperCase();
+        int updatedRows = promotionRepository.incrementUsedCountIfAvailable(cleanCode);
+        if (updatedRows > 0) {
+            log.info(">>> [VOUCHER CONSUME] Đã tiêu thụ thành công 1 lượt sử dụng cho mã voucher: {}", cleanCode);
+            return true;
+        } else {
+            log.warn(">>> [VOUCHER CONSUME] Không thể tiêu thụ mã voucher {}: đã hết hạn mức hoặc không tồn tại", cleanCode);
+            return false;
+        }
+    }
+
 
     @Override
     @Transactional
@@ -468,13 +511,10 @@ public class PromotionServiceImpl implements PromotionService {
             return;
         }
         String cleanCode = voucherCode.trim().toUpperCase();
-        promotionRepository.findByVoucherCode(cleanCode).ifPresent(promo -> {
-            if (promo.getUsedCount() != null && promo.getUsedCount() > 0) {
-                promo.setUsedCount(promo.getUsedCount() - 1);
-                promotionRepository.save(promo);
-                log.info(">>> [UC28] Phục hồi 1 lượt sử dụng cho voucher cũ: {} (usedCount hiện tại: {})",
-                        cleanCode, promo.getUsedCount());
-            }
-        });
+        int affected = promotionRepository.decrementUsedCount(cleanCode);
+        if (affected > 0) {
+            log.info(">>> [UC28] Phục hồi thành công 1 lượt sử dụng cho voucher cũ: {}", cleanCode);
+        }
     }
 }
+

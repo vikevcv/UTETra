@@ -67,4 +67,15 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 
     @Query("SELECT COUNT(p) FROM Promotion p WHERE p.scope = 'BRANCH' AND p.branch.id = :branchId AND p.status = 'ACTIVE' AND (:now BETWEEN p.startDate AND p.endDate)")
     long countCurrentlyActiveByBranch(@Param("branchId") Long branchId, @Param("now") LocalDateTime now);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Promotion p SET p.usedCount = p.usedCount + 1 " +
+           "WHERE UPPER(p.voucherCode) = UPPER(:voucherCode) AND p.usedCount < p.totalUsageLimit")
+    int incrementUsedCountIfAvailable(@Param("voucherCode") String voucherCode);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Promotion p SET p.usedCount = CASE WHEN p.usedCount > 0 THEN p.usedCount - 1 ELSE 0 END " +
+           "WHERE UPPER(p.voucherCode) = UPPER(:voucherCode)")
+    int decrementUsedCount(@Param("voucherCode") String voucherCode);
 }
+

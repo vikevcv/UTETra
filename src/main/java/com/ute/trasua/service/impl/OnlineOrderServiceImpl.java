@@ -97,7 +97,7 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
         if (request.getVoucherCode() != null && !request.getVoucherCode().trim().isEmpty()) {
             String cleanCode = request.getVoucherCode().trim().toUpperCase();
             try {
-                VoucherApplyResponse voucherResp = promotionService.validateAndApplyVoucher(cleanCode, branch.getId(), subtotal);
+                VoucherApplyResponse voucherResp = promotionService.validateAndApplyVoucher(cleanCode, branch.getId(), subtotal, currentUser);
                 if (voucherResp.isValid()) {
                     discount = voucherResp.getDiscountAmount() != null ? voucherResp.getDiscountAmount() : BigDecimal.ZERO;
                     appliedVoucher = cleanCode;
@@ -108,6 +108,7 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
                 log.warn("Lỗi xác thực voucher {}: {}", cleanCode, e.getMessage());
             }
         }
+
 
         // 5. Tính tổng thanh toán cuối cùng: subtotal - discount + shippingFee
         BigDecimal finalAmount = subtotal.subtract(discount).add(shippingFee);
@@ -203,9 +204,18 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
                 savedOrder.getOrderCode(), savedOrder.getDailyQueueNumber(), branch.getName(),
                 savedOrder.getCustomerName(), savedOrder.getShippingFee(), savedOrder.getFinalAmount());
 
+        // Tiêu thụ lượt dùng voucher (Atomic) nếu đơn hàng áp dụng voucher
+        if (appliedVoucher != null && !appliedVoucher.isBlank()) {
+            boolean consumed = promotionService.consumeVoucherUsage(appliedVoucher);
+            if (!consumed) {
+                log.warn(">>> Cảnh báo: Voucher {} không thể tiêu thụ (đã hết lượt hoặc không tồn tại)", appliedVoucher);
+            }
+        }
+
         // 10. Phát sự kiện WebSocket STOMP thời gian thực tới Khách Hàng và Bếp KDS
         try {
             orderWebSocketPublisher.broadcastOrderCreated(savedOrder);
+
         } catch (Exception e) {
             log.warn("Lỗi phát WebSocket sự kiện đơn mới: {}", e.getMessage());
         }
