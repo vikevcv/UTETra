@@ -88,13 +88,25 @@
             <label class="form-label">
               Chi Nhánh Làm Việc <span class="required">*</span>
             </label>
-            <select name="branchId" class="zen-select" required style="width: 100%;">
-              <c:forEach var="b" items="${allBranches}">
-                <option value="${b.id}" ${b.id == employee.branchId ? 'selected' : ''}>
-                  ${b.name} (${b.branchCode})
-                </option>
-              </c:forEach>
-            </select>
+            <c:choose>
+              <c:when test="${pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN')}">
+                <select name="branchId" class="zen-select" required style="width: 100%;">
+                  <c:forEach var="b" items="${allBranches}">
+                    <option value="${b.id}" ${b.id == employee.branchId ? 'selected' : ''}>
+                      ${b.name} (${b.branchCode})
+                    </option>
+                  </c:forEach>
+                </select>
+              </c:when>
+              <c:otherwise>
+                <input type="hidden" name="branchId" value="${currentBranch.id}" />
+                <div class="zen-input" style="background: #f8fafc; color: var(--zen-text-main); cursor: not-allowed; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-lock" style="font-size: 0.8rem; color: #94a3b8;"></i>
+                  <strong>${currentBranch.name} (${currentBranch.branchCode})</strong>
+                  <span style="margin-left: auto; font-size: 0.75rem; color: #64748b; background: #e2e8f0; padding: 2px 8px; border-radius: 4px;">Cố định theo cơ sở quản lý</span>
+                </div>
+              </c:otherwise>
+            </c:choose>
           </div>
 
           <!-- Mã nhân viên & Họ tên -->

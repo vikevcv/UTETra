@@ -26,12 +26,16 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/branch/drivers")
-@RequiredArgsConstructor
 @Slf4j
 public class BranchDriverController {
 
     private final DriverService driverService;
     private final BranchService branchService;
+
+    public BranchDriverController(DriverService driverService, BranchService branchService) {
+        this.driverService = driverService;
+        this.branchService = branchService;
+    }
 
     /**
      * Màn hình danh sách tài xế thuộc chi nhánh phụ trách.
@@ -60,7 +64,10 @@ public class BranchDriverController {
         );
 
         Map<String, Object> stats = driverService.getBranchDriverStatistics(currentBranch.getId());
-        List<BranchResponse> allBranches = branchService.getAllBranches();
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+        List<BranchResponse> allBranches = isAdmin ? branchService.getAllBranches()
+                : (currentBranch != null ? List.of(currentBranch) : List.of());
 
         model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("allBranches", allBranches);
@@ -82,16 +89,22 @@ public class BranchDriverController {
             @Valid @ModelAttribute("newDriver") CreateDriverRequest request,
             BindingResult bindingResult,
             @RequestParam(value = "currentBranchId", required = false) Long currentBranchId,
+            Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
+        BranchResponse currentBranch = resolveCurrentBranch(currentBranchId, authentication);
+        Long effectiveBranchId = currentBranch != null ? currentBranch.getId() : currentBranchId;
+
         if (bindingResult.hasErrors()) {
             String errorMsg = bindingResult.getAllErrors().get(0).getDefaultMessage();
             redirectAttributes.addFlashAttribute("errorMessage", errorMsg);
-            return "redirect:/branch/drivers" + (currentBranchId != null ? "?branchId=" + currentBranchId : "");
+            return "redirect:/branch/drivers" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");
         }
 
         try {
-            Long targetBranchId = request.getBranchId() != null ? request.getBranchId() : currentBranchId;
+            boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+            Long targetBranchId = (isAdmin && request.getBranchId() != null) ? request.getBranchId() : effectiveBranchId;
             DriverResponse created = driverService.createDriver(request, targetBranchId);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Cấp tài khoản tài xế '" + created.getFullName() + "' (" + created.getUsername() + ") thành công! Thông tin đăng nhập đã được gửi tới email " + created.getEmail());
@@ -100,7 +113,7 @@ public class BranchDriverController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
 
-        return "redirect:/branch/drivers" + (currentBranchId != null ? "?branchId=" + currentBranchId : "");
+        return "redirect:/branch/drivers" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");
     }
 
     /**
@@ -112,12 +125,16 @@ public class BranchDriverController {
             @Valid @ModelAttribute UpdateDriverRequest request,
             BindingResult bindingResult,
             @RequestParam(value = "branchId", required = false) Long branchId,
+            Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
+        BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
+        Long effectiveBranchId = currentBranch != null ? currentBranch.getId() : branchId;
+
         if (bindingResult.hasErrors()) {
             String errorMsg = bindingResult.getAllErrors().get(0).getDefaultMessage();
             redirectAttributes.addFlashAttribute("errorMessage", errorMsg);
-            return "redirect:/branch/drivers" + (branchId != null ? "?branchId=" + branchId : "");
+            return "redirect:/branch/drivers" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");
         }
 
         try {
@@ -129,7 +146,7 @@ public class BranchDriverController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
 
-        return "redirect:/branch/drivers" + (branchId != null ? "?branchId=" + branchId : "");
+        return "redirect:/branch/drivers" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");
     }
 
     /**
@@ -141,8 +158,12 @@ public class BranchDriverController {
             @RequestParam boolean locked,
             @RequestParam(required = false, defaultValue = "Tạm ngưng tiếp nhận đơn") String reason,
             @RequestParam(value = "branchId", required = false) Long branchId,
+            Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
+        BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
+        Long effectiveBranchId = currentBranch != null ? currentBranch.getId() : branchId;
+
         try {
             driverService.toggleDriverLock(id, locked, reason);
             redirectAttributes.addFlashAttribute("successMessage",
@@ -150,7 +171,7 @@ public class BranchDriverController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-        return "redirect:/branch/drivers" + (branchId != null ? "?branchId=" + branchId : "");
+        return "redirect:/branch/drivers" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");
     }
 
     /**
@@ -160,30 +181,35 @@ public class BranchDriverController {
     public String resendCredentials(
             @PathVariable Long id,
             @RequestParam(value = "branchId", required = false) Long branchId,
+            Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
+        BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
+        Long effectiveBranchId = currentBranch != null ? currentBranch.getId() : branchId;
+
         try {
             driverService.resendDriverCredentials(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã cấp lại mật khẩu và gửi email kích hoạt thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-        return "redirect:/branch/drivers" + (branchId != null ? "?branchId=" + branchId : "");
+        return "redirect:/branch/drivers" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");
     }
 
     private BranchResponse resolveCurrentBranch(Long requestedBranchId, Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+            if (!isAdmin) {
+                String username = authentication.getName();
+                return branchService.getBranchByManagerUsername(username).orElse(null);
+            }
+        }
+
         if (requestedBranchId != null) {
             try {
                 return branchService.getBranchById(requestedBranchId);
             } catch (Exception ignored) {}
-        }
-
-        if (authentication != null && authentication.isAuthenticated()) {
-            String username = authentication.getName();
-            var branchOpt = branchService.getBranchByManagerUsername(username);
-            if (branchOpt.isPresent()) {
-                return branchOpt.get();
-            }
         }
 
         List<BranchResponse> all = branchService.getAllBranches();

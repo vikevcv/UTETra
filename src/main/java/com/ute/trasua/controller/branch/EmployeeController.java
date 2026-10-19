@@ -22,12 +22,16 @@ import java.util.List;
  */
 @Controller
 @RequestMapping("/branch/employees")
-@RequiredArgsConstructor
 @Slf4j
 public class EmployeeController {
 
     private final EmployeeService employeeService;
     private final BranchService branchService;
+
+    public EmployeeController(EmployeeService employeeService, BranchService branchService) {
+        this.employeeService = employeeService;
+        this.branchService = branchService;
+    }
 
     /**
      * Display employees list and shift management + POS accounts (UC16).
@@ -60,7 +64,10 @@ public class EmployeeController {
         long totalEmp = (targetBranchId != null) ? employeeService.countByBranch(targetBranchId) : 0;
         long activeEmp = (targetBranchId != null) ? employeeService.countActiveByBranch(targetBranchId) : 0;
 
-        List<BranchResponse> allBranches = branchService.getAllBranches();
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+        List<BranchResponse> allBranches = isAdmin ? branchService.getAllBranches()
+                : (currentBranch != null ? List.of(currentBranch) : List.of());
 
         model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("currentBranchName", currentBranch != null ? currentBranch.getName() : "Toàn Chuỗi");
@@ -95,7 +102,9 @@ public class EmployeeController {
                 .hireDate(java.time.LocalDate.now())
                 .build();
 
-        List<BranchResponse> allBranches = branchService.getAllBranches();
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+        List<BranchResponse> allBranches = isAdmin ? branchService.getAllBranches() : (currentBranch != null ? List.of(currentBranch) : List.of());
 
         model.addAttribute("employee", employee);
         model.addAttribute("currentBranch", currentBranch);
@@ -162,9 +171,17 @@ public class EmployeeController {
     @PostMapping("/save")
     public String saveEmployee(
             @ModelAttribute EmployeeRequest request,
+            Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
         try {
+            BranchResponse currentBranch = resolveCurrentBranch(null, authentication);
+            boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+            if (!isAdmin && currentBranch != null) {
+                request.setBranchId(currentBranch.getId());
+            }
+
             if (request.getId() == null) {
                 EmployeeResponse created = employeeService.createEmployee(request);
                 redirectAttributes.addFlashAttribute("successMessage",
@@ -284,6 +301,17 @@ public class EmployeeController {
     }
 
     private BranchResponse resolveCurrentBranch(Long requestedBranchId, Authentication authentication) {
+        // 1. Quản lý chi nhánh (ROLE_MANAGER): Luôn luôn bị cô lập với chi nhánh trực thuộc, tuyệt đối không được đổi chi nhánh
+        if (authentication != null && authentication.isAuthenticated()) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+            if (!isAdmin) {
+                String username = authentication.getName();
+                return branchService.getBranchByManagerUsername(username).orElse(null);
+            }
+        }
+
+        // 2. Chỉ ADMIN mới có quyền chỉ định hoặc chuyển đổi chi nhánh qua requestedBranchId
         if (requestedBranchId != null) {
             try {
                 return branchService.getBranchById(requestedBranchId);

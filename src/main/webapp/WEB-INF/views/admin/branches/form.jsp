@@ -275,7 +275,7 @@
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem;">
                 <div style="background: #ffffff; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
                   <span style="color: #64748b; font-size: 0.8rem; display: block;">Tên đăng nhập (Username):</span>
-                  <span id="previewUsername" style="font-family: monospace; font-weight: 700; color: #059669; font-size: 0.95rem;">@ql_cntd01</span>
+                  <span id="previewUsername" style="font-family: monospace; font-weight: 700; color: #059669; font-size: 0.95rem;">ql_cntd01</span>
                 </div>
                 <div style="background: #ffffff; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
                   <span style="color: #64748b; font-size: 0.8rem; display: block;">Mật khẩu khởi tạo:</span>
@@ -565,9 +565,9 @@
       let cleanCode = code.toLowerCase().replace(/[^a-z0-9]/g, '');
       if (!cleanCode) cleanCode = 'branch';
 
-      let username = '@ql_' + cleanCode;
+      let username = 'ql_' + cleanCode;
       if (customUsernameInput && customUsernameInput.value.trim() !== '') {
-        username = '@' + customUsernameInput.value.trim().toLowerCase();
+        username = customUsernameInput.value.trim().toLowerCase();
       }
       if (previewUsernameEl) previewUsernameEl.innerText = username;
 

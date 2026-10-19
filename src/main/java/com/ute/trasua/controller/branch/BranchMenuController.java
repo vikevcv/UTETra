@@ -121,13 +121,17 @@ public class BranchMenuController {
     public ResponseEntity<Map<String, Object>> toggleStatus(
             @RequestParam("branchId") Long branchId,
             @RequestParam("productId") Long productId,
-            @RequestParam("available") boolean available
+            @RequestParam("available") boolean available,
+            Authentication authentication
     ) {
         Map<String, Object> response = new HashMap<>();
         try {
-            boolean updatedStatus = branchMenuService.updateProductAvailability(branchId, productId, available);
-            long total = branchMenuService.countTotalAtBranch(branchId);
-            long availableCount = branchMenuService.countAvailableAtBranch(branchId);
+            BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
+            Long effectiveBranchId = (currentBranch != null) ? currentBranch.getId() : branchId;
+
+            boolean updatedStatus = branchMenuService.updateProductAvailability(effectiveBranchId, productId, available);
+            long total = branchMenuService.countTotalAtBranch(effectiveBranchId);
+            long availableCount = branchMenuService.countAvailableAtBranch(effectiveBranchId);
             long outOfStock = Math.max(0, total - availableCount);
             int rate = total > 0 ? (int) Math.round((double) availableCount / total * 100) : 0;
 
@@ -156,17 +160,20 @@ public class BranchMenuController {
     @PostMapping("/branch/menu/sync")
     public String syncBranchMenu(
             @RequestParam("branchId") Long branchId,
+            Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
+        BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
+        Long effectiveBranchId = (currentBranch != null) ? currentBranch.getId() : branchId;
         try {
-            branchMenuService.syncAllProductsToBranch(branchId);
+            branchMenuService.syncAllProductsToBranch(effectiveBranchId);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã đồng bộ đầy đủ toàn bộ món nước từ thực đơn chuỗi vào chi nhánh thành công!");
         } catch (Exception e) {
-            log.error(">>> Error syncing menu for branch {}: {}", branchId, e.getMessage());
+            log.error(">>> Error syncing menu for branch {}: {}", effectiveBranchId, e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", "Không thể đồng bộ: " + e.getMessage());
         }
-        return "redirect:/branch/menu?branchId=" + branchId;
+        return "redirect:/branch/menu?branchId=" + effectiveBranchId;
     }
 
     /**
@@ -213,6 +220,17 @@ public class BranchMenuController {
      * Helper xác định chi nhánh đang được quản lý.
      */
     private BranchResponse resolveCurrentBranch(Long requestedBranchId, Authentication authentication) {
+        // 1. Quản lý chi nhánh (ROLE_MANAGER): Luôn luôn bị cô lập với chi nhánh trực thuộc, tuyệt đối không được đổi chi nhánh
+        if (authentication != null && authentication.isAuthenticated()) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+            if (!isAdmin) {
+                String username = authentication.getName();
+                return branchService.getBranchByManagerUsername(username).orElse(null);
+            }
+        }
+
+        // 2. Chỉ ADMIN mới có quyền chỉ định hoặc chuyển đổi chi nhánh qua requestedBranchId
         if (requestedBranchId != null) {
             try {
                 return branchService.getBranchById(requestedBranchId);

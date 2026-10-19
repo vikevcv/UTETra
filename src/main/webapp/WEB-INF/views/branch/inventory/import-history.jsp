@@ -103,8 +103,8 @@
     </div>
 
     <div class="d-flex align-items-center gap-2 flex-wrap">
-      <!-- Đổi Chi Nhánh -->
-      <c:if test="${fn:length(allBranches) > 1}">
+      <!-- Đổi Chi Nhánh (Chỉ Quản trị viên hệ thống) -->
+      <c:if test="${fn:length(allBranches) > 1 && (pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN'))}">
         <div class="dropdown">
           <button class="btn btn-outline-secondary dropdown-toggle btn-sm px-3" type="button" data-bs-toggle="dropdown">
             <i class="fa-solid fa-repeat me-1"></i> Đổi Chi Nhánh

@@ -125,19 +125,21 @@
             </span>
           </div>
 
-          <!-- Dropdown chuyển đổi xem chi nhánh khác -->
-          <form action="${pageContext.request.contextPath}/branch/employees" method="get"
-            style="display: flex; align-items: center; gap: 8px; margin: 0;">
-            <label style="font-size: 0.85rem; color: var(--zen-text-muted); font-weight: 500;">Chuyển Cơ Sở:</label>
-            <select name="branchId" class="zen-select" onchange="this.form.submit()"
-              style="padding: 6px 12px; font-size: 0.85rem; border-radius: 8px;">
-              <c:forEach var="b" items="${allBranches}">
-                <option value="${b.id}" ${b.id==branchId ? 'selected' : '' }>
-                  ${b.name} (${b.branchCode})
-                </option>
-              </c:forEach>
-            </select>
-          </form>
+          <!-- Dropdown chuyển đổi xem chi nhánh khác (Chỉ dành cho Quản trị viên hệ thống) -->
+          <c:if test="${fn:length(allBranches) > 1 && (pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN'))}">
+            <form action="${pageContext.request.contextPath}/branch/employees" method="get"
+              style="display: flex; align-items: center; gap: 8px; margin: 0;">
+              <label style="font-size: 0.85rem; color: var(--zen-text-muted); font-weight: 500;">Chuyển Cơ Sở:</label>
+              <select name="branchId" class="zen-select" onchange="this.form.submit()"
+                style="padding: 6px 12px; font-size: 0.85rem; border-radius: 8px;">
+                <c:forEach var="b" items="${allBranches}">
+                  <option value="${b.id}" ${b.id==branchId ? 'selected' : '' }>
+                    ${b.name} (${b.branchCode})
+                  </option>
+                </c:forEach>
+              </select>
+            </form>
+          </c:if>
         </div>
 
         <!-- Thống kê nhanh nhân sự cơ sở -->
