@@ -527,7 +527,7 @@
                        + "--------------------------------------------\n"
                        + "• Chi nhánh: [" + branchCode + "] " + branchName + "\n"
                        + "• Cổng đăng nhập: " + loginUrl + "\n"
-                       + "• Tên đăng nhập: @" + username + "\n"
+                       + "• Tên đăng nhập: " + username + "\n"
                        + "• Mật khẩu: " + password + "\n"
                        + "• Quyền hạn: Quản Lý Chi Nhánh (ROLE_MANAGER)\n"
                        + "--------------------------------------------\n"
@@ -599,7 +599,7 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
                       <span class="text-muted small">Tên đăng nhập (Username):</span>
-                      <span class="badge bg-dark font-monospace fs-6" id="credentialUsername">@${accountCreatedInfo.username}</span>
+                      <span class="badge bg-dark font-monospace fs-6" id="credentialUsername">${accountCreatedInfo.username}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
                       <span class="text-muted small">Mật khẩu ban đầu:</span>

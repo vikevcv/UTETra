@@ -27,12 +27,16 @@ import java.util.List;
  */
 @Controller
 @RequestMapping("/branch/reports")
-@RequiredArgsConstructor
 @Slf4j
 public class BranchReportController {
 
     private final RevenueReportService revenueReportService;
     private final BranchService branchService;
+
+    public BranchReportController(RevenueReportService revenueReportService, BranchService branchService) {
+        this.revenueReportService = revenueReportService;
+        this.branchService = branchService;
+    }
 
     /**
      * Hiển thị Dashboard báo cáo doanh thu chi nhánh với đồ thị Chart.js (UC19).
@@ -49,7 +53,10 @@ public class BranchReportController {
         BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
         Long targetBranchId = (currentBranch != null) ? currentBranch.getId() : null;
 
-        List<BranchResponse> allBranches = branchService.getAllBranches();
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+        List<BranchResponse> allBranches = isAdmin ? branchService.getAllBranches()
+                : (currentBranch != null ? List.of(currentBranch) : List.of());
 
         LocalDate startDate = null;
         if (startDateStr != null && !startDateStr.trim().isEmpty()) {
@@ -182,18 +189,19 @@ public class BranchReportController {
     }
 
     private BranchResponse resolveCurrentBranch(Long requestedBranchId, Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+            if (!isAdmin) {
+                String username = authentication.getName();
+                return branchService.getBranchByManagerUsername(username).orElse(null);
+            }
+        }
+
         if (requestedBranchId != null) {
             try {
                 return branchService.getBranchById(requestedBranchId);
             } catch (Exception ignored) {}
-        }
-
-        if (authentication != null && authentication.isAuthenticated()) {
-            String username = authentication.getName();
-            var branchOpt = branchService.getBranchByManagerUsername(username);
-            if (branchOpt.isPresent()) {
-                return branchOpt.get();
-            }
         }
 
         List<BranchResponse> all = branchService.getAllBranches();

@@ -54,7 +54,14 @@
         </div>
       </div>
 
-      <c:set var="branchQuery" value="${currentBranch != null ? ('?branchId=' += currentBranch.id) : (branchId != null ? ('?branchId=' += branchId) : '')}" />
+      <c:choose>
+        <c:when test="${pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN')}">
+          <c:set var="branchQuery" value="${currentBranch != null ? ('?branchId=' += currentBranch.id) : (branchId != null ? ('?branchId=' += branchId) : '')}" />
+        </c:when>
+        <c:otherwise>
+          <c:set var="branchQuery" value="" />
+        </c:otherwise>
+      </c:choose>
 
       <!-- Sidebar Navigation Menu Dành Riêng Cho Quản Lý Chi Nhánh (QLCN) -->
       <div class="admin-sidebar-content">

@@ -58,8 +58,17 @@ public class AuthController {
         }
     }
 
-    private String redirectByRole(String username) {
-        return userRepository.findByUsername(username)
+    private String redirectByRole(String rawIdentifier) {
+        if (rawIdentifier == null || rawIdentifier.trim().isEmpty()) {
+            return "redirect:/";
+        }
+        String clean = rawIdentifier.trim();
+        if (clean.startsWith("@")) {
+            clean = clean.substring(1).trim();
+        }
+        final String searchKey = clean;
+        return userRepository.findByUsername(searchKey)
+                .or(() -> userRepository.findByEmail(searchKey))
                 .map(user -> {
                     if (user.getRoles() != null) {
                         if (user.getRoles().contains("ROLE_ADMIN")) {

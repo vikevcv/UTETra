@@ -29,13 +29,22 @@ import java.util.List;
  */
 @Controller
 @RequestMapping("/branch/inventory")
-@RequiredArgsConstructor
 @Slf4j
 public class BranchInventoryController {
 
     private final InventoryService inventoryService;
     private final BranchService branchService;
     private final IngredientService ingredientService;
+
+    public BranchInventoryController(
+            InventoryService inventoryService,
+            BranchService branchService,
+            IngredientService ingredientService
+    ) {
+        this.inventoryService = inventoryService;
+        this.branchService = branchService;
+        this.ingredientService = ingredientService;
+    }
 
     @GetMapping
     public String index(@RequestParam(value = "branchId", required = false) Long branchId) {
@@ -58,7 +67,10 @@ public class BranchInventoryController {
         BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
         Long targetBranchId = (currentBranch != null) ? currentBranch.getId() : null;
 
-        List<BranchResponse> allBranches = branchService.getAllBranches();
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+        List<BranchResponse> allBranches = isAdmin ? branchService.getAllBranches()
+                : (currentBranch != null ? List.of(currentBranch) : List.of());
 
         Boolean isLowStockFilter = null;
         if ("low_stock".equalsIgnoreCase(filter)) {
@@ -105,16 +117,19 @@ public class BranchInventoryController {
             @RequestParam("branchId") Long branchId,
             @RequestParam("ingredientId") Long ingredientId,
             @RequestParam("minThreshold") BigDecimal minThreshold,
+            Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
+        BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
+        Long effectiveBranchId = (currentBranch != null) ? currentBranch.getId() : branchId;
         try {
-            inventoryService.updateMinThreshold(branchId, ingredientId, minThreshold);
+            inventoryService.updateMinThreshold(effectiveBranchId, ingredientId, minThreshold);
             redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật ngưỡng cảnh báo tồn tối thiểu thành công!");
         } catch (Exception e) {
             log.error("Lỗi cập nhật ngưỡng tối thiểu: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-        return "redirect:/branch/inventory/stock?branchId=" + branchId;
+        return "redirect:/branch/inventory/stock" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");
     }
 
     /**
@@ -131,7 +146,9 @@ public class BranchInventoryController {
             return "redirect:/branch/inventory/stock";
         }
 
-        List<BranchResponse> allBranches = branchService.getAllBranches();
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+        List<BranchResponse> allBranches = isAdmin ? branchService.getAllBranches() : List.of(currentBranch);
         List<IngredientResponse> ingredients = ingredientService.getActiveIngredients();
 
         String today = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
@@ -162,17 +179,19 @@ public class BranchInventoryController {
             Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
+        BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
+        Long effectiveBranchId = (currentBranch != null) ? currentBranch.getId() : branchId;
         String username = (authentication != null) ? authentication.getName() : null;
         try {
-            ImportReceiptResponse response = inventoryService.createImportReceipt(branchId, username, request);
+            ImportReceiptResponse response = inventoryService.createImportReceipt(effectiveBranchId, username, request);
             redirectAttributes.addFlashAttribute("successMessage", 
                     "Đã lập thành công phiếu nhập kho BM2: " + response.getReceiptCode() 
                     + " (Tổng giá trị: " + response.getFormattedTotalAmount() + ")!");
-            return "redirect:/branch/inventory/stock?branchId=" + branchId;
+            return "redirect:/branch/inventory/stock" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");
         } catch (Exception e) {
             log.error("Lỗi khi lập phiếu nhập kho: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/branch/inventory/import?branchId=" + branchId;
+            return "redirect:/branch/inventory/import" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");
         }
     }
 
@@ -194,7 +213,10 @@ public class BranchInventoryController {
         BranchResponse currentBranch = resolveCurrentBranch(branchId, authentication);
         Long targetBranchId = (currentBranch != null) ? currentBranch.getId() : null;
 
-        List<BranchResponse> allBranches = branchService.getAllBranches();
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+        List<BranchResponse> allBranches = isAdmin ? branchService.getAllBranches()
+                : (currentBranch != null ? List.of(currentBranch) : List.of());
 
         LocalDateTime startDateTime = null;
         if (startDateStr != null && !startDateStr.trim().isEmpty()) {
@@ -268,17 +290,22 @@ public class BranchInventoryController {
             Model model
     ) {
         ImportReceiptResponse receipt = inventoryService.getReceiptById(id);
-        BranchResponse currentBranch = null;
-        if (receipt.getBranchId() != null) {
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+
+        BranchResponse currentBranch = resolveCurrentBranch(receipt.getBranchId(), authentication);
+        if (!isAdmin && currentBranch != null && receipt.getBranchId() != null && !currentBranch.getId().equals(receipt.getBranchId())) {
+            return "redirect:/branch/inventory/history";
+        }
+
+        if (isAdmin && receipt.getBranchId() != null) {
             try {
                 currentBranch = branchService.getBranchById(receipt.getBranchId());
             } catch (Exception ignored) {}
         }
-        if (currentBranch == null) {
-            currentBranch = resolveCurrentBranch(null, authentication);
-        }
 
-        List<BranchResponse> allBranches = branchService.getAllBranches();
+        List<BranchResponse> allBranches = isAdmin ? branchService.getAllBranches()
+                : (currentBranch != null ? List.of(currentBranch) : List.of());
 
         model.addAttribute("receipt", receipt);
         model.addAttribute("currentBranch", currentBranch);
@@ -298,18 +325,19 @@ public class BranchInventoryController {
     }
 
     private BranchResponse resolveCurrentBranch(Long requestedBranchId, Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+            if (!isAdmin) {
+                String username = authentication.getName();
+                return branchService.getBranchByManagerUsername(username).orElse(null);
+            }
+        }
+
         if (requestedBranchId != null) {
             try {
                 return branchService.getBranchById(requestedBranchId);
             } catch (Exception ignored) {}
-        }
-
-        if (authentication != null && authentication.isAuthenticated()) {
-            String username = authentication.getName();
-            var branchOpt = branchService.getBranchByManagerUsername(username);
-            if (branchOpt.isPresent()) {
-                return branchOpt.get();
-            }
         }
 
         List<BranchResponse> all = branchService.getAllBranches();

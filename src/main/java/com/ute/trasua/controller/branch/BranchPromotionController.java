@@ -179,18 +179,19 @@ public class BranchPromotionController {
     }
 
     private BranchResponse resolveCurrentBranch(Long requestedBranchId, Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()));
+            if (!isAdmin) {
+                String username = authentication.getName();
+                return branchService.getBranchByManagerUsername(username).orElse(null);
+            }
+        }
+
         if (requestedBranchId != null) {
             try {
                 return branchService.getBranchById(requestedBranchId);
             } catch (Exception ignored) {}
-        }
-
-        if (authentication != null && authentication.isAuthenticated()) {
-            String username = authentication.getName();
-            var branchOpt = branchService.getBranchByManagerUsername(username);
-            if (branchOpt.isPresent()) {
-                return branchOpt.get();
-            }
         }
 
         List<BranchResponse> all = branchService.getAllBranches();

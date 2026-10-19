@@ -197,8 +197,8 @@
       </span>
     </div>
 
-    <!-- Dropdown chuyển đổi xem chi nhánh khác -->
-    <c:if test="${fn:length(allBranches) > 1}">
+    <!-- Dropdown chuyển đổi xem chi nhánh khác (Chỉ Quản trị viên hệ thống) -->
+    <c:if test="${fn:length(allBranches) > 1 && (pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN'))}">
       <form action="${pageContext.request.contextPath}/branch/menu" method="get"
             style="display: flex; align-items: center; gap: 8px; margin: 0;">
         <label style="font-size: 0.85rem; color: var(--zen-text-muted); font-weight: 500;">Chuyển Cơ Sở:</label>
