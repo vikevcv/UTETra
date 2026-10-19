@@ -79,7 +79,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o " +
            "LEFT JOIN FETCH o.branch b " +
            "WHERE (:branchId IS NULL OR o.branch.id = :branchId) AND " +
-           "o.createdAt >= :start AND o.createdAt <= :end " +
+           "o.createdAt >= :start AND o.createdAt < :end " +
            "ORDER BY o.createdAt ASC")
     List<Order> findOrdersForReport(@Param("branchId") Long branchId,
                                     @Param("start") LocalDateTime start,
@@ -89,7 +89,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "FROM OrderDetail d " +
            "JOIN d.order o " +
            "WHERE (:branchId IS NULL OR o.branch.id = :branchId) AND " +
-           "o.createdAt >= :start AND o.createdAt <= :end AND " +
+           "o.createdAt >= :start AND o.createdAt < :end AND " +
            "(o.paymentStatus = 'PAID' OR o.status = 'PAID' OR o.status = 'COMPLETED') " +
            "GROUP BY d.product.id, d.productName " +
            "ORDER BY SUM(d.quantity) DESC")

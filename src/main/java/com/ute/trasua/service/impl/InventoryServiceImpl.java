@@ -75,7 +75,7 @@ public class InventoryServiceImpl implements InventoryService {
             throw new IllegalArgumentException("Ngưỡng tối thiểu không được âm!");
         }
 
-        BranchInventory inventory = branchInventoryRepository.findByBranchIdAndIngredientId(branchId, ingredientId)
+        BranchInventory inventory = branchInventoryRepository.findByBranchIdAndIngredientIdWithLock(branchId, ingredientId)
                 .orElseGet(() -> {
                     Branch branch = branchRepository.findById(branchId)
                             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh: " + branchId));
@@ -102,7 +102,7 @@ public class InventoryServiceImpl implements InventoryService {
             throw new IllegalArgumentException("Số lượng tồn kho kiểm kê không được âm!");
         }
 
-        BranchInventory inventory = branchInventoryRepository.findByBranchIdAndIngredientId(branchId, ingredientId)
+        BranchInventory inventory = branchInventoryRepository.findByBranchIdAndIngredientIdWithLock(branchId, ingredientId)
                 .orElseGet(() -> {
                     Branch branch = branchRepository.findById(branchId)
                             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh: " + branchId));
@@ -196,8 +196,8 @@ public class InventoryServiceImpl implements InventoryService {
 
             receipt.addDetail(detail);
 
-            // Cộng dồn tồn kho trong BranchInventory
-            BranchInventory inventory = branchInventoryRepository.findByBranchIdAndIngredientId(branchId, ingredient.getId())
+            // Cộng dồn tồn kho trong BranchInventory với Khóa bi quan (PESSIMISTIC_WRITE)
+            BranchInventory inventory = branchInventoryRepository.findByBranchIdAndIngredientIdWithLock(branchId, ingredient.getId())
                     .orElseGet(() -> BranchInventory.builder()
                             .branch(branch)
                             .ingredient(ingredient)
@@ -213,9 +213,6 @@ public class InventoryServiceImpl implements InventoryService {
                     branch.getBranchCode(), ingredient.getName(), qty, ingredient.getUnit(), inventory.getStockQuantity());
         }
 
-        // Tự động mở bán lại các món nước tạm ngưng bán do hết hàng tại chi nhánh (Task 4.2)
-        autoReopenBranchMenuIfAvailable(branchId);
-
         receipt.recalculateTotalAmount();
         ImportReceipt saved = importReceiptRepository.save(receipt);
         log.info(">>> Đã lưu thành công phiếu nhập kho BM2: {} (Tổng tiền: {} VNĐ)", saved.getReceiptCode(), saved.getTotalAmount());
@@ -230,28 +227,6 @@ public class InventoryServiceImpl implements InventoryService {
             finalCode = baseCode + "-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
         }
         return finalCode;
-    }
-
-    /**
-     * Tự động kích hoạt lại các món nước tạm ngưng khi đã nhập đủ nguyên liệu kho (Task 4.2 / UC29).
-     */
-    private void autoReopenBranchMenuIfAvailable(Long branchId) {
-        try {
-            List<BranchMenu> unavailableMenus = branchMenuRepository.findByBranchId(branchId).stream()
-                    .filter(bm -> !bm.isAvailable())
-                    .collect(Collectors.toList());
-
-            if (!unavailableMenus.isEmpty()) {
-                for (BranchMenu bm : unavailableMenus) {
-                    bm.setAvailable(true);
-                    branchMenuRepository.save(bm);
-                    log.info(">>> Đã tự động mở bán lại món '{}' tại chi nhánh ID: {} sau khi nhập kho",
-                            bm.getProduct().getName(), branchId);
-                }
-            }
-        } catch (Exception ex) {
-            log.warn("Lưu ý: Không thể tự động mở bán BranchMenu cho chi nhánh {}: {}", branchId, ex.getMessage());
-        }
     }
 
     @Override
@@ -292,7 +267,7 @@ public class InventoryServiceImpl implements InventoryService {
             return null;
         }
 
-        BranchInventory inventory = branchInventoryRepository.findByBranchIdAndIngredientId(branchId, ingredientId)
+        BranchInventory inventory = branchInventoryRepository.findByBranchIdAndIngredientIdWithLock(branchId, ingredientId)
                 .orElse(null);
 
         if (inventory == null) {
