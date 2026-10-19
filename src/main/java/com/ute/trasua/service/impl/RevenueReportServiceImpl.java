@@ -52,7 +52,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         LocalDate endDate = dateRange[1];
 
         LocalDateTime startDateTime = startDate.atStartOfDay();
-        LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+        LocalDateTime endDateTime = endDate.plusDays(1).atStartOfDay(); // Khoảng nửa mở [start, end) để không bỏ sót các đơn lúc 23:59:59.xxx
 
         // 2. Xác định chi nhánh
         Long branchId = request.getBranchId();

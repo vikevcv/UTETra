@@ -1,9 +1,11 @@
 package com.ute.trasua.repository;
 
 import com.ute.trasua.entity.BranchInventory;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -19,6 +21,13 @@ import java.util.Optional;
 public interface BranchInventoryRepository extends JpaRepository<BranchInventory, Long> {
 
     Optional<BranchInventory> findByBranchIdAndIngredientId(Long branchId, Long ingredientId);
+
+    /**
+     * Lock row for update (PESSIMISTIC_WRITE) to prevent race condition & lost updates during deduction or import.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM BranchInventory b WHERE b.branch.id = :branchId AND b.ingredient.id = :ingredientId")
+    Optional<BranchInventory> findByBranchIdAndIngredientIdWithLock(@Param("branchId") Long branchId, @Param("ingredientId") Long ingredientId);
 
     boolean existsByBranchIdAndIngredientId(Long branchId, Long ingredientId);
 

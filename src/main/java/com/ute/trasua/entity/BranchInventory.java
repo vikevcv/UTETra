@@ -53,6 +53,13 @@ public class BranchInventory {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    /**
+     * Version field for Optimistic Locking to prevent lost updates under concurrent transactions.
+     */
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @PrePersist
     protected void onCreate() {
         this.updatedAt = LocalDateTime.now();
