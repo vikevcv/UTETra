@@ -731,14 +731,14 @@ public class DataInitializer implements CommandLineRunner {
         // Đồng bộ 8 Món Trà khớp 100% với zenProducts trên Storefront
         java.util.List<com.ute.trasua.entity.Product> prods = productRepository.findAll();
         String[][] zenItems = {
-            {"Bạch Hạc Shan Tuyết", "65000", "Búp trà cổ thụ 300 năm tuổi trên đỉnh Tà Xùa, hương khói nhẹ và hậu ngọt sâu lắng."},
-            {"Thiết Quan Âm Ủ Lạnh", "58000", "Trà Thiết Quan Âm ủ lạnh 12h, lưu giữ trọn vẹn hương hoa lan thanh khiết."},
-            {"Đại Hồng Bào Nham Trà", "70000", "Nham trà Vũ Di Sơn đượm khoáng chất, vị đậm đà và bền hương qua nhiều tuần nước."},
-            {"Trà Sen Hồ Tây Thượng Hạng", "68000", "Trà xanh ướp trong bông sen Bách Diệp sớm mai tinh sương ngát hương thơm quý phái."},
-            {"Trà Oolong Sữa Mộc Vân", "55000", "Trà ô long Kim Tuyên béo ngậy tự nhiên từ giống trà vùng cao Cầu Đất."},
-            {"Lục Trà Hoa Nhài Cung Đình", "50000", "Hoa nhài hữu cơ thu hái lúc hoàng hôn hòa quyện lục trà thanh mảnh."},
-            {"Hồng Trà Quế Hoa Hoàng Cung", "54000", "Hồng trà cổ thụ điểm xuyết hoa mộc vàng thơm dịu dàng ấm áp."},
-            {"Trà Thảo Mộc Tĩnh Tâm", "52000", "Táo đỏ, kỷ tử, hoa cúc tuyết và cam thảo giúp thư giãn tinh thần tuyệt đối."}
+            {"Bạch Hạc Shan Tuyết", "65000", "Búp trà cổ thụ 300 năm tuổi trên đỉnh Tà Xùa, hương khói nhẹ và hậu ngọt sâu lắng.", "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500"},
+            {"Thiết Quan Âm Ủ Lạnh", "58000", "Trà Thiết Quan Âm ủ lạnh 12h, lưu giữ trọn vẹn hương hoa lan thanh khiết.", "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500"},
+            {"Đại Hồng Bào Nham Trà", "70000", "Nham trà Vũ Di Sơn đượm khoáng chất, vị đậm đà và bền hương qua nhiều tuần nước.", "https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=500"},
+            {"Trà Sen Hồ Tây Thượng Hạng", "68000", "Trà xanh ướp trong bông sen Bách Diệp sớm mai tinh sương ngát hương thơm quý phái.", "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=500"},
+            {"Trà Oolong Sữa Mộc Vân", "55000", "Trà ô long Kim Tuyên béo ngậy tự nhiên từ giống trà vùng cao Cầu Đất.", "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500"},
+            {"Lục Trà Hoa Nhài Cung Đình", "50000", "Hoa nhài hữu cơ thu hái lúc hoàng hôn hòa quyện lục trà thanh mảnh.", "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=500"},
+            {"Hồng Trà Quế Hoa Hoàng Cung", "54000", "Hồng trà cổ thụ điểm xuyết hoa mộc vàng thơm dịu dàng ấm áp.", "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500"},
+            {"Trà Thảo Mộc Tĩnh Tâm", "52000", "Táo đỏ, kỷ tử, hoa cúc tuyết và cam thảo giúp thư giãn tinh thần tuyệt đối.", "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500"}
         };
 
         for (int i = 0; i < Math.min(prods.size(), zenItems.length); i++) {
@@ -746,9 +746,10 @@ public class DataInitializer implements CommandLineRunner {
             p.setName(zenItems[i][0]);
             p.setBasePrice(new java.math.BigDecimal(zenItems[i][1]));
             p.setDescription(zenItems[i][2]);
+            p.setImageUrl(zenItems[i][3]);
             productRepository.save(p);
         }
-        log.info(">>> Đã đồng bộ 100% tên món trà và topping khớp với giao diện Storefront HTML!");
+        log.info(">>> Đã đồng bộ 100% tên món trà, hình ảnh và topping khớp với giao diện Storefront HTML!");
 
         // Khởi tạo sản phẩm kiểm thử thanh toán PayOS giá tối thiểu 2.000 VNĐ (theo hạn mức Napas247 / PayOS)
         com.ute.trasua.entity.Product testProd = productRepository.findByProductCode("SP-TEST-PAYOS").orElse(null);
@@ -759,13 +760,14 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Trà Thử Nghiệm PayOS (2.000đ)")
                     .category(defaultCat)
                     .basePrice(new java.math.BigDecimal("2000"))
-                    .imageUrl("https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500")
+                    .imageUrl("https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=500")
                     .description("Phẩm trà dùng để kiểm thử thanh toán trực tuyến PayOS Napas247 với mức phí tối thiểu 2.000 VNĐ.")
                     .status("ACTIVE")
                     .build());
             log.info(">>> Đã khởi tạo phẩm trà kiểm thử PayOS (2.000đ): SP-TEST-PAYOS");
         } else {
             testProd.setBasePrice(new java.math.BigDecimal("2000"));
+            testProd.setImageUrl("https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=500");
             testProd.setStatus("ACTIVE");
             productRepository.save(testProd);
         }

@@ -118,42 +118,22 @@
         <div class="pos-brand">
             <div class="pos-brand-enso">円</div>
             <span>UTETRA POS</span>
-            <span class="badge bg-secondary ms-2" style="font-size: 0.75rem; font-weight: normal;">Thực Đơn Chi Nhánh</span>
         </div>
 
         <!-- Navigation Tabs Chuyển Đổi Nhanh -->
         <div class="pos-nav-tabs d-none d-lg-flex">
-            <a href="<c:url value='/pos?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-cash-register me-1"></i>Bán Lẻ POS
-            </a>
-            <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-mug-hot me-1"></i>Pha Chế KDS
-            </a>
-            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-box-open me-1"></i>Bàn Giao Đơn
-            </a>
-            <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab active">
-                <i class="fa-solid fa-list-check me-1"></i>Thực Đơn Chi Nhánh
-            </a>
+            <a href="<c:url value='/pos?branchId=${branchId}'/>" class="pos-nav-tab">Bán Lẻ POS</a>
+            <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab">Pha Chế KDS</a>
+            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab">Bàn Giao Đơn</a>
+            <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab active">Thực Đơn Chi Nhánh</a>
         </div>
 
         <div class="pos-header-info">
-            <div class="pos-badge">
-                <i class="fa-solid fa-store text-warning"></i>
-                <select id="branchSelect" class="form-select form-select-sm bg-transparent text-white border-0 py-0 pe-4" style="cursor: pointer; width: auto; font-weight: 500;">
-                    <c:forEach var="b" items="${branches}">
-                        <option value="${b.id}" class="text-dark" ${b.id == branchId ? 'selected' : ''}>${b.name}</option>
-                    </c:forEach>
-                    <c:if test="${empty branches}">
-                        <option value="1" class="text-dark" selected>UTETra Chi Nhánh Thủ Đức</option>
-                    </c:if>
-                </select>
+            <div class="pos-badge" title="Cơ sở chi nhánh cố định">
+                <span class="fw-bold text-white">${branchName}</span>
             </div>
-            <div class="pos-badge">
-                <i class="fa-regular fa-clock"></i>
-                <span id="posClock" style="font-variant-numeric: tabular-nums;">--:--:--</span>
-            </div>
-            <a href="<c:url value='/pos/logout'/>" class="btn btn-outline-danger btn-sm" title="Đăng xuất quầy">
+            <div class="pos-clock" id="posClock">00:00:00</div>
+            <a href="<c:url value='/pos/logout'/>" class="btn-pos-logout" title="Đăng xuất quầy thực đơn chi nhánh">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
             </a>
         </div>
@@ -161,24 +141,6 @@
 
     <!-- Main Content -->
     <main class="menu-status-container">
-        <!-- Banner Hướng Dẫn Nghiệp Vụ UC11 -->
-        <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #1C1D1F 0%, #2D3139 100%); color: #FFFFFF;">
-            <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <div>
-                    <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-store-slash text-warning"></i>
-                        <span>Cập Nhật Còn / Hết Hàng Chi Nhánh (UC11)</span>
-                    </h4>
-                    <p class="text-secondary mb-0 small">
-                        Gạt công tắc để tắt món tạm hết do thiếu nguyên liệu. Món bị tắt sẽ lập tức <strong>làm mờ trên máy POS</strong> và <strong>ngừng nhận đơn trên Website khách hàng</strong>.
-                    </p>
-                </div>
-                <div class="d-flex align-items-center gap-2 bg-dark bg-opacity-50 px-3 py-2 rounded-3 border border-secondary">
-                    <span class="badge bg-success rounded-circle p-1"></span>
-                    <span class="small">Đang xem: <strong class="text-warning">${branchName}</strong></span>
-                </div>
-            </div>
-        </div>
 
         <!-- Filter & Search Bar -->
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
@@ -209,7 +171,7 @@
         </div>
     </main>
 
-    <!-- Modal Xác Nhận Gạt Hết Hàng (Luồng chính Bước 4 UC11) -->
+    <!-- Modal Xác Nhận Gạt Hết Hàng -->
     <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 shadow">
@@ -221,11 +183,10 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body py-3">
-                    <p class="mb-2">Bạn có chắc chắn muốn đánh dấu tạm hết món này tại chi nhánh?</p>
+                    <p class="mb-2">Bạn có chắc chắn muốn chuyển món này sang trạng thái tạm hết?</p>
                     <div class="alert alert-danger py-2 px-3 fw-bold small" id="confirmItemName">
                         Tên món: -
                     </div>
-                    <p class="small text-muted mb-0">Khi xác nhận, hệ thống sẽ tự động cập nhật bảng <code>branch_menus</code> và làm mờ món trên máy POS quầy bán lẻ.</p>
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy bỏ</button>
@@ -278,13 +239,6 @@
             initClock();
             confirmModalInstance = new bootstrap.Modal(document.getElementById("confirmModal"));
             toastInstance = new bootstrap.Toast(document.getElementById("liveToast"));
-
-            const branchSelect = document.getElementById("branchSelect");
-            if (branchSelect) {
-                branchSelect.addEventListener("change", (e) => {
-                    window.location.href = "<c:url value='/branch/menu-status'/>?branchId=" + e.target.value;
-                });
-            }
 
             // Filter Pill Buttons
             document.querySelectorAll(".filter-pill-btn").forEach(btn => {
@@ -411,14 +365,24 @@
             filtered.forEach(item => {
                 const col = document.createElement("div");
                 col.className = "col-md-6 col-lg-4";
-
                 const isAvail = item.isAvailable !== false;
-                const statusBadge = isAvail
-                        ? `<span class="badge bg-success-subtle text-success fw-bold px-2 py-1"><i class="fa-solid fa-check me-1"></i>Còn hàng (Tồn: ~\${item.stockEstimate} ly)</span>`
-                        : `<span class="badge bg-danger-subtle text-danger fw-bold px-2 py-1"><i class="fa-solid fa-xmark me-1"></i>Tạm hết tại quán</span>`;
 
-                const thumb = item.imageUrl ? `<img src="\${item.imageUrl}" class="menu-item-thumb" alt="\${item.name}" onerror="this.src='https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500'">`
-                                            : `<div class="menu-item-thumb bg-light d-flex align-items-center justify-content-center text-secondary fs-4"><i class="fa-solid fa-cubes-stacked"></i></div>`;
+                let itemImg = item.imageUrl;
+                if (!itemImg && item.itemType === "TOPPING") {
+                    const cleanName = (item.name || "").toLowerCase();
+                    if (cleanName.includes("hạt sen") || cleanName.includes("sen")) {
+                        itemImg = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500";
+                    } else if (cleanName.includes("sương sáo") || cleanName.includes("thạch")) {
+                        itemImg = "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500";
+                    } else if (cleanName.includes("kem mây") || cleanName.includes("kem") || cleanName.includes("macchiato")) {
+                        itemImg = "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=500";
+                    } else {
+                        itemImg = "https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500";
+                    }
+                }
+
+                const thumb = itemImg ? `<img src="\${itemImg}" class="menu-item-thumb" alt="\${item.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500';">`
+                                      : `<div class="menu-item-thumb bg-light d-flex align-items-center justify-content-center text-secondary fs-4"><i class="fa-solid fa-cubes-stacked"></i></div>`;
 
                 col.innerHTML = `
                     <div class="menu-item-card \${!isAvail ? 'out-of-stock' : ''}">
@@ -426,12 +390,10 @@
                             \${thumb}
                             <div class="overflow-hidden">
                                 <div class="item-name fw-bold text-truncate" title="\${item.name}">\${item.name}</div>
-                                <div class="text-muted small mb-1">\${item.categoryName} • <strong class="text-dark">\${new Intl.NumberFormat('vi-VN').format(item.price)}₫</strong></div>
-                                <div>\${statusBadge}</div>
                             </div>
                         </div>
 
-                        <!-- Công tắc Switch -->
+                        <!-- Công tắc Switch On/Off -->
                         <div class="form-check form-switch ps-0 ms-2">
                             <input class="form-check-input ms-0" type="checkbox" role="switch"
                                    id="switch-\${item.itemType}-\${item.id}"

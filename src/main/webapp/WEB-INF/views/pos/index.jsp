@@ -26,41 +26,23 @@
         <div class="pos-brand">
             <div class="pos-brand-enso">円</div>
             <span>UTETRA POS</span>
-            <span class="badge bg-secondary ms-2" style="font-size: 0.75rem; font-weight: normal;">Quầy Bán Lẻ</span>
         </div>
         <div class="pos-nav-tabs d-none d-lg-flex">
-            <a href="<c:url value='/pos?branchId=${branchId}'/>" class="pos-nav-tab active">
-                <i class="fa-solid fa-cash-register me-1"></i>Bán Lẻ POS
-            </a>
-            <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-mug-hot me-1"></i>Pha Chế KDS
-            </a>
-            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-box-open me-1"></i>Bàn Giao Đơn
-            </a>
-            <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab">
-                <i class="fa-solid fa-list-check me-1"></i>Thực Đơn Chi Nhánh
-            </a>
+            <a href="<c:url value='/pos?branchId=${branchId}'/>" class="pos-nav-tab active">Bán Lẻ POS</a>
+            <a href="<c:url value='/pos/kitchen?branchId=${branchId}'/>" class="pos-nav-tab">Pha Chế KDS</a>
+            <a href="<c:url value='/pos/handover?branchId=${branchId}'/>" class="pos-nav-tab">Bàn Giao Đơn</a>
+            <a href="<c:url value='/branch/menu-status?branchId=${branchId}'/>" class="pos-nav-tab">Thực Đơn Chi Nhánh</a>
         </div>
         <div class="pos-header-info">
-            <div class="pos-badge">
-                <i class="fa-solid fa-store text-warning"></i>
-                <select id="branchSelect" class="form-select form-select-sm bg-transparent text-white border-0 py-0 pe-4" style="cursor: pointer; width: auto; font-weight: 500;">
-                    <c:forEach var="b" items="${branches}">
-                        <option value="${b.id}" class="text-dark" ${b.id == branchId ? 'selected' : ''}>${b.name}</option>
-                    </c:forEach>
-                    <c:if test="${empty branches}">
-                        <option value="1" class="text-dark" selected>UTETra Chi Nhánh Thủ Đức</option>
-                    </c:if>
-                </select>
+            <div class="pos-badge" title="Cơ sở chi nhánh cố định của quầy POS">
+                <span class="fw-bold text-white">${branchName}</span>
             </div>
             <div class="pos-badge" id="btnShiftBadge" style="cursor: pointer;" title="Nhấn để điểm danh hoặc thay đổi nhân viên trực ca">
-                <i class="fa-solid fa-clipboard-user text-warning"></i>
                 <span id="shiftIndicatorDot" class="badge bg-danger rounded-pill px-2 py-1">OFF</span>
                 <span id="shiftSummaryName" class="fw-bold" style="max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Chưa có người trực</span>
             </div>
             <div class="pos-clock" id="posClock">00:00:00</div>
-            <a href="<c:url value='/portal'/>" class="btn btn-outline-light btn-sm" title="Quay về trung tâm điều hành">
+            <a href="<c:url value='/pos/logout'/>" class="btn-pos-logout" title="Đăng xuất quầy bán lẻ POS">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
             </a>
         </div>
