@@ -35,6 +35,9 @@ function initCheckoutPage() {
 
   // Mặc định tính khoảng cách tới chi nhánh đầu tiên
   onBranchSelected();
+
+  // Tự động chọn địa chỉ mặc định trong Sổ địa chỉ (nếu có)
+  initSavedAddressesFromBook();
 }
 
 function renderCheckoutItems(cart) {
@@ -108,14 +111,7 @@ function initLeafletMap() {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  // Lắng nghe sự kiện click trên bản đồ để chọn điểm giao
-  map.on('click', async function(e) {
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-    setCustomerCoordinates(lat, lng, "Đang tra cứu địa chỉ...", true);
-    const addr = await reverseGeocode(lat, lng);
-    setCustomerCoordinates(lat, lng, addr, true);
-  });
+  // Bản đồ chỉ đóng vai trò hiển thị vị trí chi nhánh & địa chỉ đã chọn trong Sổ địa chỉ
 }
 
 async function reverseGeocode(lat, lng) {
@@ -207,6 +203,81 @@ async function getCurrentLocation() {
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
+}
+
+/**
+ * Xử lý khi click vào thẻ địa chỉ (gọi từ data-* attribute trên thẻ)
+ */
+function selectSavedAddressCard(card) {
+  if (!card) return;
+  const id = card.getAttribute('data-id');
+  const lat = parseFloat(card.getAttribute('data-lat'));
+  const lng = parseFloat(card.getAttribute('data-lng'));
+  const addressDetail = card.getAttribute('data-detail') || '';
+  const recipientName = card.getAttribute('data-recipient') || '';
+  const recipientPhone = card.getAttribute('data-phone') || '';
+  selectSavedAddress(id, lat, lng, addressDetail, recipientName, recipientPhone, card);
+}
+
+/**
+ * Xử lý khi khách bấm chọn 1 thẻ địa chỉ trong Sổ địa chỉ (Checkout 1-chạm)
+ */
+function selectSavedAddress(id, lat, lng, addressDetail, recipientName, recipientPhone, el) {
+  document.querySelectorAll(".checkout-address-card").forEach(c => {
+    c.classList.remove("selected");
+    const radio = c.querySelector("input[type='radio']");
+    if (radio) radio.checked = false;
+  });
+
+  const card = el || document.getElementById('addrCard-' + id);
+  if (card) {
+    card.classList.add("selected");
+    const radio = card.querySelector("input[type='radio']");
+    if (radio) radio.checked = true;
+  }
+
+  // Điền thông tin người nhận
+  const nameInput = document.getElementById("customerName");
+  if (nameInput && recipientName) nameInput.value = recipientName;
+  const phoneInput = document.getElementById("customerPhone");
+  if (phoneInput && recipientPhone) phoneInput.value = recipientPhone;
+
+  // Cập nhật tọa độ và địa chỉ chi tiết
+  setCustomerCoordinates(lat, lng, addressDetail, true);
+  if (map) {
+    map.setView([lat, lng], 15);
+  }
+}
+
+/**
+ * Tự động tìm và chọn địa chỉ từ Sổ địa chỉ khi tải trang
+ */
+function initSavedAddressesFromBook() {
+  const cards = document.querySelectorAll(".checkout-address-card");
+  if (!cards || cards.length === 0) return;
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetId = urlParams.get("selectedAddressId");
+
+  let targetCard = null;
+  if (targetId) {
+    targetCard = document.getElementById('addrCard-' + targetId);
+  }
+
+  if (!targetCard) {
+    targetCard = document.querySelector(".checkout-address-card.is-default") || cards[0];
+  }
+
+  if (targetCard) {
+    const id = targetCard.getAttribute("data-id");
+    const lat = parseFloat(targetCard.getAttribute("data-lat"));
+    const lng = parseFloat(targetCard.getAttribute("data-lng"));
+    const detail = targetCard.getAttribute("data-detail");
+    const recipient = targetCard.getAttribute("data-recipient");
+    const phone = targetCard.getAttribute("data-phone");
+
+    selectSavedAddress(id, lat, lng, detail, recipient, phone, targetCard);
+  }
 }
 
 function setCustomerCoordinates(lat, lng, addressDesc, forceAddressUpdate = false) {
@@ -349,9 +420,8 @@ async function submitOnlineOrder() {
     if (phoneEl) phoneEl.focus();
     return;
   }
-  if (!addr) {
-    alert("Vui lòng nhập địa chỉ nhận hàng chi tiết.");
-    if (addrEl) addrEl.focus();
+  if (!addr || !currentLat || !currentLng) {
+    alert("Vui lòng chọn một địa chỉ nhận hàng từ danh sách có sẵn để tiếp tục đặt hàng.");
     return;
   }
 

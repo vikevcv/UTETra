@@ -1,13 +1,14 @@
 package com.ute.trasua.controller;
 
+import com.ute.trasua.dto.user.UserAddressDto;
 import com.ute.trasua.entity.Branch;
 import com.ute.trasua.entity.Order;
 import com.ute.trasua.entity.User;
-import com.ute.trasua.entity.Branch;
-import com.ute.trasua.entity.Order;
-import com.ute.trasua.entity.User;
+import com.ute.trasua.repository.OrderRepository;
 import com.ute.trasua.service.BranchService;
 import com.ute.trasua.service.OnlineOrderService;
+import com.ute.trasua.service.PayOSService;
+import com.ute.trasua.service.UserAddressService;
 import com.ute.trasua.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -26,17 +27,20 @@ public class CheckoutViewController {
 
     private final BranchService branchService;
     private final UserService userService;
+    private final UserAddressService userAddressService;
     private final OnlineOrderService onlineOrderService;
-    private final com.ute.trasua.service.PayOSService payosService;
-    private final com.ute.trasua.repository.OrderRepository orderRepository;
+    private final PayOSService payosService;
+    private final OrderRepository orderRepository;
 
     public CheckoutViewController(BranchService branchService,
                                   UserService userService,
+                                  UserAddressService userAddressService,
                                   OnlineOrderService onlineOrderService,
-                                  com.ute.trasua.service.PayOSService payosService,
-                                  com.ute.trasua.repository.OrderRepository orderRepository) {
+                                  PayOSService payosService,
+                                  OrderRepository orderRepository) {
         this.branchService = branchService;
         this.userService = userService;
+        this.userAddressService = userAddressService;
         this.onlineOrderService = onlineOrderService;
         this.payosService = payosService;
         this.orderRepository = orderRepository;
@@ -53,6 +57,11 @@ public class CheckoutViewController {
             model.addAttribute("defaultCustomerName", currentUser.getFullName() != null ? currentUser.getFullName() : currentUser.getUsername());
             model.addAttribute("defaultCustomerPhone", currentUser.getPhone() != null ? currentUser.getPhone() : "");
             model.addAttribute("defaultCustomerEmail", currentUser.getEmail() != null ? currentUser.getEmail() : "");
+
+            List<UserAddressDto> addresses = userAddressService.getAddressesByUserId(currentUser.getId());
+            model.addAttribute("userAddresses", addresses);
+            UserAddressDto defaultAddress = userAddressService.getDefaultAddress(currentUser.getId());
+            model.addAttribute("defaultAddress", defaultAddress);
         }
 
         model.addAttribute("siteTitle", "Thanh Toán & Đặt Hàng Trực Tuyến — UTETra Zen Gallery");

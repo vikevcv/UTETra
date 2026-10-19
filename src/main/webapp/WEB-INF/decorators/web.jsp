@@ -24,6 +24,82 @@
   <!-- Custom Zen Wabi-Sabi Design System -->
   <link rel="stylesheet" href="${pageContext.request.contextPath}/css/zen-wabi-sabi.css">
 
+  <style>
+    .btn-zen-user-menu {
+      background: #FFFFFF;
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 7px 14px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .btn-zen-user-menu:hover, .btn-zen-user-menu:focus {
+      background: var(--zen-sand);
+      border-color: var(--celadon-green);
+    }
+    .btn-zen-user-menu::after {
+      margin-left: 8px;
+      vertical-align: 0.15em;
+      color: var(--text-muted);
+    }
+    .zen-user-dropdown {
+      background: #FFFFFF !important;
+      border: 1px solid var(--border-hairline) !important;
+      border-radius: var(--radius-sm) !important;
+      box-shadow: 0 10px 30px rgba(28, 29, 31, 0.08) !important;
+      min-width: 270px !important;
+      padding: 10px !important;
+      margin-top: 8px !important;
+    }
+    .zen-user-dropdown-header {
+      padding: 6px 12px 10px;
+      border-bottom: 1px dashed var(--border-hairline);
+      margin-bottom: 8px;
+    }
+    .zen-dropdown-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px;
+      background: var(--zen-sand);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 0.88rem;
+      text-decoration: none;
+      margin-bottom: 8px;
+      transition: all 0.2s ease;
+    }
+    .zen-dropdown-item:hover {
+      background: #FFFFFF;
+      border-color: var(--celadon-green);
+      color: var(--celadon-green);
+      transform: translateX(3px);
+    }
+    .zen-dropdown-item.logout-item:hover {
+      border-color: #EF4444;
+      color: #DC2626;
+      background: #FEF2F2;
+    }
+    .zen-item-arrow {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+    .zen-dropdown-item:hover .zen-item-arrow {
+      color: inherit;
+      transform: translateX(2px);
+    }
+    .zen-dropdown-divider {
+      height: 1px;
+      background-color: var(--border-hairline);
+      margin: 6px 0 10px;
+    }
+  </style>
+
   <%="<sitemesh:write property='head'/>"%>
 </head>
 <body>
@@ -56,11 +132,6 @@
           <li><a href="${pageContext.request.contextPath}/#salonHero">Triển Lãm</a></li>
           <li><a href="${pageContext.request.contextPath}/#privateReserve">Trà Độc Bản</a></li>
           <li><a href="${pageContext.request.contextPath}/#teaRooms">Phòng Trà</a></li>
-          <li>
-            <a href="${pageContext.request.contextPath}/order/tracking" style="color:var(--tea-matcha, #2D5A27); font-weight:600;">
-              <i class="fa-solid fa-clock-rotate-left me-1"></i> Đơn Hàng
-            </a>
-          </li>
         </ul>
       </nav>
 
@@ -87,11 +158,53 @@
               </a>
             </c:if>
 
-            <span style="font-size:0.82rem; color:var(--text-muted); margin-right:8px;">
-              Xin chào, <strong>${pageContext.request.remoteUser}</strong>
-            </span>
-            <a href="${pageContext.request.contextPath}/auth/logout"
-               class="btn-zen-outline" style="text-decoration:none;">Đăng Xuất</a>
+            <div class="dropdown d-inline-block" style="margin-right:8px;">
+              <button class="btn-zen-user-menu dropdown-toggle d-inline-flex align-items-center gap-2" 
+                      type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa-regular fa-circle-user" style="color:var(--celadon-green); font-size:1.15rem;"></i>
+                <span style="font-weight:600; color:var(--text-main); font-size:0.86rem;">${pageContext.request.remoteUser}</span>
+              </button>
+              <div class="dropdown-menu dropdown-menu-end zen-user-dropdown" aria-labelledby="userMenuDropdown">
+                <div class="zen-user-dropdown-header">
+                  <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; font-weight:700;">Tài Khoản Khách</div>
+                  <div style="font-weight:700; color:var(--text-main); font-size:0.92rem; margin-top:2px;">${pageContext.request.remoteUser}</div>
+                </div>
+
+                <a class="zen-dropdown-item" href="${pageContext.request.contextPath}/user/profile">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-user" style="color:var(--ceramic-bizen); font-size:0.95rem; width:20px; text-align:center;"></i>
+                    <span>Hồ Sơ Cá Nhân</span>
+                  </div>
+                  <i class="fa-solid fa-chevron-right zen-item-arrow"></i>
+                </a>
+
+                <a class="zen-dropdown-item" href="${pageContext.request.contextPath}/user/addresses">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-map-location-dot" style="color:var(--celadon-green); font-size:0.95rem; width:20px; text-align:center;"></i>
+                    <span>Sổ Địa Chỉ Giao Hàng</span>
+                  </div>
+                  <i class="fa-solid fa-chevron-right zen-item-arrow"></i>
+                </a>
+
+                <a class="zen-dropdown-item" href="${pageContext.request.contextPath}/order/tracking">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left" style="color:var(--autumn-leaf); font-size:0.95rem; width:20px; text-align:center;"></i>
+                    <span>Lịch Sử Đơn Hàng</span>
+                  </div>
+                  <i class="fa-solid fa-chevron-right zen-item-arrow"></i>
+                </a>
+
+                <div class="zen-dropdown-divider"></div>
+
+                <a class="zen-dropdown-item logout-item" href="${pageContext.request.contextPath}/auth/logout">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-right-from-bracket text-danger" style="font-size:0.95rem; width:20px; text-align:center;"></i>
+                    <span>Đăng Xuất</span>
+                  </div>
+                  <i class="fa-solid fa-chevron-right zen-item-arrow"></i>
+                </a>
+              </div>
+            </div>
           </c:when>
           <c:otherwise>
             <a href="${pageContext.request.contextPath}/auth/login"

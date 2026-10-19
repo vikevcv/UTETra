@@ -139,6 +139,51 @@
       color: #FFFFFF;
     }
 
+    /* Checkout Address Book Cards */
+    .checkout-address-card {
+      border: 1px solid var(--border-hairline);
+      border-radius: 10px;
+      padding: 12px 16px;
+      background: #FFFFFF;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .checkout-address-card:hover {
+      border-color: #CBD5E1;
+      background: #FAF8F5;
+    }
+    .checkout-address-card.selected {
+      border-color: var(--tea-matcha);
+      background: #F5FBF4;
+      box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.15);
+    }
+    .label-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: #F4F4F5;
+      color: var(--zen-sumi);
+    }
+    .label-badge.home { background: #FEF3C7; color: #92400E; }
+    .label-badge.office { background: #E0E7FF; color: #3730A3; }
+    .label-badge.school { background: #FCE7F3; color: #9D174D; }
+    .default-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: var(--tea-matcha-soft);
+      color: var(--tea-matcha);
+    }
+
     /* Payment Option Cards */
     .payment-option {
       border: 1px solid var(--border-hairline);
@@ -290,26 +335,124 @@
 
           <!-- Box 2: Định vị & Chi nhánh -->
           <div class="zen-box">
-            <div class="zen-box-title">
-              <i class="fa-solid fa-map-location-dot"></i>
-              <span>2. Chi Nhánh & Địa Chỉ Giao Hàng</span>
+            <div class="zen-box-title" style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span>2. Chi Nhánh & Địa Chỉ Giao Hàng</span>
+              </div>
+              <c:if test="${currentUser != null}">
+                <a href="${pageContext.request.contextPath}/user/addresses?returnUrl=/checkout" 
+                   class="btn-action-icon" 
+                   style="border-radius:var(--radius-sm); font-size:0.8rem; font-weight:600; text-decoration:none; padding:5px 12px;">
+                  <i class="fa-solid fa-plus me-1" style="color:var(--celadon-green);"></i> Thêm Địa Chỉ Mới
+                </a>
+              </c:if>
             </div>
 
-            <!-- Nút định vị GPS -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:0.85rem; color:var(--zen-sumi-light);">Nhập địa chỉ hoặc bật GPS tự động tìm quán gần nhất</span>
-              <button type="button" class="btn-gps" id="btnGps" onclick="getCurrentLocation()">
-                <i class="fa-solid fa-crosshairs"></i> Xác Định Vị Trí
-              </button>
-            </div>
+            <!-- NẾU LÀ KHÁCH ĐÃ ĐĂNG NHẬP -->
+            <c:choose>
+              <c:when test="${currentUser != null}">
+                <c:choose>
+                  <%-- ĐÃ CÓ ĐỊA CHỈ TRONG SỔ --%>
+                  <c:when test="${not empty userAddresses}">
+                    <div style="margin-bottom:16px;">
+                      <div style="font-size:0.82rem; font-weight:700; color:var(--zen-sumi); text-transform:uppercase; margin-bottom:10px; letter-spacing:0.5px;">
+                        <i class="fa-solid fa-bookmark text-success me-1"></i> Chọn Địa Chỉ Trong Sổ Địa Chỉ (1-Chạm)
+                      </div>
 
-            <!-- Input địa chỉ giao hàng -->
-            <div class="form-group">
-              <label class="form-label-zen" for="deliveryAddress">Địa Chỉ Nhận Hàng Chi Tiết *</label>
-              <input type="text" id="deliveryAddress" class="form-control-zen" 
-                     placeholder="Ví dụ: 1 Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức..." 
-                     onchange="onAddressChanged()" required>
-            </div>
+                      <div class="checkout-addresses-list" style="display:flex; flex-direction:column; gap:10px;">
+                        <c:forEach var="addr" items="${userAddresses}">
+                          <div class="checkout-address-card ${addr.isDefault ? 'is-default' : ''}" 
+                               id="addrCard-${addr.id}"
+                               data-id="${addr.id}"
+                               data-lat="${addr.latitude}"
+                               data-lng="${addr.longitude}"
+                               data-detail="<c:out value='${addr.addressDetail}'/>"
+                               data-recipient="<c:out value='${addr.recipientName}'/>"
+                               data-phone="<c:out value='${addr.recipientPhone}'/>"
+                               onclick="selectSavedAddressCard(this)">
+                            
+                            <div style="display:flex; align-items:flex-start; gap:12px;">
+                              <div style="padding-top:2px;">
+                                <input type="radio" name="selectedSavedAddress" value="${addr.id}" ${addr.isDefault ? 'checked' : ''} style="accent-color:var(--tea-matcha);">
+                              </div>
+                              <div style="flex-grow:1;">
+                                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
+                                  <c:choose>
+                                    <c:when test="${addr.label == 'Nhà riêng' || addr.label == 'HOME'}">
+                                      <span class="label-badge home"><i class="fa-solid fa-house"></i> Nhà riêng</span>
+                                    </c:when>
+                                    <c:when test="${addr.label == 'Công ty' || addr.label == 'OFFICE'}">
+                                      <span class="label-badge office"><i class="fa-solid fa-building"></i> Công ty</span>
+                                    </c:when>
+                                    <c:when test="${addr.label == 'Trường học' || addr.label == 'SCHOOL'}">
+                                      <span class="label-badge school"><i class="fa-solid fa-graduation-cap"></i> Trường học</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                      <span class="label-badge"><i class="fa-solid fa-map-pin"></i> ${addr.label}</span>
+                                    </c:otherwise>
+                                  </c:choose>
+                                  
+                                  <c:if test="${addr.isDefault}">
+                                    <span class="default-pill"><i class="fa-solid fa-check"></i> Mặc định</span>
+                                  </c:if>
+
+                                  <strong style="font-size:0.92rem; color:var(--zen-sumi); margin-left:4px;">${addr.recipientName}</strong>
+                                  <span style="font-size:0.83rem; color:var(--zen-sumi-light);">(${addr.recipientPhone})</span>
+                                </div>
+
+                                <div style="font-size:0.88rem; color:var(--zen-sumi); line-height:1.4;">
+                                  ${addr.addressDetail}
+                                </div>
+                              </div>
+                            </div>
+
+                          </div>
+                        </c:forEach>
+                      </div>
+                    </div>
+                  </c:when>
+
+                  <%-- CHƯA CÓ ĐỊA CHỈ NÀO TRONG SỔ --%>
+                  <c:otherwise>
+                    <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:var(--radius-sm); padding:16px 20px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                      <div>
+                        <strong style="color:#92400E; display:block; font-size:0.92rem;">
+                          <i class="fa-solid fa-triangle-exclamation me-1"></i> Bạn chưa có địa chỉ nhận hàng trong Sổ địa chỉ
+                        </strong>
+                        <span style="font-size:0.83rem; color:#B45309;">
+                          Vui lòng thêm ít nhất một địa chỉ thân quen để hệ thống tiến hành giao trà.
+                        </span>
+                      </div>
+                      <a href="${pageContext.request.contextPath}/user/addresses?returnUrl=/checkout" 
+                         class="btn btn-sm btn-warning text-dark fw-bold px-3 py-1" style="border-radius:var(--radius-sm); text-decoration:none;">
+                        <i class="fa-solid fa-plus me-1"></i> Thêm Địa Chỉ Ngay
+                      </a>
+                    </div>
+                  </c:otherwise>
+                </c:choose>
+              </c:when>
+
+              <%-- KHÁCH VÃNG LAI CHƯA ĐĂNG NHẬP --%>
+              <c:otherwise>
+                <div style="background:var(--zen-sand); border:1px solid var(--border-hairline); border-radius:var(--radius-sm); padding:16px 20px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                  <div>
+                    <strong style="color:var(--text-main); display:block; font-size:0.92rem;">
+                      <i class="fa-solid fa-circle-user text-primary me-1"></i> Vui lòng đăng nhập để chọn địa chỉ nhận hàng
+                    </strong>
+                    <span style="font-size:0.83rem; color:var(--text-muted);">
+                      Hệ thống chỉ hỗ trợ giao hàng tới địa chỉ đã lưu trong Sổ địa chỉ để bảo đảm độ chính xác.
+                    </span>
+                  </div>
+                  <a href="${pageContext.request.contextPath}/auth/login" class="btn btn-sm btn-dark px-3 py-1 fw-bold" style="border-radius:var(--radius-sm); text-decoration:none;">
+                    <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Đăng Nhập Ngay
+                  </a>
+                </div>
+              </c:otherwise>
+            </c:choose>
+
+            <!-- Hidden input lưu trữ địa chỉ đã chọn từ Sổ địa chỉ -->
+            <input type="hidden" id="deliveryAddress" name="deliveryAddress" required>
 
             <!-- Dropdown chọn chi nhánh -->
             <div class="form-group">

@@ -16,4 +16,10 @@ public interface UserService {
     User save(User user);
 
     User getCurrentAuthenticatedUser();
+
+    com.ute.trasua.dto.user.UserProfileDto getUserProfile(String username);
+
+    com.ute.trasua.dto.user.UserProfileDto updateProfile(String username, com.ute.trasua.dto.user.UpdateProfileRequest request);
+
+    String updateAvatar(String username, org.springframework.web.multipart.MultipartFile avatarFile);
 }
