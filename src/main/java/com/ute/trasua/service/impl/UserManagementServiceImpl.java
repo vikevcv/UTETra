@@ -3,7 +3,12 @@ package com.ute.trasua.service.impl;
 import com.ute.trasua.dto.UserResponse;
 import com.ute.trasua.dto.UserSearchRequest;
 import com.ute.trasua.dto.UserUpdateRequest;
+import com.ute.trasua.dto.user.UserDriverTripDto;
+import com.ute.trasua.dto.user.UserOrderHistoryDto;
+import com.ute.trasua.entity.Order;
+import com.ute.trasua.entity.OrderDetail;
 import com.ute.trasua.entity.User;
+import com.ute.trasua.repository.OrderRepository;
 import com.ute.trasua.repository.UserRepository;
 import com.ute.trasua.service.UserManagementService;
 import lombok.RequiredArgsConstructor;
@@ -15,10 +20,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service implementation xử lý nghiệp vụ quản lý người dùng và giám sát tài xế toàn chuỗi (Module 11 - UC20, UC25).
@@ -32,6 +38,10 @@ public class UserManagementServiceImpl implements UserManagementService {
     private final com.ute.trasua.repository.BranchRepository branchRepository;
     private final com.ute.trasua.repository.PosAccountRepository posAccountRepository;
     private final com.ute.trasua.repository.DriverRepository driverRepository;
+    private final OrderRepository orderRepository;
+
+    private static final DecimalFormat CURRENCY_FMT = new DecimalFormat("#,### đ");
+    private static final DateTimeFormatter DATE_TIME_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     @Override
     @Transactional(readOnly = true)
@@ -255,5 +265,284 @@ public class UserManagementServiceImpl implements UserManagementService {
         stats.put("totalCustomers", totalCustomers);
         stats.put("totalStaff", totalStaff);
         return stats;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserOrderHistoryDto> getUserOrderHistory(Long userId) {
+        if (userId == null) return Collections.emptyList();
+        List<Order> orders = orderRepository.findAllByUserIdWithDetailsOrderByCreatedAtDesc(userId);
+        List<UserOrderHistoryDto> result = new ArrayList<>();
+
+        for (Order o : orders) {
+            int totalQty = 0;
+            List<String> itemNames = new ArrayList<>();
+            List<UserOrderHistoryDto.OrderItemDetailDto> items = new ArrayList<>();
+
+            if (o.getOrderDetails() != null) {
+                for (OrderDetail d : o.getOrderDetails()) {
+                    int qty = (d.getQuantity() != null) ? d.getQuantity() : 0;
+                    totalQty += qty;
+                    String pName = (d.getProductName() != null) ? d.getProductName() : "Món nước";
+                    itemNames.add(pName + " (x" + qty + ")");
+
+                    String topSummary = "";
+                    if (d.getToppings() != null && !d.getToppings().isEmpty()) {
+                        topSummary = d.getToppings().stream()
+                                .map(com.ute.trasua.entity.OrderDetailTopping::getToppingName)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.joining(", "));
+                    }
+
+                    BigDecimal sub = (d.getSubtotal() != null) ? d.getSubtotal() : BigDecimal.ZERO;
+                    items.add(UserOrderHistoryDto.OrderItemDetailDto.builder()
+                            .productName(pName)
+                            .sizeName(d.getSizeName())
+                            .quantity(qty)
+                            .subtotal(sub)
+                            .formattedSubtotal(CURRENCY_FMT.format(sub))
+                            .toppingsSummary(topSummary)
+                            .build());
+                }
+            }
+
+            String summaryItems = itemNames.isEmpty() ? "Không có món" : String.join(", ", itemNames);
+            if (summaryItems.length() > 60) {
+                summaryItems = summaryItems.substring(0, 57) + "...";
+            }
+
+            BigDecimal tot = (o.getTotalAmount() != null) ? o.getTotalAmount() : BigDecimal.ZERO;
+            BigDecimal disc = (o.getDiscountAmount() != null) ? o.getDiscountAmount() : BigDecimal.ZERO;
+            BigDecimal ship = (o.getShippingFee() != null) ? o.getShippingFee() : BigDecimal.ZERO;
+            BigDecimal fin = (o.getFinalAmount() != null) ? o.getFinalAmount() : BigDecimal.ZERO;
+
+            String driverName = "";
+            String driverPhone = "";
+            if (o.getDriver() != null && o.getDriver().getUser() != null) {
+                driverName = o.getDriver().getUser().getFullName();
+                driverPhone = o.getDriver().getUser().getPhone();
+            }
+
+            result.add(UserOrderHistoryDto.builder()
+                    .orderId(o.getId())
+                    .orderCode(o.getOrderCode())
+                    .branchName(o.getBranch() != null ? o.getBranch().getName() : "Toàn chuỗi")
+                    .branchCode(o.getBranch() != null ? o.getBranch().getBranchCode() : "")
+                    .createdAt(o.getCreatedAt())
+                    .formattedCreatedAt(o.getCreatedAt() != null ? o.getCreatedAt().format(DATE_TIME_FMT) : "")
+                    .totalAmount(tot)
+                    .formattedTotalAmount(CURRENCY_FMT.format(tot))
+                    .discountAmount(disc)
+                    .formattedDiscountAmount(CURRENCY_FMT.format(disc))
+                    .shippingFee(ship)
+                    .formattedShippingFee(CURRENCY_FMT.format(ship))
+                    .finalAmount(fin)
+                    .formattedFinalAmount(CURRENCY_FMT.format(fin))
+                    .orderType(o.getOrderType())
+                    .orderTypeDisplay(mapOrderType(o.getOrderType()))
+                    .paymentMethod(o.getPaymentMethod())
+                    .paymentMethodDisplay(mapPaymentMethod(o.getPaymentMethod()))
+                    .paymentStatus(o.getPaymentStatus())
+                    .status(o.getStatus())
+                    .statusDisplay(mapOrderStatus(o.getStatus()))
+                    .statusBadgeClass(mapOrderStatusBadge(o.getStatus()))
+                    .driverName(driverName)
+                    .driverPhone(driverPhone)
+                    .deliveryAddress(o.getDeliveryAddress())
+                    .totalQuantity(totalQty)
+                    .itemsSummary(summaryItems)
+                    .items(items)
+                    .build());
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getUserOrderSummary(Long userId) {
+        List<Order> orders = orderRepository.findAllByUserIdWithDetailsOrderByCreatedAtDesc(userId);
+        long totalOrders = orders.size();
+        long completedOrders = 0;
+        long cancelledOrders = 0;
+        BigDecimal totalSpent = BigDecimal.ZERO;
+
+        for (Order o : orders) {
+            String s = (o.getStatus() != null) ? o.getStatus().toUpperCase() : "";
+            if ("COMPLETED".equals(s) || "DELIVERED".equals(s) || "PAID".equals(s) || "PAID".equalsIgnoreCase(o.getPaymentStatus())) {
+                completedOrders++;
+                if (o.getFinalAmount() != null) {
+                    totalSpent = totalSpent.add(o.getFinalAmount());
+                }
+            } else if ("CANCELLED".equals(s)) {
+                cancelledOrders++;
+            }
+        }
+
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("totalOrders", totalOrders);
+        summary.put("completedOrders", completedOrders);
+        summary.put("cancelledOrders", cancelledOrders);
+        summary.put("totalSpent", totalSpent);
+        summary.put("formattedTotalSpent", CURRENCY_FMT.format(totalSpent));
+        return summary;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserDriverTripDto> getDriverTripHistory(Long userId) {
+        if (userId == null) return Collections.emptyList();
+        com.ute.trasua.entity.Driver driver = driverRepository.findByUserId(userId).orElse(null);
+        if (driver == null) return Collections.emptyList();
+
+        List<Order> orders = orderRepository.findAllByDriverIdWithDetailsOrderByCreatedAtDesc(driver.getId());
+        List<UserDriverTripDto> result = new ArrayList<>();
+
+        for (Order o : orders) {
+            int cupCount = 0;
+            if (o.getOrderDetails() != null) {
+                cupCount = o.getOrderDetails().stream()
+                        .mapToInt(d -> d.getQuantity() != null ? d.getQuantity() : 0)
+                        .sum();
+            }
+
+            BigDecimal ship = (o.getShippingFee() != null) ? o.getShippingFee() : BigDecimal.ZERO;
+            BigDecimal fin = (o.getFinalAmount() != null) ? o.getFinalAmount() : BigDecimal.ZERO;
+
+            String customerName = o.getCustomerName();
+            String customerPhone = o.getCustomerPhone();
+            if ((customerName == null || customerName.isBlank()) && o.getUser() != null) {
+                customerName = o.getUser().getFullName();
+                customerPhone = o.getUser().getPhone();
+            }
+            if (customerName == null || customerName.isBlank()) {
+                customerName = "Khách hàng";
+            }
+
+            result.add(UserDriverTripDto.builder()
+                    .orderId(o.getId())
+                    .orderCode(o.getOrderCode())
+                    .branchName(o.getBranch() != null ? o.getBranch().getName() : "")
+                    .branchCode(o.getBranch() != null ? o.getBranch().getBranchCode() : "")
+                    .customerName(customerName)
+                    .customerPhone(customerPhone)
+                    .deliveryAddress(o.getDeliveryAddress())
+                    .distanceKm(o.getDistanceKm())
+                    .cupCount(cupCount)
+                    .shippingFee(ship)
+                    .formattedShippingFee(CURRENCY_FMT.format(ship))
+                    .finalAmount(fin)
+                    .formattedFinalAmount(CURRENCY_FMT.format(fin))
+                    .status(o.getStatus())
+                    .statusDisplay(mapOrderStatus(o.getStatus()))
+                    .statusBadgeClass(mapOrderStatusBadge(o.getStatus()))
+                    .createdAt(o.getCreatedAt())
+                    .formattedCreatedAt(o.getCreatedAt() != null ? o.getCreatedAt().format(DATE_TIME_FMT) : "")
+                    .handedOverAt(o.getHandedOverAt())
+                    .formattedHandedOverAt(o.getHandedOverAt() != null ? o.getHandedOverAt().format(DATE_TIME_FMT) : "")
+                    .deliveredAt(o.getDeliveredAt())
+                    .formattedDeliveredAt(o.getDeliveredAt() != null ? o.getDeliveredAt().format(DATE_TIME_FMT) : "")
+                    .pickupPhotoUrl(o.getPickupPhotoUrl())
+                    .deliveryPhotoUrl(o.getDeliveryPhotoUrl())
+                    .incidentReason(o.getIncidentReason())
+                    .incidentNote(o.getIncidentNote())
+                    .failureReason(o.getFailureReason())
+                    .failureProofUrl(o.getFailureProofUrl())
+                    .build());
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getDriverTripSummary(Long userId) {
+        Map<String, Object> summary = new HashMap<>();
+        com.ute.trasua.entity.Driver driver = driverRepository.findByUserId(userId).orElse(null);
+        if (driver == null) {
+            summary.put("isDriver", false);
+            return summary;
+        }
+
+        List<Order> orders = orderRepository.findAllByDriverIdWithDetailsOrderByCreatedAtDesc(driver.getId());
+        long totalTrips = orders.size();
+        long completedTrips = 0;
+        long deliveringTrips = 0;
+        long failedTrips = 0;
+        BigDecimal totalDeliveryFee = BigDecimal.ZERO;
+
+        for (Order o : orders) {
+            String s = (o.getStatus() != null) ? o.getStatus().toUpperCase() : "";
+            if ("COMPLETED".equals(s) || "DELIVERED".equals(s)) {
+                completedTrips++;
+                if (o.getShippingFee() != null) {
+                    totalDeliveryFee = totalDeliveryFee.add(o.getShippingFee());
+                }
+            } else if ("DELIVERING".equals(s)) {
+                deliveringTrips++;
+            } else if ("DELIVERY_FAILED".equals(s) || "FAILED".equals(s) || "CANCELLED".equals(s)) {
+                failedTrips++;
+            }
+        }
+
+        summary.put("isDriver", true);
+        summary.put("driverId", driver.getId());
+        summary.put("licensePlate", driver.getLicensePlate());
+        summary.put("vehicleType", driver.getVehicleType());
+        summary.put("workingStatus", driver.getWorkingStatus());
+        summary.put("kpiScore", driver.getKpiScore() != null ? driver.getKpiScore() : 5.0);
+        summary.put("totalTrips", totalTrips);
+        summary.put("completedTrips", completedTrips);
+        summary.put("deliveringTrips", deliveringTrips);
+        summary.put("failedTrips", failedTrips);
+        summary.put("totalDeliveryFee", totalDeliveryFee);
+        summary.put("formattedTotalDeliveryFee", CURRENCY_FMT.format(totalDeliveryFee));
+        return summary;
+    }
+
+    private String mapOrderType(String type) {
+        if (type == null) return "Đặt hàng";
+        return switch (type.toUpperCase()) {
+            case "ONLINE_DELIVERY" -> "Giao hàng tận nơi";
+            case "POS_WALK_IN" -> "Tại quầy (POS)";
+            case "TAKEAWAY" -> "Mang đi";
+            default -> type;
+        };
+    }
+
+    private String mapPaymentMethod(String pm) {
+        if (pm == null) return "Chưa xác định";
+        return switch (pm.toUpperCase()) {
+            case "CASH" -> "Tiền mặt";
+            case "VIETQR", "BANK_TRANSFER" -> "Chuyển khoản VietQR";
+            case "MOMO" -> "Ví MoMo";
+            case "VNPAY" -> "Cổng VNPAY";
+            default -> pm;
+        };
+    }
+
+    private String mapOrderStatus(String status) {
+        if (status == null) return "Đang xử lý";
+        return switch (status.toUpperCase()) {
+            case "PENDING" -> "Chờ xác nhận";
+            case "CONFIRMED" -> "Đã xác nhận";
+            case "PREPARING" -> "Đang pha chế";
+            case "READY_FOR_DELIVERY" -> "Chờ tài xế lấy";
+            case "DELIVERING" -> "Đang giao hàng";
+            case "DELIVERED", "COMPLETED", "PAID" -> "Hoàn tất";
+            case "CANCELLED" -> "Đã hủy";
+            case "DELIVERY_FAILED" -> "Giao thất bại";
+            default -> status;
+        };
+    }
+
+    private String mapOrderStatusBadge(String status) {
+        if (status == null) return "zen-badge-secondary";
+        return switch (status.toUpperCase()) {
+            case "PENDING" -> "zen-badge-warning";
+            case "CONFIRMED", "PREPARING" -> "zen-badge-info";
+            case "READY_FOR_DELIVERY", "DELIVERING" -> "zen-badge-primary";
+            case "DELIVERED", "COMPLETED", "PAID" -> "zen-badge-success";
+            case "CANCELLED", "DELIVERY_FAILED" -> "zen-badge-danger";
+            default -> "zen-badge-secondary";
+        };
     }
 }

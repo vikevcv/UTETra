@@ -42,6 +42,14 @@
               background: #10b981;
             }
 
+            .kpi-card.kpi-expense::before {
+              background: #f97316;
+            }
+
+            .kpi-card.kpi-profit::before {
+              background: #0d9488;
+            }
+
             .kpi-card.kpi-gross::before {
               background: #3b82f6;
             }
@@ -156,7 +164,7 @@
                 <i class="fa-solid fa-chart-line fs-4"></i>
               </div>
               <div>
-                <h4 class="fw-bold mb-1" style="color: #0f172a;">Báo Cáo Doanh Thu Bán Hàng</h4>
+                <h4 class="fw-bold mb-1" style="color: #0f172a;">Báo Cáo Doanh Thu, Chi Tiêu & Lợi Nhuận Chi Nhánh</h4>
                 <div class="d-flex align-items-center gap-2 text-muted" style="font-size: 0.88rem;">
                   <span><i class="fa-solid fa-store me-1 text-primary"></i><strong>${currentBranch.name}</strong>
                     (${currentBranch.branchCode})</span>
@@ -238,10 +246,10 @@
             </div>
           </div>
 
-          <!-- 4 THẺ KPI CHỈ SỐ DOANH THU CHÍNH -->
+          <!-- 6 THẺ KPI CHỈ SỐ DOANH THU, CHI TIÊU & LỢI NHUẬN -->
           <div class="row g-3 mb-4">
             <!-- 1. Doanh Thu Thực Thu (Net Revenue) -->
-            <div class="col-12 col-sm-6 col-lg-3">
+            <div class="col-12 col-sm-6 col-lg-4">
               <div class="kpi-card kpi-net">
                 <div>
                   <div class="text-muted small fw-semibold text-uppercase">Thực Thu (Net Revenue)</div>
@@ -254,8 +262,36 @@
               </div>
             </div>
 
-            <!-- 2. Tiền Món (Gross Revenue) -->
-            <div class="col-12 col-sm-6 col-lg-3">
+            <!-- 2. Chi Tiêu Nhập Kho (Expense) -->
+            <div class="col-12 col-sm-6 col-lg-4">
+              <div class="kpi-card kpi-expense">
+                <div>
+                  <div class="text-muted small fw-semibold text-uppercase">Chi Tiêu Nhập Kho</div>
+                  <div class="fs-4 fw-bold text-danger mt-1">${report.formattedTotalExpense}</div>
+                  <div class="text-muted" style="font-size: 0.78rem;">Từ <strong>${report.totalImportReceipts}</strong> phiếu nhập BM2</div>
+                </div>
+                <div class="kpi-icon-wrap" style="background:#ffe4e6; color:#e11d48;">
+                  <i class="fa-solid fa-boxes-packing"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Lợi Nhuận Chi Nhánh (Profit) -->
+            <div class="col-12 col-sm-6 col-lg-4">
+              <div class="kpi-card kpi-profit">
+                <div>
+                  <div class="text-muted small fw-semibold text-uppercase">Lợi Nhuận Chi Nhánh</div>
+                  <div class="fs-4 fw-bold mt-1" style="color: #0d9488;">${report.formattedTotalProfit}</div>
+                  <div class="text-muted" style="font-size: 0.78rem;">Tỷ suất: <strong class="text-teal" style="color:#0d9488;">${report.formattedProfitMargin}</strong></div>
+                </div>
+                <div class="kpi-icon-wrap" style="background:#ccfbf1; color:#0f766e;">
+                  <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Tiền Món (Gross Revenue) -->
+            <div class="col-12 col-sm-6 col-lg-4">
               <div class="kpi-card kpi-gross">
                 <div>
                   <div class="text-muted small fw-semibold text-uppercase">Tiền Món (Gross)</div>
@@ -268,8 +304,8 @@
               </div>
             </div>
 
-            <!-- 3. Giảm Giá Voucher -->
-            <div class="col-12 col-sm-6 col-lg-3">
+            <!-- 5. Giảm Giá Voucher -->
+            <div class="col-12 col-sm-6 col-lg-4">
               <div class="kpi-card kpi-disc">
                 <div>
                   <div class="text-muted small fw-semibold text-uppercase">Giảm Giá Voucher</div>
@@ -282,8 +318,8 @@
               </div>
             </div>
 
-            <!-- 4. Số Đơn & Giá Trị TB/Đơn (AOV) -->
-            <div class="col-12 col-sm-6 col-lg-3">
+            <!-- 6. Số Đơn & Giá Trị TB/Đơn (AOV) -->
+            <div class="col-12 col-sm-6 col-lg-4">
               <div class="kpi-card kpi-orders">
                 <div>
                   <div class="text-muted small fw-semibold text-uppercase">Đơn Hàng / AOV</div>
@@ -303,12 +339,12 @@
 
           <!-- KHU VỰC BIỂU ĐỒ CHART.JS -->
           <div class="row g-4 mb-4">
-            <!-- Biểu đồ Đường: Xu Hướng Doanh Thu Theo Ngày -->
+            <!-- Biểu đồ Đường: Xu Hướng Doanh Thu, Chi Tiêu & Lợi Nhuận Theo Ngày -->
             <div class="col-12 col-lg-8">
               <div class="report-card p-3 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
                   <div class="fw-bold text-dark" style="font-size: 0.95rem;">
-                    <i class="fa-solid fa-chart-area me-2 text-primary"></i>Biểu Đồ Xu Hướng Doanh Thu & Số Đơn Hàng
+                    <i class="fa-solid fa-chart-area me-2 text-primary"></i>Xu Hướng Doanh Thu, Chi Tiêu & Lợi Nhuận Chi Nhánh
                   </div>
                   <span class="badge bg-light text-muted border">${report.formattedDateRange}</span>
                 </div>
@@ -336,12 +372,12 @@
 
           <!-- KHU VỰC BẢNG DỮ LIỆU CHI TIẾT -->
           <div class="row g-4">
-            <!-- Bảng Chi Tiết Doanh Thu Từng Ngày -->
+            <!-- Bảng Chi Tiết Doanh Thu, Chi Tiêu & Lợi Nhuận Từng Ngày -->
             <div class="col-12 col-lg-7">
               <div class="report-card overflow-hidden">
                 <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                   <div class="fw-bold text-dark" style="font-size: 0.95rem;">
-                    <i class="fa-solid fa-table-list me-2 text-primary"></i>Chi Tiết Doanh Thu Từng Ngày
+                    <i class="fa-solid fa-table-list me-2 text-primary"></i>Doanh Thu, Chi Tiêu & Lợi Nhuận Từng Ngày
                   </div>
                   <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
@@ -358,13 +394,12 @@
                   <table class="table table-hover table-report align-middle mb-0">
                     <thead class="sticky-top">
                       <tr>
-                        <th class="ps-3 text-center" style="width: 45px;">#</th>
-                        <th style="min-width: 100px;">Ngày</th>
-                        <th style="min-width: 90px;">Thứ</th>
-                        <th class="text-center" style="min-width: 75px;">Số Đơn</th>
-                        <th class="text-end" style="min-width: 110px;">Tiền Món</th>
-                        <th class="text-end" style="min-width: 100px;">Voucher</th>
-                        <th class="text-end pe-3" style="min-width: 120px;">Thực Thu</th>
+                        <th class="ps-3 text-center" style="width: 40px;">#</th>
+                        <th style="min-width: 95px;">Ngày</th>
+                        <th class="text-center" style="min-width: 60px;">Đơn</th>
+                        <th class="text-end" style="min-width: 110px;">Thực Thu</th>
+                        <th class="text-end" style="min-width: 100px;">Chi Tiêu Kho</th>
+                        <th class="text-end pe-3" style="min-width: 110px;">Lợi Nhuận</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -373,26 +408,24 @@
                           <c:forEach var="d" items="${report.dailyRevenues}" varStatus="status">
                             <tr>
                               <td class="ps-3 text-center text-muted small">${status.count}</td>
-                              <td class="fw-semibold text-dark">${d.formattedDate}</td>
-                              <td class="text-muted small">${d.dayOfWeek}</td>
+                              <td>
+                                <div class="fw-semibold text-dark">${d.formattedDate}</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">${d.dayOfWeek}</div>
+                              </td>
                               <td class="text-center">
                                 <span class="badge bg-light text-dark border px-2 py-1 fw-bold">${d.orderCount}</span>
                               </td>
-                              <td class="text-end text-muted font-monospace">
-                                <fmt:formatNumber value="${d.grossAmount}" type="currency" currencySymbol="₫"
-                                  maxFractionDigits="0" />
+                              <td class="text-end fw-bold text-success font-monospace">${d.formattedNetAmount}</td>
+                              <td class="text-end fw-bold text-danger font-monospace">${d.formattedExpenseAmount}</td>
+                              <td class="text-end pe-3 fw-bold font-monospace" style="color: ${d.profitAmount != null && d.profitAmount >= 0 ? '#0d9488' : '#dc2626'};">
+                                ${d.formattedProfitAmount}
                               </td>
-                              <td class="text-end text-danger font-monospace">
-                                <fmt:formatNumber value="${d.discountAmount}" type="currency" currencySymbol="₫"
-                                  maxFractionDigits="0" />
-                              </td>
-                              <td class="text-end pe-3 fw-bold text-success font-monospace">${d.formattedNetAmount}</td>
                             </tr>
                           </c:forEach>
                         </c:when>
                         <c:otherwise>
                           <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">Không có dữ liệu bán hàng trong kỳ này.
+                            <td colspan="6" class="text-center py-4 text-muted">Không có dữ liệu bán hàng trong kỳ này.
                             </td>
                           </tr>
                         </c:otherwise>
@@ -462,6 +495,8 @@
         <script type="application/json" id="chartDataLabels">${chartLabelsJson}</script>
         <script type="application/json" id="chartDataNetRevenue">${chartNetRevenueJson}</script>
         <script type="application/json" id="chartDataGrossRevenue">${chartGrossRevenueJson}</script>
+        <script type="application/json" id="chartDataExpenses">${chartExpensesJson}</script>
+        <script type="application/json" id="chartDataProfits">${chartProfitsJson}</script>
         <script type="application/json" id="chartDataOrderCount">${chartOrderCountJson}</script>
         <script type="application/json" id="chartDataPaymentLabels">${chartPaymentLabelsJson}</script>
         <script type="application/json" id="chartDataPaymentValues">${chartPaymentValuesJson}</script>
@@ -482,21 +517,27 @@
             const labels = parseJsonData('chartDataLabels');
             const netRevenues = parseJsonData('chartDataNetRevenue');
             const grossRevenues = parseJsonData('chartDataGrossRevenue');
+            const expenses = parseJsonData('chartDataExpenses');
+            const profits = parseJsonData('chartDataProfits');
             const orderCounts = parseJsonData('chartDataOrderCount');
 
-            // 1. Biểu đồ Đường (Xu Hướng Doanh Thu & Số Đơn)
+            const formatVND = function (value) {
+              return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+            };
+
+            // 1. Biểu đồ Đường Đa Chỉ Số (Xu Hướng Doanh Thu, Chi Tiêu, Lợi Nhuận & Số Đơn)
             const ctxTrend = document.getElementById('revenueTrendChart');
-            if (ctxTrend) {
+            if (ctxTrend && labels.length > 0) {
               new Chart(ctxTrend, {
                 type: 'line',
                 data: {
                   labels: labels,
                   datasets: [
                     {
-                      label: 'Thực Thu (VNĐ)',
+                      label: 'Thực Thu (Net)',
                       data: netRevenues,
                       borderColor: '#10b981',
-                      backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
                       fill: true,
                       tension: 0.35,
                       borderWidth: 2.5,
@@ -505,14 +546,28 @@
                       yAxisID: 'y'
                     },
                     {
-                      label: 'Tiền Món (VNĐ)',
-                      data: grossRevenues,
-                      borderColor: '#3b82f6',
-                      borderDash: [5, 5],
-                      tension: 0.35,
-                      borderWidth: 1.8,
-                      pointRadius: 3,
+                      label: 'Chi Tiêu Kho',
+                      data: expenses,
+                      borderColor: '#f97316',
+                      backgroundColor: 'rgba(249, 115, 22, 0.08)',
                       fill: false,
+                      tension: 0.35,
+                      borderWidth: 2,
+                      borderDash: [4, 4],
+                      pointRadius: 3,
+                      pointHoverRadius: 5,
+                      yAxisID: 'y'
+                    },
+                    {
+                      label: 'Lợi Nhuận',
+                      data: profits,
+                      borderColor: '#0d9488',
+                      backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                      fill: false,
+                      tension: 0.35,
+                      borderWidth: 2.5,
+                      pointRadius: 4,
+                      pointHoverRadius: 6,
                       yAxisID: 'y'
                     },
                     {
@@ -543,10 +598,10 @@
                       callbacks: {
                         label: function (context) {
                           let val = context.parsed.y;
-                          if (context.datasetIndex === 2) {
+                          if (context.datasetIndex === 3) {
                             return context.dataset.label + ': ' + val + ' đơn';
                           }
-                          return context.dataset.label + ': ' + Number(val).toLocaleString('vi-VN') + ' ₫';
+                          return context.dataset.label + ': ' + formatVND(val);
                         }
                       }
                     }
@@ -564,8 +619,8 @@
                       ticks: {
                         font: { size: 10 },
                         callback: function (val) {
-                          if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
-                          if (val >= 1000) return (val / 1000).toFixed(0) + 'k';
+                          if (Math.abs(val) >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+                          if (Math.abs(val) >= 1000) return (val / 1000).toFixed(0) + 'k';
                           return val;
                         }
                       }
@@ -615,7 +670,7 @@
                         callbacks: {
                           label: function (context) {
                             let val = context.parsed;
-                            return ' ' + context.label + ': ' + Number(val).toLocaleString('vi-VN') + ' ₫';
+                            return ' ' + context.label + ': ' + formatVND(val);
                           }
                         }
                       }

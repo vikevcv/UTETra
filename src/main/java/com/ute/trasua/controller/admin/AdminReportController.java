@@ -78,10 +78,12 @@ public class AdminReportController {
 
         RevenueReportResponse report = revenueReportService.generateRevenueReport(request);
 
-        // 1. Dữ liệu xu hướng doanh thu theo ngày (Timeline Chart)
+        // 1. Dữ liệu xu hướng doanh thu, chi tiêu và lợi nhuận theo ngày (Timeline Chart)
         List<String> timelineLabels = new ArrayList<>();
         List<Double> timelineNetRevenues = new ArrayList<>();
         List<Double> timelineGrossRevenues = new ArrayList<>();
+        List<Double> timelineExpenses = new ArrayList<>();
+        List<Double> timelineProfits = new ArrayList<>();
         List<Long> timelineOrderCounts = new ArrayList<>();
 
         if (report.getDailyRevenues() != null) {
@@ -89,6 +91,8 @@ public class AdminReportController {
                 timelineLabels.add(d.getFormattedDate() + " (" + d.getDayOfWeek() + ")");
                 timelineNetRevenues.add(d.getNetAmount() != null ? d.getNetAmount().doubleValue() : 0.0);
                 timelineGrossRevenues.add(d.getGrossAmount() != null ? d.getGrossAmount().doubleValue() : 0.0);
+                timelineExpenses.add(d.getExpenseAmount() != null ? d.getExpenseAmount().doubleValue() : 0.0);
+                timelineProfits.add(d.getProfitAmount() != null ? d.getProfitAmount().doubleValue() : 0.0);
                 timelineOrderCounts.add(d.getOrderCount());
             }
         }
@@ -96,6 +100,8 @@ public class AdminReportController {
         // 2. Dữ liệu so sánh hiệu quả các chi nhánh (Branch Comparison Bar & Pie Chart)
         List<String> branchLabels = new ArrayList<>();
         List<Double> branchRevenues = new ArrayList<>();
+        List<Double> branchExpenses = new ArrayList<>();
+        List<Double> branchProfits = new ArrayList<>();
         List<Long> branchOrderCounts = new ArrayList<>();
         List<Double> branchPercentages = new ArrayList<>();
 
@@ -103,6 +109,8 @@ public class AdminReportController {
             for (RevenueReportResponse.BranchRevenueDto br : report.getBranchRevenues()) {
                 branchLabels.add(br.getBranchName());
                 branchRevenues.add(br.getNetAmount() != null ? br.getNetAmount().doubleValue() : 0.0);
+                branchExpenses.add(br.getExpenseAmount() != null ? br.getExpenseAmount().doubleValue() : 0.0);
+                branchProfits.add(br.getProfitAmount() != null ? br.getProfitAmount().doubleValue() : 0.0);
                 branchOrderCounts.add(br.getOrderCount());
                 branchPercentages.add(br.getPercentage());
             }
@@ -122,10 +130,14 @@ public class AdminReportController {
         model.addAttribute("chartTimelineLabelsJson", toJsonArray(timelineLabels));
         model.addAttribute("chartTimelineNetJson", toJsonArray(timelineNetRevenues));
         model.addAttribute("chartTimelineGrossJson", toJsonArray(timelineGrossRevenues));
+        model.addAttribute("chartTimelineExpensesJson", toJsonArray(timelineExpenses));
+        model.addAttribute("chartTimelineProfitsJson", toJsonArray(timelineProfits));
         model.addAttribute("chartTimelineOrdersJson", toJsonArray(timelineOrderCounts));
 
         model.addAttribute("chartBranchLabelsJson", toJsonArray(branchLabels));
         model.addAttribute("chartBranchRevenuesJson", toJsonArray(branchRevenues));
+        model.addAttribute("chartBranchExpensesJson", toJsonArray(branchExpenses));
+        model.addAttribute("chartBranchProfitsJson", toJsonArray(branchProfits));
         model.addAttribute("chartBranchOrdersJson", toJsonArray(branchOrderCounts));
         model.addAttribute("chartBranchPercentagesJson", toJsonArray(branchPercentages));
 
@@ -139,7 +151,7 @@ public class AdminReportController {
         model.addAttribute("selectedPeriod", period);
         model.addAttribute("startDate", startDateStr);
         model.addAttribute("endDate", endDateStr);
-        model.addAttribute("pageTitle", "Báo Cáo So Sánh Doanh Thu Toàn Chuỗi (UC26)");
+        model.addAttribute("pageTitle", "Báo Cáo So Sánh Doanh Thu, Chi Tiêu & Lợi Nhuận Toàn Chuỗi (UC26)");
 
         return "admin/reports/dashboard";
     }

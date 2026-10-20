@@ -53,6 +53,25 @@ public class RevenueReportResponse {
     private BigDecimal averageOrderValue = BigDecimal.ZERO;
     private String formattedAverageOrderValue;
 
+    // THỐNG KÊ CHI TIÊU & LỢI NHUẬN
+    /** Tổng chi tiêu nhập kho nguyên liệu (BM2) */
+    @Builder.Default
+    private BigDecimal totalExpense = BigDecimal.ZERO;
+    private String formattedTotalExpense;
+
+    /** Lợi nhuận gộp hoạt động: Lợi nhuận = Thực thu - Chi tiêu nhập kho */
+    @Builder.Default
+    private BigDecimal totalProfit = BigDecimal.ZERO;
+    private String formattedTotalProfit;
+
+    /** Tỷ suất lợi nhuận (%): (Lợi nhuận / Thực thu) * 100 */
+    @Builder.Default
+    private double profitMargin = 0.0;
+    private String formattedProfitMargin;
+
+    /** Số phiếu nhập kho trong kỳ */
+    private long totalImportReceipts;
+
     // DỮ LIỆU ĐỒ THỊ & BẢNG BIỂU
     @Builder.Default
     private List<DailyRevenueDto> dailyRevenues = new ArrayList<>();
@@ -67,7 +86,7 @@ public class RevenueReportResponse {
     private List<PaymentMethodRevenueDto> paymentMethods = new ArrayList<>();
 
     /**
-     * Doanh thu theo từng ngày trong chuỗi thời gian (cho Chart.js line / bar chart).
+     * Doanh thu, chi tiêu và lợi nhuận theo từng ngày trong chuỗi thời gian (cho Chart.js line / bar chart).
      */
     @Data
     @NoArgsConstructor
@@ -82,10 +101,20 @@ public class RevenueReportResponse {
         private BigDecimal discountAmount;
         private BigDecimal netAmount;
         private String formattedNetAmount;
+
+        /** Chi tiêu nhập kho trong ngày */
+        @Builder.Default
+        private BigDecimal expenseAmount = BigDecimal.ZERO;
+        private String formattedExpenseAmount;
+
+        /** Lợi nhuận trong ngày: netAmount - expenseAmount */
+        @Builder.Default
+        private BigDecimal profitAmount = BigDecimal.ZERO;
+        private String formattedProfitAmount;
     }
 
     /**
-     * Doanh thu theo từng chi nhánh (so sánh tỷ trọng toàn chuỗi).
+     * Doanh thu, chi tiêu và lợi nhuận theo từng chi nhánh (so sánh tỷ trọng toàn chuỗi).
      */
     @Data
     @NoArgsConstructor
@@ -98,7 +127,21 @@ public class RevenueReportResponse {
         private long orderCount;
         private BigDecimal netAmount;
         private String formattedNetAmount;
-        private double percentage; // % đóng góp
+        private double percentage; // % đóng góp doanh thu
+
+        /** Chi tiêu nhập kho của chi nhánh */
+        @Builder.Default
+        private BigDecimal expenseAmount = BigDecimal.ZERO;
+        private String formattedExpenseAmount;
+
+        /** Lợi nhuận của chi nhánh */
+        @Builder.Default
+        private BigDecimal profitAmount = BigDecimal.ZERO;
+        private String formattedProfitAmount;
+
+        /** Tỷ suất lợi nhuận của chi nhánh (%) */
+        @Builder.Default
+        private double profitMargin = 0.0;
     }
 
     /**

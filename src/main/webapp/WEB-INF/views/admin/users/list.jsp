@@ -247,11 +247,25 @@
                   <!-- Actions -->
                   <td class="text-end">
                     <div class="d-inline-flex gap-1">
-                      <!-- Xem chi tiết -->
+                      <!-- Xem chi tiết hồ sơ -->
                       <a href="${pageContext.request.contextPath}/admin/users/${u.id}" 
                          class="btn btn-sm btn-zen-light" title="Xem hồ sơ chi tiết">
                         <i class="fa-solid fa-eye"></i>
                       </a>
+
+                      <!-- Xem lịch sử đơn mua của User -->
+                      <a href="${pageContext.request.contextPath}/admin/users/${u.id}?tab=orders" 
+                         class="btn btn-sm btn-zen-light" title="Xem lịch sử đơn đặt hàng">
+                        <i class="fa-solid fa-receipt text-success"></i>
+                      </a>
+
+                      <!-- Xem lịch sử chạy đơn (nếu là tài xế) -->
+                      <c:if test="${u.roles.contains('ROLE_DRIVER')}">
+                        <a href="${pageContext.request.contextPath}/admin/users/${u.id}?tab=trips" 
+                           class="btn btn-sm btn-zen-light" title="Xem lịch sử chạy đơn shipper">
+                          <i class="fa-solid fa-motorcycle text-info"></i>
+                        </a>
+                      </c:if>
 
                       <!-- Đổi quyền nhanh -->
                       <button type="button" class="btn btn-sm btn-zen-light" 
