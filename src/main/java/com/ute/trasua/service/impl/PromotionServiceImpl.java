@@ -1,0 +1,520 @@
+package com.ute.trasua.service.impl;
+
+import com.ute.trasua.dto.*;
+import com.ute.trasua.entity.Branch;
+import com.ute.trasua.entity.Promotion;
+import com.ute.trasua.repository.BranchRepository;
+import com.ute.trasua.repository.PromotionRepository;
+import com.ute.trasua.service.PromotionService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.security.SecureRandom;
+import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
+import com.ute.trasua.entity.Order;
+import com.ute.trasua.entity.User;
+
+@Service
+@Slf4j
+public class PromotionServiceImpl implements PromotionService {
+
+    private static final String RANDOM_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    private final PromotionRepository promotionRepository;
+    private final BranchRepository branchRepository;
+    private final com.ute.trasua.repository.OrderRepository orderRepository;
+
+    public PromotionServiceImpl(PromotionRepository promotionRepository,
+                                BranchRepository branchRepository,
+                                com.ute.trasua.repository.OrderRepository orderRepository) {
+        this.promotionRepository = promotionRepository;
+        this.branchRepository = branchRepository;
+        this.orderRepository = orderRepository;
+    }
+
+
+    // ==================== UC24: ADMIN TOÀN CHUỖI ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PromotionResponse> searchPromotionsForAdmin(String keyword, String scope, Long branchId, String status, Pageable pageable) {
+        String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        String cleanScope = (scope != null && !scope.isBlank()) ? scope.trim().toUpperCase() : null;
+        String cleanStatus = (status != null && !status.isBlank()) ? status.trim().toUpperCase() : null;
+
+        return promotionRepository.searchForAdmin(cleanKeyword, cleanScope, branchId, cleanStatus, pageable)
+                .map(PromotionResponse::fromEntity);
+    }
+
+    // ==================== UC18: CHI NHÁNH CỤ THỂ ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PromotionResponse> searchPromotionsForBranch(Long branchId, String keyword, String status, Pageable pageable) {
+        String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        String cleanStatus = (status != null && !status.isBlank()) ? status.trim().toUpperCase() : null;
+
+        return promotionRepository.searchForBranch(branchId, cleanKeyword, cleanStatus, pageable)
+                .map(PromotionResponse::fromEntity);
+    }
+
+    // ==================== CRUD CHUNG ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public PromotionResponse getPromotionById(Long id) {
+        Promotion promotion = promotionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi với ID: " + id));
+        return PromotionResponse.fromEntity(promotion);
+    }
+
+    @Override
+    @Transactional
+    public PromotionResponse createPromotion(CreatePromotionRequest request, Long authenticatedBranchId, boolean isAdmin) {
+        String cleanCode = request.getVoucherCode().trim().toUpperCase();
+        if (promotionRepository.existsByVoucherCode(cleanCode)) {
+            throw new IllegalArgumentException("Mã voucher '" + cleanCode + "' đã tồn tại trên hệ thống.");
+        }
+
+        if (request.getEndDate().isBefore(request.getStartDate()) || request.getEndDate().isEqual(request.getStartDate())) {
+            throw new IllegalArgumentException("Thời điểm kết thúc phải sau thời điểm bắt đầu.");
+        }
+
+        String discountType = "PERCENT".equalsIgnoreCase(request.getDiscountType()) ? "PERCENT" : "FIXED_AMOUNT";
+        if ("PERCENT".equals(discountType)) {
+            if (request.getDiscountValue().compareTo(BigDecimal.ZERO) <= 0 || request.getDiscountValue().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new IllegalArgumentException("Tỷ lệ giảm giá phần trăm phải từ 1% đến 100%.");
+            }
+        } else {
+            if (request.getDiscountValue().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Số tiền giảm giá cố định phải lớn hơn 0đ.");
+            }
+        }
+
+        String scope;
+        Branch branch = null;
+
+        if (isAdmin) {
+            if ("BRANCH".equalsIgnoreCase(request.getScope()) && request.getBranchId() != null) {
+                scope = "BRANCH";
+                branch = branchRepository.findById(request.getBranchId())
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh với ID: " + request.getBranchId()));
+            } else {
+                scope = "GLOBAL";
+            }
+        } else {
+            // Manager chi nhánh (UC18) chỉ được tạo voucher cho chi nhánh phụ trách
+            scope = "BRANCH";
+            if (authenticatedBranchId == null) {
+                throw new IllegalArgumentException("Không xác định được chi nhánh quản lý.");
+            }
+            branch = branchRepository.findById(authenticatedBranchId)
+                    .orElseThrow(() -> new IllegalArgumentException("Chi nhánh liên kết không tồn tại."));
+        }
+
+        Promotion promotion = Promotion.builder()
+                .voucherCode(cleanCode)
+                .title(request.getTitle().trim())
+                .description(request.getDescription() != null ? request.getDescription().trim() : null)
+                .discountType(discountType)
+                .discountValue(request.getDiscountValue())
+                .maxDiscountAmount("PERCENT".equals(discountType) ? request.getMaxDiscountAmount() : null)
+                .minOrderAmount(request.getMinOrderAmount() != null ? request.getMinOrderAmount() : BigDecimal.ZERO)
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .totalUsageLimit(request.getTotalUsageLimit())
+                .usedCount(0)
+                .usageLimitPerUser(request.getUsageLimitPerUser() != null ? request.getUsageLimitPerUser() : 1)
+                .scope(scope)
+                .branch(branch)
+                .status("ACTIVE")
+                .build();
+
+        promotion = promotionRepository.save(promotion);
+        log.info(">>> Đã tạo voucher mới: [{}] - '{}', Scope: {}, Chi nhánh: {}",
+                promotion.getVoucherCode(), promotion.getTitle(), promotion.getScope(),
+                promotion.getBranch() != null ? promotion.getBranch().getName() : "Toàn Chuỗi");
+
+        return PromotionResponse.fromEntity(promotion);
+    }
+
+    @Override
+    @Transactional
+    public PromotionResponse updatePromotion(Long id, UpdatePromotionRequest request, Long authenticatedBranchId, boolean isAdmin) {
+        Promotion promotion = promotionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi với ID: " + id));
+
+        // Kiểm tra quyền đối với Manager chi nhánh (UC18)
+        if (!isAdmin) {
+            if (!"BRANCH".equalsIgnoreCase(promotion.getScope()) ||
+                    promotion.getBranch() == null ||
+                    !promotion.getBranch().getId().equals(authenticatedBranchId)) {
+                throw new IllegalArgumentException("Bạn không có quyền chỉnh sửa chương trình khuyến mãi này.");
+            }
+        }
+
+        if (request.getEndDate().isBefore(request.getStartDate()) || request.getEndDate().isEqual(request.getStartDate())) {
+            throw new IllegalArgumentException("Thời điểm kết thúc phải sau thời điểm bắt đầu.");
+        }
+
+        String discountType = "PERCENT".equalsIgnoreCase(request.getDiscountType()) ? "PERCENT" : "FIXED_AMOUNT";
+        if ("PERCENT".equals(discountType)) {
+            if (request.getDiscountValue().compareTo(BigDecimal.ZERO) <= 0 || request.getDiscountValue().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new IllegalArgumentException("Tỷ lệ giảm giá phần trăm phải từ 1% đến 100%.");
+            }
+        } else {
+            if (request.getDiscountValue().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Số tiền giảm giá cố định phải lớn hơn 0đ.");
+            }
+        }
+
+        if (request.getTotalUsageLimit() < promotion.getUsedCount()) {
+            throw new IllegalArgumentException("Tổng lượt dùng không thể nhỏ hơn số lượt đã sử dụng (" + promotion.getUsedCount() + " lượt).");
+        }
+
+        promotion.setTitle(request.getTitle().trim());
+        promotion.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
+        promotion.setDiscountType(discountType);
+        promotion.setDiscountValue(request.getDiscountValue());
+        promotion.setMaxDiscountAmount("PERCENT".equals(discountType) ? request.getMaxDiscountAmount() : null);
+        promotion.setMinOrderAmount(request.getMinOrderAmount() != null ? request.getMinOrderAmount() : BigDecimal.ZERO);
+        promotion.setStartDate(request.getStartDate());
+        promotion.setEndDate(request.getEndDate());
+        promotion.setTotalUsageLimit(request.getTotalUsageLimit());
+        promotion.setUsageLimitPerUser(request.getUsageLimitPerUser() != null ? request.getUsageLimitPerUser() : 1);
+        if (request.getStatus() != null) {
+            promotion.setStatus(request.getStatus().trim().toUpperCase());
+        }
+
+        promotion = promotionRepository.save(promotion);
+        log.info(">>> Đã cập nhật voucher [ID: {} - {}]", promotion.getId(), promotion.getVoucherCode());
+        return PromotionResponse.fromEntity(promotion);
+    }
+
+    @Override
+    @Transactional
+    public boolean togglePromotionStatus(Long id, Long authenticatedBranchId, boolean isAdmin) {
+        Promotion promotion = promotionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi với ID: " + id));
+
+        if (!isAdmin) {
+            if (!"BRANCH".equalsIgnoreCase(promotion.getScope()) ||
+                    promotion.getBranch() == null ||
+                    !promotion.getBranch().getId().equals(authenticatedBranchId)) {
+                throw new IllegalArgumentException("Bạn không có quyền thay đổi trạng thái khuyến mãi này.");
+            }
+        }
+
+        boolean willActive = !"ACTIVE".equalsIgnoreCase(promotion.getStatus());
+        promotion.setStatus(willActive ? "ACTIVE" : "INACTIVE");
+        promotionRepository.save(promotion);
+        log.info(">>> Đã đổi trạng thái voucher [{}] sang: {}", promotion.getVoucherCode(), promotion.getStatus());
+        return willActive;
+    }
+
+    @Override
+    @Transactional
+    public void deletePromotion(Long id, Long authenticatedBranchId, boolean isAdmin) {
+        Promotion promotion = promotionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi với ID: " + id));
+
+        if (!isAdmin) {
+            if (!"BRANCH".equalsIgnoreCase(promotion.getScope()) ||
+                    promotion.getBranch() == null ||
+                    !promotion.getBranch().getId().equals(authenticatedBranchId)) {
+                throw new IllegalArgumentException("Bạn không có quyền xóa khuyến mãi này.");
+            }
+        }
+
+        if (promotion.getUsedCount() != null && promotion.getUsedCount() > 0) {
+            throw new IllegalArgumentException("Không thể xóa mã voucher đã có " + promotion.getUsedCount() + " lượt sử dụng. Bạn có thể chọn Tạm ngưng để vô hiệu hóa mã.");
+        }
+
+        promotionRepository.deleteById(id);
+        log.info(">>> Đã xóa voucher [ID: {} - {}]", id, promotion.getVoucherCode());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getPromotionStatistics(Long branchId) {
+        Map<String, Object> stats = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        if (branchId == null) {
+            // Thống kê toàn chuỗi (UC24)
+            long total = promotionRepository.count();
+            long globalCount = promotionRepository.countByScope("GLOBAL");
+            long activeCount = promotionRepository.countCurrentlyActive(now);
+            long inactiveCount = promotionRepository.countByStatus("INACTIVE");
+            long branchCount = total - globalCount;
+
+            stats.put("total", total);
+            stats.put("global", globalCount);
+            stats.put("globalCount", globalCount);
+            stats.put("branch", branchCount);
+            stats.put("branchCount", branchCount);
+            stats.put("active", activeCount);
+            stats.put("activeCount", activeCount);
+            stats.put("inactive", inactiveCount);
+            stats.put("inactiveCount", inactiveCount);
+        } else {
+            // Thống kê tại chi nhánh (UC18)
+            long total = promotionRepository.countByBranchId(branchId);
+            long activeCount = promotionRepository.countCurrentlyActiveByBranch(branchId, now);
+            long inactiveCount = total - activeCount;
+
+            stats.put("total", total);
+            stats.put("active", activeCount);
+            stats.put("activeCount", activeCount);
+            stats.put("inactive", inactiveCount);
+            stats.put("inactiveCount", inactiveCount);
+        }
+
+        return stats;
+    }
+
+    // ==================== CHECK VOUCHER CHO KHÁCH & POS ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PromotionResponse> getAvailablePromotionsForStore(Long branchId) {
+        LocalDateTime now = LocalDateTime.now();
+        return promotionRepository.findActivePromotionsForStore(branchId, now)
+                .stream()
+                .map(PromotionResponse::fromEntity)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VoucherApplyResponse validateAndApplyVoucher(String voucherCode, Long branchId, BigDecimal orderSubtotal) {
+        return validateAndApplyVoucher(voucherCode, branchId, orderSubtotal, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VoucherApplyResponse validateAndApplyVoucher(String voucherCode, Long branchId, BigDecimal orderSubtotal, User currentUser) {
+        if (voucherCode == null || voucherCode.isBlank()) {
+            return VoucherApplyResponse.builder()
+                    .valid(false)
+                    .message("Vui lòng nhập mã voucher.")
+                    .build();
+        }
+
+        String cleanCode = voucherCode.trim().toUpperCase();
+        Promotion promotion = promotionRepository.findByVoucherCode(cleanCode).orElse(null);
+
+        if (promotion == null) {
+            return VoucherApplyResponse.builder()
+                    .valid(false)
+                    .voucherCode(cleanCode)
+                    .message("Mã voucher '" + cleanCode + "' không tồn tại.")
+                    .build();
+        }
+
+        if (!"ACTIVE".equalsIgnoreCase(promotion.getStatus())) {
+            return VoucherApplyResponse.builder()
+                    .valid(false)
+                    .voucherCode(cleanCode)
+                    .message("Mã voucher này hiện đang tạm ngưng áp dụng.")
+                    .build();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(promotion.getStartDate())) {
+            return VoucherApplyResponse.builder()
+                    .valid(false)
+                    .voucherCode(cleanCode)
+                    .message("Chương trình khuyến mãi này chưa đến thời gian áp dụng.")
+                    .build();
+        }
+
+        if (now.isAfter(promotion.getEndDate())) {
+            return VoucherApplyResponse.builder()
+                    .valid(false)
+                    .voucherCode(cleanCode)
+                    .message("Mã voucher đã hết hạn sử dụng.")
+                    .build();
+        }
+
+        if (promotion.getUsedCount() >= promotion.getTotalUsageLimit()) {
+            return VoucherApplyResponse.builder()
+                    .valid(false)
+                    .voucherCode(cleanCode)
+                    .message("Mã voucher đã hết lượt sử dụng trên toàn hệ thống.")
+                    .build();
+        }
+
+        // Kiểm tra giới hạn số lần sử dụng của riêng từng tài khoản (usageLimitPerUser)
+        if (currentUser != null && currentUser.getId() != null
+                && promotion.getUsageLimitPerUser() != null && promotion.getUsageLimitPerUser() > 0) {
+            long userUsedCount = orderRepository.countUsedVoucherByUser(currentUser.getId(), cleanCode);
+            if (userUsedCount >= promotion.getUsageLimitPerUser()) {
+                return VoucherApplyResponse.builder()
+                        .valid(false)
+                        .voucherCode(cleanCode)
+                        .message("Bạn đã sử dụng hết số lượt cho phép của mã voucher này (" + promotion.getUsageLimitPerUser() + " lần/tài khoản).")
+                        .build();
+            }
+        }
+
+        // Kiểm tra phạm vi chi nhánh
+        if ("BRANCH".equalsIgnoreCase(promotion.getScope())) {
+            if (branchId == null || promotion.getBranch() == null || !branchId.equals(promotion.getBranch().getId())) {
+                String targetBranchName = promotion.getBranch() != null ? promotion.getBranch().getName() : "chi nhánh khác";
+                return VoucherApplyResponse.builder()
+                        .valid(false)
+                        .voucherCode(cleanCode)
+                        .message("Voucher này chỉ áp dụng riêng cho khách đặt tại " + targetBranchName + ".")
+                        .build();
+            }
+        }
+
+        // Kiểm tra giá trị đơn tối thiểu
+        if (orderSubtotal == null) orderSubtotal = BigDecimal.ZERO;
+        if (orderSubtotal.compareTo(promotion.getMinOrderAmount()) < 0) {
+            DecimalFormat df = new DecimalFormat("#,###");
+            return VoucherApplyResponse.builder()
+                    .valid(false)
+                    .voucherCode(cleanCode)
+                    .message("Đơn hàng chưa đạt giá trị tối thiểu " + df.format(promotion.getMinOrderAmount()) + "đ để áp dụng mã này.")
+                    .build();
+        }
+
+        BigDecimal discount = promotion.calculateDiscount(orderSubtotal);
+        BigDecimal finalAmount = orderSubtotal.subtract(discount).max(BigDecimal.ZERO);
+
+        return VoucherApplyResponse.builder()
+                .valid(true)
+                .voucherCode(cleanCode)
+                .title(promotion.getTitle())
+                .discountAmount(discount)
+                .finalAmount(finalAmount)
+                .message("Áp dụng mã voucher thành công!")
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public boolean consumeVoucherUsage(String voucherCode) {
+        if (voucherCode == null || voucherCode.trim().isEmpty()) {
+            return false;
+        }
+        String cleanCode = voucherCode.trim().toUpperCase();
+        int updatedRows = promotionRepository.incrementUsedCountIfAvailable(cleanCode);
+        if (updatedRows > 0) {
+            log.info(">>> [VOUCHER CONSUME] Đã tiêu thụ thành công 1 lượt sử dụng cho mã voucher: {}", cleanCode);
+            return true;
+        } else {
+            log.warn(">>> [VOUCHER CONSUME] Không thể tiêu thụ mã voucher {}: đã hết hạn mức hoặc không tồn tại", cleanCode);
+            return false;
+        }
+    }
+
+
+    @Override
+    @Transactional
+    public Promotion createCompensationVoucher(Order order, BigDecimal rate, int expiryDays) {
+        if (order == null) {
+            throw new IllegalArgumentException("Không tìm thấy đơn hàng cần bồi hoàn voucher.");
+        }
+        if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
+            rate = new BigDecimal("0.80");
+        }
+        if (expiryDays <= 0) {
+            expiryDays = 30;
+        }
+
+        // 1. Tính toán số tiền bồi hoàn 80% (dựa trên finalAmount hoặc totalAmount)
+        BigDecimal baseAmount = order.getFinalAmount();
+        if (baseAmount == null || baseAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            baseAmount = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+        }
+        BigDecimal compensationAmount = baseAmount.multiply(rate).setScale(0, RoundingMode.HALF_UP);
+        if (compensationAmount.compareTo(BigDecimal.ZERO) < 0) {
+            compensationAmount = BigDecimal.ZERO;
+        }
+
+        // 2. Thử sinh mã ngẫu nhiên và lưu (tối đa 5 lượt nếu gặp Race Condition tại DB)
+        int retrySave = 0;
+        while (retrySave < 5) {
+            String candidateCode = generateUniqueVoucherCode(10);
+            int percent = rate.multiply(new BigDecimal("100")).setScale(0, RoundingMode.HALF_UP).intValue();
+            try {
+                Promotion promo = Promotion.builder()
+                        .voucherCode(candidateCode)
+                        .title("Bồi Hoàn " + percent + "% Đơn #" + order.getOrderCode())
+                        .description("Voucher bồi hoàn " + percent + "% giá trị đơn hàng trực tuyến #" + order.getOrderCode() + ". Hạn dùng " + expiryDays + " ngày.")
+                        .discountType("FIXED_AMOUNT")
+                        .discountValue(compensationAmount)
+                        .maxDiscountAmount(compensationAmount)
+                        .minOrderAmount(BigDecimal.ZERO)
+                        .startDate(LocalDateTime.now())
+                        .endDate(LocalDateTime.now().plusDays(expiryDays))
+                        .totalUsageLimit(1)
+                        .usedCount(0)
+                        .usageLimitPerUser(1)
+                        .scope("GLOBAL")
+                        .branch(null)
+                        .status("ACTIVE")
+                        .build();
+
+                Promotion savedPromo = promotionRepository.save(promo);
+                log.info(">>> [UC28] Đã tạo thành công voucher bồi hoàn {} trị giá {}đ cho đơn hàng {}",
+                        savedPromo.getVoucherCode(), compensationAmount, order.getOrderCode());
+                return savedPromo;
+            } catch (DataIntegrityViolationException ex) {
+                log.warn(">>> [UC28] Trùng mã voucher tại DB (Race-Condition) với code {}. Đang thử lại lần {}...", candidateCode, retrySave + 1);
+                retrySave++;
+            }
+        }
+
+        throw new IllegalStateException("Không thể sinh mã voucher bồi hoàn độc nhất sau nhiều lần thử.");
+    }
+
+    private String generateUniqueVoucherCode(int length) {
+        String code;
+        int attempts = 0;
+        do {
+            StringBuilder sb = new StringBuilder(length);
+            for (int i = 0; i < length; i++) {
+                int idx = SECURE_RANDOM.nextInt(RANDOM_CHARSET.length());
+                sb.append(RANDOM_CHARSET.charAt(idx));
+            }
+            code = sb.toString();
+            attempts++;
+            if (attempts > 10) {
+                // Tăng độ dài nếu số lần thử vượt quá 10 để tránh va chạm tuyệt đối
+                length = 12;
+            }
+        } while (promotionRepository.existsByVoucherCode(code));
+
+        return code;
+    }
+
+    @Override
+    @Transactional
+    public void restoreVoucherUsage(String voucherCode) {
+        if (voucherCode == null || voucherCode.trim().isEmpty()) {
+            return;
+        }
+        String cleanCode = voucherCode.trim().toUpperCase();
+        int affected = promotionRepository.decrementUsedCount(cleanCode);
+        if (affected > 0) {
+            log.info(">>> [UC28] Phục hồi thành công 1 lượt sử dụng cho voucher cũ: {}", cleanCode);
+        }
+    }
+}
+

@@ -4,6 +4,35 @@
     <mapping path="/js/*" exclude="true"/>
     <mapping path="/images/*" exclude="true"/>
     <mapping path="/favicon.ico" exclude="true"/>
+    <!-- Không bọc decorator web.jsp cho giao diện Shipper di động toàn màn hình -->
+    <mapping path="/shipper" exclude="true"/>
+    <mapping path="/shipper/*" exclude="true"/>
+    <mapping path="/shipper/**" exclude="true"/>
+
+    <!-- Không bọc decorator cho giao diện Web POS bán lẻ cảm ứng toàn màn hình (Module 6 & Module 7 KDS) -->
+    <mapping path="/pos" exclude="true"/>
+    <mapping path="/pos/*" exclude="true"/>
+    <mapping path="/pos/**" exclude="true"/>
+    <mapping path="/branch/pos" exclude="true"/>
+    <mapping path="/branch/pos/*" exclude="true"/>
+    <mapping path="/branch/pos/**" exclude="true"/>
+    <mapping path="/branch/kitchen" exclude="true"/>
+    <mapping path="/branch/kitchen/*" exclude="true"/>
+    <mapping path="/branch/kitchen/**" exclude="true"/>
+    <mapping path="/branch/menu-status" exclude="true"/>
+    <mapping path="/branch/menu-status/*" exclude="true"/>
+    <mapping path="/branch/menu-status/**" exclude="true"/>
+    <!-- Áp dụng decorator riêng cho Chủ Chuỗi (Admin Portal) -->
+    <mapping path="/admin/*" decorator="/WEB-INF/decorators/admin.jsp"/>
+    <mapping path="/admin/**" decorator="/WEB-INF/decorators/admin.jsp"/>
+
+    <!-- Áp dụng decorator riêng biệt cho Quản Lý Chi Nhánh (Branch Portal) -->
+    <mapping path="/branch/*" decorator="/WEB-INF/decorators/branch.jsp"/>
+    <mapping path="/branch/**" decorator="/WEB-INF/decorators/branch.jsp"/>
+
     <!-- Áp dụng decorator web.jsp cho toàn bộ giao diện phía khách hàng -->
+    <mapping path="/user/*" decorator="/WEB-INF/decorators/web.jsp"/>
+    <mapping path="/user/**" decorator="/WEB-INF/decorators/web.jsp"/>
     <mapping path="/*" decorator="/WEB-INF/decorators/web.jsp"/>
+    <mapping path="/**" decorator="/WEB-INF/decorators/web.jsp"/>
 </sitemesh>

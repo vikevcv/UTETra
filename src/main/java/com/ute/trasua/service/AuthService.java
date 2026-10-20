@@ -40,11 +40,11 @@ public class AuthService {
     private static final long RESET_TOKEN_EXPIRATION_MS = 10 * 60 * 1000; // 10 phút
 
     // Cache lưu trữ tạm thông tin đăng ký (key: email, value: RegisterOtpData)
-    private final ConcurrentHashMap<String, RegisterOtpData> registerOtpCache = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, RegisterOtpData> registerOtpCache = new ConcurrentHashMap<>();
 
     // Cache lưu trữ tạm thông tin quên mật khẩu (key: email, value:
     // ForgotPasswordData)
-    private final ConcurrentHashMap<String, ForgotPasswordData> forgotPasswordCache = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, ForgotPasswordData> forgotPasswordCache = new ConcurrentHashMap<>();
 
     @Data
     @AllArgsConstructor
@@ -313,7 +313,9 @@ public class AuthService {
     } catch (BadCredentialsException e) {
         throw new RuntimeException("Sai tài khoản hoặc mật khẩu");
     } catch (DisabledException e) {
-        throw new RuntimeException("Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt");
+        throw new RuntimeException("Tài khoản của bạn đã bị vô hiệu hóa hoặc chưa kích hoạt");
+    } catch (org.springframework.security.authentication.LockedException e) {
+        throw new RuntimeException("Tài khoản của bạn đã bị khóa bởi Quản trị viên hệ thống");
     } catch (AuthenticationException e) {
         throw new RuntimeException("Đăng nhập thất bại: " + e.getMessage());
     }

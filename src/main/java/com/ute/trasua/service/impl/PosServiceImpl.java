@@ -1,0 +1,638 @@
+package com.ute.trasua.service.impl;
+
+import com.ute.trasua.dto.pos.*;
+import com.ute.trasua.entity.*;
+import com.ute.trasua.repository.*;
+import com.ute.trasua.service.PosService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@Slf4j
+public class PosServiceImpl implements PosService {
+
+    private final BranchRepository branchRepository;
+    private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
+    private final SizeRepository sizeRepository;
+    private final ToppingRepository toppingRepository;
+    private final OrderRepository orderRepository;
+    private final OrderDetailRepository orderDetailRepository;
+    private final PaymentRepository paymentRepository;
+    private final EmployeeRepository employeeRepository;
+    private final BranchMenuRepository branchMenuRepository;
+    private final PosAccountRepository posAccountRepository;
+    private final com.ute.trasua.service.BranchMenuService branchMenuService;
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+    private final com.ute.trasua.service.PayOSService payosService;
+
+    public PosServiceImpl(
+            BranchRepository branchRepository,
+            CategoryRepository categoryRepository,
+            ProductRepository productRepository,
+            SizeRepository sizeRepository,
+            ToppingRepository toppingRepository,
+            OrderRepository orderRepository,
+            OrderDetailRepository orderDetailRepository,
+            PaymentRepository paymentRepository,
+            EmployeeRepository employeeRepository,
+            BranchMenuRepository branchMenuRepository,
+            PosAccountRepository posAccountRepository,
+            com.ute.trasua.service.BranchMenuService branchMenuService,
+            org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate,
+            com.ute.trasua.service.PayOSService payosService
+    ) {
+        this.branchRepository = branchRepository;
+        this.categoryRepository = categoryRepository;
+        this.productRepository = productRepository;
+        this.sizeRepository = sizeRepository;
+        this.toppingRepository = toppingRepository;
+        this.orderRepository = orderRepository;
+        this.orderDetailRepository = orderDetailRepository;
+        this.paymentRepository = paymentRepository;
+        this.employeeRepository = employeeRepository;
+        this.branchMenuRepository = branchMenuRepository;
+        this.posAccountRepository = posAccountRepository;
+        this.branchMenuService = branchMenuService;
+        this.messagingTemplate = messagingTemplate;
+        this.payosService = payosService;
+    }
+
+    @org.springframework.beans.factory.annotation.Value("${app.vietqr.bank-bin:970422}")
+    private String bankBin;
+
+    @org.springframework.beans.factory.annotation.Value("${app.vietqr.account-no:0396202885}")
+    private String accountNo;
+
+    @org.springframework.beans.factory.annotation.Value("${app.vietqr.account-name:UTETRA TEA GALLERY}")
+    private String accountName;
+
+    @Override
+    @Transactional(readOnly = true)
+    public PosMenuResponse getPosMenu(Long branchId) {
+        Long targetBranchId = (branchId != null) ? branchId : 1L;
+
+        // Lấy danh sách trạng thái tạm hết của chi nhánh
+        List<BranchMenu> branchMenus = branchMenuRepository.findByBranchId(targetBranchId);
+        java.util.Map<Long, Boolean> productAvailMap = branchMenus.stream()
+                .collect(Collectors.toMap(bm -> bm.getProduct().getId(), BranchMenu::getIsAvailable, (v1, v2) -> v1));
+
+        List<PosMenuResponse.CategoryDto> categories = categoryRepository.findAllByActiveTrueOrderByDisplayOrderAsc()
+                .stream()
+                .map(c -> PosMenuResponse.CategoryDto.builder()
+                        .id(c.getId())
+                        .name(c.getName())
+                        .description(c.getDescription())
+                        .displayOrder(c.getDisplayOrder())
+                        .build())
+                .collect(Collectors.toList());
+
+        java.util.Map<Long, BranchMenu> branchMenuMap = new java.util.HashMap<>();
+        if (branchId != null) {
+            branchMenuRepository.findByBranchId(branchId).forEach(bm -> {
+                if (bm.getProduct() != null) {
+                    branchMenuMap.put(bm.getProduct().getId(), bm);
+                }
+            });
+        }
+
+        java.util.List<com.ute.trasua.dto.kitchen.BranchMenuStatusDto> menuStatuses = branchMenuService.getBranchMenuStatus(targetBranchId);
+        java.util.Map<Long, Integer> productStockMap = menuStatuses.stream()
+                .filter(dto -> "PRODUCT".equalsIgnoreCase(dto.getItemType()) && dto.getId() != null)
+                .collect(Collectors.toMap(com.ute.trasua.dto.kitchen.BranchMenuStatusDto::getId, dto -> dto.getStockEstimate() != null ? dto.getStockEstimate() : 0, (v1, v2) -> v1));
+
+        List<PosMenuResponse.ProductDto> products = productRepository.findByStatusOrderByNameAsc("ACTIVE")
+                .stream()
+                .map(p -> {
+                    boolean isAvail = true;
+                    BigDecimal price = p.getBasePrice();
+                    if (branchMenuMap.containsKey(p.getId())) {
+                        BranchMenu bm = branchMenuMap.get(p.getId());
+                        isAvail = bm.isAvailable();
+                        if (bm.getCustomPrice() != null) {
+                            price = bm.getCustomPrice();
+                        }
+                    }
+                    int stock = isAvail ? productStockMap.getOrDefault(p.getId(), 0) : 0;
+                    boolean finalAvailable = isAvail && stock > 0;
+                    return PosMenuResponse.ProductDto.builder()
+                            .id(p.getId())
+                            .productCode(p.getProductCode())
+                            .name(p.getName())
+                            .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
+                            .categoryName(p.getCategory() != null ? p.getCategory().getName() : "")
+                            .basePrice(price)
+                            .imageUrl(p.getImageUrl())
+                            .description(p.getDescription())
+                            .status(p.getStatus())
+                            .isAvailable(finalAvailable)
+                            .stockEstimate(stock)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        java.util.Map<String, Integer> cupStocks = branchMenuService.getBranchCupStocks(targetBranchId);
+
+        List<PosMenuResponse.SizeDto> sizes = sizeRepository.findAllByActiveTrueOrderByExtraPriceAsc()
+                .stream()
+                .map(s -> {
+                    String cleanName = s.getName() != null ? s.getName().trim().toUpperCase() : "M";
+                    int cStock = cupStocks.getOrDefault(cleanName, 50);
+                    return PosMenuResponse.SizeDto.builder()
+                            .id(s.getId())
+                            .name(s.getName())
+                            .volumeMl(s.getVolumeMl())
+                            .extraPrice(s.getExtraPrice())
+                            .cupStock(cStock)
+                            .isCupAvailable(cStock > 0)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        List<PosMenuResponse.ToppingDto> toppings = toppingRepository.findByStatusOrderByNameAsc("ACTIVE")
+                .stream()
+                .map(t -> {
+                    boolean isAvail = "ACTIVE".equalsIgnoreCase(t.getStatus())
+                            && branchMenuService.isToppingAvailableAtBranch(targetBranchId, t.getId());
+                    int stock = isAvail ? (25 + (int)(t.getId() % 5) * 5) : 0;
+                    return PosMenuResponse.ToppingDto.builder()
+                            .id(t.getId())
+                            .name(t.getName())
+                            .price(t.getPrice())
+                            .status(t.getStatus())
+                            .isAvailable(isAvail)
+                            .stockEstimate(stock)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return PosMenuResponse.builder()
+                .categories(categories)
+                .products(products)
+                .sizes(sizes)
+                .toppings(toppings)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public PosOrderResponse createPosOrder(PosOrderRequest request) {
+        if (request.getBranchId() == null) {
+            throw new IllegalStateException("Missing POS branch id!");
+        }
+        Branch branch = branchRepository.findById(request.getBranchId())
+                .orElseThrow(() -> new IllegalArgumentException("POS branch not found!"));
+
+        // Tính STT lấy nước trong ngày của chi nhánh
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+        long countToday = (branch != null) ? orderRepository.countByBranchIdAndCreatedAtBetween(branch.getId(), startOfDay, endOfDay) : 0;
+        int queueNumber = (int) countToday + 1;
+
+        String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
+        String orderCode = String.format("ORD-POS-%s-%04d", dateStr, queueNumber);
+
+        String cashierUsername = request.getCashierUsername() != null ? request.getCashierUsername().trim() : "pos_cashier";
+        if (cashierUsername.length() > 50) {
+            cashierUsername = cashierUsername.substring(0, 47) + "...";
+        }
+
+        Order order = Order.builder()
+                .orderCode(orderCode)
+                .dailyQueueNumber(queueNumber)
+                .orderType("POS_WALK_IN")
+                .status("PENDING")
+                .paymentStatus("UNPAID")
+                .cashierUsername(cashierUsername)
+                .branch(branch)
+                .note(request.getNote())
+                .orderDetails(new ArrayList<>())
+                .build();
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        if (request.getItems() != null) {
+            for (PosOrderItemRequest itemReq : request.getItems()) {
+                Product product = productRepository.findById(itemReq.getProductId())
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm với ID: " + itemReq.getProductId()));
+
+                if (!branchMenuService.isProductAvailable(branch.getId(), product.getId())) {
+                    throw new IllegalStateException("Product [" + product.getName() + "] is currently out of stock at this branch!");
+                }
+
+                Size size = null;
+                if (itemReq.getSizeId() != null) {
+                    size = sizeRepository.findById(itemReq.getSizeId()).orElse(null);
+                }
+                if (size == null) {
+                    size = sizeRepository.findByName("M").orElseGet(() ->
+                            sizeRepository.findAll().stream().findFirst().orElse(null));
+                }
+
+                BigDecimal unitPrice = product.getBasePrice();
+                if (size != null && size.getExtraPrice() != null) {
+                    unitPrice = unitPrice.add(size.getExtraPrice());
+                }
+
+                List<Topping> toppings = new ArrayList<>();
+                if (itemReq.getToppingIds() != null && !itemReq.getToppingIds().isEmpty()) {
+                    toppings = toppingRepository.findAllById(itemReq.getToppingIds());
+                    for (Topping t : toppings) {
+                        if (!branchMenuService.isToppingAvailableAtBranch(branch.getId(), t.getId())) {
+                            throw new IllegalStateException("Topping [" + t.getName() + "] is currently unavailable at this branch!");
+                        }
+                        if (t.getPrice() != null) {
+                            unitPrice = unitPrice.add(t.getPrice());
+                        }
+                    }
+                }
+
+                int qty = (itemReq.getQuantity() != null && itemReq.getQuantity() > 0) ? itemReq.getQuantity() : 1;
+                BigDecimal itemSubtotal = unitPrice.multiply(BigDecimal.valueOf(qty));
+                totalAmount = totalAmount.add(itemSubtotal);
+
+                OrderDetail detail = OrderDetail.builder()
+                        .order(order)
+                        .product(product)
+                        .productName(product.getName())
+                        .size(size)
+                        .sizeName(size != null ? size.getName() : "M")
+                        .quantity(qty)
+                        .sugarLevel(itemReq.getSugarLevel() != null ? itemReq.getSugarLevel() : "100%")
+                        .iceLevel(itemReq.getIceLevel() != null ? itemReq.getIceLevel() : "100%")
+                        .unitPrice(unitPrice)
+                        .subtotal(itemSubtotal)
+                        .note(itemReq.getNote())
+                        .toppings(new ArrayList<>())
+                        .build();
+
+                for (Topping t : toppings) {
+                    OrderDetailTopping detailTopping = OrderDetailTopping.builder()
+                            .orderDetail(detail)
+                            .topping(t)
+                            .toppingName(t.getName())
+                            .price(t.getPrice())
+                            .build();
+                    detail.getToppings().add(detailTopping);
+                }
+
+                order.getOrderDetails().add(detail);
+            }
+        }
+
+        order.setTotalAmount(totalAmount);
+        order.setDiscountAmount(BigDecimal.ZERO);
+        order.setFinalAmount(totalAmount);
+
+        Order savedOrder = orderRepository.save(order);
+
+        // Khởi tạo hoặc tái sử dụng phiên thanh toán VietQR PayOS
+        com.ute.trasua.dto.payment.PayOSCreatePaymentResponse paymentInfo = null;
+        try {
+            paymentInfo = payosService.createOrGetPaymentLink(savedOrder.getOrderCode());
+        } catch (Exception e) {
+            log.warn(">>> Không thể khởi tạo PayOS Payment Link cho đơn POS {}: {}", savedOrder.getOrderCode(), e.getMessage());
+        }
+
+        Order refreshedOrder = orderRepository.findById(savedOrder.getId()).orElse(savedOrder);
+        String vietQrUrl = null;
+        if (paymentInfo != null && paymentInfo.getBin() != null && paymentInfo.getAccountNumber() != null) {
+            long payosNum = paymentInfo.getPayosOrderCode() != null ? paymentInfo.getPayosOrderCode() : (refreshedOrder.getPayosOrderCode() != null ? refreshedOrder.getPayosOrderCode() : 0L);
+            String memo = "DH " + payosNum;
+            String encodedMemo = URLEncoder.encode(memo, StandardCharsets.UTF_8);
+            String encodedName = URLEncoder.encode(paymentInfo.getAccountName() != null ? paymentInfo.getAccountName() : "UTETRA TEA GALLERY", StandardCharsets.UTF_8);
+            vietQrUrl = String.format("https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s&accountName=%s",
+                    paymentInfo.getBin(),
+                    paymentInfo.getAccountNumber(),
+                    refreshedOrder.getFinalAmount().longValue(),
+                    encodedMemo,
+                    encodedName);
+        } else {
+            vietQrUrl = generateVietQrUrl(refreshedOrder);
+        }
+
+        log.info(">>> Đã tạo đơn POS thành công: Mã {}, STT: #{}, Tổng tiền: {}₫, PayOS Code: {}",
+                refreshedOrder.getOrderCode(), refreshedOrder.getDailyQueueNumber(), refreshedOrder.getFinalAmount(), refreshedOrder.getPayosOrderCode());
+
+        return mapToOrderResponse(refreshedOrder, vietQrUrl, paymentInfo);
+    }
+
+    @Override
+    @Transactional
+    public PosOrderResponse processPosPayment(PosPaymentRequest request) {
+        Order order = orderRepository.findById(request.getOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + request.getOrderId()));
+
+        String method = (request.getPaymentMethod() != null) ? request.getPaymentMethod() : "CASH";
+        order.setPaymentMethod(method);
+        order.setPaymentStatus("PAID");
+        order.setStatus("PAID");
+        order.setPaidAt(LocalDateTime.now());
+
+        BigDecimal amountPaid = request.getAmountPaid() != null ? request.getAmountPaid() : order.getFinalAmount();
+        BigDecimal cashTendered = request.getCashTendered();
+        BigDecimal changeAmount = request.getChangeAmount();
+
+        if ("CASH".equalsIgnoreCase(method) && cashTendered != null) {
+            if (changeAmount == null) {
+                changeAmount = cashTendered.subtract(order.getFinalAmount());
+                if (changeAmount.compareTo(BigDecimal.ZERO) < 0) {
+                    changeAmount = BigDecimal.ZERO;
+                }
+            }
+        }
+
+        Payment payment = Payment.builder()
+                .order(order)
+                .paymentMethod(method)
+                .amount(amountPaid)
+                .cashTendered(cashTendered)
+                .changeAmount(changeAmount)
+                .transactionCode(request.getTransactionCode() != null ? request.getTransactionCode() : "TXN-" + System.currentTimeMillis())
+                .status("SUCCESS")
+                .paidAt(LocalDateTime.now())
+                .build();
+        paymentRepository.save(payment);
+
+        Order savedOrder = orderRepository.save(order);
+        String vietQrUrl = generateVietQrUrl(savedOrder.getOrderCode(), savedOrder.getFinalAmount());
+
+        broadcastNewOrder(savedOrder);
+
+        log.info(">>> Đã xác nhận thanh toán POS thành công đơn {}: Phương thức {}, Số tiền: {}₫",
+                savedOrder.getOrderCode(), method, amountPaid);
+
+        return mapToOrderResponse(savedOrder, vietQrUrl);
+    }
+
+    @Override
+    @Transactional
+    public PosOrderResponse checkoutCashOrder(PosOrderRequest request, BigDecimal cashTendered, BigDecimal changeAmount) {
+        // Tạo đơn hàng trước
+        PosOrderResponse created = createPosOrder(request);
+        Order order = orderRepository.findById(created.getOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + created.getOrderId()));
+
+        order.setPaymentMethod("CASH");
+        order.setPaymentStatus("PAID");
+        order.setStatus("PAID");
+
+        BigDecimal amountPaid = order.getFinalAmount();
+        Payment payment = Payment.builder()
+                .order(order)
+                .paymentMethod("CASH")
+                .amount(amountPaid)
+                .cashTendered(cashTendered != null ? cashTendered : amountPaid)
+                .changeAmount(changeAmount != null ? changeAmount : BigDecimal.ZERO)
+                .transactionCode("CASH-" + System.currentTimeMillis())
+                .status("SUCCESS")
+                .paidAt(LocalDateTime.now())
+                .build();
+        paymentRepository.save(payment);
+
+        Order savedOrder = orderRepository.save(order);
+        broadcastNewOrder(savedOrder);
+
+        log.info(">>> Đã thanh toán TIỀN MẶT thành công đơn {}: Khách đưa {}₫, Tiền thối {}₫",
+                savedOrder.getOrderCode(), cashTendered, changeAmount);
+
+        return mapToOrderResponse(savedOrder, "");
+    }
+
+    private void broadcastNewOrder(Order order) {
+        if (order == null || order.getBranch() == null) return;
+        try {
+            messagingTemplate.convertAndSend("/topic/kitchen/" + order.getBranch().getId(),
+                    (Object) java.util.Map.of(
+                            "type", "NEW_ORDER_PAID",
+                            "branchId", order.getBranch().getId(),
+                            "orderId", order.getId(),
+                            "orderCode", order.getOrderCode(),
+                            "queueNumber", order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : 1,
+                            "timestamp", System.currentTimeMillis()
+                    ));
+        } catch (Exception e) {
+            log.warn("Không thể gửi WebSocket event NEW_ORDER_PAID: {}", e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void cancelPendingOrder(Long orderId) {
+        if (orderId == null) return;
+        orderRepository.findById(orderId).ifPresent(order -> {
+            if ("PENDING_PAYMENT".equalsIgnoreCase(order.getPaymentStatus()) || "PENDING".equalsIgnoreCase(order.getStatus())) {
+                order.setStatus("CANCELLED");
+                order.setPaymentStatus("CANCELLED");
+                orderRepository.save(order);
+                log.info(">>> Đã hủy đơn hàng treo ID: {} (Mã: {})", order.getId(), order.getOrderCode());
+            }
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PosOrderResponse getPosOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
+        String vietQrUrl = generateVietQrUrl(order.getOrderCode(), order.getFinalAmount());
+        return mapToOrderResponse(order, vietQrUrl);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ShiftEmployeeDto> getBranchEmployees(Long branchId) {
+        Long targetBranchId = (branchId != null) ? branchId : 1L;
+        List<Employee> employees = employeeRepository.findByBranchIdAndStatus(targetBranchId, "ACTIVE");
+
+        return employees.stream()
+                .map(e -> ShiftEmployeeDto.builder()
+                        .id(e.getId())
+                        .employeeCode(e.getEmployeeCode())
+                        .fullName(e.getFullName())
+                        .phone(e.getPhone())
+                        .activeOnShift(false)
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShiftAttendanceResponse getShiftStatus(Long branchId, List<Long> activeEmployeeIds) {
+        List<ShiftEmployeeDto> allEmployees = getBranchEmployees(branchId);
+        List<ShiftEmployeeDto> onShiftList = new ArrayList<>();
+
+        if (activeEmployeeIds != null && !activeEmployeeIds.isEmpty()) {
+            for (ShiftEmployeeDto emp : allEmployees) {
+                if (activeEmployeeIds.contains(emp.getId())) {
+                    emp.setActiveOnShift(true);
+                    onShiftList.add(emp);
+                }
+            }
+        }
+
+        boolean isActive = !onShiftList.isEmpty();
+        String summary = onShiftList.stream()
+                .map(ShiftEmployeeDto::getFullName)
+                .collect(Collectors.joining(", "));
+
+        return ShiftAttendanceResponse.builder()
+                .shiftActive(isActive)
+                .activeCount(onShiftList.size())
+                .activeCashiersSummary(isActive ? summary : "Chưa có người trực ca")
+                .activeEmployees(onShiftList)
+                .build();
+    }
+
+    private String generateVietQrUrl(Order order) {
+        if (order == null) return "";
+        long amountLong = (order.getFinalAmount() != null) ? order.getFinalAmount().longValue() : 0L;
+        if (amountLong < 1000L) {
+            return "";
+        }
+        String binToUse = (order.getPayosBin() != null && !order.getPayosBin().isBlank()) ? order.getPayosBin() : (bankBin != null ? bankBin : "970422");
+        String accToUse = (order.getPayosAccountNumber() != null && !order.getPayosAccountNumber().isBlank()) ? order.getPayosAccountNumber() : (accountNo != null ? accountNo : "0396202885");
+        String nameToUse = (order.getPayosAccountName() != null && !order.getPayosAccountName().isBlank()) ? order.getPayosAccountName() : (accountName != null ? accountName : "UTETRA TEA GALLERY");
+
+        String memo = (order.getPayosOrderCode() != null) ? ("DH " + order.getPayosOrderCode()) : order.getOrderCode();
+        String encodedMemo = URLEncoder.encode(memo, StandardCharsets.UTF_8);
+        String encodedName = URLEncoder.encode(nameToUse, StandardCharsets.UTF_8);
+        return String.format("https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s&accountName=%s",
+                binToUse, accToUse, amountLong, encodedMemo, encodedName);
+    }
+
+    private String generateVietQrUrl(String orderCode, BigDecimal amount) {
+        long amountLong = (amount != null) ? amount.longValue() : 0L;
+        if (amountLong < 1000L) {
+            return "";
+        }
+        String encodedOrderCode = URLEncoder.encode(orderCode, StandardCharsets.UTF_8);
+        String encodedName = URLEncoder.encode(accountName != null ? accountName : "UTETRA TEA GALLERY", StandardCharsets.UTF_8);
+        return String.format("https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s&accountName=%s",
+                bankBin != null ? bankBin : "970422",
+                accountNo != null ? accountNo : "0396202885",
+                amountLong, encodedOrderCode, encodedName);
+    }
+
+    private PosOrderResponse mapToOrderResponse(Order order, String vietQrUrl) {
+        return mapToOrderResponse(order, vietQrUrl, null);
+    }
+
+    private PosOrderResponse mapToOrderResponse(Order order, String vietQrUrl, com.ute.trasua.dto.payment.PayOSCreatePaymentResponse paymentInfo) {
+        Long remaining = (paymentInfo != null && paymentInfo.getRemainingSeconds() != null) ? paymentInfo.getRemainingSeconds() : 900L;
+        String qr = (paymentInfo != null && paymentInfo.getQrCode() != null) ? paymentInfo.getQrCode() : vietQrUrl;
+        
+        String accNum = (paymentInfo != null && paymentInfo.getAccountNumber() != null && !paymentInfo.getAccountNumber().isBlank())
+                ? paymentInfo.getAccountNumber()
+                : (order.getPayosAccountNumber() != null ? order.getPayosAccountNumber() : accountNo);
+        String accName = (paymentInfo != null && paymentInfo.getAccountName() != null && !paymentInfo.getAccountName().isBlank())
+                ? paymentInfo.getAccountName()
+                : (order.getPayosAccountName() != null ? order.getPayosAccountName() : accountName);
+        String binNum = (paymentInfo != null && paymentInfo.getBin() != null && !paymentInfo.getBin().isBlank())
+                ? paymentInfo.getBin()
+                : (order.getPayosBin() != null ? order.getPayosBin() : bankBin);
+        Long payosCode = (paymentInfo != null && paymentInfo.getPayosOrderCode() != null)
+                ? paymentInfo.getPayosOrderCode()
+                : order.getPayosOrderCode();
+
+        return PosOrderResponse.builder()
+                .orderId(order.getId())
+                .orderCode(order.getOrderCode())
+                .dailyQueueNumber(order.getDailyQueueNumber())
+                .totalAmount(order.getTotalAmount())
+                .discountAmount(order.getDiscountAmount())
+                .finalAmount(order.getFinalAmount())
+                .vietQrUrl(vietQrUrl)
+                .payosOrderCode(payosCode)
+                .qrCode(qr)
+                .accountNumber(accNum)
+                .accountName(accName)
+                .bin(binNum)
+                .remainingSeconds(remaining)
+                .status(order.getStatus())
+                .paymentStatus(order.getPaymentStatus())
+                .cashierUsername(order.getCashierUsername())
+                .createdAt(order.getCreatedAt())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Optional<PosAccount> findPosAccountByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        return posAccountRepository.findByUsername(username);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PosAccount resolvePosAccountForUser(User user, Branch defaultBranch) {
+        if (user == null) {
+            return null;
+        }
+        PosAccount existingPos = posAccountRepository.findByUsername(user.getUsername()).orElse(null);
+        if (existingPos != null) {
+            if (user.getBranch() != null && (existingPos.getBranch() == null || !existingPos.getBranch().getId().equals(user.getBranch().getId()))) {
+                existingPos.setBranch(user.getBranch());
+            }
+            return existingPos;
+        }
+        Branch branchToUse = (user.getBranch() != null) ? user.getBranch() : defaultBranch;
+        return PosAccount.builder()
+                .username(user.getUsername())
+                .counterName(user.getFullName() != null ? user.getFullName() : (user.getUsername() + " (Quầy POS)"))
+                .branch(branchToUse)
+                .active(true)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PosAccount> getActivePosAccountsByBranch(Long branchId) {
+        if (branchId == null) {
+            return java.util.Collections.emptyList();
+        }
+        return posAccountRepository.findByBranchIdAndActiveTrue(branchId);
+    }
+
+    @Override
+    @Transactional
+    public boolean checkPosPaymentStatus(Long orderId) {
+        if (orderId == null) return false;
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null) return false;
+
+        if ("PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+            return true;
+        }
+
+        // Tự động đối soát trực tiếp với PayOS Cloud nếu đơn POS vẫn đang UNPAID
+        return payosService.syncPaymentStatusFromPayOS(order.getOrderCode());
+    }
+
+    @Override
+    @Transactional
+    public PosOrderResponse skipPosPaymentForTesting(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
+
+        payosService.skipPaymentForTesting(order.getOrderCode());
+        Order reloadedOrder = orderRepository.findById(orderId).orElse(order);
+        String vietQrUrl = generateVietQrUrl(reloadedOrder);
+        return mapToOrderResponse(reloadedOrder, vietQrUrl);
+    }
+}

@@ -21,6 +21,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtTokenProvider tokenProvider;
+    private final com.ute.trasua.repository.UserRepository userRepository;
 
     @Value("${app.jwt.expiration-ms}")
     private long jwtExpirationMs;
@@ -28,9 +29,13 @@ public class AuthController {
     // LOGIN
     @GetMapping("/login")
     public String loginPage(@RequestParam(value = "error", required = false) String error,
+                            @RequestParam(value = "redirect", required = false) String redirect,
                             Model model) {
         if (error != null) {
             model.addAttribute("errorMessage", "Sai tài khoản hoặc mật khẩu");
+        }
+        if (redirect != null && !redirect.isBlank() && redirect.startsWith("/")) {
+            model.addAttribute("redirectUrl", redirect);
         }
         model.addAttribute("loginRequest", new LoginRequest());
         return "auth/login";
@@ -39,6 +44,7 @@ public class AuthController {
     @PostMapping("/login")
     public String login(@Valid @ModelAttribute LoginRequest request,
                         BindingResult result,
+                        @RequestParam(value = "redirectUrl", required = false) String redirectUrl,
                         HttpServletResponse response,
                         RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
@@ -48,11 +54,48 @@ public class AuthController {
         try {
             String token = authService.login(request);
             addJwtCookie(response, token);
-            return "redirect:/";
+
+            if (redirectUrl != null && !redirectUrl.isBlank() && redirectUrl.startsWith("/")) {
+                return "redirect:" + redirectUrl;
+            }
+
+            // Điều hướng tự động theo vai trò (Role-based redirect)
+            return redirectByRole(request.getUsername());
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            if (redirectUrl != null && !redirectUrl.isBlank() && redirectUrl.startsWith("/")) {
+                redirectAttributes.addAttribute("redirect", redirectUrl);
+            }
             return "redirect:/auth/login";
         }
+    }
+
+    private String redirectByRole(String rawIdentifier) {
+        if (rawIdentifier == null || rawIdentifier.trim().isEmpty()) {
+            return "redirect:/";
+        }
+        String clean = rawIdentifier.trim();
+        if (clean.startsWith("@")) {
+            clean = clean.substring(1).trim();
+        }
+        final String searchKey = clean;
+        return userRepository.findByUsername(searchKey)
+                .or(() -> userRepository.findByEmail(searchKey))
+                .map(user -> {
+                    if (user.getRoles() != null) {
+                        if (user.getRoles().contains("ROLE_ADMIN")) {
+                            return "redirect:/admin/dashboard";
+                        } else if (user.getRoles().contains("ROLE_MANAGER")) {
+                            return "redirect:/branch/employees";
+                        } else if (user.getRoles().contains("ROLE_DRIVER")) {
+                            return "redirect:/shipper";
+                        } else if (user.getRoles().contains("ROLE_STAFF") || user.getRoles().contains("ROLE_POS")) {
+                            return "redirect:/pos";
+                        }
+                    }
+                    return "redirect:/";
+                })
+                .orElse("redirect:/");
     }
 
     // REGISTER

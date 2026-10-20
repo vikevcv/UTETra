@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -16,12 +17,13 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.mail.from:thoain.n2006@gmail.com}")
+    @Value("${app.mail.from}")
     private String mailFrom;
 
     @Value("${app.mail.from-name:UTETra Zen Gallery}")
     private String mailFromName;
 
+    @Async
     public void sendOtpEmail(String to, String otp) {
         String subject = "Mã xác nhận đăng ký tài khoản UTETra";
         String htmlContent = buildOtpEmailTemplate(
@@ -32,6 +34,7 @@ public class EmailService {
         sendMimeEmail(to, subject, htmlContent);
     }
 
+    @Async
     public void sendForgotPasswordOtpEmail(String to, String otp) {
         String subject = "[UTETra] Mã xác nhận đặt lại mật khẩu";
         String htmlContent = buildOtpEmailTemplate(
@@ -114,6 +117,56 @@ public class EmailService {
                 + "  </table>"
                 + "</body>"
                 + "</html>";
+    }
+
+    public void sendDriverWelcomeEmail(String to, String fullName, String username, String tempPassword, String branchName) {
+        String subject = "[UTETra] Thông báo cấp tài khoản tài xế giao hàng — " + branchName;
+        String htmlContent = buildDriverWelcomeEmailTemplate(fullName, username, tempPassword, branchName);
+        sendMimeEmail(to, subject, htmlContent);
+    }
+
+    private String buildDriverWelcomeEmailTemplate(String fullName, String username, String password, String branchName) {
+        return "<!DOCTYPE html>"
+                + "<html lang=\"vi\">"
+                + "<head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"></head>"
+                + "<body style=\"margin: 0; padding: 0; background-color: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;\">"
+                + "  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color: #F7F5F0; padding: 32px 16px;\">"
+                + "    <tr>"
+                + "      <td align=\"center\">"
+                + "        <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"max-width: 560px; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; border: 1px solid #E8E5DF; box-shadow: 0 4px 20px rgba(15, 16, 17, 0.06);\">"
+                + "          <tr>"
+                + "            <td align=\"center\" style=\"padding: 36px 24px 20px; background: linear-gradient(180deg, #FFFFFF 0%, #FAFAF8 100%); border-bottom: 1px solid #F0ECE4;\">"
+                + "              <div style=\"display: inline-block; width: 68px; height: 68px; line-height: 68px; background-color: #059669; color: #FFFFFF; font-size: 30px; border-radius: 50%; text-align: center;\">🛵</div>"
+                + "              <h1 style=\"margin: 14px 0 4px; font-size: 22px; font-weight: 700; color: #0F1011;\">Chào Mừng Gia Nhập Đội Ngũ UTETra</h1>"
+                + "              <p style=\"margin: 0; font-size: 13px; color: #059669; font-weight: 600;\">CƠ SỞ: " + branchName.toUpperCase() + "</p>"
+                + "            </td>"
+                + "          </tr>"
+                + "          <tr>"
+                + "            <td style=\"padding: 28px 32px;\">"
+                + "              <p style=\"margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #334155;\">"
+                + "                Kính gửi <strong>" + fullName + "</strong>,<br>"
+                + "                Quản lý chi nhánh vừa thiết lập tài khoản giao hàng nội bộ cho bạn. Bạn được phân quyền nhận và giao các đơn hàng trực tuyến phát sinh tại <strong>" + branchName + "</strong>."
+                + "              </p>"
+                + "              <div style=\"background-color: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 12px; padding: 20px; margin: 20px 0;\">"
+                + "                <div style=\"font-size: 13px; color: #64748B; margin-bottom: 8px; font-weight: 600;\">THÔNG TIN ĐĂNG NHẬP ỨNG DỤNG TÀI XẾ:</div>"
+                + "                <table width=\"100%\" style=\"font-size: 14px; color: #0F172A;\">"
+                + "                  <tr><td style=\"padding: 4px 0; width: 120px;\"><strong>Tài khoản:</strong></td><td style=\"font-family: monospace; font-size: 15px; color: #059669;\">" + username + "</td></tr>"
+                + "                  <tr><td style=\"padding: 4px 0;\"><strong>Mật khẩu tạm:</strong></td><td style=\"font-family: monospace; font-size: 16px; font-weight: 700; color: #DC2626;\">" + password + "</td></tr>"
+                + "                </table>"
+                + "              </div>"
+                + "              <div style=\"background-color: #FEF3C7; border-left: 4px solid #D97706; border-radius: 4px; padding: 12px 16px; margin: 20px 0; font-size: 13px; color: #92400E;\">"
+                + "                <strong>Lưu ý:</strong> Vui lòng đổi mật khẩu ngay trong lần đăng nhập đầu tiên để bảo mật tài khoản."
+                + "              </div>"
+                + "              <p style=\"margin: 24px 0 0; font-size: 13.5px; line-height: 1.6; color: #475569;\">"
+                + "                Trân trọng,<br><strong>Ban Quản Lý Chi Nhánh " + branchName + "</strong>"
+                + "              </p>"
+                + "            </td>"
+                + "          </tr>"
+                + "        </table>"
+                + "      </td>"
+                + "    </tr>"
+                + "  </table>"
+                + "</body></html>";
     }
 }
 

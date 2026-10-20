@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Thực Thi Module 6: Web POS Bán Lẻ & VietQR — UTETra</title>
+  
+  <!-- Font thuần Việt chuẩn Be Vietnam Pro & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    :root {
+      --bg-page: #F7F5F0;
+      --bg-card: #FFFFFF;
+      --bg-inner: #FBF9F5;
+      --text-main: #1F2328;
+      --text-muted: #59636E;
+      --primary: #2F6A4F;
+      --primary-light: #E7EFE9;
+      --bizen-clay: #8C6D53;
+      --bizen-light: #F6EFE9;
+      --accent-gold: #B8860B;
+      --accent-gold-light: #FFF8E7;
+      --danger: #CF222E;
+      --danger-light: #FFEBE9;
+      --warning: #9A6700;
+      --warning-light: #FFF8C5;
+      --info: #0969DA;
+      --info-light: #DDF4FF;
+      --border-color: #E1DCD2;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+      --shadow-md: 0 8px 24px rgba(40,30,20,0.08);
+      --radius: 14px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .report-container {
+      width: 100%;
+      max-width: 1100px;
+      background: var(--bg-card);
+      border-radius: 24px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md);
+      padding: 48px;
+    }
+
+    header.report-header {
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 28px;
+      margin-bottom: 36px;
+    }
+
+    .tag-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .badge-bizen {
+      background: var(--bizen-light);
+      color: var(--bizen-clay);
+      border: 1px solid #E5D6C7;
+    }
+
+    .badge-primary {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #C4D9CD;
+    }
+
+    .badge-warning {
+      background: var(--warning-light);
+      color: var(--warning);
+      border: 1px solid #F5E59C;
+    }
+
+    .badge-info {
+      background: var(--info-light);
+      color: var(--info);
+      border: 1px solid #BFE5FF;
+    }
+
+    h1.report-title {
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: #1A1C1D;
+      line-height: 1.3;
+      margin-bottom: 12px;
+    }
+
+    .report-subtitle {
+      font-size: 1.08rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .report-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border-color);
+      font-size: 0.92rem;
+      color: var(--text-muted);
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .meta-item strong {
+      color: var(--text-main);
+    }
+
+    section.report-section {
+      margin-bottom: 44px;
+    }
+
+    h2.section-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #1A1C1D;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary-light);
+    }
+
+    h3.subsection-title {
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: var(--bizen-clay);
+      margin: 24px 0 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    p {
+      margin-bottom: 14px;
+      color: #2D3136;
+      font-size: 0.98rem;
+    }
+
+    .highlight-box {
+      background: var(--bg-inner);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 12px 12px 0;
+      padding: 18px 22px;
+      margin: 18px 0;
+      border-top: 1px solid var(--border-color);
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .highlight-box.warning {
+      border-left-color: var(--warning);
+      background: #FFFDF5;
+    }
+
+    .highlight-box.bizen {
+      border-left-color: var(--bizen-clay);
+      background: #FDFBF7;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin: 20px 0;
+    }
+
+    .tech-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .tech-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--bizen-clay);
+    }
+
+    .tech-icon {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+      color: var(--primary);
+    }
+
+    .tech-card h4 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #1A1C1D;
+    }
+
+    .tech-card p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 0;
+      line-height: 1.5;
+    }
+
+    /* Table styling */
+    .table-responsive {
+      overflow-x: auto;
+      margin: 18px 0;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.93rem;
+      background: #FFFFFF;
+    }
+
+    table.data-table th {
+      background: #F4EFEB;
+      color: #332A22;
+      font-weight: 700;
+      padding: 14px 16px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    table.data-table td {
+      padding: 13px 16px;
+      border-bottom: 1px solid #EBE6DC;
+      vertical-align: top;
+      color: #2D3136;
+    }
+
+    table.data-table tr:hover td {
+      background-color: #FAF8F5;
+    }
+
+    code, .code-inline {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.86rem;
+      background: #EFECE6;
+      color: #7A3E1D;
+      padding: 2px 6px;
+      border-radius: 5px;
+      border: 1px solid #E2DCD1;
+    }
+
+    pre {
+      background: #1C1D1F;
+      color: #F7F5F0;
+      padding: 18px 22px;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin: 16px 0;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      border: none;
+      padding: 0;
+      font-family: 'JetBrains Mono', monospace !important;
+    }
+
+    .badge-status {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-done {
+      background: #E6F4EA;
+      color: #137333;
+      border: 1px solid #CEEAD6;
+    }
+
+    .status-highlight {
+      background: #FEF7E0;
+      color: #B06000;
+      border: 1px solid #FEEFC3;
+    }
+
+    /* Workflow visual flow */
+    .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .flow-step-item {
+      display: flex;
+      gap: 18px;
+      background: var(--bg-inner);
+      padding: 18px 22px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      align-items: flex-start;
+    }
+
+    .step-number {
+      background: var(--bizen-clay);
+      color: #FFFFFF;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(140,109,83,0.3);
+    }
+
+    .step-content h4 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #1A1C1D;
+    }
+
+    .step-content p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      margin-bottom: 0;
+    }
+
+    footer.report-footer {
+      border-top: 2px solid var(--border-color);
+      padding-top: 24px;
+      margin-top: 48px;
+      text-align: center;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="report-container">
+    
+    <!-- HEADER -->
+    <header class="report-header">
+      <div class="tag-badge badge-bizen">
+        <i class="fa-solid fa-mug-hot"></i> Đồ Án Lập Trình Web — Báo Cáo Kỹ Thuật
+      </div>
+      <h1 class="report-title">Báo Cáo Thực Thi Toàn Diện: Module 6 — Web POS Bán Lẻ & VietQR</h1>
+      <p class="report-subtitle">Tài liệu kỹ thuật tổng hợp chi tiết công nghệ, cấu trúc tệp mã nguồn, logic nghiệp vụ quầy và bài học thực tế theo tiêu chuẩn Superpowers & Ponytail.</p>
+      
+      <div class="report-meta">
+        <div class="meta-item"><i class="fa-solid fa-code-branch text-success"></i> Nhánh Git: <strong>NThoai</strong></div>
+        <div class="meta-item"><i class="fa-solid fa-user-check"></i> Phụ trách: <strong>Nguyễn Ngọc Thoại (NThoai)</strong></div>
+        <div class="meta-item"><i class="fa-solid fa-diagram-project"></i> Use Case: <strong>UC27 — Bán lẻ & Thanh toán tại quầy</strong></div>
+        <div class="meta-item"><i class="fa-solid fa-calendar-check"></i> Hoàn thành: <strong>12/10/2026</strong></div>
+        <div class="meta-item"><i class="fa-solid fa-circle-check text-success"></i> Trạng thái: <strong>100% Hoàn Thành & Đã Push Git</strong></div>
+      </div>
+    </header>
+
+    <!-- PHẦN 1: TỔNG QUAN NGHIỆP VỤ & TRIẾT LÝ VẬN HÀNH -->
+    <section class="report-section">
+      <h2 class="section-title"><i class="fa-solid fa-store text-success"></i> 1. Tổng Quan Nghiệp Vụ & Triết Lý Vận Hành</h2>
+      
+      <p>
+        Trong hệ thống chuỗi cửa hàng trà sữa & trà đạo <strong>UTETra</strong>, quầy thu ngân (POS) là trái tim vận hành trực tiếp tại quán.
+        Theo tài liệu đặc tả <code>Docs/Nhom19_BaoCaoProjectSE (5).docx</code> và quy chuẩn nhóm <code>rules.docx</code>, <strong>Module 6 (UC27)</strong> có nhiệm vụ cung cấp cho nhân viên một giao diện bán lẻ siêu tốc, tối ưu thao tác cảm ứng (Touchscreen-first), kết hợp phương thức thanh toán không tiền mặt qua mã VietQR động chuẩn NAPAS 24/7 và in hóa đơn nhiệt K80.
+      </p>
+
+      <div class="highlight-box bizen">
+        <h4 style="color: var(--bizen-clay); font-weight: 700; margin-bottom: 8px;"><i class="fa-solid fa-compass"></i> Định Hướng Vận Hành Quầy POS Độc Quyền (Quyết Định 14)</h4>
+        <ul style="padding-left: 20px; font-size: 0.94rem; color: #332A22;">
+          <li><strong>Cố định theo máy chi nhánh (No Login Friction):</strong> Máy POS vật lý tại quầy được gắn cố định với chi nhánh (mặc định Chi nhánh Thủ Đức). Nhân viên không cần gõ username/password rườm rà mỗi lần mở máy, tránh gây ùn tắc khách vào giờ cao điểm.</li>
+          <li><strong>Điểm danh trực ca linh hoạt (Shift Attendance):</strong> Hỗ trợ đồng thời 1, 2, 3 hoặc 4 nhân viên (Thu ngân, Pha chế, Phục vụ) cùng tick chọn tên mình để xác nhận đang đứng ca thực tế.</li>
+          <li><strong>Cơ chế khóa máy an toàn (Shift Lock Guard):</strong> Nếu chưa có nhân viên nào nhận ca $\rightarrow$ máy POS ở trạng thái <em>TẠM KHÓA (OFF)</em> và tự động bật popup điểm danh đầu tiên. Thực đơn chỉ mở ra khi ca trực có người chịu trách nhiệm.</li>
+          <li><strong>Minh bạch hóa đơn:</strong> Tên các nhân viên đang trực ca thực tế sẽ được in thẳng lên hóa đơn K80 trao cho khách để dễ dàng đối soát doanh thu và phản hồi dịch vụ.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- PHẦN 2: TECH STACK & THƯ VIỆN SỬ DỤNG -->
+    <section class="report-section">
+      <h2 class="section-title"><i class="fa-solid fa-layer-group text-primary"></i> 2. Công Nghệ & Thư Viện Sử Dụng</h2>
+      
+      <div class="card-grid">
+        <div class="tech-card">
+          <div class="tech-icon"><i class="fa-brands fa-java" style="color: #E76F00;"></i></div>
+          <h4>Java 26 LTS</h4>
+          <p>Môi trường thực thi Eclipse Adoptium OpenJDK 26.0.2.1+1 (macOS arm64), sử dụng cú pháp hiện đại, Stream API và Date-Time chuẩn.</p>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-icon"><i class="fa-solid fa-leaf" style="color: #6DB33F;"></i></div>
+          <h4>Spring Boot 4.1.1</h4>
+          <p>Core framework: Spring MVC, Spring Data JPA, Spring Security, Hibernate Core 7.x, tự động quản lý Transaction và Dependency Injection.</p>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-icon"><i class="fa-solid fa-file-code" style="color: #007396;"></i></div>
+          <h4>JSP & JSTL Jakarta EE 10</h4>
+          <p>Jakarta Servlet 6.0 với <code>tomcat-embed-jasper</code>. Sử dụng cú pháp JSTL chuẩn <code>jakarta.tags.core</code> render phía máy chủ cực nhanh.</p>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-icon"><i class="fa-solid fa-border-none" style="color: #8C6D53;"></i></div>
+          <h4>SiteMesh 3 Custom Filter</h4>
+          <p>Loại trừ (exclude) các route <code>/pos/**</code> khỏi decorator chung của web khách hàng, tạo trải nghiệm ứng dụng POS toàn màn hình chuyên biệt.</p>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-icon"><i class="fa-brands fa-bootstrap" style="color: #7952B3;"></i></div>
+          <h4>Bootstrap 5.3 + Zen CSS</h4>
+          <p>Hệ màu Wabi-Sabi Mẫu 6: Cát Zen (<code>#F7F5F0</code>), Gốm Bizen (<code>#8C6D53</code>), Đen Sumi (<code>#0F1011</code>), Men ngọc Celadon (<code>#5C7667</code>).</p>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-icon"><i class="fa-solid fa-qrcode" style="color: #0969DA;"></i></div>
+          <h4>VietQR QuickLink 24/7</h4>
+          <p>Tích hợp API chuẩn NAPAS sinh mã QR ngân hàng tức thì dựa trên số tài khoản MBBank, mã ngân hàng 970422 và tổng tiền đơn hàng động.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHẦN 3: DANH MỤC CÁC FILE ĐÃ XÂY DỰNG -->
+    <section class="report-section">
+      <h2 class="section-title"><i class="fa-solid fa-folder-tree text-warning"></i> 3. Danh Mục Các Tệp Mã Nguồn Đã Xây Dựng (Files & Architecture)</h2>
+      
+      <p>Tuân thủ nghiêm ngặt <strong>Mục 2 & Mục 6 rules.docx</strong>: 100% tên phương thức bằng tiếng Anh, tách biệt hoàn toàn Interface và Implementation ở tầng Service, chuyển đổi dữ liệu qua DTO chuyên biệt, không để lộ Entity JPA nhạy cảm.</p>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 28%;">Tệp Mã Nguồn (Path)</th>
+              <th style="width: 14%;">Tầng (Layer)</th>
+              <th style="width: 44%;">Vai Trò & Chức Năng Cốt Lõi</th>
+              <th style="width: 14%;">Trạng Thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>PosController.java</code></td>
+              <td><span class="badge-status badge-info">Controller</span></td>
+              <td>Điều phối định tuyến giao diện <code>/pos</code>, <code>/branch/pos</code> và các REST API endpoints: lấy thực đơn, tạo đơn, thanh toán, điểm danh ca trực, in bill.</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+            <tr>
+              <td><code>PosService.java</code><br><code>PosServiceImpl.java</code></td>
+              <td><span class="badge-status badge-primary">Service</span></td>
+              <td>Xử lý toàn bộ logic nghiệp vụ: nạp menu Wabi-Sabi, tính giá theo size/topping, lưu đơn POS 1 bước (tiền mặt), quản lý trạng thái thanh toán, lưu session điểm danh ca trực.</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+            <tr>
+              <td><code>ReceiptService.java</code><br><code>ReceiptServiceImpl.java</code></td>
+              <td><span class="badge-status badge-primary">Service</span></td>
+              <td>Tổng hợp dữ liệu in hóa đơn K80: lấy thông tin chi nhánh, hotline, tên nhân viên trực ca thực tế, chi tiết từng món/topping, định dạng ngày giờ chuẩn <code>dd/MM/yyyy HH:mm:ss</code>.</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+            <tr>
+              <td><code>PosOrderRequest.java</code><br><code>PosOrderItemRequest.java</code></td>
+              <td><span class="badge-status badge-bizen">DTO</span></td>
+              <td>Đóng gói dữ liệu giỏ hàng POS gửi từ giao diện web lên backend (danh sách món, số lượng, sizeId, toppingIds, ghi chú, mã nhân viên tạo đơn).</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+            <tr>
+              <td><code>PosCashCheckoutRequest.java</code><br><code>PosPaymentRequest.java</code></td>
+              <td><span class="badge-status badge-bizen">DTO</span></td>
+              <td>Đóng gói dữ liệu thanh toán: tiền khách đưa (cash tendered), tiền thừa (change amount), phương thức CASH/VIETQR, id đơn hàng cần hoàn tất.</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+            <tr>
+              <td><code>ShiftAttendanceRequest.java</code><br><code>ShiftAttendanceResponse.java</code></td>
+              <td><span class="badge-status badge-bizen">DTO</span></td>
+              <td>Quản lý điểm danh ca trực: gửi danh sách ID các nhân viên được chọn, trả về danh sách tên nhân viên đang trực và trạng thái mở khóa máy POS.</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+            <tr>
+              <td><code>ReceiptResponse.java</code></td>
+              <td><span class="badge-status badge-bizen">DTO</span></td>
+              <td>Trả dữ liệu chuẩn hóa để giao diện render hóa đơn in nhiệt K80 và kích hoạt lệnh <code>window.print()</code>.</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+            <tr>
+              <td><code>Order.java</code>, <code>OrderDetail.java</code><br><code>OrderDetailTopping.java</code>, <code>Payment.java</code></td>
+              <td><span class="badge-status badge-warning">Entity JPA</span></td>
+              <td>Các thực thể CSDL lưu trữ giao dịch đơn hàng bán lẻ tại quầy, chi tiết món nước, topping và bản ghi thanh toán. Sử dụng Wrapper Type chống lỗi primitive null.</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+            <tr>
+              <td><code>/WEB-INF/views/pos/index.jsp</code></td>
+              <td><span class="badge-status badge-info">View (JSP)</span></td>
+              <td>Giao diện bán hàng POS cảm ứng chia 2 cột: Danh mục/Món bên trái, Giỏ hàng bên phải; tích hợp Modal Điểm danh, Modal Tiền mặt, Modal VietQR và vùng in ẩn K80.</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+            <tr>
+              <td><code>/static/css/pos.css</code></td>
+              <td><span class="badge-status badge-bizen">Static Asset</span></td>
+              <td>Định dạng phong cách Zen Wabi-Sabi: màu sắc gốm Bizen, scroll mượt, tối ưu cảm ứng vân tay, z-index phân tầng lớp phủ khóa máy và CSS Print 80mm cho máy in nhiệt.</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+            <tr>
+              <td><code>/static/js/pos.js</code></td>
+              <td><span class="badge-status badge-bizen">Static Asset</span></td>
+              <td>Điều khiển toàn bộ logic phía Client: quản lý giỏ hàng, tính tiền thừa, gợi ý phím tiền mặt nhanh, sinh mã VietQR động, checkbox an toàn thu ngân, in hóa đơn.</td>
+              <td><span class="badge-status status-done">Hoàn thành</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PHẦN 4: CHI TIẾT CÁC LOGIC THỰC THI CỐT LÕI -->
+    <section class="report-section">
+      <h2 class="section-title"><i class="fa-solid fa-gears text-success"></i> 4. Chi Tiết Các Logic Thực Thi Cốt Lõi (Core Business Logics)</h2>
+
+      <!-- LOGIC 1 -->
+      <h3 class="subsection-title"><i class="fa-solid fa-user-clock"></i> 4.1 Cơ Chế Điểm Danh Trực Ca & Tự Động Khóa Máy Khi Trống Ca</h3>
+      <p>
+        Để giải quyết triệt để vấn đề nhân viên quên đăng nhập hoặc dùng chung tài khoản quầy, hệ thống áp dụng cơ chế <strong>Điểm Danh Ca Trực (Shift Attendance)</strong>:
+      </p>
+      
+      <div class="flow-steps">
+        <div class="flow-step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Mở máy POS lần đầu $\rightarrow$ Máy ở trạng thái TẠM KHÓA (OFF)</h4>
+            <p>Lớp phủ <code>.pos-lock-overlay</code> hiển thị thông báo màn hình tạm khóa với biểu tượng ổ khóa, yêu cầu phải có nhân sự đứng ca. Modal điểm danh tự động bật lên đầu tiên.</p>
+          </div>
+        </div>
+
+        <div class="flow-step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Nhân viên tick chọn tên của mình (Hỗ trợ chọn cùng lúc 1 đến 4 người)</h4>
+            <p>Hệ thống nạp danh sách nhân viên chi nhánh (mẫu có sẵn Quản lý, Thu ngân Phạm Gia Hân, Pha chế Đỗ Hoàng Long, v.v.). Nhân viên chỉ cần nhấp vào dòng hoặc ô checkbox để kích hoạt.</p>
+          </div>
+        </div>
+
+        <div class="flow-step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h4>Lưu ca trực vào Session & Mở khóa thực đơn</h4>
+            <p>Backend lưu danh sách mã nhân viên vào <code>POS_ACTIVE_SHIFT_EMPLOYEE_IDS</code>. Giao diện mở khóa thực đơn, hiển thị tên các bạn đang đứng ca trên thanh tiêu đề và ghi nhận vào mọi giao dịch.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOGIC 2 -->
+      <h3 class="subsection-title"><i class="fa-solid fa-money-bill-wave"></i> 4.2 Thanh Toán Tiền Mặt 1 Bước (1-Step Cash Checkout) & Bàn Phím Tiền Nhanh</h3>
+      <p>
+        <strong>Vết xe đổ đã tránh:</strong> Trước đây nếu người dùng mở modal tiền mặt mà hệ thống đã vội <code>INSERT</code> đơn hàng vào CSDL, khi khách hàng đổi ý hoặc hủy đơn sẽ tạo ra đơn rác (Orphaned Order).
+      </p>
+      <div class="highlight-box">
+        <strong>Giải pháp 1-Step Checkout:</strong>
+        <p style="margin-top: 6px; margin-bottom: 0;">
+          Khi mở modal tiền mặt, hệ thống chỉ tính toán trên bộ nhớ Client. Chỉ khi Thu ngân bấm <em>"Xác Nhận Thu Tiền & In Hóa Đơn"</em>, một request duy nhất gửi lên API <code>/api/pos/checkout/cash</code> để tạo <code>Order</code>, gán chi tiết món và lưu bản ghi <code>Payment</code> mang trạng thái <code>PAID</code> trong cùng một <code>@Transactional</code>.
+        </p>
+      </div>
+      <p>
+        <strong>Tính năng phím tiền nhanh & cộng dồn:</strong> Bổ sung dãy nút <code>20.000₫</code>, <code>50.000₫</code>, <code>100.000₫</code>, <code>200.000₫</code>, <code>500.000₫</code> cùng nút <em>"Khách đưa đủ"</em>. Khi thu ngân bấm liên tiếp (ví dụ: bấm 200k rồi bấm 100k), hệ thống sẽ tự động cộng dồn thành 300k và tự động tính tiền thừa trả khách cực kỳ tiện lợi.
+      </p>
+
+      <!-- LOGIC 3 -->
+      <h3 class="subsection-title"><i class="fa-solid fa-qrcode"></i> 4.3 Tích Hợp VietQR MBBank, Khắc Phục ID Inflation & Checkbox An Toàn</h3>
+      <p>
+        Mã QR chuyển khoản ngân hàng được tạo theo chuẩn VietQR NAPAS 24/7 với tài khoản MBBank <strong>0396202885</strong>.
+      </p>
+      <ul style="padding-left: 20px; font-size: 0.94rem; margin-bottom: 16px;">
+        <li><strong>Triệt tiêu hiện tượng tăng ID ảo (ID Inflation):</strong> Khi bấm mở popup VietQR, hệ thống lưu lại <code>activePendingOrder</code>. Nếu giỏ hàng không đổi, mở lại modal QR sẽ tái sử dụng lại đơn này. Nếu thu ngân sửa hoặc xóa giỏ hàng, hệ thống tự động gọi API <code>/api/pos/orders/{id}/cancel</code> để hủy đơn cũ trước khi tạo đơn mới.</li>
+        <li><strong>Hộp kiểm an toàn (Safety Checkbox Guard):</strong> Để ngăn chặn việc thu ngân lỡ tay bấm xác nhận khi tiền chưa thực sự về tài khoản ngân hàng, modal có ô kiểm <code>[x] Thu ngân xác nhận ĐÃ NHẬN ĐỦ TIỀN vào tài khoản MBBank</code>. Nút bấm in hóa đơn sẽ bị khóa mờ (disabled) và chỉ mở khóa khi thu ngân tick chọn vào ô này.</li>
+      </ul>
+
+      <!-- LOGIC 4 -->
+      <h3 class="subsection-title"><i class="fa-solid fa-receipt"></i> 4.4 In Hóa Đơn Nhiệt Chuẩn K80 Quầy Thu Ngân</h3>
+      <p>
+        Giao diện in được thiết kế tối ưu riêng cho khổ giấy <strong>80mm</strong> (chuẩn máy in nhiệt F&B):
+      </p>
+      <pre><code>========================================
+       UTETRA — TRÀ ĐẠO ĐƯƠNG ĐẠI
+Chi nhánh: UTETra Thủ Đức
+Địa chỉ: 01 Võ Văn Ngân, TP. Thủ Đức, TP.HCM
+Hotline: 1900 6868
+----------------------------------------
+HÓA ĐƠN THANH TOÁN
+Mã đơn: ORD-20261012-0005
+Thời gian: 12/10/2026 16:50:12
+Thu ngân: Phạm Gia Hân, Đỗ Hoàng Long
+----------------------------------------
+TÊN MÓN               SL     Đ.GIÁ    T.TIỀN
+1. Bạch Hạc Shan Tuyết 1    65.000    65.000
+   - Size: M
+   - Đường: 50% | Đá: 70%
+   - Hạt sen Huế (+12.000)
+----------------------------------------
+TỔNG CỘNG:                           77.000₫
+Hình thức:                     TIỀN MẶT
+Tiền khách đưa:                     100.000₫
+Tiền thừa:                           23.000₫
+========================================
+     Cảm ơn quý khách & Hẹn gặp lại!</code></pre>
+    </section>
+
+    <!-- PHẦN 5: BÀI HỌC KỸ THUẬT & VẾT XE ĐỔ (LESSONS LEARNED) -->
+    <section class="report-section">
+      <h2 class="section-title"><i class="fa-solid fa-triangle-exclamation text-danger"></i> 5. Bài Học Kỹ Thuật & Cạm Bẫy Đã Khắc Phục (Lessons Learned)</h2>
+      
+      <p>Đã ghi nhận toàn bộ vào tệp <code>LESSONS.md</code> để ngăn chặn tái phạm trong tương lai:</p>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Vấn Đề / Lỗi Phát Sinh</th>
+              <th style="width: 45%;">Nguyên Nhân Gốc Rễ</th>
+              <th style="width: 30%;">Giải Pháp Khắc Phục Chuẩn</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Click điểm danh không ăn</strong></td>
+              <td>Màn hình khóa <code>.pos-lock-overlay</code> có <code>z-index: 1040</code>, trong khi popup modal chỉ có <code>z-index: 1000</code> khiến lớp khóa đè lên modal và chặn chuột.</td>
+              <td>Nâng <code>.pos-modal-backdrop</code> lên <code>z-index: 1060</code>; gắn sự kiện click cho cả dòng item lẫn thẻ checkbox.</td>
+            </tr>
+            <tr>
+              <td><strong>In hóa đơn ra trang trắng</strong></td>
+              <td>Thẻ chứa hóa đơn mang thuộc tính <code>display: none</code>. Khi gọi <code>window.print()</code>, CSS print không thể hiển thị thẻ bị display none.</td>
+              <td>Bổ sung trong <code>@media print</code> rule <code>#receiptPrintArea { display: block !important; }</code> và <code>@page { size: 80mm auto; margin: 0; }</code>.</td>
+            </tr>
+            <tr>
+              <td><strong>Lỗi Lazy Proxy trong Session</strong></td>
+              <td>Lưu nguyên cả thực thể <code>PosAccount</code> vào <code>HttpSession</code>, khi gọi <code>account.getBranch()</code> ở request sau bị văng lỗi <code>LazyInitializationException</code>.</td>
+              <td>Chỉ lưu <code>branchId</code> vào session; re-query lại qua Repository với <code>@EntityGraph(attributePaths = {"branch"})</code>.</td>
+            </tr>
+            <tr>
+              <td><strong>Maven Incremental Compile</strong></td>
+              <td>Khi thay đổi method trong interface <code>PosService</code>, compiler không tự build lại metadata <code>implements</code> dẫn đến Spring báo lỗi thiếu Bean.</td>
+              <td>Chạy lệnh biên dịch sạch hoàn toàn: <code>./mvnw clean compile</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="report-footer">
+      <p>Dự Án UTETra — Website Chuỗi Bán Trà Sữa & Trà Đạo Đương Đại (Môn Học: Lập Trình Web)</p>
+      <p style="font-size: 0.82rem; margin-top: 4px;">Báo cáo được biên soạn tự động & lưu trữ tại <code>reports/bao-cao-thuc-thi-module-6-pos.html</code>.</p>
+    </footer>
+
+  </div>
+
+</body>
+</html>

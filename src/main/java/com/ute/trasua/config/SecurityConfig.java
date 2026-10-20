@@ -1,7 +1,7 @@
 package com.ute.trasua.config;
 
 import com.ute.trasua.security.*;
-import jakarta.servlet.DispatcherType; // <-- THÊM IMPORT NÀY
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,11 +17,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final JwtAuthenticationEntryPoint entryPoint;
+    private final PosOrStaffAuthorizationManager posOrStaffAuthorizationManager;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter,
+                          JwtAuthenticationEntryPoint entryPoint,
+                          PosOrStaffAuthorizationManager posOrStaffAuthorizationManager) {
+        this.jwtAuthFilter = jwtAuthFilter;
+        this.entryPoint = entryPoint;
+        this.posOrStaffAuthorizationManager = posOrStaffAuthorizationManager;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -38,21 +46,55 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .exceptionHandling(ex -> ex
-                .authenticationEntryPoint(entryPoint))
+                .authenticationEntryPoint(entryPoint)
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                    if (auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_DRIVER") || a.getAuthority().equals("DRIVER"))) {
+                        response.sendRedirect(request.getContextPath() + "/shipper?accessDenied=true");
+                    } else {
+                        response.sendRedirect(request.getContextPath() + "/?accessDenied=true");
+                    }
+                }))
             .sessionManagement(sm -> sm
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // 1. Cho phép tất cả các dispatch nội bộ (forward tới JSP, include, error)
                 .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.INCLUDE, DispatcherType.ERROR).permitAll()
-                // 2. Cho phép các URL công khai và thư mục view nội bộ
+                // 2. Cho phép các URL công khai và tài nguyên tĩnh
                 .requestMatchers(
                     "/",
+                    "/portal",
                     "/auth/**",
+                    "/cart", "/cart/**",
+                    "/checkout", "/checkout/**",
+                    "/order", "/order/**",
+                    "/product", "/product/**",
+                    "/api/v1/cart/**",
+                    "/api/v1/shipping/**",
+                    "/api/v1/orders/**",
+                    "/api/v1/payments/**",
+                    "/api/v1/products/**",
+                    "/api/v1/promotions/**",
+                    "/api/v1/product-options/active",
+                    "/pos", "/pos/**",
+                    "/branch/pos", "/branch/pos/**",
+                    "/branch/kitchen", "/branch/kitchen/**",
+                    "/branch/handover", "/branch/handover/**",
+                    "/branch/menu-status", "/branch/menu-status/**",
+                    "/api/pos/**",
+                    "/api/kitchen/**",
+                    "/ws-kds/**",
+                    "/ws-kds-native/**",
                     "/css/**", "/js/**", "/images/**", "/favicon.ico",
                     "/h2-console/**",
                     "/WEB-INF/**"
                 ).permitAll()
-                .requestMatchers("/admin/**").hasRole("ADMIN")
+                // 3. Phân quyền chặt chẽ theo vai trò
+                .requestMatchers("/admin", "/admin/**").hasRole("ADMIN")
+                .requestMatchers("/shipper", "/shipper/**").hasRole("DRIVER")
+                .requestMatchers("/api/dispatch/**").hasAnyRole("ADMIN", "MANAGER", "STAFF")
+                .requestMatchers("/api/handover/**", "/api/branch-menu/**").access(posOrStaffAuthorizationManager)
+                .requestMatchers("/branch", "/branch/**").hasAnyRole("ADMIN", "MANAGER")
                 .anyRequest().authenticated())
             .csrf(csrf -> csrf.disable())
             .headers(headers -> headers.frameOptions(fo -> fo.disable()))
