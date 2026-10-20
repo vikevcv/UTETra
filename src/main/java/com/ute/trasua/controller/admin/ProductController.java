@@ -91,7 +91,11 @@ public class ProductController {
     public String newProductForm(Model model) {
         model.addAttribute("product", new ProductRequest());
         model.addAttribute("categories", categoryService.getActiveCategories());
-        model.addAttribute("ingredients", ingredientService.getActiveIngredients());
+        List<com.ute.trasua.dto.IngredientResponse> ingredients = ingredientService.getActiveIngredients();
+        if (ingredients == null || ingredients.isEmpty()) {
+            ingredients = ingredientService.getAllIngredients();
+        }
+        model.addAttribute("ingredients", ingredients);
         model.addAttribute("isEdit", false);
         model.addAttribute("pageTitle", "Thêm Món Nước Mới — UTETra");
         return "admin/products/form";
@@ -144,7 +148,11 @@ public class ProductController {
 
             model.addAttribute("product", form);
             model.addAttribute("categories", categoryService.getAllCategories());
-            model.addAttribute("ingredients", ingredientService.getActiveIngredients());
+            List<com.ute.trasua.dto.IngredientResponse> ingredients = ingredientService.getActiveIngredients();
+            if (ingredients == null || ingredients.isEmpty()) {
+                ingredients = ingredientService.getAllIngredients();
+            }
+            model.addAttribute("ingredients", ingredients);
             model.addAttribute("recipes", recipeService.getRecipesByProductId(id));
             model.addAttribute("isEdit", true);
             model.addAttribute("pageTitle", "Chỉnh Sửa Món: " + res.getName() + " — UTETra");

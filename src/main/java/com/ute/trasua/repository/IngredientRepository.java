@@ -26,6 +26,9 @@ public interface IngredientRepository extends JpaRepository<Ingredient, Long> {
 
     List<Ingredient> findByStatus(String status);
 
+    @Query("SELECT i FROM Ingredient i WHERE i.status IS NULL OR UPPER(i.status) = 'ACTIVE' ORDER BY i.id ASC")
+    List<Ingredient> findActiveIngredients();
+
     @Query("SELECT i FROM Ingredient i WHERE " +
            "(:keyword IS NULL OR LOWER(i.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(i.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
            "(:status IS NULL OR i.status = :status) " +
