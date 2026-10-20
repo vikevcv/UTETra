@@ -9,6 +9,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentCustomizingProduct = null;
     let activeOrderId = null;
     let qrCountdownInterval = null;
+    let qrPollingInterval = null;
+    let qrStompSubscription = null;
+    let qrProcessed = false;
 
     // Digital clock
     function updateClock() {
@@ -659,29 +662,56 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("qrModalTotal").textContent = formatCurrency(order.finalAmount);
             document.getElementById("vietQrImage").src = order.vietQrUrl;
 
-            // Bắt đầu đếm ngược 3 phút
-            let secondsLeft = 180;
-            const timerEl = document.getElementById("qrCountdownTimer");
-            if (qrCountdownInterval) clearInterval(qrCountdownInterval);
-            qrCountdownInterval = setInterval(() => {
-                secondsLeft--;
-                const m = Math.floor(secondsLeft / 60);
-                const s = secondsLeft % 60;
-                timerEl.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
-                if (secondsLeft <= 0) {
-                    clearInterval(qrCountdownInterval);
-                    timerEl.textContent = "Hết hạn";
-                }
-            }, 1000);
-
-            // Reset nút tick xác nhận tiền VietQR
-            const chkQr = document.getElementById("chkQrMoneyReceived");
-            const btnConfirmQr = document.getElementById("btnConfirmQrPay");
-            if (chkQr) chkQr.checked = false;
-            if (btnConfirmQr) {
-                btnConfirmQr.disabled = true;
-                btnConfirmQr.style.opacity = "0.55";
+            // Reset trạng thái xử lý và ẩn overlay tick xanh
+            qrProcessed = false;
+            const successOverlay = document.getElementById("qrSuccessOverlay");
+            if (successOverlay) {
+                successOverlay.style.display = "none";
+                successOverlay.style.opacity = "0";
             }
+
+            // Dọn dẹp timer / subscription cũ
+            if (qrPollingInterval) clearInterval(qrPollingInterval);
+            if (qrStompSubscription) {
+                try { qrStompSubscription.unsubscribe(); } catch (e) {}
+                qrStompSubscription = null;
+            }
+
+            // 1. KÊNH WEBSOCKET STOMP: Lắng nghe trạng thái đơn theo mã đơn hàng
+            if (stompClient && stompClient.connected) {
+                try {
+                    qrStompSubscription = stompClient.subscribe(`/topic/order/${order.orderCode}`, (message) => {
+                        try {
+                            const event = JSON.parse(message.body);
+                            console.log(">>> [POS QR] Nhận STOMP event:", event);
+                            if (event.eventType === "PAYMENT_SUCCESS" || event.status === "PAID" || event.status === "AWAITING_PREPARATION") {
+                                handleQrPaymentSuccess(order.orderId);
+                            }
+                        } catch (e) {
+                            console.error("Lỗi parse STOMP event đơn:", e);
+                        }
+                    });
+                } catch (err) {
+                    console.warn("Lỗi đăng ký STOMP /topic/order:", err);
+                }
+            }
+
+            // 2. KÊNH POLLING DỰ PHÒNG CHỐNG LAG: 2 giây/lần kiểm tra API status
+            qrPollingInterval = setInterval(async () => {
+                if (qrProcessed) return;
+                try {
+                    const res = await fetch(`/api/pos/orders/${order.orderId}/status`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.paid === true) {
+                            console.log(">>> [POS QR] Polling phát hiện đơn đã PAID!");
+                            handleQrPaymentSuccess(order.orderId);
+                        }
+                    }
+                } catch (e) {
+                    // Mạng chập chờn, đợi lần kế tiếp
+                }
+            }, 2000);
 
             document.getElementById("vietQrModalBackdrop").style.display = "flex";
         } catch (err) {
@@ -689,62 +719,94 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Lắng nghe sự kiện tick xác nhận đã nhận tiền chuyển khoản
-    const chkQr = document.getElementById("chkQrMoneyReceived");
-    const btnConfirmQr = document.getElementById("btnConfirmQrPay");
-    if (chkQr && btnConfirmQr) {
-        chkQr.addEventListener("change", () => {
-            btnConfirmQr.disabled = !chkQr.checked;
-            btnConfirmQr.style.opacity = chkQr.checked ? "1" : "0.55";
-        });
-        document.getElementById("chkQrContainer")?.addEventListener("click", (e) => {
-            if (e.target !== chkQr) {
-                chkQr.checked = !chkQr.checked;
-                btnConfirmQr.disabled = !chkQr.checked;
-                btnConfirmQr.style.opacity = chkQr.checked ? "1" : "0.55";
+    // Hàm kích hoạt hiệu ứng thành công, chuông Ting-Ting, in bill K80 và reset
+    async function handleQrPaymentSuccess(orderId) {
+        if (qrProcessed) return;
+        qrProcessed = true;
+
+        if (qrPollingInterval) {
+            clearInterval(qrPollingInterval);
+            qrPollingInterval = null;
+        }
+        if (qrStompSubscription) {
+            try { qrStompSubscription.unsubscribe(); } catch (e) {}
+            qrStompSubscription = null;
+        }
+
+        // Hiện hiệu ứng dấu tick xanh to phủ lên mã QR
+        const successOverlay = document.getElementById("qrSuccessOverlay");
+        if (successOverlay) {
+            successOverlay.style.display = "flex";
+            setTimeout(() => { successOverlay.style.opacity = "1"; }, 15);
+        }
+
+        // Âm thanh chuông báo Ting-Ting quầy thu ngân
+        playPosChime();
+
+        // Chờ 1.2s để hiệu ứng tick xanh hiển thị trọn vẹn rồi tự động in bill và dọn giỏ hàng
+        setTimeout(async () => {
+            document.getElementById("vietQrModalBackdrop").style.display = "none";
+            if (successOverlay) {
+                successOverlay.style.display = "none";
+                successOverlay.style.opacity = "0";
             }
-        });
+            activePendingOrder = null;
+            await printReceiptAndFinish(orderId);
+            showPosZenToast("🎉 Thanh toán thành công! Đã in hóa đơn.", "success", 2500);
+        }, 1200);
     }
 
-    // Xác nhận đã nhận tiền VietQR chuyển khoản
-    document.getElementById("btnConfirmQrPay")?.addEventListener("click", async () => {
-        const chk = document.getElementById("chkQrMoneyReceived");
-        if (chk && !chk.checked) {
-            showPosZenToast("Vui lòng tick xác nhận đã nhận được tiền trước khi in hóa đơn!", "warning", 2400);
-            return;
+    // Đóng hoặc Hủy Modal VietQR
+    function closeAndCancelQrModal(shouldCancelOrder) {
+        if (qrPollingInterval) {
+            clearInterval(qrPollingInterval);
+            qrPollingInterval = null;
         }
-        if (!activePendingOrder || !activePendingOrder.orderId) return;
-        if (qrCountdownInterval) clearInterval(qrCountdownInterval);
-
-        const orderIdToPay = activePendingOrder.orderId;
-
-        try {
-            const payRes = await fetch(`/api/pos/orders/${orderIdToPay}/pay`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    orderId: orderIdToPay,
-                    paymentMethod: "VIETQR_BANK_TRANSFER"
-                })
-            });
-
-            if (!payRes.ok) throw new Error("Lỗi xác nhận chuyển khoản");
-            document.getElementById("vietQrModalBackdrop").style.display = "none";
-            await printReceiptAndFinish(orderIdToPay);
-        } catch (err) {
-            showPosZenToast("Lỗi hoàn tất VietQR: " + err.message, "error", 2800);
+        if (qrStompSubscription) {
+            try { qrStompSubscription.unsubscribe(); } catch (e) {}
+            qrStompSubscription = null;
         }
-    });
+        document.getElementById("vietQrModalBackdrop").style.display = "none";
+        const successOverlay = document.getElementById("qrSuccessOverlay");
+        if (successOverlay) {
+            successOverlay.style.display = "none";
+            successOverlay.style.opacity = "0";
+        }
+
+        if (shouldCancelOrder && activePendingOrder && activePendingOrder.orderId) {
+            fetch(`/api/pos/orders/${activePendingOrder.orderId}/cancel`, { method: "POST" }).catch(() => {});
+            activePendingOrder = null;
+            showPosZenToast("Đã hủy mã thanh toán VietQR.", "info", 1800);
+        }
+    }
 
     // Đóng các Modal
     document.getElementById("closeCashModal")?.addEventListener("click", () => {
         document.getElementById("cashModalBackdrop").style.display = "none";
     });
     document.getElementById("closeQrModal")?.addEventListener("click", () => {
-        if (qrCountdownInterval) clearInterval(qrCountdownInterval);
-        document.getElementById("vietQrModalBackdrop").style.display = "none";
-        // Giữ activePendingOrder để nếu bấm mở lại QR thì không tạo đơn mới
+        closeAndCancelQrModal(false);
     });
+    document.getElementById("btnCancelQrPay")?.addEventListener("click", () => {
+        closeAndCancelQrModal(true);
+    });
+
+    // Dev helper ẩn trong Console phục vụ kiểm thử không cần nút bấm trên UI
+    window.devSkipPos = async function() {
+        if (!activePendingOrder || !activePendingOrder.orderId) {
+            console.warn("Chưa có đơn hàng pending nào!");
+            return;
+        }
+        try {
+            const res = await fetch(`/api/pos/orders/${activePendingOrder.orderId}/dev-skip`, { method: "POST" });
+            if (res.ok) {
+                console.log(">>> [Dev Skip] Giả lập thanh toán thành công cho đơn:", activePendingOrder.orderCode);
+                handleQrPaymentSuccess(activePendingOrder.orderId);
+            }
+        } catch (err) {
+            console.error("Lỗi devSkipPos:", err);
+        }
+    };
 
     // In Hóa Đơn K80 Chuẩn Quầy & Reset Đơn
     async function printReceiptAndFinish(orderId) {
@@ -1185,13 +1247,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 stompClient.subscribe(`/topic/pos/${currentBranchId}`, (message) => {
                     try {
                         const event = JSON.parse(message.body);
-                        console.log(">>> [POS] Nhận thông báo đơn online mới:", event);
+                        console.log(">>> [POS] Nhận thông báo WebSocket POS topic:", event);
                         if (event.type === "ONLINE_ORDER_PAID") {
                             playPosChime();
                             const queueText = event.queueNumber ? `STT #${event.queueNumber}` : '';
                             const amountText = event.finalAmount ? formatCurrency(event.finalAmount) : '';
                             const msg = `🎉 Có đơn online mới: ${event.orderCode} (${queueText}) - ${amountText}!`;
                             showPosZenToast(msg, "success", 5000);
+                        } else if (event.type === "POS_ORDER_PAID" || event.type === "POS_QR_PAYMENT_SUCCESS") {
+                            if (activePendingOrder && (activePendingOrder.orderId == event.orderId || activePendingOrder.orderCode === event.orderCode)) {
+                                handleQrPaymentSuccess(activePendingOrder.orderId);
+                            }
                         }
                     } catch (e) {
                         console.error("Lỗi xử lý WebSocket POS order event:", e);
