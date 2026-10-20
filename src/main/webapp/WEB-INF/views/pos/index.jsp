@@ -269,27 +269,38 @@
         </div>
     </div>
 
-    <!-- Modal 3: Quét Mã VietQR Động Tối Giản Tuyệt Đối (Chỉ QR + Số Tiền + Dấu Tick Thành Công + Nút Hủy) -->
+    <!-- Modal 3: Quét Mã VietQR Động Chuẩn PayOS (Giống y đúc bên Pay Online) -->
     <div class="pos-modal-backdrop" id="vietQrModalBackdrop">
-        <div class="pos-modal" style="max-width: 380px; text-align: center; border-radius: 16px; padding: 24px;">
-            <div class="pos-modal-header border-0 pb-0 justify-content-between">
-                <div class="pos-modal-title fw-bold fs-5">📱 Quét Mã VietQR</div>
+        <div class="pos-modal" style="max-width: 440px; text-align: center; border-radius: 16px; padding: 22px;">
+            <div class="pos-modal-header border-0 pb-0 justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fs-5">📱</span>
+                    <div class="text-start">
+                        <div class="pos-modal-title fw-bold fs-6">Cổng Thanh Toán VietQR (PayOS)</div>
+                        <div class="text-muted" style="font-size: 0.78rem;">Quét mã chuyển khoản Napas247 tức thời</div>
+                    </div>
+                </div>
                 <button class="pos-modal-close" id="closeQrModal">&times;</button>
             </div>
             <div class="pos-modal-body pt-2">
-                <!-- Ẩn mã đơn / STT phục vụ logic js ngầm -->
-                <span id="qrModalOrderCode" style="display: none;">-</span>
-                <span id="qrModalQueueNo" style="display: none;">-</span>
+                <!-- Mã đơn hàng & STT lấy nước -->
+                <div class="d-flex justify-content-between align-items-center px-2 py-1 mb-2 rounded" style="background: var(--zen-bg); border: 1px solid var(--zen-border);">
+                    <div>
+                        <span class="text-muted small">Đơn POS: </span>
+                        <strong id="qrModalOrderCode" class="text-primary font-monospace small">-</strong>
+                    </div>
+                    <span id="qrModalQueueNo" class="badge bg-success-subtle text-success border border-success-subtle fw-bold">STT #-</span>
+                </div>
 
-                <!-- 1. SỐ TIỀN CẦN THANH TOÁN -->
-                <div class="mb-3 text-center">
-                    <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.5px; font-size: 0.8rem;">Số Tiền Thanh Toán</div>
-                    <div class="fs-1 fw-bold text-danger" id="qrModalTotal" style="line-height: 1.2;">0₫</div>
+                <!-- 1. SỐ TIỀN CẦN THANH TOÁN (100% TRẢ TRƯỚC) -->
+                <div class="p-2 mb-2 rounded" style="background: rgba(220, 53, 69, 0.06); border: 1px dashed rgba(220, 53, 69, 0.3);">
+                    <div class="text-danger small text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 0.72rem;">SỐ TIỀN THANH TOÁN (100% TRẢ TRƯỚC)</div>
+                    <div class="fs-2 fw-bold text-danger" id="qrModalTotal" style="line-height: 1.15;">0₫</div>
                 </div>
 
                 <!-- 2. MÃ QR TO CHÍNH DIỆN + LỚP PHỦ DẤU TICK THÀNH CÔNG -->
-                <div class="position-relative p-2 bg-white rounded border d-inline-block shadow-sm mb-3" style="max-width: 276px; width: 100%;">
-                    <img id="vietQrImage" src="" alt="VietQR" style="width: 256px; height: 256px; object-fit: contain; display: block; margin: 0 auto;">
+                <div class="position-relative p-2 bg-white rounded border d-inline-block shadow-sm mb-2" style="max-width: 250px; width: 100%;">
+                    <img id="vietQrImage" src="" alt="VietQR PayOS" style="width: 230px; height: 230px; object-fit: contain; display: block; margin: 0 auto;">
 
                     <!-- Hiệu ứng khi thanh toán thành công: Dấu tick xanh gợn sóng -->
                     <div id="qrSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center rounded"
@@ -298,12 +309,48 @@
                             <i class="fa-solid fa-check"></i>
                         </div>
                         <div class="fw-bold fs-5 text-success">ĐÃ NHẬN TIỀN!</div>
-                        <div class="text-muted small mt-1">Đang in hóa đơn...</div>
+                        <div class="text-muted small mt-1">Đang in hóa đơn và chuyển sang pha chế...</div>
                     </div>
                 </div>
 
-                <!-- 3. DUY NHẤT 1 NÚT HỦY MÃ THANH TOÁN -->
-                <button class="btn btn-outline-secondary w-100 py-2 fw-medium" id="btnCancelQrPay" style="border-radius: 10px; font-size: 0.95rem;">
+                <!-- 3. THÔNG TIN CHUYỂN KHOẢN THỦ CÔNG (GIỐNG Y ĐÚC BÊN PAY ONLINE) -->
+                <div class="p-2 mb-2 rounded text-start" style="background: #F8F9FA; border: 1px solid #E9ECEF; font-size: 0.82rem;">
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                        <span class="text-muted">Ngân hàng:</span>
+                        <strong id="qrModalBankName" class="text-dark">MBBank (Ngân hàng Quân Đội)</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                        <span class="text-muted">Số tài khoản:</span>
+                        <div class="d-flex align-items-center">
+                            <strong id="qrModalAccountNumber" class="text-dark font-monospace fw-bold">0396202885</strong>
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 ms-2" onclick="copyQrText('qrModalAccountNumber')" title="Sao chép số tài khoản" style="font-size: 0.72rem;">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                        <span class="text-muted">Chủ tài khoản:</span>
+                        <strong id="qrModalAccountName" class="text-dark">UTETRA TEA GALLERY</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-1">
+                        <span class="text-muted">Nội dung CK:</span>
+                        <div class="d-flex align-items-center">
+                            <strong id="qrModalTransferContent" class="text-danger font-monospace fw-bold">DH -</strong>
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 ms-2" onclick="copyQrText('qrModalTransferContent')" title="Sao chép nội dung chuyển khoản" style="font-size: 0.72rem;">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. TRẠNG THÁI CHỜ REALTIME -->
+                <div class="mb-2 d-flex align-items-center justify-content-center gap-2 small text-muted" style="font-size: 0.8rem;">
+                    <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 8px; height: 8px;"></span>
+                    <span>Đang lắng nghe chuyển khoản từ ngân hàng...</span>
+                </div>
+
+                <!-- 5. NÚT HỦY MÃ THANH TOÁN -->
+                <button class="btn btn-outline-secondary w-100 py-2 fw-medium" id="btnCancelQrPay" style="border-radius: 10px; font-size: 0.9rem;">
                     <i class="fa-solid fa-xmark me-1"></i>Hủy Mã Thanh Toán
                 </button>
             </div>

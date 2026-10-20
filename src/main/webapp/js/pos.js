@@ -665,9 +665,37 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             document.getElementById("qrModalOrderCode").textContent = order.orderCode;
-            document.getElementById("qrModalQueueNo").textContent = "#" + order.dailyQueueNumber;
+            document.getElementById("qrModalQueueNo").textContent = "STT #" + order.dailyQueueNumber;
             document.getElementById("qrModalTotal").textContent = formatCurrency(order.finalAmount);
             document.getElementById("vietQrImage").src = order.vietQrUrl;
+
+            // Gán thông tin chuyển khoản thủ công (chuẩn 100% giống bên Pay Online)
+            const bankNameEl = document.getElementById("qrModalBankName");
+            if (bankNameEl) {
+                const bin = order.bin || "970422";
+                let bankTitle = "MBBank (Ngân hàng Quân Đội)";
+                if (bin === "970415") bankTitle = "VietinBank (Ngân hàng Công Thương)";
+                else if (bin === "970436") bankTitle = "Vietcombank";
+                else if (bin === "970407") bankTitle = "Techcombank";
+                else if (bin === "970418") bankTitle = "BIDV";
+                bankNameEl.textContent = bankTitle;
+            }
+
+            const accNumEl = document.getElementById("qrModalAccountNumber");
+            if (accNumEl) {
+                accNumEl.textContent = order.accountNumber || "0396202885";
+            }
+
+            const accNameEl = document.getElementById("qrModalAccountName");
+            if (accNameEl) {
+                accNameEl.textContent = order.accountName || "UTETRA TEA GALLERY";
+            }
+
+            const memoEl = document.getElementById("qrModalTransferContent");
+            if (memoEl) {
+                const memo = order.payosOrderCode ? ("DH " + order.payosOrderCode) : order.orderCode;
+                memoEl.textContent = memo;
+            }
 
             // Reset trạng thái xử lý và ẩn overlay tick xanh
             qrProcessed = false;
@@ -1311,6 +1339,38 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             console.warn("Không thể phát âm thanh chuông POS:", e);
         }
+    }
+
+    // Hàm hỗ trợ sao chép nhanh STK / Nội dung CK trong Modal VietQR
+    window.copyQrText = function(elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const text = el.textContent.trim();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showPosZenToast("Đã sao chép: " + text, "success", 1600);
+            }).catch(() => {
+                fallbackCopyText(text);
+            });
+        } else {
+            fallbackCopyText(text);
+        }
+    };
+
+    function fallbackCopyText(text) {
+        const temp = document.createElement("textarea");
+        temp.value = text;
+        temp.style.position = "fixed";
+        temp.style.opacity = "0";
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+            document.execCommand("copy");
+            showPosZenToast("Đã sao chép: " + text, "success", 1600);
+        } catch (err) {
+            showPosZenToast("Không thể sao chép tự động!", "warning", 1800);
+        }
+        document.body.removeChild(temp);
     }
 
     // Initialize: Tải menu, Kiểm tra ca trực & Kết nối WebSocket đồng bộ realtime
