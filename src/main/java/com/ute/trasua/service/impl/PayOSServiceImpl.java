@@ -313,9 +313,12 @@ public class PayOSServiceImpl implements PayOSService {
             return true;
         }
 
-        // Cập nhật trạng thái đơn hàng sang PAID và AWAITING_PREPARATION
+        boolean isPosOrder = (order.getOrderCode() != null && order.getOrderCode().startsWith("ORD-POS-"))
+                || "POS_WALK_IN".equalsIgnoreCase(order.getOrderType());
+
+        // Cập nhật trạng thái đơn hàng sang PAID
         order.setPaymentStatus("PAID");
-        order.setStatus("AWAITING_PREPARATION");
+        order.setStatus(isPosOrder ? "PAID" : "AWAITING_PREPARATION");
         order.setPaidAt(LocalDateTime.now());
         orderRepository.save(order);
 
@@ -350,8 +353,11 @@ public class PayOSServiceImpl implements PayOSService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + orderCode));
 
         if (!"PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+            boolean isPosOrder = (order.getOrderCode() != null && order.getOrderCode().startsWith("ORD-POS-"))
+                    || "POS_WALK_IN".equalsIgnoreCase(order.getOrderType());
+
             order.setPaymentStatus("PAID");
-            order.setStatus("AWAITING_PREPARATION");
+            order.setStatus(isPosOrder ? "PAID" : "AWAITING_PREPARATION");
             order.setPaidAt(LocalDateTime.now());
             orderRepository.save(order);
 

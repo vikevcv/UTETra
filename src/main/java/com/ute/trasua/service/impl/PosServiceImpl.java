@@ -37,6 +37,7 @@ public class PosServiceImpl implements PosService {
     private final PosAccountRepository posAccountRepository;
     private final com.ute.trasua.service.BranchMenuService branchMenuService;
     private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+    private final com.ute.trasua.service.PayOSService payosService;
 
     public PosServiceImpl(
             BranchRepository branchRepository,
@@ -51,7 +52,8 @@ public class PosServiceImpl implements PosService {
             BranchMenuRepository branchMenuRepository,
             PosAccountRepository posAccountRepository,
             com.ute.trasua.service.BranchMenuService branchMenuService,
-            org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate
+            org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate,
+            com.ute.trasua.service.PayOSService payosService
     ) {
         this.branchRepository = branchRepository;
         this.categoryRepository = categoryRepository;
@@ -66,6 +68,7 @@ public class PosServiceImpl implements PosService {
         this.posAccountRepository = posAccountRepository;
         this.branchMenuService = branchMenuService;
         this.messagingTemplate = messagingTemplate;
+        this.payosService = payosService;
     }
 
     @org.springframework.beans.factory.annotation.Value("${app.vietqr.bank-bin:970422}")
@@ -292,13 +295,21 @@ public class PosServiceImpl implements PosService {
 
         Order savedOrder = orderRepository.save(order);
 
-        // Sinh link ảnh VietQR QuickLink động theo chuẩn NAPAS
-        String vietQrUrl = generateVietQrUrl(savedOrder.getOrderCode(), savedOrder.getFinalAmount());
+        // Khởi tạo hoặc tái sử dụng phiên thanh toán VietQR PayOS
+        com.ute.trasua.dto.payment.PayOSCreatePaymentResponse paymentInfo = null;
+        try {
+            paymentInfo = payosService.createOrGetPaymentLink(savedOrder.getOrderCode());
+        } catch (Exception e) {
+            log.warn(">>> Không thể khởi tạo PayOS Payment Link cho đơn POS {}: {}", savedOrder.getOrderCode(), e.getMessage());
+        }
 
-        log.info(">>> Đã tạo đơn POS thành công: Mã {}, STT: #{}, Tổng tiền: {}₫",
-                savedOrder.getOrderCode(), savedOrder.getDailyQueueNumber(), savedOrder.getFinalAmount());
+        Order refreshedOrder = orderRepository.findById(savedOrder.getId()).orElse(savedOrder);
+        String vietQrUrl = generateVietQrUrl(refreshedOrder);
 
-        return mapToOrderResponse(savedOrder, vietQrUrl);
+        log.info(">>> Đã tạo đơn POS thành công: Mã {}, STT: #{}, Tổng tiền: {}₫, PayOS Code: {}",
+                refreshedOrder.getOrderCode(), refreshedOrder.getDailyQueueNumber(), refreshedOrder.getFinalAmount(), refreshedOrder.getPayosOrderCode());
+
+        return mapToOrderResponse(refreshedOrder, vietQrUrl, paymentInfo);
     }
 
     @Override
@@ -474,6 +485,23 @@ public class PosServiceImpl implements PosService {
                 .build();
     }
 
+    private String generateVietQrUrl(Order order) {
+        if (order == null) return "";
+        long amountLong = (order.getFinalAmount() != null) ? order.getFinalAmount().longValue() : 0L;
+        if (amountLong < 1000L) {
+            return "";
+        }
+        String binToUse = (order.getPayosBin() != null && !order.getPayosBin().isBlank()) ? order.getPayosBin() : (bankBin != null ? bankBin : "970422");
+        String accToUse = (order.getPayosAccountNumber() != null && !order.getPayosAccountNumber().isBlank()) ? order.getPayosAccountNumber() : (accountNo != null ? accountNo : "0396202885");
+        String nameToUse = (order.getPayosAccountName() != null && !order.getPayosAccountName().isBlank()) ? order.getPayosAccountName() : (accountName != null ? accountName : "UTETRA TEA GALLERY");
+
+        String memo = (order.getPayosOrderCode() != null) ? ("DH " + order.getPayosOrderCode()) : order.getOrderCode();
+        String encodedMemo = URLEncoder.encode(memo, StandardCharsets.UTF_8);
+        String encodedName = URLEncoder.encode(nameToUse, StandardCharsets.UTF_8);
+        return String.format("https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s&accountName=%s",
+                binToUse, accToUse, amountLong, encodedMemo, encodedName);
+    }
+
     private String generateVietQrUrl(String orderCode, BigDecimal amount) {
         long amountLong = (amount != null) ? amount.longValue() : 0L;
         if (amountLong < 1000L) {
@@ -488,6 +516,12 @@ public class PosServiceImpl implements PosService {
     }
 
     private PosOrderResponse mapToOrderResponse(Order order, String vietQrUrl) {
+        return mapToOrderResponse(order, vietQrUrl, null);
+    }
+
+    private PosOrderResponse mapToOrderResponse(Order order, String vietQrUrl, com.ute.trasua.dto.payment.PayOSCreatePaymentResponse paymentInfo) {
+        Long remaining = (paymentInfo != null && paymentInfo.getRemainingSeconds() != null) ? paymentInfo.getRemainingSeconds() : 900L;
+        String qr = (paymentInfo != null && paymentInfo.getQrCode() != null) ? paymentInfo.getQrCode() : vietQrUrl;
         return PosOrderResponse.builder()
                 .orderId(order.getId())
                 .orderCode(order.getOrderCode())
@@ -496,6 +530,12 @@ public class PosServiceImpl implements PosService {
                 .discountAmount(order.getDiscountAmount())
                 .finalAmount(order.getFinalAmount())
                 .vietQrUrl(vietQrUrl)
+                .payosOrderCode(order.getPayosOrderCode())
+                .qrCode(qr)
+                .accountNumber(order.getPayosAccountNumber() != null ? order.getPayosAccountNumber() : accountNo)
+                .accountName(order.getPayosAccountName() != null ? order.getPayosAccountName() : accountName)
+                .bin(order.getPayosBin() != null ? order.getPayosBin() : bankBin)
+                .remainingSeconds(remaining)
                 .status(order.getStatus())
                 .paymentStatus(order.getPaymentStatus())
                 .cashierUsername(order.getCashierUsername())
@@ -541,5 +581,26 @@ public class PosServiceImpl implements PosService {
             return java.util.Collections.emptyList();
         }
         return posAccountRepository.findByBranchIdAndActiveTrue(branchId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean checkPosPaymentStatus(Long orderId) {
+        if (orderId == null) return false;
+        return orderRepository.findById(orderId)
+                .map(o -> "PAID".equalsIgnoreCase(o.getPaymentStatus()))
+                .orElse(false);
+    }
+
+    @Override
+    @Transactional
+    public PosOrderResponse skipPosPaymentForTesting(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
+
+        payosService.skipPaymentForTesting(order.getOrderCode());
+        Order reloadedOrder = orderRepository.findById(orderId).orElse(order);
+        String vietQrUrl = generateVietQrUrl(reloadedOrder);
+        return mapToOrderResponse(reloadedOrder, vietQrUrl);
     }
 }

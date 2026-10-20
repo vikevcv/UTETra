@@ -269,57 +269,42 @@
         </div>
     </div>
 
-    <!-- Modal 3: Quét Mã VietQR Động Chuẩn NAPAS 24/7 -->
+    <!-- Modal 3: Quét Mã VietQR Động Tối Giản Tuyệt Đối (Chỉ QR + Số Tiền + Dấu Tick Thành Công + Nút Hủy) -->
     <div class="pos-modal-backdrop" id="vietQrModalBackdrop">
-        <div class="pos-modal" style="max-width: 460px; text-align: center;">
-            <div class="pos-modal-header">
-                <div>
-                    <div class="pos-modal-title">📱 Quét Mã VietQR Thanh Toán</div>
-                    <div class="text-muted small">Mã đơn: <strong id="qrModalOrderCode">-</strong> | STT: <strong id="qrModalQueueNo" class="text-danger">-</strong></div>
-                </div>
+        <div class="pos-modal" style="max-width: 380px; text-align: center; border-radius: 16px; padding: 24px;">
+            <div class="pos-modal-header border-0 pb-0 justify-content-between">
+                <div class="pos-modal-title fw-bold fs-5">📱 Quét Mã VietQR</div>
                 <button class="pos-modal-close" id="closeQrModal">&times;</button>
             </div>
-            <div class="pos-modal-body">
-                <div class="alert alert-warning py-2 mb-3 small">
-                    <i class="fa-regular fa-clock me-1"></i>Mã thanh toán hết hạn trong: <strong id="qrCountdownTimer">3:00</strong>
+            <div class="pos-modal-body pt-2">
+                <!-- Ẩn mã đơn / STT phục vụ logic js ngầm -->
+                <span id="qrModalOrderCode" style="display: none;">-</span>
+                <span id="qrModalQueueNo" style="display: none;">-</span>
+
+                <!-- 1. SỐ TIỀN CẦN THANH TOÁN -->
+                <div class="mb-3 text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.5px; font-size: 0.8rem;">Số Tiền Thanh Toán</div>
+                    <div class="fs-1 fw-bold text-danger" id="qrModalTotal" style="line-height: 1.2;">0₫</div>
                 </div>
 
-                <!-- Ảnh QR Động VietQR -->
-                <div class="p-2 bg-white rounded border d-inline-block shadow-sm mb-3">
-                    <img id="vietQrImage" src="" alt="VietQR" style="width: 260px; height: 260px; object-fit: contain;">
-                </div>
+                <!-- 2. MÃ QR TO CHÍNH DIỆN + LỚP PHỦ DẤU TICK THÀNH CÔNG -->
+                <div class="position-relative p-2 bg-white rounded border d-inline-block shadow-sm mb-3" style="max-width: 276px; width: 100%;">
+                    <img id="vietQrImage" src="" alt="VietQR" style="width: 256px; height: 256px; object-fit: contain; display: block; margin: 0 auto;">
 
-                <div class="p-3 rounded mb-3 text-start small" style="background-color: var(--zen-bg);">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span>Số tiền thanh toán:</span>
-                        <strong class="fs-5 text-danger" id="qrModalTotal">0₫</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span>Ngân hàng thụ hưởng:</span>
-                        <span class="fw-bold">MBBank (Ngân hàng Quân Đội)</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span>Số tài khoản:</span>
-                        <span class="fw-bold text-primary">0396202885</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Chủ tài khoản:</span>
-                        <span class="fw-bold">UTETRA TEA GALLERY</span>
+                    <!-- Hiệu ứng khi thanh toán thành công: Dấu tick xanh gợn sóng -->
+                    <div id="qrSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center rounded"
+                         style="background: rgba(255, 255, 255, 0.96); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 10;">
+                        <div style="width: 76px; height: 76px; border-radius: 50%; background: #E8F5E9; color: #2E7D32; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; border: 3px solid #2E7D32; margin-bottom: 10px; animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <div class="fw-bold fs-5 text-success">ĐÃ NHẬN TIỀN!</div>
+                        <div class="text-muted small mt-1">Đang in hóa đơn...</div>
                     </div>
                 </div>
 
-                <!-- Nút tick xác nhận nhân viên đã nhận được tiền -->
-                <div class="p-2 mb-3 border rounded text-start" style="background: #FFFBEB; border-color: #FDE68A !important; cursor: pointer;" id="chkQrContainer">
-                    <div class="form-check d-flex align-items-center gap-2 m-0">
-                        <input class="form-check-input mt-0" type="checkbox" id="chkQrMoneyReceived" style="width: 22px; height: 22px; cursor: pointer; accent-color: var(--zen-celadon);">
-                        <label class="form-check-label fw-bold text-dark small" for="chkQrMoneyReceived" style="cursor: pointer; user-select: none;">
-                            <i class="fa-solid fa-shield-check text-success me-1"></i>Thu ngân xác nhận ĐÃ NHẬN ĐỦ TIỀN vào tài khoản MBBank
-                        </label>
-                    </div>
-                </div>
-
-                <button class="btn btn-primary w-100 py-3 fw-bold fs-6" id="btnConfirmQrPay" disabled style="background-color: var(--zen-celadon); border-color: var(--zen-celadon); opacity: 0.55;">
-                    <i class="fa-solid fa-circle-check me-2"></i>Đã Nhận Tiền Chuyển Khoản • In Hóa Đơn
+                <!-- 3. DUY NHẤT 1 NÚT HỦY MÃ THANH TOÁN -->
+                <button class="btn btn-outline-secondary w-100 py-2 fw-medium" id="btnCancelQrPay" style="border-radius: 10px; font-size: 0.95rem;">
+                    <i class="fa-solid fa-xmark me-1"></i>Hủy Mã Thanh Toán
                 </button>
             </div>
         </div>

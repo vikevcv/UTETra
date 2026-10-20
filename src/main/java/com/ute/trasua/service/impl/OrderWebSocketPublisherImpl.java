@@ -355,8 +355,13 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
 
     private void sendToPos(Long branchId, Order order, OrderStatusEventDto event) {
         try {
+            boolean isPosOrder = (order.getOrderCode() != null && order.getOrderCode().startsWith("ORD-POS-"))
+                    || "POS_WALK_IN".equalsIgnoreCase(order.getOrderType());
+
             Map<String, Object> payload = new HashMap<>();
-            payload.put("type", "ONLINE_ORDER_PAID");
+            payload.put("type", isPosOrder ? "POS_ORDER_PAID" : "ONLINE_ORDER_PAID");
+            payload.put("paid", true);
+            payload.put("isPosOrder", isPosOrder);
             payload.put("branchId", branchId);
             payload.put("orderId", order.getId());
             payload.put("orderCode", order.getOrderCode());
@@ -367,7 +372,7 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
             payload.put("paymentMethod", order.getPaymentMethod());
             payload.put("timestamp", event.getTimestamp());
             messagingTemplate.convertAndSend("/topic/pos/" + branchId, (Object) payload);
-            log.info(">>> [WebSocket] Phát sự kiện ONLINE_ORDER_PAID tới /topic/pos/{}", branchId);
+            log.info(">>> [WebSocket] Phát sự kiện {} tới /topic/pos/{}", payload.get("type"), branchId);
         } catch (Exception e) {
             log.warn("Lỗi phát WebSocket tới /topic/pos/{}: {}", branchId, e.getMessage());
         }

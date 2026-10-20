@@ -394,4 +394,36 @@ public class PosController {
         PosOrderResponse order = posService.getPosOrderById(orderId);
         return ResponseEntity.ok(order);
     }
+
+    /**
+     * API kiểm tra trạng thái thanh toán đơn POS (Polling realtime phục vụ modal VietQR).
+     */
+    @GetMapping("/api/pos/orders/{orderId}/status")
+    @ResponseBody
+    public ResponseEntity<java.util.Map<String, Object>> checkPosPaymentStatus(
+            @PathVariable Long orderId,
+            HttpSession session) {
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        if (sessionBranchId == null) {
+            return ResponseEntity.status(401).body(java.util.Map.of("paid", false, "message", "POS session expired"));
+        }
+        boolean isPaid = posService.checkPosPaymentStatus(orderId);
+        return ResponseEntity.ok(java.util.Map.of("paid", isPaid, "orderId", orderId));
+    }
+
+    /**
+     * API Dev Skip giả lập thanh toán nhanh cho quầy POS (phục vụ test).
+     */
+    @PostMapping("/api/pos/orders/{orderId}/dev-skip")
+    @ResponseBody
+    public ResponseEntity<PosOrderResponse> skipPosPaymentForTesting(
+            @PathVariable Long orderId,
+            HttpSession session) {
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        if (sessionBranchId == null) {
+            throw new IllegalStateException("POS session expired!");
+        }
+        PosOrderResponse response = posService.skipPosPaymentForTesting(orderId);
+        return ResponseEntity.ok(response);
+    }
 }

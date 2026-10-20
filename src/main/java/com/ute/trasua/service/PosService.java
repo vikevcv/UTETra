@@ -61,4 +61,14 @@ public interface PosService {
      * Lấy danh sách tài khoản POS đang kích hoạt theo chi nhánh.
      */
     java.util.List<com.ute.trasua.entity.PosAccount> getActivePosAccountsByBranch(Long branchId);
+
+    /**
+     * Kiểm tra trạng thái thanh toán của đơn hàng POS.
+     */
+    boolean checkPosPaymentStatus(Long orderId);
+
+    /**
+     * Giả lập thanh toán thành công cho đơn POS phục vụ kiểm thử.
+     */
+    PosOrderResponse skipPosPaymentForTesting(Long orderId);
 }
