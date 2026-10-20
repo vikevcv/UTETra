@@ -338,15 +338,15 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             int currentStock = isDbAvail ? Math.max(0, estimatedPortions) : 0;
             boolean isAvail = isDbAvail && (currentStock > 0);
 
-            String topImg = "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500";
+            String topImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511985/utetra/defaults/default-tea-zen.jpg";
             if (cleanTopName.contains("hạt sen") || cleanTopName.contains("sen")) {
-                topImg = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500";
+                topImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511980/utetra/toppings/top-01-hat-sen-hue.jpg";
             } else if (cleanTopName.contains("sương sáo") || cleanTopName.contains("thạch")) {
-                topImg = "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500";
+                topImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511982/utetra/toppings/top-02-thach-suong-sao.jpg";
             } else if (cleanTopName.contains("kem mây") || cleanTopName.contains("kem") || cleanTopName.contains("macchiato")) {
-                topImg = "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=500";
+                topImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511983/utetra/toppings/top-03-kem-may-sua-moc.jpg";
             } else if (cleanTopName.contains("trân châu")) {
-                topImg = "https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500";
+                topImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792512015/utetra/toppings/top-04-tran-chau-hoang-kim.jpg";
             }
 
             list.add(BranchMenuStatusDto.builder()
