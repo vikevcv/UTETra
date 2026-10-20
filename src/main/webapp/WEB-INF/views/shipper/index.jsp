@@ -2910,14 +2910,14 @@
         if (Notification.permission === 'granted') {
           new Notification(title, {
             body: message,
-            icon: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=128&q=80'
+            icon: 'https://res.cloudinary.com/hueitcyt/image/upload/v1792511985/utetra/defaults/default-tea-zen.jpg'
           });
         } else if (Notification.permission !== 'denied') {
           Notification.requestPermission().then(function(perm) {
             if (perm === 'granted') {
               new Notification(title, {
                 body: message,
-                icon: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=128&q=80'
+                icon: 'https://res.cloudinary.com/hueitcyt/image/upload/v1792511985/utetra/defaults/default-tea-zen.jpg'
               });
             }
           });

@@ -727,7 +727,7 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Trà Sữa Trân Châu Đường Đen")
                     .category(cat1)
                     .basePrice(new java.math.BigDecimal("35000"))
-                    .imageUrl("https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500")
+                    .imageUrl("https://res.cloudinary.com/hueitcyt/image/upload/v1792511969/utetra/products/sp-01-bach-hac-shan-tuyet.jpg")
                     .description("Cốt trà đen đậm đà hòa quyện sữa tươi thanh trùng và trân châu đường đen dẻo dai")
                     .status("ACTIVE")
                     .build());
@@ -737,7 +737,7 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Trà Sữa Oolong Nướng Cầu Đất")
                     .category(cat1)
                     .basePrice(new java.math.BigDecimal("38000"))
-                    .imageUrl("https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=500")
+                    .imageUrl("https://res.cloudinary.com/hueitcyt/image/upload/v1792511970/utetra/products/sp-02-thiet-quan-am-u-lanh.jpg")
                     .description("Vị trà Oolong sao lửa độc đáo hòa quyện lớp sữa béo ngậy thơm lừng")
                     .status("ACTIVE")
                     .build());
@@ -747,7 +747,7 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Lục Trà Hoa Nhài Chanh Vàng")
                     .category(cat2)
                     .basePrice(new java.math.BigDecimal("32000"))
-                    .imageUrl("https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500")
+                    .imageUrl("https://res.cloudinary.com/hueitcyt/image/upload/v1792511971/utetra/products/sp-03-dai-hong-bao-nham-tra.jpg")
                     .description("Hương hoa nhài ướp tự nhiên kết hợp vị chua ngọt sảng khoái của chanh vàng")
                     .status("ACTIVE")
                     .build());
@@ -757,7 +757,7 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Trà Đào Cam Sả Tươi Mát")
                     .category(cat2)
                     .basePrice(new java.math.BigDecimal("39000"))
-                    .imageUrl("https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500")
+                    .imageUrl("https://res.cloudinary.com/hueitcyt/image/upload/v1792511972/utetra/products/sp-04-tra-sen-ho-tay-thuong-hang.jpg")
                     .description("Miếng đào giòn tan kết hợp cam vàng mọng nước và hương sả tinh tế")
                     .status("ACTIVE")
                     .build());
@@ -767,7 +767,7 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Matcha Uji Macchiato Nhật Bản")
                     .category(cat3)
                     .basePrice(new java.math.BigDecimal("45000"))
-                    .imageUrl("https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500")
+                    .imageUrl("https://res.cloudinary.com/hueitcyt/image/upload/v1792511973/utetra/products/sp-05-tra-oolong-sua-moc-van.jpg")
                     .description("Bột trà xanh Uji Kyoto hảo hạng phủ lớp kem cheese béo mặn sánh mịn")
                     .status("ACTIVE")
                     .build());
@@ -777,7 +777,7 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Trà Đen Macchiato Cổ Thụ")
                     .category(cat3)
                     .basePrice(new java.math.BigDecimal("40000"))
-                    .imageUrl("https://images.unsplash.com/photo-1571934811356-5cc507423022?w=500")
+                    .imageUrl("https://res.cloudinary.com/hueitcyt/image/upload/v1792511975/utetra/products/sp-06-luc-tra-hoa-nhai-cung-dinh.jpg")
                     .description("Cốt trà đen ủ lạnh 12 tiếng hòa quyện lớp foam phô mai ngọt dịu")
                     .status("ACTIVE")
                     .build());
@@ -787,7 +787,7 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Trà Sen Vàng Long Nhãn")
                     .category(cat4)
                     .basePrice(new java.math.BigDecimal("42000"))
-                    .imageUrl("https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=500")
+                    .imageUrl("https://res.cloudinary.com/hueitcyt/image/upload/v1792511976/utetra/products/sp-07-hong-tra-que-hoa-hoang-cung.jpg")
                     .description("Hạt sen bùi thơm cùng long nhãn thanh ngọt trên nền trà Ô Long truyền thống")
                     .status("ACTIVE")
                     .build());
@@ -797,7 +797,7 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Trà Thiết Quan Âm Tuyết Sơn")
                     .category(cat4)
                     .basePrice(new java.math.BigDecimal("48000"))
-                    .imageUrl("https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500")
+                    .imageUrl("https://res.cloudinary.com/hueitcyt/image/upload/v1792511977/utetra/products/sp-08-tra-thao-moc-tinh-tam.jpg")
                     .description("Dòng trà danh tiếng với hậu vị ngọt sâu lắng của vùng núi sương mù")
                     .status("ACTIVE")
                     .build());
@@ -838,14 +838,14 @@ public class DataInitializer implements CommandLineRunner {
         // Đồng bộ 8 Món Trà khớp 100% với zenProducts trên Storefront
         java.util.List<com.ute.trasua.entity.Product> prods = productRepository.findAll();
         String[][] zenItems = {
-            {"Bạch Hạc Shan Tuyết", "65000", "Búp trà cổ thụ 300 năm tuổi trên đỉnh Tà Xùa, hương khói nhẹ và hậu ngọt sâu lắng.", "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500"},
-            {"Thiết Quan Âm Ủ Lạnh", "58000", "Trà Thiết Quan Âm ủ lạnh 12h, lưu giữ trọn vẹn hương hoa lan thanh khiết.", "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500"},
-            {"Đại Hồng Bào Nham Trà", "70000", "Nham trà Vũ Di Sơn đượm khoáng chất, vị đậm đà và bền hương qua nhiều tuần nước.", "https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=500"},
-            {"Trà Sen Hồ Tây Thượng Hạng", "68000", "Trà xanh ướp trong bông sen Bách Diệp sớm mai tinh sương ngát hương thơm quý phái.", "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=500"},
-            {"Trà Oolong Sữa Mộc Vân", "55000", "Trà ô long Kim Tuyên béo ngậy tự nhiên từ giống trà vùng cao Cầu Đất.", "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500"},
-            {"Lục Trà Hoa Nhài Cung Đình", "50000", "Hoa nhài hữu cơ thu hái lúc hoàng hôn hòa quyện lục trà thanh mảnh.", "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=500"},
-            {"Hồng Trà Quế Hoa Hoàng Cung", "54000", "Hồng trà cổ thụ điểm xuyết hoa mộc vàng thơm dịu dàng ấm áp.", "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500"},
-            {"Trà Thảo Mộc Tĩnh Tâm", "52000", "Táo đỏ, kỷ tử, hoa cúc tuyết và cam thảo giúp thư giãn tinh thần tuyệt đối.", "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500"}
+            {"Bạch Hạc Shan Tuyết", "65000", "Búp trà cổ thụ 300 năm tuổi trên đỉnh Tà Xùa, hương khói nhẹ và hậu ngọt sâu lắng.", "https://res.cloudinary.com/hueitcyt/image/upload/v1792511969/utetra/products/sp-01-bach-hac-shan-tuyet.jpg"},
+            {"Thiết Quan Âm Ủ Lạnh", "58000", "Trà Thiết Quan Âm ủ lạnh 12h, lưu giữ trọn vẹn hương hoa lan thanh khiết.", "https://res.cloudinary.com/hueitcyt/image/upload/v1792511970/utetra/products/sp-02-thiet-quan-am-u-lanh.jpg"},
+            {"Đại Hồng Bào Nham Trà", "70000", "Nham trà Vũ Di Sơn đượm khoáng chất, vị đậm đà và bền hương qua nhiều tuần nước.", "https://res.cloudinary.com/hueitcyt/image/upload/v1792511971/utetra/products/sp-03-dai-hong-bao-nham-tra.jpg"},
+            {"Trà Sen Hồ Tây Thượng Hạng", "68000", "Trà xanh ướp trong bông sen Bách Diệp sớm mai tinh sương ngát hương thơm quý phái.", "https://res.cloudinary.com/hueitcyt/image/upload/v1792511972/utetra/products/sp-04-tra-sen-ho-tay-thuong-hang.jpg"},
+            {"Trà Oolong Sữa Mộc Vân", "55000", "Trà ô long Kim Tuyên béo ngậy tự nhiên từ giống trà vùng cao Cầu Đất.", "https://res.cloudinary.com/hueitcyt/image/upload/v1792511973/utetra/products/sp-05-tra-oolong-sua-moc-van.jpg"},
+            {"Lục Trà Hoa Nhài Cung Đình", "50000", "Hoa nhài hữu cơ thu hái lúc hoàng hôn hòa quyện lục trà thanh mảnh.", "https://res.cloudinary.com/hueitcyt/image/upload/v1792511975/utetra/products/sp-06-luc-tra-hoa-nhai-cung-dinh.jpg"},
+            {"Hồng Trà Quế Hoa Hoàng Cung", "54000", "Hồng trà cổ thụ điểm xuyết hoa mộc vàng thơm dịu dàng ấm áp.", "https://res.cloudinary.com/hueitcyt/image/upload/v1792511976/utetra/products/sp-07-hong-tra-que-hoa-hoang-cung.jpg"},
+            {"Trà Thảo Mộc Tĩnh Tâm", "52000", "Táo đỏ, kỷ tử, hoa cúc tuyết và cam thảo giúp thư giãn tinh thần tuyệt đối.", "https://res.cloudinary.com/hueitcyt/image/upload/v1792511977/utetra/products/sp-08-tra-thao-moc-tinh-tam.jpg"}
         };
 
         for (int i = 0; i < Math.min(prods.size(), zenItems.length); i++) {
@@ -867,14 +867,14 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Trà Thử Nghiệm PayOS (2.000đ)")
                     .category(defaultCat)
                     .basePrice(new java.math.BigDecimal("2000"))
-                    .imageUrl("https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=500")
+                    .imageUrl("https://res.cloudinary.com/hueitcyt/image/upload/v1792511979/utetra/products/sp-test-payos.jpg")
                     .description("Phẩm trà dùng để kiểm thử thanh toán trực tuyến PayOS Napas247 với mức phí tối thiểu 2.000 VNĐ.")
                     .status("ACTIVE")
                     .build());
             log.info(">>> Đã khởi tạo phẩm trà kiểm thử PayOS (2.000đ): SP-TEST-PAYOS");
         } else {
             testProd.setBasePrice(new java.math.BigDecimal("2000"));
-            testProd.setImageUrl("https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=500");
+            testProd.setImageUrl("https://res.cloudinary.com/hueitcyt/image/upload/v1792511979/utetra/products/sp-test-payos.jpg");
             testProd.setStatus("ACTIVE");
             productRepository.save(testProd);
         }

@@ -371,17 +371,17 @@
                 if (!itemImg && item.itemType === "TOPPING") {
                     const cleanName = (item.name || "").toLowerCase();
                     if (cleanName.includes("hạt sen") || cleanName.includes("sen")) {
-                        itemImg = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500";
+                        itemImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511980/utetra/toppings/top-01-hat-sen-hue.jpg";
                     } else if (cleanName.includes("sương sáo") || cleanName.includes("thạch")) {
-                        itemImg = "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500";
+                        itemImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511982/utetra/toppings/top-02-thach-suong-sao.jpg";
                     } else if (cleanName.includes("kem mây") || cleanName.includes("kem") || cleanName.includes("macchiato")) {
-                        itemImg = "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=500";
+                        itemImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511983/utetra/toppings/top-03-kem-may-sua-moc.jpg";
                     } else {
-                        itemImg = "https://images.unsplash.com/photo-1558857563-b37cf5a2a7e7?w=500";
+                        itemImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792512015/utetra/toppings/top-04-tran-chau-hoang-kim.jpg";
                     }
                 }
 
-                const thumb = itemImg ? `<img src="\${itemImg}" class="menu-item-thumb" alt="\${item.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500';">`
+                const thumb = itemImg ? `<img src="\${itemImg}" class="menu-item-thumb" alt="\${item.name}" onerror="this.onerror=null; this.src='https://res.cloudinary.com/hueitcyt/image/upload/v1792511985/utetra/defaults/default-tea-zen.jpg';">`
                                       : `<div class="menu-item-thumb bg-light d-flex align-items-center justify-content-center text-secondary fs-4"><i class="fa-solid fa-cubes-stacked"></i></div>`;
 
                 col.innerHTML = `

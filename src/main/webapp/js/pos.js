@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
         filtered.forEach(p => {
             const card = document.createElement("div");
             card.className = "pos-product-card position-relative";
-            const fallbackImg = "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500";
+            const fallbackImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511985/utetra/defaults/default-tea-zen.jpg";
             const imgUrl = p.imageUrl || fallbackImg;
             const isAvail = (p.isAvailable !== false) && (p.stockEstimate === undefined || p.stockEstimate > 0);
 
@@ -140,8 +140,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("modalProdPrice").textContent = formatCurrency(product.basePrice);
         const modalImg = document.getElementById("modalProdImg");
         if (modalImg) {
-            modalImg.onerror = function() { this.onerror = null; this.src = "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500"; };
-            modalImg.src = product.imageUrl || "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500";
+            modalImg.onerror = function() { this.onerror = null; this.src = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511985/utetra/defaults/default-tea-zen.jpg"; };
+            modalImg.src = product.imageUrl || "https://res.cloudinary.com/hueitcyt/image/upload/v1792511985/utetra/defaults/default-tea-zen.jpg";
         }
         document.getElementById("modalItemNote").value = "";
         document.getElementById("modalItemQty").textContent = "1";
