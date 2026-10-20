@@ -67,6 +67,7 @@ public class KitchenServiceImpl implements KitchenService {
         }
 
         return orders.stream()
+                .filter(o -> "PAID".equalsIgnoreCase(o.getPaymentStatus()))
                 .map(this::mapToKitchenOrderDto)
                 .collect(Collectors.toList());
     }
