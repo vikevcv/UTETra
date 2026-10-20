@@ -60,15 +60,33 @@ public class UserManagementController {
     }
 
     /**
-     * Xem hồ sơ chi tiết của một người dùng (UC20).
+     * Xem hồ sơ chi tiết của một người dùng, lịch sử đặt hàng và lịch sử chạy đơn của shipper (UC20).
      */
     @GetMapping("/{id}")
-    public String viewUserDetail(@PathVariable("id") Long id, Model model) {
+    public String viewUserDetail(
+            @PathVariable("id") Long id,
+            @RequestParam(value = "tab", defaultValue = "profile") String activeTab,
+            Model model
+    ) {
         try {
             UserResponse user = userService.getUserById(id);
             model.addAttribute("user", user);
             model.addAttribute("branches", branchService.getAllBranches());
-            model.addAttribute("pageTitle", "Chi Tiết Người Dùng: " + user.getUsername());
+
+            // Lấy lịch sử đơn hàng của người dùng
+            var userOrders = userService.getUserOrderHistory(id);
+            var orderSummary = userService.getUserOrderSummary(id);
+            model.addAttribute("userOrders", userOrders);
+            model.addAttribute("orderSummary", orderSummary);
+
+            // Lấy lịch sử chạy đơn nếu người dùng là tài xế (Shipper)
+            var driverTrips = userService.getDriverTripHistory(id);
+            var driverSummary = userService.getDriverTripSummary(id);
+            model.addAttribute("driverTrips", driverTrips);
+            model.addAttribute("driverSummary", driverSummary);
+
+            model.addAttribute("activeTab", activeTab);
+            model.addAttribute("pageTitle", "Hồ Sơ & Lịch Sử Hoạt Động: @" + user.getUsername());
             return "admin/users/detail";
         } catch (IllegalArgumentException e) {
             model.addAttribute("errorMessage", e.getMessage());

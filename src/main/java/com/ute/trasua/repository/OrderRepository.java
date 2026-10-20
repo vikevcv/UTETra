@@ -39,6 +39,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "ORDER BY o.createdAt DESC")
     List<Order> findTop20ByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.branch " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "LEFT JOIN FETCH o.driver d " +
+           "LEFT JOIN FETCH d.user " +
+           "WHERE o.user.id = :userId " +
+           "ORDER BY o.createdAt DESC")
+    List<Order> findAllByUserIdWithDetailsOrderByCreatedAtDesc(@Param("userId") Long userId);
+
     @Query("SELECT COUNT(o) FROM Order o WHERE o.user.id = :userId " +
            "AND UPPER(o.voucherCode) = UPPER(:voucherCode) " +
            "AND o.status <> 'CANCELLED'")
@@ -80,6 +89,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "WHERE o.driver.id = :driverId " +
            "ORDER BY o.createdAt DESC")
     List<Order> findByDriverIdOrderByCreatedAtDesc(@Param("driverId") Long driverId);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.branch " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "LEFT JOIN FETCH o.user " +
+           "WHERE o.driver.id = :driverId " +
+           "ORDER BY o.createdAt DESC")
+    List<Order> findAllByDriverIdWithDetailsOrderByCreatedAtDesc(@Param("driverId") Long driverId);
 
     // Revenue Report Queries
     @Query("SELECT o FROM Order o " +
