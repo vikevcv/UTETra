@@ -542,6 +542,8 @@
   </div>
 
   <script>
+    const initialUserBranchId = '${user.branchId != null ? user.branchId : ""}';
+
     function handleDetailRoleChange() {
       const role = document.getElementById('detailRoleSelect').value;
       const branchGroup = document.getElementById('detailBranchGroup');
@@ -552,17 +554,21 @@
         branchGroup.style.display = 'block';
         branchSelect.required = true;
         if (branchStar) branchStar.style.display = 'inline';
+        if (!branchSelect.value && initialUserBranchId) {
+          branchSelect.value = initialUserBranchId;
+        }
       } else {
         branchGroup.style.display = 'none';
         branchSelect.required = false;
-        branchSelect.value = '';
         if (branchStar) branchStar.style.display = 'none';
       }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', handleDetailRoleChange);
+    } else {
       handleDetailRoleChange();
-    });
+    }
 
     function openLockModal(id, username) {
       const modal = new bootstrap.Modal(document.getElementById('lockUserModal'));
