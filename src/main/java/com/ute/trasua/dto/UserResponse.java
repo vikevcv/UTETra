@@ -31,11 +31,25 @@ public class UserResponse {
     private String lockReason;
     private LocalDateTime createdAt;
 
+    private Long branchId;
+    private String branchName;
+    private String branchCode;
+
     @Builder.Default
     private Set<String> roles = new HashSet<>();
 
     public static UserResponse fromEntity(User user) {
         if (user == null) return null;
+
+        Long bId = null;
+        String bName = null;
+        String bCode = null;
+        if (user.getBranch() != null) {
+            bId = user.getBranch().getId();
+            bName = user.getBranch().getName();
+            bCode = user.getBranch().getBranchCode();
+        }
+
         return UserResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -46,6 +60,9 @@ public class UserResponse {
                 .enabled(user.isEnabled())
                 .locked(user.isLocked())
                 .lockReason(user.getLockReason())
+                .branchId(bId)
+                .branchName(bName)
+                .branchCode(bCode)
                 .roles(user.getRoles() != null ? new HashSet<>(user.getRoles()) : new HashSet<>())
                 .createdAt(user.getCreatedAt())
                 .build();

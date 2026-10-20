@@ -23,11 +23,14 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public UserServiceImpl(UserRepository userRepository,
-                           @Autowired(required = false) CloudinaryService cloudinaryService) {
+                           @Autowired(required = false) CloudinaryService cloudinaryService,
+                           @Autowired(required = false) org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.cloudinaryService = cloudinaryService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -104,6 +107,29 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
         log.info(">>> Đã cập nhật ảnh đại diện cho người dùng {}: {}", username, avatarUrl);
         return avatarUrl;
+    }
+
+    @Override
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng: " + username));
+
+        if (passwordEncoder == null) {
+            log.error("PasswordEncoder chưa được nạp trong Spring Context");
+            throw new IllegalStateException("Hệ thống mã hóa mật khẩu chưa sẵn sàng.");
+        }
+
+        if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu hiện tại không chính xác!");
+        }
+
+        if (newPassword == null || newPassword.trim().length() < 6) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có ít nhất 6 ký tự!");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword.trim()));
+        userRepository.save(user);
+        log.info(">>> Đã đổi mật khẩu thành công cho người dùng {}", username);
     }
 
     private UserProfileDto mapToProfileDto(User user) {

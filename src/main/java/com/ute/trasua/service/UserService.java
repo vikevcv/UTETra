@@ -22,4 +22,6 @@ public interface UserService {
     com.ute.trasua.dto.user.UserProfileDto updateProfile(String username, com.ute.trasua.dto.user.UpdateProfileRequest request);
 
     String updateAvatar(String username, org.springframework.web.multipart.MultipartFile avatarFile);
+
+    void changePassword(String username, String currentPassword, String newPassword);
 }

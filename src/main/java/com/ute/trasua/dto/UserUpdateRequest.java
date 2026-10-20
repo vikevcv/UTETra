@@ -30,4 +30,9 @@ public class UserUpdateRequest {
     private String lockReason;
 
     private Set<String> roles;
+
+    /**
+     * Chi nhánh phân công trực thuộc (Bắt buộc đối với ROLE_MANAGER, ROLE_STAFF, ROLE_DRIVER).
+     */
+    private Long branchId;
 }

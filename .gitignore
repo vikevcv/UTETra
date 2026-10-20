@@ -60,3 +60,6 @@ nohup.out
 
 ### CodeGraph Local Index ###
 .codegraph/
+
+### Scratch Scripts & Tests ###
+scratch/

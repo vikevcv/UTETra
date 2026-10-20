@@ -38,4 +38,13 @@ public class ProductRequest {
      * URL ảnh hiện tại (nếu người dùng không chọn ảnh mới khi cập nhật).
      */
     private String currentImageUrl;
+
+    /**
+     * Danh sách công thức nguyên liệu của món (định lượng cho 1 ly).
+     */
+    private java.util.List<RecipeItemDto> recipes;
+
+    private java.util.List<Long> recipeIngredientIds;
+    private java.util.List<BigDecimal> recipeQuantities;
+    private java.util.List<String> recipeNotes;
 }

@@ -145,6 +145,7 @@
             <th>Người Dùng</th>
             <th>Liên Hệ</th>
             <th>Vai Trò</th>
+            <th>Chi Nhánh Trực Thuộc</th>
             <th>Trạng Thái</th>
             <th>Ngày Tham Gia</th>
             <th class="text-end">Hành Động</th>
@@ -203,6 +204,20 @@
                     </c:forEach>
                   </td>
 
+                  <!-- Chi Nhánh Trực Thuộc -->
+                  <td>
+                    <c:choose>
+                      <c:when test="${not empty u.branchName}">
+                        <span class="zen-badge zen-badge-info" title="Mã CN: ${u.branchCode}">
+                          <i class="fa-solid fa-store me-1"></i>${u.branchName}
+                        </span>
+                      </c:when>
+                      <c:otherwise>
+                        <span class="text-muted small"><em>Toàn chuỗi / Chưa gán</em></span>
+                      </c:otherwise>
+                    </c:choose>
+                  </td>
+
                   <!-- Status -->
                   <td>
                     <c:choose>
@@ -241,7 +256,7 @@
                       <!-- Đổi quyền nhanh -->
                       <button type="button" class="btn btn-sm btn-zen-light" 
                               title="Phân quyền vai trò"
-                              onclick="openRoleModal('${u.id}', '${u.username}', '${u.fullName}', '${u.primaryRole}')">
+                              onclick="openRoleModal('${u.id}', '${u.username}', '${u.fullName}', '${u.primaryRole}', '${u.branchId != null ? u.branchId : ''}')">
                         <i class="fa-solid fa-user-shield text-primary"></i>
                       </button>
 
@@ -416,13 +431,27 @@
             </div>
             <div class="mb-3">
               <label class="form-label small fw-bold text-muted">Vai trò hệ thống</label>
-              <select name="role" id="roleSelect" class="form-select">
+              <select name="role" id="roleSelect" class="form-select" onchange="handleRoleChange()">
                 <option value="ROLE_CUSTOMER">Khách Hàng (CUSTOMER)</option>
                 <option value="ROLE_DRIVER">Tài Xế Giao Hàng (DRIVER)</option>
                 <option value="ROLE_STAFF">Nhân Viên Quán (STAFF)</option>
                 <option value="ROLE_MANAGER">Quản Lý Chi Nhánh (MANAGER)</option>
                 <option value="ROLE_ADMIN">Chủ Chuỗi Cấp Cao (ADMIN)</option>
               </select>
+            </div>
+            <div class="mb-3" id="roleBranchGroup">
+              <label class="form-label small fw-bold text-muted">
+                Chi nhánh trực thuộc phân công <span class="text-danger" id="branchStar">*</span>
+              </label>
+              <select name="branchId" id="roleBranchSelect" class="form-select">
+                <option value="">-- Chọn chi nhánh trực thuộc --</option>
+                <c:forEach var="b" items="${branches}">
+                  <option value="${b.id}">${b.name} (${b.branchCode})</option>
+                </c:forEach>
+              </select>
+              <div class="form-text small text-muted">
+                Bắt buộc chọn chi nhánh khi phân quyền Quản lý chi nhánh, Nhân viên quán hoặc Tài xế giao hàng.
+              </div>
             </div>
           </div>
           <div class="modal-footer bg-light">
@@ -438,6 +467,24 @@
 
   <!-- Modal Trigger Script -->
   <script>
+    function handleRoleChange() {
+      const role = document.getElementById('roleSelect').value;
+      const branchGroup = document.getElementById('roleBranchGroup');
+      const branchSelect = document.getElementById('roleBranchSelect');
+      const branchStar = document.getElementById('branchStar');
+      const needsBranch = (role === 'ROLE_MANAGER' || role === 'ROLE_STAFF' || role === 'ROLE_DRIVER');
+      if (needsBranch) {
+        branchGroup.style.display = 'block';
+        branchSelect.required = true;
+        if (branchStar) branchStar.style.display = 'inline';
+      } else {
+        branchGroup.style.display = 'none';
+        branchSelect.required = false;
+        branchSelect.value = '';
+        if (branchStar) branchStar.style.display = 'none';
+      }
+    }
+
     function openLockModal(id, username) {
       document.getElementById('lockUsername').textContent = '@' + username;
       document.getElementById('lockForm').action = '${pageContext.request.contextPath}/admin/users/' + id + '/lock';
@@ -452,11 +499,20 @@
       modal.show();
     }
 
-    function openRoleModal(id, username, fullName, primaryRole) {
+    function openRoleModal(id, username, fullName, primaryRole, branchId) {
       document.getElementById('roleUsername').value = '@' + username;
       document.getElementById('roleFullName').value = fullName;
       const roleSelect = document.getElementById('roleSelect');
-      roleSelect.value = 'ROLE_' + primaryRole;
+      roleSelect.value = (primaryRole && primaryRole.startsWith('ROLE_')) ? primaryRole : ('ROLE_' + (primaryRole || 'CUSTOMER'));
+      
+      const branchSelect = document.getElementById('roleBranchSelect');
+      if (branchId) {
+        branchSelect.value = branchId;
+      } else {
+        branchSelect.value = '';
+      }
+      handleRoleChange();
+
       document.getElementById('roleForm').action = '${pageContext.request.contextPath}/admin/users/' + id + '/update';
       const modal = new bootstrap.Modal(document.getElementById('roleModal'));
       modal.show();

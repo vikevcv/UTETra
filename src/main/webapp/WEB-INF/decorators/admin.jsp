@@ -55,6 +55,13 @@
               <span>Bảng Điều Khiển</span>
             </a>
           </li>
+          <li class="sidebar-item">
+            <a href="${pageContext.request.contextPath}/admin/profile" 
+               class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/admin/profile') ? 'active' : ''}">
+              <i class="fa-solid fa-id-badge text-info"></i>
+              <span>Hồ Sơ Quản Trị</span>
+            </a>
+          </li>
         </ul>
 
         <!-- Nhóm: Quản Trị Toàn Chuỗi (Chủ chuỗi) -->
@@ -211,7 +218,7 @@
             </div>
             
             <ul class="dropdown-menu dropdown-menu-end shadow" style="font-size: 0.88rem;">
-              <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin/dashboard"><i class="fa-solid fa-user-tie me-2 text-primary"></i> Hồ sơ quản trị</a></li>
+              <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin/profile"><i class="fa-solid fa-id-badge me-2 text-primary"></i> Hồ sơ quản trị</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item py-2 text-danger" href="${pageContext.request.contextPath}/auth/logout"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Đăng xuất an toàn</a></li>
             </ul>

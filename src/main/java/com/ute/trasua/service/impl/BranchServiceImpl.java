@@ -128,8 +128,12 @@ public class BranchServiceImpl implements BranchService {
     @Override
     @Transactional(readOnly = true)
     public Optional<BranchResponse> getBranchByManagerUsername(String username) {
-        return branchRepository.findFirstByManagerUsername(username)
-                .map(this::enrichToResponse);
+        Optional<Branch> branchOpt = branchRepository.findFirstByManagerUsername(username);
+        if (branchOpt.isEmpty() && username != null) {
+            branchOpt = userRepository.findByUsername(username)
+                    .map(User::getBranch);
+        }
+        return branchOpt.map(this::enrichToResponse);
     }
 
     @Override

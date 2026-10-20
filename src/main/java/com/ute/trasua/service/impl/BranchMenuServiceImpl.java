@@ -47,6 +47,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     private final BranchToppingRepository branchToppingRepository;
     private final BranchInventoryRepository branchInventoryRepository;
     private final IngredientRepository ingredientRepository;
+    private final com.ute.trasua.repository.ProductRecipeRepository productRecipeRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     public BranchMenuServiceImpl(
@@ -57,6 +58,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             BranchToppingRepository branchToppingRepository,
             BranchInventoryRepository branchInventoryRepository,
             IngredientRepository ingredientRepository,
+            com.ute.trasua.repository.ProductRecipeRepository productRecipeRepository,
             SimpMessagingTemplate messagingTemplate
     ) {
         this.branchMenuRepository = branchMenuRepository;
@@ -66,6 +68,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         this.branchToppingRepository = branchToppingRepository;
         this.branchInventoryRepository = branchInventoryRepository;
         this.ingredientRepository = ingredientRepository;
+        this.productRecipeRepository = productRecipeRepository;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -558,61 +561,98 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         Product product = productRepository.findById(productId).orElse(null);
         if (product == null) return;
 
-        List<BranchInventory> inventories = branchInventoryRepository.findByBranchId(targetBranchId);
-        String prodName = product.getName() != null ? product.getName().toLowerCase() : "";
-        String catName = product.getCategory() != null ? product.getCategory().getName().toLowerCase() : "";
-
-        BranchInventory teaInv = null;
-        BranchInventory milkInv = null;
-
-        for (BranchInventory inv : inventories) {
-            if (inv.getIngredient() == null) continue;
-            String code = inv.getIngredient().getCode() != null ? inv.getIngredient().getCode().toUpperCase() : "";
-            String name = inv.getIngredient().getName() != null ? inv.getIngredient().getName().toLowerCase() : "";
-
-            if (prodName.contains("ô long") && (code.equals("NL003") || name.contains("ô long"))) {
-                teaInv = inv;
-            } else if ((prodName.contains("lục trà") || prodName.contains("nhài")) && (code.equals("NL002") || name.contains("lục trà"))) {
-                teaInv = inv;
-            } else if ((code.equals("NL001") || name.contains("trà đen")) && teaInv == null) {
-                teaInv = inv;
-            }
-
-            if (catName.contains("trà sữa") && (code.equals("NL004") || name.contains("sữa tươi"))) {
-                milkInv = inv;
-            }
-        }
-
         boolean outOfStock = false;
 
-        // Trừ trà: 0.02 Kg / ly
-        if (teaInv != null) {
-            BigDecimal teaDeduct = BigDecimal.valueOf(0.02).multiply(BigDecimal.valueOf(quantity));
-            BigDecimal current = teaInv.getStockQuantity() != null ? teaInv.getStockQuantity() : BigDecimal.ZERO;
-            BigDecimal updated = current.subtract(teaDeduct);
-            if (updated.compareTo(BigDecimal.ZERO) <= 0) {
-                updated = BigDecimal.ZERO;
-                outOfStock = true;
-            }
-            teaInv.setStockQuantity(updated);
-            teaInv.setUpdatedAt(LocalDateTime.now());
-            branchInventoryRepository.save(teaInv);
-            log.info(">>> [DB INVENTORY] Chi nhánh {} đã trừ {} Kg trà '{}'. Tồn CSDL còn: {}", targetBranchId, teaDeduct, teaInv.getIngredient().getName(), updated);
-        }
+        // ƯU TIÊN 1: Khấu trừ theo công thức pha chế chính thức của món nước (ProductRecipe)
+        List<com.ute.trasua.entity.ProductRecipe> recipes = productRecipeRepository.findByProductIdWithIngredient(productId);
+        if (recipes != null && !recipes.isEmpty()) {
+            for (com.ute.trasua.entity.ProductRecipe recipe : recipes) {
+                Ingredient ing = recipe.getIngredient();
+                if (ing == null) continue;
 
-        // Trừ sữa tươi: 0.10 Lít / ly
-        if (milkInv != null) {
-            BigDecimal milkDeduct = BigDecimal.valueOf(0.10).multiply(BigDecimal.valueOf(quantity));
-            BigDecimal current = milkInv.getStockQuantity() != null ? milkInv.getStockQuantity() : BigDecimal.ZERO;
-            BigDecimal updated = current.subtract(milkDeduct);
-            if (updated.compareTo(BigDecimal.ZERO) <= 0) {
-                updated = BigDecimal.ZERO;
-                outOfStock = true;
+                BigDecimal portionPerCup = recipe.getQuantity() != null ? recipe.getQuantity() : BigDecimal.ZERO;
+                if (portionPerCup.compareTo(BigDecimal.ZERO) <= 0) continue;
+
+                BigDecimal totalDeduct = portionPerCup.multiply(BigDecimal.valueOf(quantity));
+
+                // Lấy kho nguyên liệu chi nhánh (có pessimistic write lock để chống race condition)
+                BranchInventory inv = branchInventoryRepository.findByBranchIdAndIngredientIdWithLock(targetBranchId, ing.getId())
+                        .orElse(null);
+
+                if (inv != null) {
+                    BigDecimal current = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                    BigDecimal updated = current.subtract(totalDeduct);
+                    if (updated.compareTo(BigDecimal.ZERO) <= 0) {
+                        updated = BigDecimal.ZERO;
+                        outOfStock = true;
+                    }
+                    inv.setStockQuantity(updated);
+                    inv.setUpdatedAt(LocalDateTime.now());
+                    branchInventoryRepository.save(inv);
+
+                    log.info(">>> [RECIPE DEDUCT] Chi nhánh {} đã trừ {} {} '{}' theo công thức món '{}'. Ước lượng tồn kho còn: {}",
+                            targetBranchId, totalDeduct, ing.getUnit(), ing.getName(), product.getName(), updated);
+                } else {
+                    log.warn(">>> [RECIPE DEDUCT] Chi nhánh {} chưa có tồn kho nguyên liệu '{}' (ID: {}), bỏ qua trừ kho.",
+                            targetBranchId, ing.getName(), ing.getId());
+                }
             }
-            milkInv.setStockQuantity(updated);
-            milkInv.setUpdatedAt(LocalDateTime.now());
-            branchInventoryRepository.save(milkInv);
-            log.info(">>> [DB INVENTORY] Chi nhánh {} đã trừ {} Lít sữa tươi. Tồn CSDL còn: {}", targetBranchId, milkDeduct, updated);
+        } else {
+            // ƯU TIÊN 2: Fallback logic cơ bản khi món chưa được cấu hình công thức
+            List<BranchInventory> inventories = branchInventoryRepository.findByBranchId(targetBranchId);
+            String prodName = product.getName() != null ? product.getName().toLowerCase() : "";
+            String catName = product.getCategory() != null ? product.getCategory().getName().toLowerCase() : "";
+
+            BranchInventory teaInv = null;
+            BranchInventory milkInv = null;
+
+            for (BranchInventory inv : inventories) {
+                if (inv.getIngredient() == null) continue;
+                String code = inv.getIngredient().getCode() != null ? inv.getIngredient().getCode().toUpperCase() : "";
+                String name = inv.getIngredient().getName() != null ? inv.getIngredient().getName().toLowerCase() : "";
+
+                if (prodName.contains("ô long") && (code.equals("NL003") || name.contains("ô long"))) {
+                    teaInv = inv;
+                } else if ((prodName.contains("lục trà") || prodName.contains("nhài")) && (code.equals("NL002") || name.contains("lục trà"))) {
+                    teaInv = inv;
+                } else if ((code.equals("NL001") || name.contains("trà đen")) && teaInv == null) {
+                    teaInv = inv;
+                }
+
+                if (catName.contains("trà sữa") && (code.equals("NL004") || name.contains("sữa tươi"))) {
+                    milkInv = inv;
+                }
+            }
+
+            // Trừ trà: 0.02 Kg / ly
+            if (teaInv != null) {
+                BigDecimal teaDeduct = BigDecimal.valueOf(0.02).multiply(BigDecimal.valueOf(quantity));
+                BigDecimal current = teaInv.getStockQuantity() != null ? teaInv.getStockQuantity() : BigDecimal.ZERO;
+                BigDecimal updated = current.subtract(teaDeduct);
+                if (updated.compareTo(BigDecimal.ZERO) <= 0) {
+                    updated = BigDecimal.ZERO;
+                    outOfStock = true;
+                }
+                teaInv.setStockQuantity(updated);
+                teaInv.setUpdatedAt(LocalDateTime.now());
+                branchInventoryRepository.save(teaInv);
+                log.info(">>> [DB INVENTORY FALLBACK] Chi nhánh {} đã trừ {} Kg trà '{}'. Tồn CSDL còn: {}", targetBranchId, teaDeduct, teaInv.getIngredient().getName(), updated);
+            }
+
+            // Trừ sữa tươi: 0.10 Lít / ly
+            if (milkInv != null) {
+                BigDecimal milkDeduct = BigDecimal.valueOf(0.10).multiply(BigDecimal.valueOf(quantity));
+                BigDecimal current = milkInv.getStockQuantity() != null ? milkInv.getStockQuantity() : BigDecimal.ZERO;
+                BigDecimal updated = current.subtract(milkDeduct);
+                if (updated.compareTo(BigDecimal.ZERO) <= 0) {
+                    updated = BigDecimal.ZERO;
+                    outOfStock = true;
+                }
+                milkInv.setStockQuantity(updated);
+                milkInv.setUpdatedAt(LocalDateTime.now());
+                branchInventoryRepository.save(milkInv);
+                log.info(">>> [DB INVENTORY FALLBACK] Chi nhánh {} đã trừ {} Lít sữa tươi. Tồn CSDL còn: {}", targetBranchId, milkDeduct, updated);
+            }
         }
 
         // Tự động tắt món khi nguyên liệu hết
