@@ -151,6 +151,10 @@
               background: #f1f5f9;
               color: #64748b;
             }
+
+            .text-purple {
+              color: #7c3aed !important;
+            }
           </style>
         </head>
 
@@ -417,7 +421,7 @@
                               </td>
                               <td class="text-end fw-bold text-success font-monospace">${d.formattedNetAmount}</td>
                               <td class="text-end fw-bold text-danger font-monospace">${d.formattedExpenseAmount}</td>
-                              <td class="text-end pe-3 fw-bold font-monospace" style="color: ${d.profitAmount != null && d.profitAmount >= 0 ? '#7c3aed' : '#dc2626'};">
+                              <td class="text-end pe-3 fw-bold font-monospace ${d.profitAmount != null && d.profitAmount >= 0 ? 'text-purple' : 'text-danger'}">
                                 ${d.formattedProfitAmount}
                               </td>
                             </tr>

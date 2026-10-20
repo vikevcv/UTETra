@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
  * Service implementation handling Employee management and POS accounts at Branch (UC16).
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class EmployeeServiceImpl implements EmployeeService {
 
@@ -40,6 +39,19 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final PosAccountRepository posAccountRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository,
+                               BranchRepository branchRepository,
+                               PosAccountRepository posAccountRepository,
+                               UserRepository userRepository,
+                               PasswordEncoder passwordEncoder) {
+        super();
+        this.employeeRepository = employeeRepository;
+        this.branchRepository = branchRepository;
+        this.posAccountRepository = posAccountRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     // ==========================================
     // EMPLOYEE MANAGEMENT (UC16)
@@ -108,6 +120,14 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build();
 
         Employee saved = employeeRepository.save(emp);
+        if (userRepository != null && saved.getEmail() != null && !saved.getEmail().isBlank()) {
+            userRepository.findByEmail(saved.getEmail().trim().toLowerCase()).ifPresent(u -> {
+                if (u.getBranch() == null) {
+                    u.setBranch(branch);
+                    userRepository.save(u);
+                }
+            });
+        }
         log.info(">>> Onboarded new employee: [{}] {} - Branch: {}", saved.getEmployeeCode(), saved.getFullName(), branch.getName());
         return EmployeeResponse.fromEntity(saved);
     }
@@ -137,6 +157,12 @@ public class EmployeeServiceImpl implements EmployeeService {
             Branch newBranch = branchRepository.findById(request.getBranchId())
                     .orElseThrow(() -> new IllegalArgumentException("Transferred branch does not exist!"));
             emp.setBranch(newBranch);
+            if (userRepository != null && emp.getEmail() != null && !emp.getEmail().isBlank()) {
+                userRepository.findByEmail(emp.getEmail().trim().toLowerCase()).ifPresent(u -> {
+                    u.setBranch(newBranch);
+                    userRepository.save(u);
+                });
+            }
             log.info(">>> Transferred employee ID {} to branch {}", id, newBranch.getName());
         }
 
@@ -220,6 +246,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .fullName(request.getCounterName() != null ? request.getCounterName().trim() : "Quầy POS - " + branch.getName())
                 .email(email)
                 .phone(branch.getHotline())
+                .branch(branch)
                 .enabled(request.isActive())
                 .locked(!request.isActive())
                 .roles(new HashSet<>(Set.of("ROLE_STAFF", "ROLE_POS")))

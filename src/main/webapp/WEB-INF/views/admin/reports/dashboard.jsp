@@ -164,6 +164,10 @@
             .progress-bar-emerald {
               background: linear-gradient(90deg, #10b981, #059669);
             }
+
+            .text-purple {
+              color: #7c3aed !important;
+            }
           </style>
         </head>
 
@@ -510,7 +514,7 @@
                           <td class="text-end fw-bold text-danger font-monospace">
                             ${br.formattedExpenseAmount}
                           </td>
-                          <td class="text-end fw-bold font-monospace" style="color: ${br.profitAmount != null && br.profitAmount >= 0 ? '#7c3aed' : '#dc2626'};">
+                          <td class="text-end fw-bold font-monospace ${br.profitAmount != null && br.profitAmount >= 0 ? 'text-purple' : 'text-danger'}">
                             ${br.formattedProfitAmount}
                           </td>
                           <td class="text-center">
@@ -656,7 +660,7 @@
                               <td class="text-end fw-bold text-danger font-monospace small">
                                 ${d.formattedExpenseAmount}
                               </td>
-                              <td class="text-end fw-bold font-monospace small" style="color: ${d.profitAmount != null && d.profitAmount >= 0 ? '#7c3aed' : '#dc2626'};">
+                              <td class="text-end fw-bold font-monospace small ${d.profitAmount != null && d.profitAmount >= 0 ? 'text-purple' : 'text-danger'}">
                                 ${d.formattedProfitAmount}
                               </td>
                             </tr>

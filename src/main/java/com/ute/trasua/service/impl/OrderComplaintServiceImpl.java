@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class OrderComplaintServiceImpl implements OrderComplaintService {
 
@@ -32,6 +31,19 @@ public class OrderComplaintServiceImpl implements OrderComplaintService {
     private final OrderRepository orderRepository;
     private final com.ute.trasua.repository.BranchRepository branchRepository;
     private final PromotionService promotionService;
+
+    public OrderComplaintServiceImpl(
+            OrderComplaintRepository orderComplaintRepository,
+            OrderRepository orderRepository,
+            com.ute.trasua.repository.BranchRepository branchRepository,
+            PromotionService promotionService
+    ) {
+        super();
+        this.orderComplaintRepository = orderComplaintRepository;
+        this.orderRepository = orderRepository;
+        this.branchRepository = branchRepository;
+        this.promotionService = promotionService;
+    }
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 

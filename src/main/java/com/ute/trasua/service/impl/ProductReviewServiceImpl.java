@@ -22,7 +22,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ProductReviewServiceImpl implements ProductReviewService {
 
@@ -30,6 +29,19 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     private final OrderRepository orderRepository;
     private final OrderDetailRepository orderDetailRepository;
     private final ProductRepository productRepository;
+
+    public ProductReviewServiceImpl(
+            ProductReviewRepository productReviewRepository,
+            OrderRepository orderRepository,
+            OrderDetailRepository orderDetailRepository,
+            ProductRepository productRepository
+    ) {
+        super();
+        this.productReviewRepository = productReviewRepository;
+        this.orderRepository = orderRepository;
+        this.orderDetailRepository = orderDetailRepository;
+        this.productRepository = productRepository;
+    }
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 

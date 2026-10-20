@@ -10,11 +10,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class OrderSecurityServiceImpl implements OrderSecurityService {
 
     private final OrderRepository orderRepository;
+
+    public OrderSecurityServiceImpl(OrderRepository orderRepository) {
+        super();
+        this.orderRepository = orderRepository;
+    }
 
     @Override
     public boolean canAccessOrder(Order order, User currentUser) {

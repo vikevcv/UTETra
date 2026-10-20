@@ -99,7 +99,8 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         for (Order order : orders) {
             boolean isPaid = "PAID".equalsIgnoreCase(order.getPaymentStatus()) ||
                     "PAID".equalsIgnoreCase(order.getStatus()) ||
-                    "COMPLETED".equalsIgnoreCase(order.getStatus());
+                    "COMPLETED".equalsIgnoreCase(order.getStatus()) ||
+                    "DELIVERED".equalsIgnoreCase(order.getStatus());
 
             if (isPaid) {
                 completedOrders++;
@@ -406,6 +407,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             String methodName = switch (methodKey) {
                 case "CASH" -> "Tiền mặt (POS)";
                 case "BANK_TRANSFER", "VIETQR" -> "Chuyển khoản VietQR";
+                case "PAYOS" -> "Cổng PayOS (VietQR / Thẻ)";
                 case "MOMO" -> "Ví điện tử MoMo";
                 case "VNPAY" -> "Cổng VNPAY";
                 default -> methodKey;
