@@ -454,25 +454,24 @@
     const tbody = document.getElementById('recipeTableBody');
     const tr = document.createElement('tr');
     tr.className = 'recipe-row';
-    tr.innerHTML = `
-      <td>
-        <select name="recipeIngredientIds" class="form-select form-select-sm recipe-ing-select" onchange="onIngredientChange(this)">
-          ${getIngredientOptionsHtml()}
-        </select>
-      </td>
-      <td>
-        <input type="number" name="recipeQuantities" class="form-control form-control-sm text-end recipe-qty-input" 
-               step="0.0001" min="0.0001" value="" placeholder="VD: 0.02">
-      </td>
-      <td>
-        <span class="badge bg-light text-dark border px-2 py-1 unit-label">Chưa chọn</span>
-      </td>
-      <td class="text-center">
-        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRecipeRow(this)" title="Xóa dòng">
-          <i class="fa-solid fa-trash-can"></i>
-        </button>
-      </td>
-    `;
+    tr.innerHTML = 
+      '<td>' +
+        '<select name="recipeIngredientIds" class="form-select form-select-sm recipe-ing-select" onchange="onIngredientChange(this)">' +
+          getIngredientOptionsHtml() +
+        '</select>' +
+      '</td>' +
+      '<td>' +
+        '<input type="number" name="recipeQuantities" class="form-control form-control-sm text-end recipe-qty-input" ' +
+               'step="0.0001" min="0.0001" value="" placeholder="VD: 0.02">' +
+      '</td>' +
+      '<td>' +
+        '<span class="badge bg-light text-dark border px-2 py-1 unit-label">Chưa chọn</span>' +
+      '</td>' +
+      '<td class="text-center">' +
+        '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRecipeRow(this)" title="Xóa dòng">' +
+          '<i class="fa-solid fa-trash-can"></i>' +
+        '</button>' +
+      '</td>';
     tbody.appendChild(tr);
     checkRecipeEmpty();
   }
@@ -529,17 +528,24 @@
         const ingVal = select ? select.value.trim() : '';
         const qtyVal = qtyInput ? parseFloat(qtyInput.value) : 0;
 
+        const qtyStr = qtyInput ? qtyInput.value.trim() : '';
+
         if (ingVal !== '' && (isNaN(qtyVal) || qtyVal <= 0)) {
           e.preventDefault();
           alert('Vui lòng nhập định lượng lớn hơn 0 cho nguyên liệu đã chọn trong công thức!');
           qtyInput.focus();
           return false;
         }
-        if (ingVal === '' && qtyVal > 0) {
+        if (ingVal === '' && qtyStr !== '') {
           e.preventDefault();
-          alert('Vui lòng chọn loại nguyên liệu tương ứng với định lượng ' + qtyVal + '!');
+          alert('Vui lòng chọn loại nguyên liệu tương ứng với định lượng ' + qtyStr + '!');
           select.focus();
           return false;
+        }
+        // Nếu dòng trống hoàn toàn, gỡ bỏ name để không gửi param rỗng lên server
+        if (ingVal === '' && qtyStr === '') {
+          if (select) select.removeAttribute('name');
+          if (qtyInput) qtyInput.removeAttribute('name');
         }
       }
     });
