@@ -181,6 +181,13 @@
               </button>
             </div>
 
+            <c:if test="${empty ingredients}">
+              <div class="alert alert-warning py-2 small mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> Chưa có dữ liệu nguyên liệu trong kho. 
+                Vui lòng vào <a href="${pageContext.request.contextPath}/admin/ingredients" class="fw-bold alert-link">Quản lý nguyên liệu chuỗi</a> để kiểm tra hoặc thêm nguyên liệu mới.
+              </div>
+            </c:if>
+
             <div class="table-responsive">
               <table class="table table-bordered table-sm align-middle bg-white mb-1" id="recipeTable">
                 <thead class="table-light small">
@@ -192,10 +199,73 @@
                   </tr>
                 </thead>
                 <tbody id="recipeTableBody">
-                  <!-- Dòng nguyên liệu được render tự động bằng JS -->
+                  <c:choose>
+                    <c:when test="${not empty recipes}">
+                      <c:forEach var="rec" items="${recipes}">
+                        <tr class="recipe-row">
+                          <td>
+                            <select name="recipeIngredientIds" class="form-select form-select-sm recipe-ing-select" onchange="onIngredientChange(this)">
+                              <option value="">-- Chọn nguyên liệu trong kho --</option>
+                              <c:forEach var="ing" items="${ingredients}">
+                                <option value="${ing.id}" data-unit="${ing.unit}" ${rec.ingredientId == ing.id ? 'selected' : ''}>
+                                  [${ing.code}] ${ing.name} (${ing.unit})
+                                </option>
+                              </c:forEach>
+                            </select>
+                          </td>
+                          <td>
+                            <input type="number" name="recipeQuantities" class="form-control form-control-sm text-end recipe-qty-input" 
+                                   step="0.0001" min="0.0001" value="${rec.quantity}" placeholder="VD: 0.02">
+                          </td>
+                          <td>
+                            <span class="badge bg-light text-dark border px-2 py-1 unit-label">${not empty rec.ingredientUnit ? rec.ingredientUnit : 'Chưa chọn'}</span>
+                          </td>
+                          <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRecipeRow(this)" title="Xóa dòng">
+                              <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      </c:forEach>
+                    </c:when>
+                    <c:otherwise>
+                      <tr class="recipe-row">
+                        <td>
+                          <select name="recipeIngredientIds" class="form-select form-select-sm recipe-ing-select" onchange="onIngredientChange(this)">
+                            <option value="">-- Chọn nguyên liệu trong kho --</option>
+                            <c:forEach var="ing" items="${ingredients}">
+                              <option value="${ing.id}" data-unit="${ing.unit}">
+                                [${ing.code}] ${ing.name} (${ing.unit})
+                              </option>
+                            </c:forEach>
+                          </select>
+                        </td>
+                        <td>
+                          <input type="number" name="recipeQuantities" class="form-control form-control-sm text-end recipe-qty-input" 
+                                 step="0.0001" min="0.0001" value="" placeholder="VD: 0.02">
+                        </td>
+                        <td>
+                          <span class="badge bg-light text-dark border px-2 py-1 unit-label">Chưa chọn</span>
+                        </td>
+                        <td class="text-center">
+                          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRecipeRow(this)" title="Xóa dòng">
+                            <i class="fa-solid fa-trash-can"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </c:otherwise>
+                  </c:choose>
                 </tbody>
               </table>
             </div>
+
+            <!-- Template options nguyên liệu ẩn dùng cho dynamic add row -->
+            <select id="ingredientOptionsTemplate" style="display: none;">
+              <option value="">-- Chọn nguyên liệu trong kho --</option>
+              <c:forEach var="ing" items="${ingredients}">
+                <option value="${ing.id}" data-unit="${ing.unit}">[${ing.code}] ${ing.name} (${ing.unit})</option>
+              </c:forEach>
+            </select>
             <div id="emptyRecipeNotice" class="text-center text-muted small py-2 d-none">
               <em>Chưa có nguyên liệu nào. Bấm "+ Thêm Nguyên Liệu" ở trên để khai báo công thức món.</em>
             </div>
@@ -375,41 +445,27 @@
   }
 
   // ==================== QUẢN LÝ CÔNG THỨC PHA CHẾ ====================
-  const allIngredients = [
-    <c:forEach var="ing" items="${ingredients}" varStatus="loop">
-      { id: ${ing.id}, code: '${ing.code}', name: '${fn:escapeXml(ing.name)}', unit: '${ing.unit}' }${!loop.last ? ',' : ''}
-    </c:forEach>
-  ];
+  function getIngredientOptionsHtml() {
+    const template = document.getElementById('ingredientOptionsTemplate');
+    return template ? template.innerHTML : '<option value="">-- Chọn nguyên liệu trong kho --</option>';
+  }
 
-  const existingRecipes = [
-    <c:forEach var="rec" items="${recipes}" varStatus="loop">
-      { ingredientId: ${rec.ingredientId}, quantity: ${rec.quantity}, unit: '${rec.ingredientUnit}' }${!loop.last ? ',' : ''}
-    </c:forEach>
-  ];
-
-  function renderRecipeRow(ingId = '', qty = '', unit = '') {
+  function addRecipeRow() {
     const tbody = document.getElementById('recipeTableBody');
     const tr = document.createElement('tr');
     tr.className = 'recipe-row';
-
-    let optionsHtml = '<option value="">-- Chọn nguyên liệu --</option>';
-    allIngredients.forEach(ing => {
-      const selected = (ingId && Number(ingId) === Number(ing.id)) ? 'selected' : '';
-      optionsHtml += `<option value="${ing.id}" data-unit="${ing.unit}" ${selected}>[${ing.code}] ${ing.name} (${ing.unit})</option>`;
-    });
-
     tr.innerHTML = `
       <td>
-        <select name="recipeIngredientIds" class="form-select form-select-sm recipe-ing-select" onchange="onIngredientChange(this)" required>
-          ${optionsHtml}
+        <select name="recipeIngredientIds" class="form-select form-select-sm recipe-ing-select" onchange="onIngredientChange(this)">
+          ${getIngredientOptionsHtml()}
         </select>
       </td>
       <td>
-        <input type="number" name="recipeQuantities" class="form-control form-control-sm text-end" 
-               step="0.0001" min="0.0001" value="${qty}" placeholder="VD: 0.02" required>
+        <input type="number" name="recipeQuantities" class="form-control form-control-sm text-end recipe-qty-input" 
+               step="0.0001" min="0.0001" value="" placeholder="VD: 0.02">
       </td>
       <td>
-        <span class="badge bg-light text-dark border px-2 py-1 unit-label">${unit || 'Chưa chọn'}</span>
+        <span class="badge bg-light text-dark border px-2 py-1 unit-label">Chưa chọn</span>
       </td>
       <td class="text-center">
         <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRecipeRow(this)" title="Xóa dòng">
@@ -423,16 +479,12 @@
 
   function onIngredientChange(select) {
     const selectedOption = select.options[select.selectedIndex];
-    const unit = selectedOption ? selectedOption.getAttribute('data-unit') : 'Chưa chọn';
+    const unit = selectedOption ? selectedOption.getAttribute('data-unit') : '';
     const tr = select.closest('tr');
-    const unitLabel = tr.querySelector('.unit-label');
+    const unitLabel = tr ? tr.querySelector('.unit-label') : null;
     if (unitLabel) {
       unitLabel.textContent = unit || 'Chưa chọn';
     }
-  }
-
-  function addRecipeRow() {
-    renderRecipeRow('', '', '');
   }
 
   function removeRecipeRow(btn) {
@@ -455,12 +507,48 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', function() {
-    if (existingRecipes && existingRecipes.length > 0) {
-      existingRecipes.forEach(r => renderRecipeRow(r.ingredientId, r.quantity, r.unit));
-    } else {
-      // Mặc định tạo 1 dòng trống cho admin dễ nhập
-      renderRecipeRow('', '', '');
-    }
-  });
+  // Khởi tạo label đơn vị cho các dòng có sẵn
+  function initRecipeUnitLabels() {
+    const selects = document.querySelectorAll('.recipe-ing-select');
+    selects.forEach(select => {
+      if (select.value) {
+        onIngredientChange(select);
+      }
+    });
+    checkRecipeEmpty();
+  }
+
+  // Kiểm tra trước khi submit form
+  const productForm = document.getElementById('productForm');
+  if (productForm) {
+    productForm.addEventListener('submit', function(e) {
+      const rows = document.querySelectorAll('.recipe-row');
+      for (let r of rows) {
+        const select = r.querySelector('.recipe-ing-select');
+        const qtyInput = r.querySelector('.recipe-qty-input');
+        const ingVal = select ? select.value.trim() : '';
+        const qtyVal = qtyInput ? parseFloat(qtyInput.value) : 0;
+
+        if (ingVal !== '' && (isNaN(qtyVal) || qtyVal <= 0)) {
+          e.preventDefault();
+          alert('Vui lòng nhập định lượng lớn hơn 0 cho nguyên liệu đã chọn trong công thức!');
+          qtyInput.focus();
+          return false;
+        }
+        if (ingVal === '' && qtyVal > 0) {
+          e.preventDefault();
+          alert('Vui lòng chọn loại nguyên liệu tương ứng với định lượng ' + qtyVal + '!');
+          select.focus();
+          return false;
+        }
+      }
+    });
+  }
+
+  // Khởi chạy khi DOM sẵn sàng
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRecipeUnitLabels);
+  } else {
+    initRecipeUnitLabels();
+  }
 </script>

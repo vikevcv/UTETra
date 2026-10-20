@@ -36,7 +36,12 @@ public class IngredientServiceImpl implements IngredientService {
 
     @Override
     public List<IngredientResponse> getActiveIngredients() {
-        return ingredientRepository.findByStatus("ACTIVE").stream()
+        List<Ingredient> list = ingredientRepository.findActiveIngredients();
+        if (list == null || list.isEmpty()) {
+            list = ingredientRepository.findAll();
+        }
+        return list.stream()
+                .filter(i -> i.getStatus() == null || !"INACTIVE".equalsIgnoreCase(i.getStatus()))
                 .map(IngredientResponse::fromEntity)
                 .collect(Collectors.toList());
     }
