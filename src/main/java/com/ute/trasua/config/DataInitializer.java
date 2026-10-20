@@ -96,59 +96,90 @@ public class DataInitializer implements CommandLineRunner {
             log.debug("Notice on altering order_details columns: {}", e.getMessage());
         }
 
-        // Cập nhật hoặc tạo tài khoản POS: tên chi nhánh viết liền (thuduc, quan1) - mật khẩu 123123
-        branchRepository.findAll().forEach(b -> {
-            String slug = java.text.Normalizer.normalize(b.getName(), java.text.Normalizer.Form.NFD)
-                    .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
-                    .toLowerCase();
-            String username = "thuduc";
-            if (slug.contains("quan 1") || b.getBranchCode().contains("Q01")) {
-                username = "quan1";
-            }
-            final String finalUser = username;
-            String shortName = "Quầy POS " + (finalUser.equals("thuduc") ? "Thủ Đức" : "Quận 1");
-            PosAccount pos = posAccountRepository.findByUsername(finalUser).orElse(null);
+        // Cập nhật hoặc tạo tài khoản POS cho các chi nhánh mẫu (thuduc -> CN-TD01, quan1 -> CN-Q01)
+        Branch tdBranch = branchRepository.findByBranchCode("CN-TD01")
+                .or(() -> branchRepository.findAll().stream().filter(b -> b.getName() != null && b.getName().toLowerCase().contains("thủ đức")).findFirst())
+                .orElse(null);
+        if (tdBranch != null) {
+            final String tdUser = "thuduc";
+            PosAccount pos = posAccountRepository.findByUsername(tdUser).orElse(null);
             if (pos == null) {
                 pos = PosAccount.builder()
-                        .counterName(shortName)
-                        .username(finalUser)
+                        .counterName("Quầy POS Thủ Đức")
+                        .username(tdUser)
                         .password(passwordEncoder.encode("123123"))
                         .active(true)
-                        .branch(b)
-                        .note("Tài khoản máy POS quầy theo chi nhánh")
+                        .branch(tdBranch)
+                        .note("Tài khoản máy POS quầy chi nhánh Thủ Đức")
                         .build();
             } else {
-                pos.setCounterName(shortName);
-                pos.setPassword(passwordEncoder.encode("123123"));
+                pos.setBranch(tdBranch);
                 pos.setActive(true);
-                pos.setBranch(b);
             }
             posAccountRepository.save(pos);
-            log.info(">>> Đã cập nhật tài khoản POS chi nhánh {}: username={} / password=123123", b.getName(), finalUser);
 
-            if (!userRepository.existsByUsername(finalUser)) {
+            if (!userRepository.existsByUsername(tdUser)) {
                 userRepository.save(User.builder()
-                        .username(finalUser)
+                        .username(tdUser)
                         .password(passwordEncoder.encode("123123"))
-                        .email(finalUser + "@pos.trasua.local")
-                        .fullName(shortName)
-                        .phone(b.getHotline())
+                        .email(tdUser + "@pos.trasua.local")
+                        .fullName("Quầy POS Thủ Đức")
+                        .phone(tdBranch.getHotline())
                         .enabled(true)
                         .locked(false)
-                        .branch(b)
+                        .branch(tdBranch)
                         .roles(Set.of("ROLE_STAFF", "ROLE_POS"))
                         .createdAt(LocalDateTime.now().minusDays(10))
                         .build());
-                log.info(">>> Đã đồng bộ tài khoản POS [{}] vào bảng users", finalUser);
             } else {
-                userRepository.findByUsername(finalUser).ifPresent(u -> {
-                    if (u.getBranch() == null) {
-                        u.setBranch(b);
-                        userRepository.save(u);
-                    }
+                userRepository.findByUsername(tdUser).ifPresent(u -> {
+                    u.setBranch(tdBranch);
+                    userRepository.save(u);
                 });
             }
-        });
+        }
+
+        Branch q1Branch = branchRepository.findByBranchCode("CN-Q01")
+                .or(() -> branchRepository.findAll().stream().filter(b -> b.getName() != null && b.getName().toLowerCase().contains("quận 1")).findFirst())
+                .orElse(null);
+        if (q1Branch != null) {
+            final String q1User = "quan1";
+            PosAccount pos = posAccountRepository.findByUsername(q1User).orElse(null);
+            if (pos == null) {
+                pos = PosAccount.builder()
+                        .counterName("Quầy POS Quận 1")
+                        .username(q1User)
+                        .password(passwordEncoder.encode("123123"))
+                        .active(true)
+                        .branch(q1Branch)
+                        .note("Tài khoản máy POS quầy chi nhánh Quận 1")
+                        .build();
+            } else {
+                pos.setBranch(q1Branch);
+                pos.setActive(true);
+            }
+            posAccountRepository.save(pos);
+
+            if (!userRepository.existsByUsername(q1User)) {
+                userRepository.save(User.builder()
+                        .username(q1User)
+                        .password(passwordEncoder.encode("123123"))
+                        .email(q1User + "@pos.trasua.local")
+                        .fullName("Quầy POS Quận 1")
+                        .phone(q1Branch.getHotline())
+                        .enabled(true)
+                        .locked(false)
+                        .branch(q1Branch)
+                        .roles(Set.of("ROLE_STAFF", "ROLE_POS"))
+                        .createdAt(LocalDateTime.now().minusDays(10))
+                        .build());
+            } else {
+                userRepository.findByUsername(q1User).ifPresent(u -> {
+                    u.setBranch(q1Branch);
+                    userRepository.save(u);
+                });
+            }
+        }
 
         // Tự động đồng bộ branch_id cho tài khoản Quản lý, Tài xế, Quầy POS nếu đang null
         try {
@@ -458,6 +489,47 @@ public class DataInitializer implements CommandLineRunner {
                         .createdAt(LocalDateTime.now().minusDays(15))
                         .build());
                 log.info(">>> Đã đồng bộ tài khoản POS [pos_q101] vào bảng users");
+            }
+
+            // Nhân sự mẫu cho CN-Q01 (Quận 1) (UC16)
+            if (!employeeRepository.existsByEmployeeCode("NV101")) {
+                employeeRepository.save(com.ute.trasua.entity.Employee.builder()
+                        .employeeCode("NV101")
+                        .fullName("Võ Thị Bích Thảo")
+                        .phone("0944556677")
+                        .citizenId("079199003322")
+                        .email("thao.vo@utetra.vn")
+                        .salary(8500000.0)
+                        .status("ACTIVE")
+                        .hireDate(java.time.LocalDate.now().minusMonths(8))
+                        .branch(cnQuan1)
+                        .build());
+            }
+            if (!employeeRepository.existsByEmployeeCode("NV102")) {
+                employeeRepository.save(com.ute.trasua.entity.Employee.builder()
+                        .employeeCode("NV102")
+                        .fullName("Phạm Gia Hân")
+                        .phone("0955667788")
+                        .citizenId("079203001122")
+                        .email("han.pham@utetra.vn")
+                        .salary(6900000.0)
+                        .status("ACTIVE")
+                        .hireDate(java.time.LocalDate.now().minusMonths(3))
+                        .branch(cnQuan1)
+                        .build());
+            }
+            if (!employeeRepository.existsByEmployeeCode("NV103")) {
+                employeeRepository.save(com.ute.trasua.entity.Employee.builder()
+                        .employeeCode("NV103")
+                        .fullName("Đỗ Hoàng Long")
+                        .phone("0966778899")
+                        .citizenId("079202004455")
+                        .email("long.do@utetra.vn")
+                        .salary(8200000.0)
+                        .status("ACTIVE")
+                        .hireDate(java.time.LocalDate.now().minusMonths(5))
+                        .branch(cnQuan1)
+                        .build());
             }
         }
 
