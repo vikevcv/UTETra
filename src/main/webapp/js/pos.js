@@ -477,7 +477,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (!res.ok) {
-            throw new Error("Không thể tạo đơn hàng POS");
+            let errorMsg = "Không thể tạo đơn hàng POS";
+            try {
+                const errData = await res.json();
+                if (errData && errData.message) {
+                    errorMsg = errData.message;
+                }
+            } catch (e) {}
+            throw new Error(errorMsg);
         }
         return await res.json();
     }

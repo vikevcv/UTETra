@@ -52,7 +52,7 @@ public class PayOSServiceImpl implements PayOSService {
             .build();
 
     @Override
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public PayOSCreatePaymentResponse createOrGetPaymentLink(String orderCode) {
         Order order = orderRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng với mã: " + orderCode));
@@ -402,19 +402,32 @@ public class PayOSServiceImpl implements PayOSService {
 
     /**
      * Sinh mã số nguyên PayOS duy nhất không đụng hàng (đảm bảo <= 9007199254740991).
-     * Dạng: [yyMMdd][queueNumber 4 chữ số] (Ví dụ: 2610190001).
+     * Phân tách tiền tố:
+     * - Đơn POS: Bắt đầu bằng 8 (VD: 82610200001)
+     * - Đơn Online: Bắt đầu bằng 9 (VD: 92610200001)
+     * Kèm vòng lặp chống trùng lặp database (Idempotency Guard).
      */
     private long generateNumericOrderCode(Order order) {
+        long numericCode;
         try {
-            String oc = order.getOrderCode(); // VD: ORD-WEB-261019-0001
+            String oc = order.getOrderCode() != null ? order.getOrderCode() : "";
+            boolean isPos = oc.contains("POS") || "POS_WALK_IN".equalsIgnoreCase(order.getOrderType());
+            long prefix = isPos ? 8L : 9L;
             String cleaned = oc.replaceAll("[^0-9]", "");
             if (cleaned.length() >= 6) {
-                return Long.parseLong(cleaned);
+                numericCode = prefix * 10000000000L + Long.parseLong(cleaned);
+            } else {
+                numericCode = prefix * 10000000000L + (System.currentTimeMillis() % 1000000000L);
             }
         } catch (Exception ignored) {
+            numericCode = (System.currentTimeMillis() % 1000000000L) * 10 + (order.getId() != null ? (order.getId() % 10) : 1);
         }
-        // Dự phòng: Timestamp modulo + order id
-        return (System.currentTimeMillis() % 1000000000L) * 10 + (order.getId() != null ? (order.getId() % 10) : 1);
+
+        // Đảm bảo không trùng với bất kỳ bản ghi nào trong database
+        while (orderRepository.findByPayosOrderCode(numericCode).isPresent()) {
+            numericCode++;
+        }
+        return numericCode;
     }
 
     /**
