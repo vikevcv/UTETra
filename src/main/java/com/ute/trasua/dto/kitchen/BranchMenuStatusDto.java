@@ -19,6 +19,7 @@ public class BranchMenuStatusDto {
     private String categoryName;
     private BigDecimal price;
     private String imageUrl;
+    @com.fasterxml.jackson.annotation.JsonProperty("isAvailable")
     private Boolean isAvailable;
     private Integer stockEstimate; // Ước lượng tồn kho phục vụ hiển thị game-like
 }

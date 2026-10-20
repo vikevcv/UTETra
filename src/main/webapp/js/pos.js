@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
             card.className = "pos-product-card position-relative";
             const fallbackImg = "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500";
             const imgUrl = p.imageUrl || fallbackImg;
-            const isAvail = (p.isAvailable !== false);
+            const isAvail = (p.isAvailable !== false) && (p.stockEstimate === undefined || p.stockEstimate > 0);
 
             if (!isAvail) {
                 card.classList.add("disabled", "out-of-stock");
@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (isAvail) {
                 card.addEventListener("click", () => openCustomizer(p));
             } else {
-                card.addEventListener("click", () => showPosZenToast("Món [" + p.name + "] hiện đang tạm hết tại cơ sở này!", "warning", 2400));
+                card.addEventListener("click", () => showPosZenToast("Món [" + p.name + "] hiện đang tạm hết hàng / cạn kiệt nguyên liệu tại chi nhánh này!", "warning", 2400));
             }
             grid.appendChild(card);
         });

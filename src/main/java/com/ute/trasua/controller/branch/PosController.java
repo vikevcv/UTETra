@@ -70,8 +70,15 @@ public class PosController {
                                   Model model) {
         PosAccount posAccount = posService.findPosAccountByUsername(username).orElse(null);
         if (posAccount != null && posAccount.isActive() && passwordEncoder.matches(password, posAccount.getPassword())) {
+            Branch posBranch = posAccount.getBranch();
+            if (posBranch != null && !posBranch.isActive()) {
+                model.addAttribute("error", "Chi nhánh [" + posBranch.getName() + "] hiện đang TẠM NGƯNG hoạt động! Máy POS tạm thời bị khóa.");
+                return "pos/login";
+            }
             session.setAttribute("POS_ACCOUNT", posAccount);
-            session.setAttribute("POS_BRANCH_ID", posAccount.getBranch() != null ? posAccount.getBranch().getId() : 1L);
+            Branch defaultBranch = branchService.getDefaultBranch();
+            Long posBranchId = posAccount.getBranch() != null ? posAccount.getBranch().getId() : (defaultBranch != null ? defaultBranch.getId() : 1L);
+            session.setAttribute("POS_BRANCH_ID", posBranchId);
             session.setAttribute("POS_COUNTER_NAME", posAccount.getCounterName());
             log.info(">>> Đăng nhập quầy POS thành công: {} ({})", posAccount.getCounterName(), posAccount.getUsername());
             return "redirect:/pos";
@@ -82,6 +89,11 @@ public class PosController {
         if (user != null && user.isEnabled() && !user.isLocked() && passwordEncoder.matches(password, user.getPassword())) {
             Branch defaultBranch = branchService.getDefaultBranch();
             PosAccount accountToUse = posService.resolvePosAccountForUser(user, defaultBranch);
+            Branch posBranch = accountToUse != null ? accountToUse.getBranch() : defaultBranch;
+            if (posBranch != null && !posBranch.isActive()) {
+                model.addAttribute("error", "Chi nhánh [" + posBranch.getName() + "] hiện đang TẠM NGƯNG hoạt động! Máy POS tạm thời bị khóa.");
+                return "pos/login";
+            }
 
             session.setAttribute("POS_ACCOUNT", accountToUse);
             session.setAttribute("POS_BRANCH_ID", accountToUse.getBranch() != null ? accountToUse.getBranch().getId() : (defaultBranch != null ? defaultBranch.getId() : 1L));
@@ -90,8 +102,40 @@ public class PosController {
             return "redirect:/pos";
         }
 
-        model.addAttribute("error", "Sai tên tài khoản máy POS hoặc mật khẩu! (Gợi ý: thuduc / 123123 hoặc quan1 / 123123)");
+        model.addAttribute("error", "Sai tên tài khoản máy POS hoặc mật khẩu!");
         return "pos/login";
+    }
+
+    /**
+     * Helper xóa toàn bộ session trực ca POS để chống rò rỉ state giữa các chi nhánh,
+     * không gọi session.invalidate() để bảo toàn phiên đăng nhập của Admin/Manager trên web.
+     */
+    private void clearPosShiftSession(HttpSession session) {
+        if (session != null) {
+            try {
+                session.removeAttribute("POS_ACCOUNT");
+                session.removeAttribute("POS_BRANCH_ID");
+                session.removeAttribute("POS_COUNTER_NAME");
+                session.removeAttribute("POS_ACTIVE_CASHIERS_NAME");
+                session.removeAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS");
+            } catch (Exception ignored) {}
+        }
+    }
+
+    /**
+     * Helper xác thực chi nhánh POS đang hoạt động từ DB (chống entity stale trong session).
+     */
+    private Long getActivePosBranchIdOrThrow(HttpSession session) {
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        if (sessionBranchId == null) {
+            throw new IllegalStateException("Phiên làm việc POS đã hết hạn! Vui lòng đăng nhập lại.");
+        }
+        Branch branch = branchService.findBranchEntityById(sessionBranchId).orElse(null);
+        if (branch == null || !branch.isActive()) {
+            clearPosShiftSession(session);
+            throw new IllegalStateException("Chi nhánh hiện đang TẠM NGƯNG hoạt động! Máy POS đã bị khóa.");
+        }
+        return sessionBranchId;
     }
 
     /**
@@ -99,14 +143,7 @@ public class PosController {
      */
     @GetMapping("/pos/logout")
     public String posLogout(HttpSession session, HttpServletResponse response) {
-        if (session != null) {
-            session.removeAttribute("POS_ACCOUNT");
-            session.removeAttribute("POS_BRANCH_ID");
-            session.removeAttribute("POS_COUNTER_NAME");
-            session.removeAttribute("POS_ACTIVE_CASHIERS_NAME");
-            session.removeAttribute("POS_ACTIVE_CASHIERS_IDS");
-            session.invalidate();
-        }
+        clearPosShiftSession(session);
 
         Cookie cookie = new Cookie("UTETRA_JWT", "");
         cookie.setMaxAge(0);
@@ -144,18 +181,27 @@ public class PosController {
         }
 
         PosAccount posAcc = (PosAccount) session.getAttribute("POS_ACCOUNT");
-        Branch currentBranch = (posAcc != null && posAcc.getBranch() != null) ? posAcc.getBranch() : null;
-        if (currentBranch == null) {
-            Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-            if (sessionBranchId != null) {
-                currentBranch = branchService.findBranchEntityById(sessionBranchId).orElse(null);
-            }
+        Long activeBranchId = branchId;
+        if (activeBranchId == null) {
+            activeBranchId = (posAcc != null && posAcc.getBranch() != null) ? posAcc.getBranch().getId() : (Long) session.getAttribute("POS_BRANCH_ID");
         }
-        if (currentBranch == null) {
-            currentBranch = branchService.getDefaultBranch();
+        if (activeBranchId == null) {
+            Branch def = branchService.getDefaultBranch();
+            activeBranchId = (def != null) ? def.getId() : 1L;
         }
 
-        Long activeBranchId = (currentBranch != null) ? currentBranch.getId() : 1L;
+        // Re-read chi nhánh tươi mới từ DB để tránh stale session khi Admin vừa bấm tạm ngưng
+        Branch currentBranch = branchService.findBranchEntityById(activeBranchId).orElse(null);
+        if (currentBranch == null || !currentBranch.isActive()) {
+            clearPosShiftSession(session);
+            model.addAttribute("error", "Chi nhánh [" + (currentBranch != null ? currentBranch.getName() : "này") + "] hiện đang TẠM NGƯNG hoạt động! Máy POS đã bị khóa.");
+            return "pos/login";
+        }
+
+        if (posAcc != null) {
+            posAcc.setBranch(currentBranch);
+            session.setAttribute("POS_ACCOUNT", posAcc);
+        }
         session.setAttribute("POS_BRANCH_ID", activeBranchId);
 
         String activeCashiers = (String) session.getAttribute("POS_ACTIVE_CASHIERS_NAME");
@@ -171,7 +217,7 @@ public class PosController {
         model.addAttribute("cashierName", activeCashiers);
         model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("branchId", activeBranchId);
-        model.addAttribute("branchName", currentBranch != null ? currentBranch.getName() : "UTETra Flagship Thủ Đức");
+        model.addAttribute("branchName", currentBranch.getName());
 
         return "pos/index";
     }
@@ -184,20 +230,42 @@ public class PosController {
     public String posHandoverView(@RequestParam(value = "branchId", required = false) Long branchId,
                                  HttpSession session,
                                  Model model) {
-        Branch currentBranch = null;
-        PosAccount posAcc = (PosAccount) session.getAttribute("POS_ACCOUNT");
-        if (posAcc != null && posAcc.getBranch() != null) {
-            currentBranch = posAcc.getBranch();
-        } else {
-            Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-            if (sessionBranchId != null) {
-                currentBranch = branchService.findBranchEntityById(sessionBranchId).orElse(null);
+        if (session.getAttribute("POS_ACCOUNT") == null) {
+            User user = userService.getCurrentAuthenticatedUser();
+            if (user != null && user.getRoles() != null && 
+                (user.getRoles().contains("ROLE_ADMIN") || user.getRoles().contains("ROLE_MANAGER") || user.getRoles().contains("ROLE_STAFF") || user.getRoles().contains("ROLE_POS"))) {
+                Branch defaultBranch = branchService.getDefaultBranch();
+                PosAccount accountToUse = posService.resolvePosAccountForUser(user, defaultBranch);
+                session.setAttribute("POS_ACCOUNT", accountToUse);
+                session.setAttribute("POS_BRANCH_ID", accountToUse.getBranch() != null ? accountToUse.getBranch().getId() : (defaultBranch != null ? defaultBranch.getId() : 1L));
+                session.setAttribute("POS_COUNTER_NAME", accountToUse.getCounterName());
+            } else {
+                return "redirect:/pos/login";
             }
         }
-        if (currentBranch == null) {
-            currentBranch = branchService.getDefaultBranch();
+
+        PosAccount posAcc = (PosAccount) session.getAttribute("POS_ACCOUNT");
+        Long activeBranchId = branchId;
+        if (activeBranchId == null) {
+            activeBranchId = (posAcc != null && posAcc.getBranch() != null) ? posAcc.getBranch().getId() : (Long) session.getAttribute("POS_BRANCH_ID");
         }
-        Long activeBranchId = (currentBranch != null) ? currentBranch.getId() : 1L;
+        if (activeBranchId == null) {
+            Branch def = branchService.getDefaultBranch();
+            activeBranchId = (def != null) ? def.getId() : 1L;
+        }
+
+        // Re-read chi nhánh tươi mới từ DB
+        Branch currentBranch = branchService.findBranchEntityById(activeBranchId).orElse(null);
+        if (currentBranch == null || !currentBranch.isActive()) {
+            clearPosShiftSession(session);
+            model.addAttribute("error", "Chi nhánh [" + (currentBranch != null ? currentBranch.getName() : "này") + "] hiện đang TẠM NGƯNG hoạt động! Màn bàn giao đã bị khóa.");
+            return "pos/login";
+        }
+
+        if (posAcc != null) {
+            posAcc.setBranch(currentBranch);
+            session.setAttribute("POS_ACCOUNT", posAcc);
+        }
         session.setAttribute("POS_BRANCH_ID", activeBranchId);
 
         String activeCashiers = (String) session.getAttribute("POS_ACTIVE_CASHIERS_NAME");
@@ -213,7 +281,7 @@ public class PosController {
         model.addAttribute("cashierName", activeCashiers);
         model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("branchId", activeBranchId);
-        model.addAttribute("branchName", currentBranch != null ? currentBranch.getName() : "UTETra Flagship Thủ Đức");
+        model.addAttribute("branchName", currentBranch.getName());
 
         return "pos/handover";
     }
@@ -224,8 +292,11 @@ public class PosController {
     @GetMapping("/api/pos/menu")
     @ResponseBody
     public ResponseEntity<PosMenuResponse> getPosMenu(
-            @RequestParam(value = "branchId", required = false) Long branchId) {
-        PosMenuResponse menu = posService.getPosMenu(branchId);
+            @RequestParam(value = "branchId", required = false) Long branchId,
+            HttpSession session) {
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        Long targetBranchId = (sessionBranchId != null) ? sessionBranchId : (branchId != null ? branchId : 1L);
+        PosMenuResponse menu = posService.getPosMenu(targetBranchId);
         return ResponseEntity.ok(menu);
     }
 
@@ -235,8 +306,11 @@ public class PosController {
     @GetMapping("/api/pos/employees")
     @ResponseBody
     public ResponseEntity<List<ShiftEmployeeDto>> getBranchEmployees(
-            @RequestParam(value = "branchId", required = false) Long branchId) {
-        List<ShiftEmployeeDto> list = posService.getBranchEmployees(branchId);
+            @RequestParam(value = "branchId", required = false) Long branchId,
+            HttpSession session) {
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        Long targetBranchId = (sessionBranchId != null) ? sessionBranchId : (branchId != null ? branchId : 1L);
+        List<ShiftEmployeeDto> list = posService.getBranchEmployees(targetBranchId);
         return ResponseEntity.ok(list);
     }
 
@@ -248,9 +322,11 @@ public class PosController {
     public ResponseEntity<ShiftAttendanceResponse> getShiftStatus(
             @RequestParam(value = "branchId", required = false) Long branchId,
             HttpSession session) {
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        Long targetBranchId = (sessionBranchId != null) ? sessionBranchId : (branchId != null ? branchId : 1L);
         @SuppressWarnings("unchecked")
         List<Long> employeeIds = (List<Long>) session.getAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS");
-        ShiftAttendanceResponse response = posService.getShiftStatus(branchId, employeeIds);
+        ShiftAttendanceResponse response = posService.getShiftStatus(targetBranchId, employeeIds);
         return ResponseEntity.ok(response);
     }
 
@@ -262,8 +338,9 @@ public class PosController {
     public ResponseEntity<ShiftAttendanceResponse> checkinShift(
             @RequestBody ShiftAttendanceRequest request,
             HttpSession session) {
+        Long sessionBranchId = getActivePosBranchIdOrThrow(session);
         List<Long> employeeIds = request.getEmployeeIds();
-        ShiftAttendanceResponse response = posService.getShiftStatus(request.getBranchId(), employeeIds);
+        ShiftAttendanceResponse response = posService.getShiftStatus(sessionBranchId, employeeIds);
         session.setAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS", employeeIds);
         session.setAttribute("POS_ACTIVE_CASHIERS_NAME", response.getActiveCashiersSummary());
         log.info(">>> Điểm danh nhận ca POS thành công: {} ({} nhân viên)",
@@ -297,15 +374,12 @@ public class PosController {
     public ResponseEntity<PosOrderResponse> createPosOrder(
             @RequestBody PosOrderRequest request,
             HttpSession session) {
+        Long sessionBranchId = getActivePosBranchIdOrThrow(session);
         if (request.getCashierUsername() == null || request.getCashierUsername().isBlank() || "pos_td01".equals(request.getCashierUsername())) {
             String activeCashiers = (String) session.getAttribute("POS_ACTIVE_CASHIERS_NAME");
             if (activeCashiers != null && !activeCashiers.isBlank()) {
                 request.setCashierUsername(activeCashiers);
             }
-        }
-        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-        if (sessionBranchId == null) {
-            throw new IllegalStateException("POS session expired or no active shift!");
         }
         request.setBranchId(sessionBranchId);
         PosOrderResponse response = posService.createPosOrder(request);
@@ -321,10 +395,7 @@ public class PosController {
             @PathVariable Long orderId,
             @RequestBody PosPaymentRequest request,
             HttpSession session) {
-        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-        if (sessionBranchId == null) {
-            throw new IllegalStateException("POS session expired or no active shift!");
-        }
+        Long sessionBranchId = getActivePosBranchIdOrThrow(session);
         Order order = orderRepository.findById(orderId).orElse(null);
         if (order == null || order.getBranch() == null || !sessionBranchId.equals(order.getBranch().getId())) {
             throw new IllegalStateException("Order does not belong to the current POS branch!");
@@ -339,7 +410,14 @@ public class PosController {
      */
     @GetMapping("/api/pos/orders/{orderId}/receipt")
     @ResponseBody
-    public ResponseEntity<ReceiptResponse> getReceiptData(@PathVariable Long orderId) {
+    public ResponseEntity<ReceiptResponse> getReceiptData(
+            @PathVariable Long orderId,
+            HttpSession session) {
+        Long sessionBranchId = getActivePosBranchIdOrThrow(session);
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getBranch() == null || !sessionBranchId.equals(order.getBranch().getId())) {
+            throw new IllegalStateException("Order does not belong to the current POS branch!");
+        }
         ReceiptResponse receipt = receiptService.printReceipt(orderId);
         return ResponseEntity.ok(receipt);
     }
@@ -352,6 +430,7 @@ public class PosController {
     public ResponseEntity<PosOrderResponse> checkoutCashOrder(
             @RequestBody PosCashCheckoutRequest request,
             HttpSession session) {
+        Long sessionBranchId = getActivePosBranchIdOrThrow(session);
         if (request.getOrder() != null) {
             if (request.getOrder().getCashierUsername() == null || request.getOrder().getCashierUsername().isBlank() || "pos_td01".equals(request.getOrder().getCashierUsername())) {
                 String activeCashiers = (String) session.getAttribute("POS_ACTIVE_CASHIERS_NAME");
@@ -359,12 +438,6 @@ public class PosController {
                     request.getOrder().setCashierUsername(activeCashiers);
                 }
             }
-        }
-        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-        if (sessionBranchId == null) {
-            throw new IllegalStateException("POS session expired or no active shift!");
-        }
-        if (request.getOrder() != null) {
             request.getOrder().setBranchId(sessionBranchId);
         }
         PosOrderResponse response = posService.checkoutCashOrder(
@@ -375,12 +448,20 @@ public class PosController {
         return ResponseEntity.ok(response);
     }
 
+
     /**
      * API hủy đơn hàng treo (PENDING) khi khách hủy giỏ hàng hoặc thay đổi món.
      */
     @PostMapping("/api/pos/orders/{orderId}/cancel")
     @ResponseBody
-    public ResponseEntity<Void> cancelPendingOrder(@PathVariable Long orderId) {
+    public ResponseEntity<Void> cancelPendingOrder(
+            @PathVariable Long orderId,
+            HttpSession session) {
+        Long sessionBranchId = getActivePosBranchIdOrThrow(session);
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getBranch() == null || !sessionBranchId.equals(order.getBranch().getId())) {
+            throw new IllegalStateException("Order does not belong to the current POS branch!");
+        }
         posService.cancelPendingOrder(orderId);
         return ResponseEntity.ok().build();
     }
@@ -390,9 +471,16 @@ public class PosController {
      */
     @GetMapping("/api/pos/orders/{orderId}")
     @ResponseBody
-    public ResponseEntity<PosOrderResponse> getOrderById(@PathVariable Long orderId) {
-        PosOrderResponse order = posService.getPosOrderById(orderId);
-        return ResponseEntity.ok(order);
+    public ResponseEntity<PosOrderResponse> getOrderById(
+            @PathVariable Long orderId,
+            HttpSession session) {
+        Long sessionBranchId = getActivePosBranchIdOrThrow(session);
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getBranch() == null || !sessionBranchId.equals(order.getBranch().getId())) {
+            throw new IllegalStateException("Order does not belong to the current POS branch!");
+        }
+        PosOrderResponse response = posService.getPosOrderById(orderId);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -403,9 +491,10 @@ public class PosController {
     public ResponseEntity<java.util.Map<String, Object>> checkPosPaymentStatus(
             @PathVariable Long orderId,
             HttpSession session) {
-        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-        if (sessionBranchId == null) {
-            return ResponseEntity.status(401).body(java.util.Map.of("paid", false, "message", "POS session expired"));
+        Long sessionBranchId = getActivePosBranchIdOrThrow(session);
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getBranch() == null || !sessionBranchId.equals(order.getBranch().getId())) {
+            return ResponseEntity.status(403).body(java.util.Map.of("paid", false, "message", "Forbidden: Order does not belong to current branch"));
         }
         boolean isPaid = posService.checkPosPaymentStatus(orderId);
         return ResponseEntity.ok(java.util.Map.of("paid", isPaid, "orderId", orderId));
@@ -419,9 +508,10 @@ public class PosController {
     public ResponseEntity<PosOrderResponse> skipPosPaymentForTesting(
             @PathVariable Long orderId,
             HttpSession session) {
-        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-        if (sessionBranchId == null) {
-            throw new IllegalStateException("POS session expired!");
+        Long sessionBranchId = getActivePosBranchIdOrThrow(session);
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getBranch() == null || !sessionBranchId.equals(order.getBranch().getId())) {
+            throw new IllegalStateException("Order does not belong to the current POS branch!");
         }
         PosOrderResponse response = posService.skipPosPaymentForTesting(orderId);
         return ResponseEntity.ok(response);

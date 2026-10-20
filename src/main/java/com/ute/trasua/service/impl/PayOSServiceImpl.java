@@ -400,6 +400,87 @@ public class PayOSServiceImpl implements PayOSService {
                 .orElse(false);
     }
 
+    @Override
+    @Transactional
+    public boolean syncPaymentStatusFromPayOS(String orderCode) {
+        if (orderCode == null || orderCode.isBlank()) {
+            return false;
+        }
+
+        Order order = orderRepository.findByOrderCode(orderCode).orElse(null);
+        if (order == null) {
+            return false;
+        }
+
+        if ("PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+            return true;
+        }
+
+        if (order.getPayosOrderCode() == null || !payosProperties.isConfigured()) {
+            return false;
+        }
+
+        try {
+            String checkUrl = PAYOS_API_ENDPOINT + "/" + order.getPayosOrderCode();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(checkUrl))
+                    .header("x-client-id", payosProperties.getClientId().trim())
+                    .header("x-api-key", payosProperties.getApiKey().trim())
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(response.body());
+                String code = root.path("code").asText();
+                if ("00".equals(code)) {
+                    JsonNode data = root.path("data");
+                    String status = data.path("status").asText();
+                    if ("PAID".equalsIgnoreCase(status)) {
+                        boolean isPosOrder = (order.getOrderCode() != null && order.getOrderCode().startsWith("ORD-POS-"))
+                                || "POS_WALK_IN".equalsIgnoreCase(order.getOrderType());
+
+                        order.setPaymentStatus("PAID");
+                        order.setStatus(isPosOrder ? "PAID" : "AWAITING_PREPARATION");
+                        order.setPaidAt(LocalDateTime.now());
+                        orderRepository.save(order);
+
+                        // Lưu bản ghi Payment
+                        String txCode = "PAYOS-" + order.getPayosOrderCode();
+                        if (data.path("transactions").isArray() && !data.path("transactions").isEmpty()) {
+                            txCode = data.path("transactions").get(0).path("reference").asText(txCode);
+                        }
+
+                        Payment payment = Payment.builder()
+                                .order(order)
+                                .paymentMethod("PAYOS")
+                                .amount(order.getFinalAmount())
+                                .transactionCode(txCode)
+                                .status("SUCCESS")
+                                .paidAt(LocalDateTime.now())
+                                .build();
+                        paymentRepository.save(payment);
+
+                        log.info(">>> [PayOS Active Sync] Đã đối soát thành công đơn {} trạng thái PAID từ máy chủ PayOS Cloud! Tx={}",
+                                order.getOrderCode(), txCode);
+
+                        try {
+                            orderWebSocketPublisher.broadcastOnlineOrderPaid(order);
+                        } catch (Exception e) {
+                            log.warn("Lỗi phát WebSocket trong syncPaymentStatusFromPayOS: {}", e.getMessage());
+                        }
+
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn(">>> [PayOS Active Sync] Không thể kiểm tra trạng thái PayOS cho đơn {}: {}", orderCode, e.getMessage());
+        }
+
+        return false;
+    }
+
     /**
      * Sinh mã số nguyên PayOS duy nhất không đụng hàng (đảm bảo <= 9007199254740991).
      * Phân tách tiền tố:
