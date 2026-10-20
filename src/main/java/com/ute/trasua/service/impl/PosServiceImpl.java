@@ -127,6 +127,7 @@ public class PosServiceImpl implements PosService {
                         }
                     }
                     int stock = isAvail ? productStockMap.getOrDefault(p.getId(), 0) : 0;
+                    boolean finalAvailable = isAvail && stock > 0;
                     return PosMenuResponse.ProductDto.builder()
                             .id(p.getId())
                             .productCode(p.getProductCode())
@@ -137,7 +138,7 @@ public class PosServiceImpl implements PosService {
                             .imageUrl(p.getImageUrl())
                             .description(p.getDescription())
                             .status(p.getStatus())
-                            .isAvailable(isAvail)
+                            .isAvailable(finalAvailable)
                             .stockEstimate(stock)
                             .build();
                 })
@@ -250,6 +251,9 @@ public class PosServiceImpl implements PosService {
                 if (itemReq.getToppingIds() != null && !itemReq.getToppingIds().isEmpty()) {
                     toppings = toppingRepository.findAllById(itemReq.getToppingIds());
                     for (Topping t : toppings) {
+                        if (!branchMenuService.isToppingAvailableAtBranch(branch.getId(), t.getId())) {
+                            throw new IllegalStateException("Topping [" + t.getName() + "] is currently unavailable at this branch!");
+                        }
                         if (t.getPrice() != null) {
                             unitPrice = unitPrice.add(t.getPrice());
                         }
@@ -439,12 +443,6 @@ public class PosServiceImpl implements PosService {
     public List<ShiftEmployeeDto> getBranchEmployees(Long branchId) {
         Long targetBranchId = (branchId != null) ? branchId : 1L;
         List<Employee> employees = employeeRepository.findByBranchIdAndStatus(targetBranchId, "ACTIVE");
-        if (employees.isEmpty()) {
-            // Fallback lấy toàn bộ nhân viên active nếu chi nhánh chưa có nhân viên riêng
-            employees = employeeRepository.findAll().stream()
-                    .filter(e -> "ACTIVE".equalsIgnoreCase(e.getStatus()))
-                    .collect(Collectors.toList());
-        }
 
         return employees.stream()
                 .map(e -> ShiftEmployeeDto.builder()
@@ -584,12 +582,18 @@ public class PosServiceImpl implements PosService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public boolean checkPosPaymentStatus(Long orderId) {
         if (orderId == null) return false;
-        return orderRepository.findById(orderId)
-                .map(o -> "PAID".equalsIgnoreCase(o.getPaymentStatus()))
-                .orElse(false);
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null) return false;
+
+        if ("PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+            return true;
+        }
+
+        // Tự động đối soát trực tiếp với PayOS Cloud nếu đơn POS vẫn đang UNPAID
+        return payosService.syncPaymentStatusFromPayOS(order.getOrderCode());
     }
 
     @Override

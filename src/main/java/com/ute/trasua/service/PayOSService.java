@@ -55,4 +55,14 @@ public interface PayOSService {
      * @return true nếu đơn đã được thanh toán (PAID)
      */
     boolean checkPaymentStatus(String orderCode);
+
+    /**
+     * Chủ động đối soát trực tiếp trạng thái thanh toán từ PayOS Cloud (Active Reconciliation).
+     * Hữu dụng đặc biệt trong môi trường dev localhost (không nhận được Webhook) hoặc khi mạng chập chờn.
+     * Tự động cập nhật Database sang PAID, lưu Payment và phát WebSocket STOMP nếu PayOS xác nhận đã nhận tiền.
+     *
+     * @param orderCode Mã đơn hàng
+     * @return true nếu đơn hàng đã được thanh toán thành công
+     */
+    boolean syncPaymentStatusFromPayOS(String orderCode);
 }

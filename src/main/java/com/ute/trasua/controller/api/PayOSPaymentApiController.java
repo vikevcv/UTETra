@@ -78,6 +78,9 @@ public class PayOSPaymentApiController {
         }
 
         boolean isPaid = payosService.checkPaymentStatus(orderCode);
+        if (!isPaid) {
+            isPaid = payosService.syncPaymentStatusFromPayOS(orderCode);
+        }
         Map<String, Object> result = new HashMap<>();
         result.put("orderCode", orderCode);
         result.put("paid", isPaid);

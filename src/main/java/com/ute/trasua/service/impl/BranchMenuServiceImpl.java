@@ -288,10 +288,6 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             }
 
             int estimatedCups = mainTeaStock.divide(BigDecimal.valueOf(0.02), 0, RoundingMode.FLOOR).intValue();
-            if (!inventories.isEmpty() && estimatedCups <= 0 && mainTeaStock.compareTo(BigDecimal.ZERO) == 0) {
-                // Nếu kho có nguyên liệu nhưng chưa gán trà riêng, lấy tồn kho ước tính từ nguyên liệu chung
-                estimatedCups = 50;
-            }
             int currentStock = isDbAvail ? Math.max(0, estimatedCups) : 0;
             boolean isAvail = isDbAvail && (currentStock > 0);
 
@@ -339,9 +335,6 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             }
 
             int estimatedPortions = toppingIngStock.divide(BigDecimal.valueOf(0.05), 0, RoundingMode.FLOOR).intValue();
-            if (!inventories.isEmpty() && estimatedPortions <= 0 && toppingIngStock.compareTo(BigDecimal.ZERO) == 0) {
-                estimatedPortions = 40;
-            }
             int currentStock = isDbAvail ? Math.max(0, estimatedPortions) : 0;
             boolean isAvail = isDbAvail && (currentStock > 0);
 
@@ -740,16 +733,27 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     @Override
     @Transactional(readOnly = true)
     public boolean isProductAvailable(Long branchId, Long productId) {
-        if (branchId == null || productId == null) return true;
-        return branchMenuRepository.findByBranchIdAndProductId(branchId, productId)
+        if (branchId == null || productId == null) return false;
+        boolean dbAvail = branchMenuRepository.findByBranchIdAndProductId(branchId, productId)
                 .map(BranchMenu::isAvailable)
                 .orElse(true);
+        if (!dbAvail) {
+            return false;
+        }
+
+        // Tái sử dụng nguồn sự thật từ getBranchMenuStatus để đảm bảo nhất quán 100% giữa POS UI và backend order gate
+        List<BranchMenuStatusDto> statuses = getBranchMenuStatus(branchId);
+        return statuses.stream()
+                .filter(dto -> "PRODUCT".equalsIgnoreCase(dto.getItemType()) && productId.equals(dto.getId()))
+                .findFirst()
+                .map(dto -> Boolean.TRUE.equals(dto.getIsAvailable()) && dto.getStockEstimate() != null && dto.getStockEstimate() > 0)
+                .orElse(false);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean isToppingAvailableAtBranch(Long branchId, Long toppingId) {
-        if (branchId == null || toppingId == null) return true;
+        if (branchId == null || toppingId == null) return false;
         return branchToppingRepository.findByBranchIdAndToppingId(branchId, toppingId)
                 .map(BranchTopping::getIsAvailable)
                 .orElse(true);

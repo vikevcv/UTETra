@@ -987,13 +987,12 @@ public class DataInitializer implements CommandLineRunner {
             ingredientRepository.saveAll(rawMaterials);
             log.info(">>> Đã khởi tạo 11 danh mục nguyên liệu pha chế & bao bì chuẩn chuỗi!");
 
-            // Khởi tạo tồn kho ban đầu cho tất cả các chi nhánh trong hệ thống
+            // Khởi tạo tồn kho ban đầu cho tất cả các chi nhánh trong hệ thống (đảm bảo mọi chi nhánh đều đủ 11 nguyên liệu)
             java.util.List<com.ute.trasua.entity.Branch> allBranches = branchRepository.findAll();
             for (com.ute.trasua.entity.Branch b : allBranches) {
-                if (branchInventoryRepository.findByBranchId(b.getId()).isEmpty()) {
-                    java.util.List<com.ute.trasua.entity.BranchInventory> stockList = new java.util.ArrayList<>();
-                    for (com.ute.trasua.entity.Ingredient ing : ingredientRepository.findAll()) {
-                        stockList.add(com.ute.trasua.entity.BranchInventory.builder()
+                for (com.ute.trasua.entity.Ingredient ing : ingredientRepository.findAll()) {
+                    if (!branchInventoryRepository.existsByBranchIdAndIngredientId(b.getId(), ing.getId())) {
+                        branchInventoryRepository.save(com.ute.trasua.entity.BranchInventory.builder()
                             .branch(b)
                             .ingredient(ing)
                             .stockQuantity(new java.math.BigDecimal("50.00"))
@@ -1001,8 +1000,6 @@ public class DataInitializer implements CommandLineRunner {
                             .updatedAt(LocalDateTime.now())
                             .build());
                     }
-                    branchInventoryRepository.saveAll(stockList);
-                    log.info(">>> Đã khởi tạo tồn kho nguyên liệu ban đầu cho chi nhánh: {}!", b.getName());
                 }
             }
 
