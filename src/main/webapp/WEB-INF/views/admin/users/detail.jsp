@@ -84,6 +84,19 @@
             <strong>${user.email}</strong>
           </div>
           <div class="d-flex justify-content-between py-2 border-bottom">
+            <span class="text-muted">Chi nhánh trực thuộc:</span>
+            <strong>
+              <c:choose>
+                <c:when test="${not empty user.branchName}">
+                  <span class="text-primary"><i class="fa-solid fa-store me-1"></i>${user.branchName} (${user.branchCode})</span>
+                </c:when>
+                <c:otherwise>
+                  <span class="text-muted fst-italic">Toàn chuỗi / Chưa gán</span>
+                </c:otherwise>
+              </c:choose>
+            </strong>
+          </div>
+          <div class="d-flex justify-content-between py-2 border-bottom">
             <span class="text-muted">Số điện thoại:</span>
             <strong>${not empty user.phone ? user.phone : 'Chưa cập nhật'}</strong>
           </div>
@@ -105,6 +118,7 @@
         </div>
 
         <form action="${pageContext.request.contextPath}/admin/users/${user.id}/update" method="post">
+          <input type="hidden" name="redirectDetail" value="true">
           <div class="row g-3">
             <div class="col-12 col-md-6">
               <label class="form-label small fw-bold">Tên đăng nhập</label>
@@ -127,13 +141,28 @@
 
             <div class="col-12">
               <label class="form-label small fw-bold">Phân quyền vai trò</label>
-              <select name="role" class="form-select">
+              <select name="role" id="detailRoleSelect" class="form-select" onchange="handleDetailRoleChange()">
                 <option value="ROLE_CUSTOMER" ${user.roles.contains('ROLE_CUSTOMER') ? 'selected' : ''}>Khách Hàng (ROLE_CUSTOMER)</option>
                 <option value="ROLE_DRIVER" ${user.roles.contains('ROLE_DRIVER') ? 'selected' : ''}>Tài Xế Giao Hàng (ROLE_DRIVER)</option>
                 <option value="ROLE_STAFF" ${user.roles.contains('ROLE_STAFF') ? 'selected' : ''}>Nhân Viên Quán (ROLE_STAFF)</option>
                 <option value="ROLE_MANAGER" ${user.roles.contains('ROLE_MANAGER') ? 'selected' : ''}>Quản Lý Chi Nhánh (ROLE_MANAGER)</option>
                 <option value="ROLE_ADMIN" ${user.roles.contains('ROLE_ADMIN') ? 'selected' : ''}>Chủ Chuỗi Cấp Cao (ROLE_ADMIN)</option>
               </select>
+            </div>
+
+            <div class="col-12" id="detailBranchGroup">
+              <label class="form-label small fw-bold">
+                Chi nhánh trực thuộc phân công <span class="text-danger" id="detailBranchStar">*</span>
+              </label>
+              <select name="branchId" id="detailBranchSelect" class="form-select">
+                <option value="">-- Chọn chi nhánh trực thuộc --</option>
+                <c:forEach var="b" items="${branches}">
+                  <option value="${b.id}" ${user.branchId == b.id ? 'selected' : ''}>${b.name} (${b.branchCode})</option>
+                </c:forEach>
+              </select>
+              <div class="form-text small text-muted">
+                Bắt buộc chọn chi nhánh khi phân quyền Quản lý chi nhánh, Nhân viên quán hoặc Tài xế giao hàng.
+              </div>
             </div>
 
             <div class="col-12 mt-4 text-end">
@@ -171,6 +200,28 @@
   </div>
 
   <script>
+    function handleDetailRoleChange() {
+      const role = document.getElementById('detailRoleSelect').value;
+      const branchGroup = document.getElementById('detailBranchGroup');
+      const branchSelect = document.getElementById('detailBranchSelect');
+      const branchStar = document.getElementById('detailBranchStar');
+      const needsBranch = (role === 'ROLE_MANAGER' || role === 'ROLE_STAFF' || role === 'ROLE_DRIVER');
+      if (needsBranch) {
+        branchGroup.style.display = 'block';
+        branchSelect.required = true;
+        if (branchStar) branchStar.style.display = 'inline';
+      } else {
+        branchGroup.style.display = 'none';
+        branchSelect.required = false;
+        branchSelect.value = '';
+        if (branchStar) branchStar.style.display = 'none';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      handleDetailRoleChange();
+    });
+
     function openLockModal(id, username) {
       const modal = new bootstrap.Modal(document.getElementById('lockUserModal'));
       modal.show();

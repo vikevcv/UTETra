@@ -53,6 +53,10 @@ public class User {
     @Column(name = "created_at", updatable = false)
     private java.time.LocalDateTime createdAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private Branch branch;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles",
                      joinColumns = @JoinColumn(name = "user_id"))

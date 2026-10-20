@@ -37,6 +37,8 @@ public class ProductController {
     private final CategoryService categoryService;
     private final BranchMenuService branchMenuService;
     private final BranchRepository branchRepository;
+    private final com.ute.trasua.service.IngredientService ingredientService;
+    private final com.ute.trasua.service.RecipeService recipeService;
 
     /**
      * Display list of products with search, category filtering, status filtering, and pagination.
@@ -89,6 +91,7 @@ public class ProductController {
     public String newProductForm(Model model) {
         model.addAttribute("product", new ProductRequest());
         model.addAttribute("categories", categoryService.getActiveCategories());
+        model.addAttribute("ingredients", ingredientService.getActiveIngredients());
         model.addAttribute("isEdit", false);
         model.addAttribute("pageTitle", "Thêm Món Nước Mới — UTETra");
         return "admin/products/form";
@@ -100,9 +103,16 @@ public class ProductController {
     @PostMapping("/create")
     public String createProduct(
             @ModelAttribute("product") ProductRequest request,
+            @RequestParam(value = "recipeIngredientIds", required = false) List<Long> recipeIngredientIds,
+            @RequestParam(value = "recipeQuantities", required = false) List<java.math.BigDecimal> recipeQuantities,
+            @RequestParam(value = "recipeNotes", required = false) List<String> recipeNotes,
             RedirectAttributes redirectAttributes
     ) {
         try {
+            request.setRecipeIngredientIds(recipeIngredientIds);
+            request.setRecipeQuantities(recipeQuantities);
+            request.setRecipeNotes(recipeNotes);
+
             ProductResponse created = productService.createProduct(request);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Thêm món nước [" + created.getName() + "] thành công!");
@@ -134,6 +144,8 @@ public class ProductController {
 
             model.addAttribute("product", form);
             model.addAttribute("categories", categoryService.getAllCategories());
+            model.addAttribute("ingredients", ingredientService.getActiveIngredients());
+            model.addAttribute("recipes", recipeService.getRecipesByProductId(id));
             model.addAttribute("isEdit", true);
             model.addAttribute("pageTitle", "Chỉnh Sửa Món: " + res.getName() + " — UTETra");
             return "admin/products/form";
@@ -151,9 +163,16 @@ public class ProductController {
     public String updateProduct(
             @PathVariable("id") Long id,
             @ModelAttribute("product") ProductRequest request,
+            @RequestParam(value = "recipeIngredientIds", required = false) List<Long> recipeIngredientIds,
+            @RequestParam(value = "recipeQuantities", required = false) List<java.math.BigDecimal> recipeQuantities,
+            @RequestParam(value = "recipeNotes", required = false) List<String> recipeNotes,
             RedirectAttributes redirectAttributes
     ) {
         try {
+            request.setRecipeIngredientIds(recipeIngredientIds);
+            request.setRecipeQuantities(recipeQuantities);
+            request.setRecipeNotes(recipeNotes);
+
             ProductResponse updated = productService.updateProduct(id, request);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Cập nhật món [" + updated.getName() + "] thành công!");

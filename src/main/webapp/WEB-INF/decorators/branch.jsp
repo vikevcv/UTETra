@@ -75,6 +75,15 @@
               <span>Bàn Làm Việc Ca Trực</span>
             </a>
           </li>
+          <c:if test="${not (pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN'))}">
+            <li class="sidebar-item">
+              <a href="${pageContext.request.contextPath}/branch/profile" 
+                 class="sidebar-link ${fn:contains(pageContext.request.requestURI, '/branch/profile') ? 'active' : ''}">
+                <i class="fa-solid fa-id-card text-warning"></i>
+                <span>Hồ Sơ Quản Lý</span>
+              </a>
+            </li>
+          </c:if>
         </ul>
 
         <!-- Nhóm: Vận Hành Chi Nhánh -->
@@ -219,7 +228,14 @@
             </div>
             
             <ul class="dropdown-menu dropdown-menu-end shadow" style="font-size: 0.88rem;">
-              <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/branch/dashboard"><i class="fa-solid fa-user-gear me-2 text-warning"></i> Ca trực hôm nay</a></li>
+              <c:choose>
+                <c:when test="${not (pageContext.request.isUserInRole('ADMIN') || pageContext.request.isUserInRole('ROLE_ADMIN'))}">
+                  <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/branch/profile"><i class="fa-solid fa-id-card me-2 text-warning"></i> Hồ sơ quản lý</a></li>
+                </c:when>
+                <c:otherwise>
+                  <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin/profile"><i class="fa-solid fa-id-badge me-2 text-primary"></i> Hồ sơ quản trị chuỗi</a></li>
+                </c:otherwise>
+              </c:choose>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item py-2 text-danger" href="${pageContext.request.contextPath}/auth/logout"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Đăng xuất an toàn</a></li>
             </ul>

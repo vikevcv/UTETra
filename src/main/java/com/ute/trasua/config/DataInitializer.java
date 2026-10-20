@@ -38,6 +38,7 @@ public class DataInitializer implements CommandLineRunner {
     private final com.ute.trasua.repository.OrderRepository orderRepository;
     private final com.ute.trasua.repository.PromotionRepository promotionRepository;
     private final com.ute.trasua.repository.BranchMenuRepository branchMenuRepository;
+    private final com.ute.trasua.repository.ProductRecipeRepository productRecipeRepository;
     private final PasswordEncoder passwordEncoder;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
@@ -58,6 +59,7 @@ public class DataInitializer implements CommandLineRunner {
             com.ute.trasua.repository.OrderRepository orderRepository,
             com.ute.trasua.repository.PromotionRepository promotionRepository,
             com.ute.trasua.repository.BranchMenuRepository branchMenuRepository,
+            com.ute.trasua.repository.ProductRecipeRepository productRecipeRepository,
             PasswordEncoder passwordEncoder,
             org.springframework.jdbc.core.JdbcTemplate jdbcTemplate
     ) {
@@ -77,6 +79,7 @@ public class DataInitializer implements CommandLineRunner {
         this.orderRepository = orderRepository;
         this.promotionRepository = promotionRepository;
         this.branchMenuRepository = branchMenuRepository;
+        this.productRecipeRepository = productRecipeRepository;
         this.passwordEncoder = passwordEncoder;
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -981,6 +984,160 @@ public class DataInitializer implements CommandLineRunner {
 
         // Khởi tạo các chương trình khuyến mãi mẫu (Module 4 / UC18, UC24)
         initSamplePromotions();
+
+        // Khởi tạo định lượng công thức món chuẩn chuỗi (ProductRecipe)
+        initProductRecipes();
+    }
+
+    private void initProductRecipes() {
+        if (productRecipeRepository.count() > 0) {
+            return;
+        }
+
+        List<Product> products = productRepository.findAll();
+        if (products.isEmpty()) {
+            return;
+        }
+
+        Ingredient nl001 = ingredientRepository.findByCode("NL001").orElse(null); // Trà Đen
+        Ingredient nl002 = ingredientRepository.findByCode("NL002").orElse(null); // Lục Trà Nhài
+        Ingredient nl003 = ingredientRepository.findByCode("NL003").orElse(null); // Trà Ô Long
+        Ingredient nl004 = ingredientRepository.findByCode("NL004").orElse(null); // Sữa Tươi Dalat Milk
+        Ingredient nl005 = ingredientRepository.findByCode("NL005").orElse(null); // Hạt Sen
+        Ingredient nl007 = ingredientRepository.findByCode("NL007").orElse(null); // Kem Mây Sữa Béo
+        Ingredient nl009 = ingredientRepository.findByCode("NL009").orElse(null); // Đường Phèn
+
+        List<ProductRecipe> recipesToSave = new ArrayList<>();
+
+        for (Product product : products) {
+            String name = product.getName().toLowerCase();
+
+            // 1. Trà sữa Oolong / Ô long
+            if (name.contains("oolong") || name.contains("ô long")) {
+                if (nl003 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl003)
+                            .quantity(new BigDecimal("0.0200"))
+                            .note("20g Trà Ô Long Cầu Đất")
+                            .build());
+                }
+                if (nl004 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl004)
+                            .quantity(new BigDecimal("0.1000"))
+                            .note("100ml Sữa tươi Dalat Milk thanh trùng")
+                            .build());
+                }
+                if (nl009 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl009)
+                            .quantity(new BigDecimal("0.0200"))
+                            .note("20g Đường phèn tinh khiết")
+                            .build());
+                }
+            }
+            // 2. Lục trà nhài
+            else if (name.contains("nhài") || name.contains("lài")) {
+                if (nl002 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl002)
+                            .quantity(new BigDecimal("0.0250"))
+                            .note("25g Lục trà hoa nhài hữu cơ")
+                            .build());
+                }
+                if (nl009 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl009)
+                            .quantity(new BigDecimal("0.0200"))
+                            .note("20g Đường phèn tinh khiết")
+                            .build());
+                }
+            }
+            // 3. Macchiato / Kem mây / Kem cheese
+            else if (name.contains("macchiato") || name.contains("kem mây") || name.contains("kem cheese")) {
+                if (nl001 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl001)
+                            .quantity(new BigDecimal("0.0200"))
+                            .note("20g Trà Đen Shan Tuyết")
+                            .build());
+                }
+                if (nl007 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl007)
+                            .quantity(new BigDecimal("0.0500"))
+                            .note("50ml Kem mây sữa béo thơm mịn")
+                            .build());
+                }
+                if (nl009 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl009)
+                            .quantity(new BigDecimal("0.0200"))
+                            .note("20g Đường phèn")
+                            .build());
+                }
+            }
+            // 4. Trà sen
+            else if (name.contains("sen")) {
+                if (nl001 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl001)
+                            .quantity(new BigDecimal("0.0200"))
+                            .note("20g Trà cốt thượng hạng")
+                            .build());
+                }
+                if (nl005 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl005)
+                            .quantity(new BigDecimal("0.0300"))
+                            .note("30g Hạt sen Huế hầm mềm")
+                            .build());
+                }
+                if (nl009 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl009)
+                            .quantity(new BigDecimal("0.0200"))
+                            .note("20g Đường phèn")
+                            .build());
+                }
+            }
+            // 5. Các món trà khác (Bạch Hạc Shan Tuyết, Đại Hồng Bào, Thiết Quan Âm, PayOS test...)
+            else {
+                Ingredient teaIng = (nl001 != null) ? nl001 : nl003;
+                if (teaIng != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(teaIng)
+                            .quantity(new BigDecimal("0.0200"))
+                            .note("20g Trà búp nguyên bản tuyển chọn")
+                            .build());
+                }
+                if (nl009 != null) {
+                    recipesToSave.add(ProductRecipe.builder()
+                            .product(product)
+                            .ingredient(nl009)
+                            .quantity(new BigDecimal("0.0150"))
+                            .note("15g Đường phèn cân bằng vị trà")
+                            .build());
+                }
+            }
+        }
+
+        if (!recipesToSave.isEmpty()) {
+            productRecipeRepository.saveAll(recipesToSave);
+            log.info(">>> Đã khởi tạo {} định mức công thức pha chế (ProductRecipe) chuẩn chuỗi cho các món trà!", recipesToSave.size());
+        }
     }
 
     private void initSampleOrders() {

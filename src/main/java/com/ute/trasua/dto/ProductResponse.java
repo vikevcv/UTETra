@@ -30,6 +30,7 @@ public class ProductResponse {
     private Integer reviewCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private java.util.List<RecipeItemDto> recipes;
 
     public static ProductResponse fromEntity(Product p) {
         if (p == null) return null;

@@ -25,6 +25,7 @@ import java.util.Set;
 public class UserManagementController {
 
     private final UserManagementService userService;
+    private final com.ute.trasua.service.BranchService branchService;
 
     /**
      * Màn hình danh sách người dùng kèm bộ lọc tìm kiếm và phân trang (UC20).
@@ -51,6 +52,7 @@ public class UserManagementController {
 
         model.addAttribute("usersPage", usersPage);
         model.addAttribute("stats", stats);
+        model.addAttribute("branches", branchService.getAllBranches());
         model.addAttribute("searchRequest", searchRequest);
         model.addAttribute("pageTitle", "Quản Lý Người Dùng Toàn Chuỗi — UTETra");
 
@@ -65,6 +67,7 @@ public class UserManagementController {
         try {
             UserResponse user = userService.getUserById(id);
             model.addAttribute("user", user);
+            model.addAttribute("branches", branchService.getAllBranches());
             model.addAttribute("pageTitle", "Chi Tiết Người Dùng: " + user.getUsername());
             return "admin/users/detail";
         } catch (IllegalArgumentException e) {
@@ -119,22 +122,31 @@ public class UserManagementController {
             @RequestParam(value = "fullName", required = false) String fullName,
             @RequestParam(value = "phone", required = false) String phone,
             @RequestParam(value = "role", required = false) String role,
+            @RequestParam(value = "branchId", required = false) Long branchId,
+            @RequestParam(value = "redirectDetail", required = false) Boolean redirectDetail,
             RedirectAttributes redirectAttributes
     ) {
         try {
             UserUpdateRequest.UserUpdateRequestBuilder builder = UserUpdateRequest.builder()
                     .fullName(fullName)
-                    .phone(phone);
+                    .phone(phone)
+                    .branchId(branchId);
 
             if (role != null && !role.isBlank()) {
                 builder.roles(Set.of(role));
             }
 
             userService.updateUser(id, builder.build());
-            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật thông tin tài khoản thành công!");
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật thông tin và phân quyền tài khoản thành công!");
         } catch (Exception e) {
             log.error("Lỗi khi cập nhật user {}: {}", id, e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            if (Boolean.TRUE.equals(redirectDetail)) {
+                return "redirect:/admin/users/" + id;
+            }
+        }
+        if (Boolean.TRUE.equals(redirectDetail)) {
+            return "redirect:/admin/users/" + id;
         }
         return "redirect:/admin/users";
     }

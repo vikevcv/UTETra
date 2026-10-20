@@ -520,12 +520,16 @@ public class PosServiceImpl implements PosService {
         }
         PosAccount existingPos = posAccountRepository.findByUsername(user.getUsername()).orElse(null);
         if (existingPos != null) {
+            if (user.getBranch() != null && (existingPos.getBranch() == null || !existingPos.getBranch().getId().equals(user.getBranch().getId()))) {
+                existingPos.setBranch(user.getBranch());
+            }
             return existingPos;
         }
+        Branch branchToUse = (user.getBranch() != null) ? user.getBranch() : defaultBranch;
         return PosAccount.builder()
                 .username(user.getUsername())
                 .counterName(user.getFullName() != null ? user.getFullName() : (user.getUsername() + " (Quầy POS)"))
-                .branch(defaultBranch)
+                .branch(branchToUse)
                 .active(true)
                 .build();
     }

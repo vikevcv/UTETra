@@ -161,8 +161,44 @@
           <!-- Mô tả món -->
           <div class="mb-4">
             <label for="description" class="form-label fw-semibold">Mô Tả Hương Vị & Thành Phần</label>
-            <textarea class="form-control" id="description" name="description" rows="4" 
+            <textarea class="form-control" id="description" name="description" rows="3" 
                       placeholder="Mô tả hương vị trà, độ ngọt, lớp kem cheese béo ngậy...">${product.description}</textarea>
+          </div>
+
+          <!-- Công thức pha chế định lượng nguyên liệu -->
+          <div class="p-3 mb-4 rounded-3 border bg-light">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-2 border-bottom">
+              <div>
+                <h6 class="fw-bold text-dark mb-0 d-flex align-items-center">
+                  <i class="fa-solid fa-flask-vial text-success me-2"></i>Công Thức Pha Chế Định Lượng (1 Ly Tiêu Chuẩn)
+                </h6>
+                <div class="text-muted small mt-1" style="font-size: 0.8rem;">
+                  Hệ thống tự động trừ kho nguyên liệu theo định lượng này khi hoàn thành đơn để ước lượng tồn kho.
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-success text-white shadow-sm" onclick="addRecipeRow()">
+                <i class="fa-solid fa-plus me-1"></i>Thêm Nguyên Liệu
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm align-middle bg-white mb-1" id="recipeTable">
+                <thead class="table-light small">
+                  <tr>
+                    <th style="width: 50%;">Nguyên Liệu Trong Kho <span class="text-danger">*</span></th>
+                    <th style="width: 25%;">Định Lượng / 1 Ly <span class="text-danger">*</span></th>
+                    <th style="width: 15%;">Đơn Vị</th>
+                    <th style="width: 10%;" class="text-center">Xóa</th>
+                  </tr>
+                </thead>
+                <tbody id="recipeTableBody">
+                  <!-- Dòng nguyên liệu được render tự động bằng JS -->
+                </tbody>
+              </table>
+            </div>
+            <div id="emptyRecipeNotice" class="text-center text-muted small py-2 d-none">
+              <em>Chưa có nguyên liệu nào. Bấm "+ Thêm Nguyên Liệu" ở trên để khai báo công thức món.</em>
+            </div>
           </div>
 
           <!-- Nút bấm submit -->
@@ -337,4 +373,94 @@
     }
     resetBtn.classList.add('d-none');
   }
+
+  // ==================== QUẢN LÝ CÔNG THỨC PHA CHẾ ====================
+  const allIngredients = [
+    <c:forEach var="ing" items="${ingredients}" varStatus="loop">
+      { id: ${ing.id}, code: '${ing.code}', name: '${fn:escapeXml(ing.name)}', unit: '${ing.unit}' }${!loop.last ? ',' : ''}
+    </c:forEach>
+  ];
+
+  const existingRecipes = [
+    <c:forEach var="rec" items="${recipes}" varStatus="loop">
+      { ingredientId: ${rec.ingredientId}, quantity: ${rec.quantity}, unit: '${rec.ingredientUnit}' }${!loop.last ? ',' : ''}
+    </c:forEach>
+  ];
+
+  function renderRecipeRow(ingId = '', qty = '', unit = '') {
+    const tbody = document.getElementById('recipeTableBody');
+    const tr = document.createElement('tr');
+    tr.className = 'recipe-row';
+
+    let optionsHtml = '<option value="">-- Chọn nguyên liệu --</option>';
+    allIngredients.forEach(ing => {
+      const selected = (ingId && Number(ingId) === Number(ing.id)) ? 'selected' : '';
+      optionsHtml += `<option value="${ing.id}" data-unit="${ing.unit}" ${selected}>[${ing.code}] ${ing.name} (${ing.unit})</option>`;
+    });
+
+    tr.innerHTML = `
+      <td>
+        <select name="recipeIngredientIds" class="form-select form-select-sm recipe-ing-select" onchange="onIngredientChange(this)" required>
+          ${optionsHtml}
+        </select>
+      </td>
+      <td>
+        <input type="number" name="recipeQuantities" class="form-control form-control-sm text-end" 
+               step="0.0001" min="0.0001" value="${qty}" placeholder="VD: 0.02" required>
+      </td>
+      <td>
+        <span class="badge bg-light text-dark border px-2 py-1 unit-label">${unit || 'Chưa chọn'}</span>
+      </td>
+      <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRecipeRow(this)" title="Xóa dòng">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    checkRecipeEmpty();
+  }
+
+  function onIngredientChange(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const unit = selectedOption ? selectedOption.getAttribute('data-unit') : 'Chưa chọn';
+    const tr = select.closest('tr');
+    const unitLabel = tr.querySelector('.unit-label');
+    if (unitLabel) {
+      unitLabel.textContent = unit || 'Chưa chọn';
+    }
+  }
+
+  function addRecipeRow() {
+    renderRecipeRow('', '', '');
+  }
+
+  function removeRecipeRow(btn) {
+    const tr = btn.closest('tr');
+    if (tr) {
+      tr.remove();
+      checkRecipeEmpty();
+    }
+  }
+
+  function checkRecipeEmpty() {
+    const rows = document.querySelectorAll('.recipe-row');
+    const notice = document.getElementById('emptyRecipeNotice');
+    if (notice) {
+      if (rows.length === 0) {
+        notice.classList.remove('d-none');
+      } else {
+        notice.classList.add('d-none');
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (existingRecipes && existingRecipes.length > 0) {
+      existingRecipes.forEach(r => renderRecipeRow(r.ingredientId, r.quantity, r.unit));
+    } else {
+      // Mặc định tạo 1 dòng trống cho admin dễ nhập
+      renderRecipeRow('', '', '');
+    }
+  });
 </script>

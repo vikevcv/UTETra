@@ -37,6 +37,7 @@ public class ProductServiceImpl implements ProductService {
     private final BranchMenuRepository branchMenuRepository;
     private final com.ute.trasua.repository.OrderDetailRepository orderDetailRepository;
     private final CloudinaryService cloudinaryService;
+    private final com.ute.trasua.service.RecipeService recipeService;
 
     public ProductServiceImpl(
             ProductRepository productRepository,
@@ -44,7 +45,8 @@ public class ProductServiceImpl implements ProductService {
             BranchRepository branchRepository,
             BranchMenuRepository branchMenuRepository,
             com.ute.trasua.repository.OrderDetailRepository orderDetailRepository,
-            CloudinaryService cloudinaryService
+            CloudinaryService cloudinaryService,
+            com.ute.trasua.service.RecipeService recipeService
     ) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
@@ -52,6 +54,7 @@ public class ProductServiceImpl implements ProductService {
         this.branchMenuRepository = branchMenuRepository;
         this.orderDetailRepository = orderDetailRepository;
         this.cloudinaryService = cloudinaryService;
+        this.recipeService = recipeService;
     }
 
     @Override
@@ -138,7 +141,11 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public ProductResponse getProductById(Long id) {
         Product product = getProductEntityById(id);
-        return ProductResponse.fromEntity(product);
+        ProductResponse res = ProductResponse.fromEntity(product);
+        if (res != null) {
+            res.setRecipes(recipeService.getRecipesByProductId(id));
+        }
+        return res;
     }
 
     @Override
@@ -199,10 +206,23 @@ public class ProductServiceImpl implements ProductService {
         Product saved = productRepository.save(product);
         log.info(">>> Created new Product: [{}] {}", saved.getProductCode(), saved.getName());
 
+        // Lưu công thức pha chế nếu có
+        List<com.ute.trasua.dto.RecipeItemDto> recipes = request.getRecipes();
+        if (recipes == null || recipes.isEmpty()) {
+            recipes = recipeService.parseRecipeInputs(request.getRecipeIngredientIds(), request.getRecipeQuantities(), request.getRecipeNotes());
+        }
+        if (recipes != null && !recipes.isEmpty()) {
+            recipeService.saveProductRecipes(saved.getId(), recipes);
+        }
+
         // Tự động đồng bộ sản phẩm vào thực đơn của tất cả các chi nhánh đang hoạt động
         syncProductToAllBranches(saved);
 
-        return ProductResponse.fromEntity(saved);
+        ProductResponse response = ProductResponse.fromEntity(saved);
+        if (response != null) {
+            response.setRecipes(recipeService.getRecipesByProductId(saved.getId()));
+        }
+        return response;
     }
 
     @Override
@@ -265,7 +285,21 @@ public class ProductServiceImpl implements ProductService {
 
         Product updated = productRepository.save(product);
         log.info(">>> Updated Product: [{}] {}", updated.getProductCode(), updated.getName());
-        return ProductResponse.fromEntity(updated);
+
+        // Cập nhật công thức pha chế nếu có
+        List<com.ute.trasua.dto.RecipeItemDto> recipes = request.getRecipes();
+        if (recipes == null || recipes.isEmpty()) {
+            recipes = recipeService.parseRecipeInputs(request.getRecipeIngredientIds(), request.getRecipeQuantities(), request.getRecipeNotes());
+        }
+        if (recipes != null) {
+            recipeService.saveProductRecipes(updated.getId(), recipes);
+        }
+
+        ProductResponse response = ProductResponse.fromEntity(updated);
+        if (response != null) {
+            response.setRecipes(recipeService.getRecipesByProductId(updated.getId()));
+        }
+        return response;
     }
 
     @Override
