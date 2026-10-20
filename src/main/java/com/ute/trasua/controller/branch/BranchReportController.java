@@ -85,6 +85,8 @@ public class BranchReportController {
         List<String> labels = new ArrayList<>();
         List<Double> netRevenues = new ArrayList<>();
         List<Double> grossRevenues = new ArrayList<>();
+        List<Double> expenses = new ArrayList<>();
+        List<Double> profits = new ArrayList<>();
         List<Long> orderCounts = new ArrayList<>();
 
         if (report.getDailyRevenues() != null) {
@@ -92,6 +94,8 @@ public class BranchReportController {
                 labels.add(d.getFormattedDate() + " (" + d.getDayOfWeek() + ")");
                 netRevenues.add(d.getNetAmount() != null ? d.getNetAmount().doubleValue() : 0.0);
                 grossRevenues.add(d.getGrossAmount() != null ? d.getGrossAmount().doubleValue() : 0.0);
+                expenses.add(d.getExpenseAmount() != null ? d.getExpenseAmount().doubleValue() : 0.0);
+                profits.add(d.getProfitAmount() != null ? d.getProfitAmount().doubleValue() : 0.0);
                 orderCounts.add(d.getOrderCount());
             }
         }
@@ -108,6 +112,8 @@ public class BranchReportController {
         model.addAttribute("chartLabelsJson", toJsonArray(labels));
         model.addAttribute("chartNetRevenueJson", toJsonArray(netRevenues));
         model.addAttribute("chartGrossRevenueJson", toJsonArray(grossRevenues));
+        model.addAttribute("chartExpensesJson", toJsonArray(expenses));
+        model.addAttribute("chartProfitsJson", toJsonArray(profits));
         model.addAttribute("chartOrderCountJson", toJsonArray(orderCounts));
         model.addAttribute("chartPaymentLabelsJson", toJsonArray(paymentLabels));
         model.addAttribute("chartPaymentValuesJson", toJsonArray(paymentValues));
@@ -118,7 +124,7 @@ public class BranchReportController {
         model.addAttribute("selectedPeriod", period);
         model.addAttribute("startDate", startDateStr);
         model.addAttribute("endDate", endDateStr);
-        model.addAttribute("pageTitle", "Báo Cáo Doanh Thu Chi Nhánh (UC19)");
+        model.addAttribute("pageTitle", "Báo Cáo Doanh Thu, Chi Tiêu & Lợi Nhuận Chi Nhánh (UC19)");
 
         return "branch/reports/dashboard";
     }

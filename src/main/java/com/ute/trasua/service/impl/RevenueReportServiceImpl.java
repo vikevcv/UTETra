@@ -5,10 +5,10 @@ import com.ute.trasua.dto.RevenueReportResponse;
 import com.ute.trasua.entity.Branch;
 import com.ute.trasua.entity.Order;
 import com.ute.trasua.repository.BranchRepository;
+import com.ute.trasua.repository.ImportReceiptRepository;
 import com.ute.trasua.repository.OrderRepository;
 import com.ute.trasua.service.ExcelExportService;
 import com.ute.trasua.service.RevenueReportService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,15 +29,26 @@ import java.util.stream.Collectors;
  * Thực thu = Tiền món + Phí vận chuyển - Voucher (Module 15 / UC30).
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class RevenueReportServiceImpl implements RevenueReportService {
 
     private final OrderRepository orderRepository;
     private final BranchRepository branchRepository;
+    private final ImportReceiptRepository importReceiptRepository;
     private final ExcelExportService excelExportService;
 
+    public RevenueReportServiceImpl(OrderRepository orderRepository,
+                                    BranchRepository branchRepository,
+                                    ImportReceiptRepository importReceiptRepository,
+                                    ExcelExportService excelExportService) {
+        this.orderRepository = orderRepository;
+        this.branchRepository = branchRepository;
+        this.importReceiptRepository = importReceiptRepository;
+        this.excelExportService = excelExportService;
+    }
+
     private static final DecimalFormat CURRENCY_FORMAT = new DecimalFormat("#,### đ");
+    private static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("#,##0.0'%'");
 
     @Override
     @Transactional(readOnly = true)
@@ -68,8 +79,11 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             }
         }
 
-        // 3. Truy vấn các đơn hàng trong khoảng thời gian
+        // 3.1. Truy vấn các đơn hàng trong khoảng thời gian
         List<Order> orders = orderRepository.findOrdersForReport(branchId, startDateTime, endDateTime);
+
+        // 3.2. Truy vấn các phiếu nhập kho nguyên liệu (Chi tiêu) trong khoảng thời gian
+        List<com.ute.trasua.entity.ImportReceipt> importReceipts = importReceiptRepository.searchReceipts(branchId, null, "IMPORTED", startDateTime, endDateTime);
 
         // 4. Tính toán các chỉ số tổng quan (KPI)
         long totalOrders = orders.size();
@@ -108,11 +122,28 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             aov = totalNetRevenue.divide(BigDecimal.valueOf(completedOrders), 0, RoundingMode.HALF_UP);
         }
 
-        // 5. Thống kê theo ngày liên tục (Daily timeline)
-        List<RevenueReportResponse.DailyRevenueDto> dailyList = buildDailyRevenueList(startDate, endDate, paidOrders);
+        // 4.2. Tính toán tổng chi tiêu & lợi nhuận
+        BigDecimal totalExpense = BigDecimal.ZERO;
+        long totalImportReceipts = importReceipts.size();
+        for (com.ute.trasua.entity.ImportReceipt ir : importReceipts) {
+            if (ir.getTotalAmount() != null) {
+                totalExpense = totalExpense.add(ir.getTotalAmount());
+            }
+        }
 
-        // 6. Thống kê theo từng chi nhánh (Branch breakdown)
-        List<RevenueReportResponse.BranchRevenueDto> branchList = buildBranchRevenueList(branchId, paidOrders, totalNetRevenue);
+        BigDecimal totalProfit = totalNetRevenue.subtract(totalExpense);
+        double profitMargin = 0.0;
+        if (totalNetRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            profitMargin = totalProfit.multiply(BigDecimal.valueOf(100))
+                    .divide(totalNetRevenue, 1, RoundingMode.HALF_UP)
+                    .doubleValue();
+        }
+
+        // 5. Thống kê theo ngày liên tục (Daily timeline) bao gồm cả chi tiêu và lợi nhuận
+        List<RevenueReportResponse.DailyRevenueDto> dailyList = buildDailyRevenueList(startDate, endDate, paidOrders, importReceipts);
+
+        // 6. Thống kê theo từng chi nhánh (Branch breakdown) bao gồm cả chi tiêu và lợi nhuận
+        List<RevenueReportResponse.BranchRevenueDto> branchList = buildBranchRevenueList(branchId, paidOrders, totalNetRevenue, importReceipts);
 
         // 7. Thống kê theo phương thức thanh toán
         List<RevenueReportResponse.PaymentMethodRevenueDto> paymentList = buildPaymentMethodList(paidOrders, totalNetRevenue);
@@ -142,6 +173,13 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                 .formattedTotalNetRevenue(CURRENCY_FORMAT.format(totalNetRevenue))
                 .averageOrderValue(aov)
                 .formattedAverageOrderValue(CURRENCY_FORMAT.format(aov))
+                .totalExpense(totalExpense)
+                .formattedTotalExpense(CURRENCY_FORMAT.format(totalExpense))
+                .totalProfit(totalProfit)
+                .formattedTotalProfit(CURRENCY_FORMAT.format(totalProfit))
+                .profitMargin(profitMargin)
+                .formattedProfitMargin(PERCENT_FORMAT.format(profitMargin))
+                .totalImportReceipts(totalImportReceipts)
                 .dailyRevenues(dailyList)
                 .branchRevenues(branchList)
                 .paymentMethods(paymentList)
@@ -197,12 +235,18 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     }
 
     /**
-     * Xây dựng danh sách doanh thu theo ngày liên tục để vẽ biểu đồ và phân tích xu hướng.
+     * Xây dựng danh sách doanh thu, chi tiêu và lợi nhuận theo ngày liên tục để vẽ biểu đồ và phân tích xu hướng.
      */
-    private List<RevenueReportResponse.DailyRevenueDto> buildDailyRevenueList(LocalDate startDate, LocalDate endDate, List<Order> paidOrders) {
+    private List<RevenueReportResponse.DailyRevenueDto> buildDailyRevenueList(LocalDate startDate, LocalDate endDate,
+                                                                              List<Order> paidOrders,
+                                                                              List<com.ute.trasua.entity.ImportReceipt> importReceipts) {
         Map<LocalDate, List<Order>> ordersByDate = paidOrders.stream()
                 .filter(o -> o.getCreatedAt() != null)
                 .collect(Collectors.groupingBy(o -> o.getCreatedAt().toLocalDate()));
+
+        Map<LocalDate, List<com.ute.trasua.entity.ImportReceipt>> receiptsByDate = importReceipts.stream()
+                .filter(r -> r.getImportDate() != null)
+                .collect(Collectors.groupingBy(r -> r.getImportDate().toLocalDate()));
 
         List<RevenueReportResponse.DailyRevenueDto> list = new ArrayList<>();
         LocalDate curr = startDate;
@@ -228,6 +272,16 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                 net = net.add(fn);
             }
 
+            // Chi tiêu nhập kho trong ngày
+            List<com.ute.trasua.entity.ImportReceipt> dayReceipts = receiptsByDate.getOrDefault(curr, Collections.emptyList());
+            BigDecimal dayExpense = BigDecimal.ZERO;
+            for (com.ute.trasua.entity.ImportReceipt r : dayReceipts) {
+                if (r.getTotalAmount() != null) {
+                    dayExpense = dayExpense.add(r.getTotalAmount());
+                }
+            }
+            BigDecimal dayProfit = net.subtract(dayExpense);
+
             int dayOfWeekIdx = curr.getDayOfWeek().getValue() - 1;
             String dayName = (dayOfWeekIdx >= 0 && dayOfWeekIdx < dayNames.length) ? dayNames[dayOfWeekIdx] : "";
 
@@ -240,6 +294,10 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                     .discountAmount(discount)
                     .netAmount(net)
                     .formattedNetAmount(CURRENCY_FORMAT.format(net))
+                    .expenseAmount(dayExpense)
+                    .formattedExpenseAmount(CURRENCY_FORMAT.format(dayExpense))
+                    .profitAmount(dayProfit)
+                    .formattedProfitAmount(CURRENCY_FORMAT.format(dayProfit))
                     .build());
 
             curr = curr.plusDays(1);
@@ -249,13 +307,20 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     }
 
     /**
-     * Xây dựng danh sách doanh thu theo từng chi nhánh và tính tỷ trọng phần trăm.
+     * Xây dựng danh sách doanh thu, chi tiêu và lợi nhuận theo từng chi nhánh và tính tỷ trọng phần trăm.
      */
-    private List<RevenueReportResponse.BranchRevenueDto> buildBranchRevenueList(Long branchId, List<Order> paidOrders, BigDecimal totalNetRevenue) {
+    private List<RevenueReportResponse.BranchRevenueDto> buildBranchRevenueList(Long branchId,
+                                                                                List<Order> paidOrders,
+                                                                                BigDecimal totalNetRevenue,
+                                                                                List<com.ute.trasua.entity.ImportReceipt> importReceipts) {
         List<Branch> branches = branchRepository.findAll();
         Map<Long, List<Order>> ordersByBranch = paidOrders.stream()
                 .filter(o -> o.getBranch() != null)
                 .collect(Collectors.groupingBy(o -> o.getBranch().getId()));
+
+        Map<Long, List<com.ute.trasua.entity.ImportReceipt>> receiptsByBranch = importReceipts.stream()
+                .filter(r -> r.getBranch() != null)
+                .collect(Collectors.groupingBy(r -> r.getBranch().getId()));
 
         List<RevenueReportResponse.BranchRevenueDto> list = new ArrayList<>();
 
@@ -277,6 +342,19 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                         .doubleValue();
             }
 
+            // Chi tiêu và lợi nhuận chi nhánh
+            List<com.ute.trasua.entity.ImportReceipt> bReceipts = receiptsByBranch.getOrDefault(b.getId(), Collections.emptyList());
+            BigDecimal bExpense = bReceipts.stream()
+                    .map(r -> r.getTotalAmount() != null ? r.getTotalAmount() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal bProfit = net.subtract(bExpense);
+            double bMargin = 0.0;
+            if (net.compareTo(BigDecimal.ZERO) > 0) {
+                bMargin = bProfit.multiply(BigDecimal.valueOf(100))
+                        .divide(net, 1, RoundingMode.HALF_UP)
+                        .doubleValue();
+            }
+
             list.add(RevenueReportResponse.BranchRevenueDto.builder()
                     .branchId(b.getId())
                     .branchCode(b.getBranchCode())
@@ -285,6 +363,11 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                     .netAmount(net)
                     .formattedNetAmount(CURRENCY_FORMAT.format(net))
                     .percentage(percentage)
+                    .expenseAmount(bExpense)
+                    .formattedExpenseAmount(CURRENCY_FORMAT.format(bExpense))
+                    .profitAmount(bProfit)
+                    .formattedProfitAmount(CURRENCY_FORMAT.format(bProfit))
+                    .profitMargin(bMargin)
                     .build());
         }
 
