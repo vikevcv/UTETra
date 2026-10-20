@@ -308,7 +308,21 @@ public class PosServiceImpl implements PosService {
         }
 
         Order refreshedOrder = orderRepository.findById(savedOrder.getId()).orElse(savedOrder);
-        String vietQrUrl = generateVietQrUrl(refreshedOrder);
+        String vietQrUrl = null;
+        if (paymentInfo != null && paymentInfo.getBin() != null && paymentInfo.getAccountNumber() != null) {
+            long payosNum = paymentInfo.getPayosOrderCode() != null ? paymentInfo.getPayosOrderCode() : (refreshedOrder.getPayosOrderCode() != null ? refreshedOrder.getPayosOrderCode() : 0L);
+            String memo = "DH " + payosNum;
+            String encodedMemo = URLEncoder.encode(memo, StandardCharsets.UTF_8);
+            String encodedName = URLEncoder.encode(paymentInfo.getAccountName() != null ? paymentInfo.getAccountName() : "UTETRA TEA GALLERY", StandardCharsets.UTF_8);
+            vietQrUrl = String.format("https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s&accountName=%s",
+                    paymentInfo.getBin(),
+                    paymentInfo.getAccountNumber(),
+                    refreshedOrder.getFinalAmount().longValue(),
+                    encodedMemo,
+                    encodedName);
+        } else {
+            vietQrUrl = generateVietQrUrl(refreshedOrder);
+        }
 
         log.info(">>> Đã tạo đơn POS thành công: Mã {}, STT: #{}, Tổng tiền: {}₫, PayOS Code: {}",
                 refreshedOrder.getOrderCode(), refreshedOrder.getDailyQueueNumber(), refreshedOrder.getFinalAmount(), refreshedOrder.getPayosOrderCode());
@@ -520,6 +534,20 @@ public class PosServiceImpl implements PosService {
     private PosOrderResponse mapToOrderResponse(Order order, String vietQrUrl, com.ute.trasua.dto.payment.PayOSCreatePaymentResponse paymentInfo) {
         Long remaining = (paymentInfo != null && paymentInfo.getRemainingSeconds() != null) ? paymentInfo.getRemainingSeconds() : 900L;
         String qr = (paymentInfo != null && paymentInfo.getQrCode() != null) ? paymentInfo.getQrCode() : vietQrUrl;
+        
+        String accNum = (paymentInfo != null && paymentInfo.getAccountNumber() != null && !paymentInfo.getAccountNumber().isBlank())
+                ? paymentInfo.getAccountNumber()
+                : (order.getPayosAccountNumber() != null ? order.getPayosAccountNumber() : accountNo);
+        String accName = (paymentInfo != null && paymentInfo.getAccountName() != null && !paymentInfo.getAccountName().isBlank())
+                ? paymentInfo.getAccountName()
+                : (order.getPayosAccountName() != null ? order.getPayosAccountName() : accountName);
+        String binNum = (paymentInfo != null && paymentInfo.getBin() != null && !paymentInfo.getBin().isBlank())
+                ? paymentInfo.getBin()
+                : (order.getPayosBin() != null ? order.getPayosBin() : bankBin);
+        Long payosCode = (paymentInfo != null && paymentInfo.getPayosOrderCode() != null)
+                ? paymentInfo.getPayosOrderCode()
+                : order.getPayosOrderCode();
+
         return PosOrderResponse.builder()
                 .orderId(order.getId())
                 .orderCode(order.getOrderCode())
@@ -528,11 +556,11 @@ public class PosServiceImpl implements PosService {
                 .discountAmount(order.getDiscountAmount())
                 .finalAmount(order.getFinalAmount())
                 .vietQrUrl(vietQrUrl)
-                .payosOrderCode(order.getPayosOrderCode())
+                .payosOrderCode(payosCode)
                 .qrCode(qr)
-                .accountNumber(order.getPayosAccountNumber() != null ? order.getPayosAccountNumber() : accountNo)
-                .accountName(order.getPayosAccountName() != null ? order.getPayosAccountName() : accountName)
-                .bin(order.getPayosBin() != null ? order.getPayosBin() : bankBin)
+                .accountNumber(accNum)
+                .accountName(accName)
+                .bin(binNum)
                 .remainingSeconds(remaining)
                 .status(order.getStatus())
                 .paymentStatus(order.getPaymentStatus())

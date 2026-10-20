@@ -52,7 +52,7 @@ public class PayOSServiceImpl implements PayOSService {
             .build();
 
     @Override
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @Transactional
     public PayOSCreatePaymentResponse createOrGetPaymentLink(String orderCode) {
         Order order = orderRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng với mã: " + orderCode));
