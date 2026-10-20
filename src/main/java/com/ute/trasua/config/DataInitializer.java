@@ -135,12 +135,44 @@ public class DataInitializer implements CommandLineRunner {
                         .phone(b.getHotline())
                         .enabled(true)
                         .locked(false)
+                        .branch(b)
                         .roles(Set.of("ROLE_STAFF", "ROLE_POS"))
                         .createdAt(LocalDateTime.now().minusDays(10))
                         .build());
                 log.info(">>> Đã đồng bộ tài khoản POS [{}] vào bảng users", finalUser);
+            } else {
+                userRepository.findByUsername(finalUser).ifPresent(u -> {
+                    if (u.getBranch() == null) {
+                        u.setBranch(b);
+                        userRepository.save(u);
+                    }
+                });
             }
         });
+
+        // Tự động đồng bộ branch_id cho tài khoản Quản lý, Tài xế, Quầy POS nếu đang null
+        try {
+            branchRepository.findAll().forEach(b -> {
+                if (b.getManager() != null && b.getManager().getBranch() == null) {
+                    b.getManager().setBranch(b);
+                    userRepository.save(b.getManager());
+                }
+            });
+            driverRepository.findAll().forEach(d -> {
+                if (d.getUser() != null && d.getUser().getBranch() == null && d.getBranch() != null) {
+                    d.getUser().setBranch(d.getBranch());
+                    userRepository.save(d.getUser());
+                }
+            });
+            posAccountRepository.findAll().forEach(pos -> {
+                if (pos.getUser() != null && pos.getUser().getBranch() == null && pos.getBranch() != null) {
+                    pos.getUser().setBranch(pos.getBranch());
+                    userRepository.save(pos.getUser());
+                }
+            });
+        } catch (Exception e) {
+            log.debug("Notice on branch auto-sync: {}", e.getMessage());
+        }
 
         if (!userRepository.existsByUsername("admin")) {
             User admin = User.builder()

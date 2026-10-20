@@ -47,7 +47,7 @@
             }
 
             .kpi-card.kpi-profit::before {
-              background: #0d9488;
+              background: #8b5cf6;
             }
 
             .kpi-card.kpi-gross::before {
@@ -59,7 +59,7 @@
             }
 
             .kpi-card.kpi-orders::before {
-              background: #8b5cf6;
+              background: #0284c7;
             }
 
             .kpi-icon-wrap {
@@ -150,6 +150,10 @@
             .rank-other {
               background: #f1f5f9;
               color: #64748b;
+            }
+
+            .text-purple {
+              color: #7c3aed !important;
             }
           </style>
         </head>
@@ -281,10 +285,10 @@
               <div class="kpi-card kpi-profit">
                 <div>
                   <div class="text-muted small fw-semibold text-uppercase">Lợi Nhuận Chi Nhánh</div>
-                  <div class="fs-4 fw-bold mt-1" style="color: #0d9488;">${report.formattedTotalProfit}</div>
-                  <div class="text-muted" style="font-size: 0.78rem;">Tỷ suất: <strong class="text-teal" style="color:#0d9488;">${report.formattedProfitMargin}</strong></div>
+                  <div class="fs-4 fw-bold mt-1" style="color: #7c3aed;">${report.formattedTotalProfit}</div>
+                  <div class="text-muted" style="font-size: 0.78rem;">Tỷ suất: <strong style="color:#7c3aed;">${report.formattedProfitMargin}</strong></div>
                 </div>
-                <div class="kpi-icon-wrap" style="background:#ccfbf1; color:#0f766e;">
+                <div class="kpi-icon-wrap" style="background:#f3e8ff; color:#7c3aed;">
                   <i class="fa-solid fa-sack-dollar"></i>
                 </div>
               </div>
@@ -417,7 +421,7 @@
                               </td>
                               <td class="text-end fw-bold text-success font-monospace">${d.formattedNetAmount}</td>
                               <td class="text-end fw-bold text-danger font-monospace">${d.formattedExpenseAmount}</td>
-                              <td class="text-end pe-3 fw-bold font-monospace" style="color: ${d.profitAmount != null && d.profitAmount >= 0 ? '#0d9488' : '#dc2626'};">
+                              <td class="text-end pe-3 fw-bold font-monospace ${d.profitAmount != null && d.profitAmount >= 0 ? 'text-purple' : 'text-danger'}">
                                 ${d.formattedProfitAmount}
                               </td>
                             </tr>
@@ -561,11 +565,13 @@
                     {
                       label: 'Lợi Nhuận',
                       data: profits,
-                      borderColor: '#0d9488',
-                      backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                      borderColor: '#8b5cf6',
+                      backgroundColor: 'rgba(139, 92, 246, 0.15)',
                       fill: false,
                       tension: 0.35,
                       borderWidth: 2.5,
+                      pointBackgroundColor: '#8b5cf6',
+                      pointBorderColor: '#ffffff',
                       pointRadius: 4,
                       pointHoverRadius: 6,
                       yAxisID: 'y'
@@ -574,8 +580,8 @@
                       label: 'Số Đơn Hàng',
                       data: orderCounts,
                       type: 'bar',
-                      backgroundColor: 'rgba(139, 92, 246, 0.25)',
-                      borderColor: '#8b5cf6',
+                      backgroundColor: 'rgba(59, 130, 246, 0.25)',
+                      borderColor: '#3b82f6',
                       borderWidth: 1,
                       borderRadius: 4,
                       yAxisID: 'y1'

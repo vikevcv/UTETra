@@ -113,7 +113,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "JOIN d.order o " +
            "WHERE (:branchId IS NULL OR o.branch.id = :branchId) AND " +
            "o.createdAt >= :start AND o.createdAt < :end AND " +
-           "(o.paymentStatus = 'PAID' OR o.status = 'PAID' OR o.status = 'COMPLETED') " +
+           "(o.paymentStatus = 'PAID' OR o.status = 'PAID' OR o.status = 'COMPLETED' OR o.status = 'DELIVERED') " +
            "GROUP BY d.product.id, d.productName " +
            "ORDER BY SUM(d.quantity) DESC")
     List<Object[]> findTopSellingProducts(@Param("branchId") Long branchId,

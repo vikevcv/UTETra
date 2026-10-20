@@ -9,7 +9,6 @@ import com.ute.trasua.repository.BranchRepository;
 import com.ute.trasua.service.BranchMenuService;
 import com.ute.trasua.service.CategoryService;
 import com.ute.trasua.service.ProductService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +19,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,6 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/admin/products")
-@RequiredArgsConstructor
 @Slf4j
 public class ProductController {
 
@@ -39,6 +38,21 @@ public class ProductController {
     private final BranchRepository branchRepository;
     private final com.ute.trasua.service.IngredientService ingredientService;
     private final com.ute.trasua.service.RecipeService recipeService;
+
+    public ProductController(
+            ProductService productService,
+            CategoryService categoryService,
+            BranchMenuService branchMenuService,
+            BranchRepository branchRepository,
+            com.ute.trasua.service.IngredientService ingredientService,
+            com.ute.trasua.service.RecipeService recipeService) {
+        this.productService = productService;
+        this.categoryService = categoryService;
+        this.branchMenuService = branchMenuService;
+        this.branchRepository = branchRepository;
+        this.ingredientService = ingredientService;
+        this.recipeService = recipeService;
+    }
 
     /**
      * Display list of products with search, category filtering, status filtering, and pagination.
@@ -107,14 +121,14 @@ public class ProductController {
     @PostMapping("/create")
     public String createProduct(
             @ModelAttribute("product") ProductRequest request,
-            @RequestParam(value = "recipeIngredientIds", required = false) List<Long> recipeIngredientIds,
-            @RequestParam(value = "recipeQuantities", required = false) List<java.math.BigDecimal> recipeQuantities,
+            @RequestParam(value = "recipeIngredientIds", required = false) List<String> rawIngredientIds,
+            @RequestParam(value = "recipeQuantities", required = false) List<String> rawQuantities,
             @RequestParam(value = "recipeNotes", required = false) List<String> recipeNotes,
             RedirectAttributes redirectAttributes
     ) {
         try {
-            request.setRecipeIngredientIds(recipeIngredientIds);
-            request.setRecipeQuantities(recipeQuantities);
+            request.setRecipeIngredientIds(parseLongList(rawIngredientIds));
+            request.setRecipeQuantities(parseBigDecimalList(rawQuantities));
             request.setRecipeNotes(recipeNotes);
 
             ProductResponse created = productService.createProduct(request);
@@ -171,14 +185,14 @@ public class ProductController {
     public String updateProduct(
             @PathVariable("id") Long id,
             @ModelAttribute("product") ProductRequest request,
-            @RequestParam(value = "recipeIngredientIds", required = false) List<Long> recipeIngredientIds,
-            @RequestParam(value = "recipeQuantities", required = false) List<java.math.BigDecimal> recipeQuantities,
+            @RequestParam(value = "recipeIngredientIds", required = false) List<String> rawIngredientIds,
+            @RequestParam(value = "recipeQuantities", required = false) List<String> rawQuantities,
             @RequestParam(value = "recipeNotes", required = false) List<String> recipeNotes,
             RedirectAttributes redirectAttributes
     ) {
         try {
-            request.setRecipeIngredientIds(recipeIngredientIds);
-            request.setRecipeQuantities(recipeQuantities);
+            request.setRecipeIngredientIds(parseLongList(rawIngredientIds));
+            request.setRecipeQuantities(parseBigDecimalList(rawQuantities));
             request.setRecipeNotes(recipeNotes);
 
             ProductResponse updated = productService.updateProduct(id, request);
@@ -190,6 +204,32 @@ public class ProductController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/admin/products/" + id + "/edit";
         }
+    }
+
+    private List<Long> parseLongList(List<String> rawList) {
+        if (rawList == null) return null;
+        List<Long> result = new ArrayList<>();
+        for (String s : rawList) {
+            if (s != null && !s.trim().isEmpty()) {
+                try {
+                    result.add(Long.valueOf(s.trim()));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        return result.isEmpty() ? null : result;
+    }
+
+    private List<java.math.BigDecimal> parseBigDecimalList(List<String> rawList) {
+        if (rawList == null) return null;
+        List<java.math.BigDecimal> result = new ArrayList<>();
+        for (String s : rawList) {
+            if (s != null && !s.trim().isEmpty()) {
+                try {
+                    result.add(new java.math.BigDecimal(s.trim()));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        return result.isEmpty() ? null : result;
     }
 
     /**

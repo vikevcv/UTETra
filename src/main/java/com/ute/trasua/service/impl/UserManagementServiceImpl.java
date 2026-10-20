@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
  * Service implementation xử lý nghiệp vụ quản lý người dùng và giám sát tài xế toàn chuỗi (Module 11 - UC20, UC25).
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class UserManagementServiceImpl implements UserManagementService {
 
@@ -38,7 +37,23 @@ public class UserManagementServiceImpl implements UserManagementService {
     private final com.ute.trasua.repository.BranchRepository branchRepository;
     private final com.ute.trasua.repository.PosAccountRepository posAccountRepository;
     private final com.ute.trasua.repository.DriverRepository driverRepository;
+    private final com.ute.trasua.repository.EmployeeRepository employeeRepository;
     private final OrderRepository orderRepository;
+
+    public UserManagementServiceImpl(
+            UserRepository userRepository,
+            com.ute.trasua.repository.BranchRepository branchRepository,
+            com.ute.trasua.repository.PosAccountRepository posAccountRepository,
+            com.ute.trasua.repository.DriverRepository driverRepository,
+            com.ute.trasua.repository.EmployeeRepository employeeRepository,
+            OrderRepository orderRepository) {
+        this.userRepository = userRepository;
+        this.branchRepository = branchRepository;
+        this.posAccountRepository = posAccountRepository;
+        this.driverRepository = driverRepository;
+        this.employeeRepository = employeeRepository;
+        this.orderRepository = orderRepository;
+    }
 
     private static final DecimalFormat CURRENCY_FMT = new DecimalFormat("#,### đ");
     private static final DateTimeFormatter DATE_TIME_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -64,7 +79,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         Boolean locked = request.getLocked();
 
         Page<User> usersPage = userRepository.searchUsers(keyword, role, locked, pageable);
-        return usersPage.map(UserResponse::fromEntity);
+        return usersPage.map(this::toUserResponse);
     }
 
     @Override
@@ -72,7 +87,7 @@ public class UserManagementServiceImpl implements UserManagementService {
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với ID: " + id));
-        return UserResponse.fromEntity(user);
+        return toUserResponse(user);
     }
 
     @Override
@@ -125,11 +140,21 @@ public class UserManagementServiceImpl implements UserManagementService {
 
             if (requiresBranch) {
                 Long branchId = request.getBranchId();
+                if (branchId == null && user.getBranch() != null) {
+                    branchId = user.getBranch().getId();
+                }
+                if (branchId == null) {
+                    UserResponse resolved = toUserResponse(user);
+                    if (resolved != null && resolved.getBranchId() != null) {
+                        branchId = resolved.getBranchId();
+                    }
+                }
                 if (branchId == null) {
                     throw new IllegalArgumentException("Vui lòng chỉ định Chi nhánh trực thuộc khi phân quyền Quản lý, Nhân viên hoặc Tài xế!");
                 }
-                com.ute.trasua.entity.Branch branch = branchRepository.findById(branchId)
-                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh với ID: " + branchId));
+                final Long targetBranchId = branchId;
+                com.ute.trasua.entity.Branch branch = branchRepository.findById(targetBranchId)
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh với ID: " + targetBranchId));
 
                 user.setRoles(newRoles);
                 user.setBranch(branch);
@@ -232,7 +257,7 @@ public class UserManagementServiceImpl implements UserManagementService {
             userRepository.save(user);
         }
 
-        return UserResponse.fromEntity(user);
+        return toUserResponse(user);
     }
 
     @Override
@@ -244,7 +269,80 @@ public class UserManagementServiceImpl implements UserManagementService {
         
         String cleanKeyword = (keyword != null) ? keyword.trim() : null;
         Page<User> driverPage = userRepository.searchDrivers(cleanKeyword, pageable);
-        return driverPage.map(UserResponse::fromEntity);
+        return driverPage.map(this::toUserResponse);
+    }
+
+    private UserResponse toUserResponse(User user) {
+        if (user == null) return null;
+        UserResponse response = UserResponse.fromEntity(user);
+        if (response.getBranchId() == null) {
+            // 1. Kiểm tra nếu là tài xế (ROLE_DRIVER)
+            if (driverRepository != null) {
+                try {
+                    driverRepository.findByUserId(user.getId()).ifPresent(driver -> {
+                        if (driver.getBranch() != null) {
+                            response.setBranchId(driver.getBranch().getId());
+                            response.setBranchName(driver.getBranch().getName());
+                            response.setBranchCode(driver.getBranch().getBranchCode());
+                        }
+                    });
+                } catch (Exception ignored) {}
+            }
+
+            // 2. Kiểm tra nếu là quản lý (ROLE_MANAGER)
+            if (response.getBranchId() == null && branchRepository != null) {
+                try {
+                    List<com.ute.trasua.entity.Branch> managedBranches = branchRepository.findByManager(user);
+                    if (managedBranches != null && !managedBranches.isEmpty()) {
+                        com.ute.trasua.entity.Branch b = managedBranches.get(0);
+                        response.setBranchId(b.getId());
+                        response.setBranchName(b.getName());
+                        response.setBranchCode(b.getBranchCode());
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            // 3. Kiểm tra nếu là nhân viên quầy POS / Staff
+            if (response.getBranchId() == null && posAccountRepository != null) {
+                try {
+                    posAccountRepository.findByUserId(user.getId())
+                            .or(() -> posAccountRepository.findByUsername(user.getUsername()))
+                            .ifPresent(pos -> {
+                                if (pos.getBranch() != null) {
+                                    response.setBranchId(pos.getBranch().getId());
+                                    response.setBranchName(pos.getBranch().getName());
+                                    response.setBranchCode(pos.getBranch().getBranchCode());
+                                }
+                            });
+                } catch (Exception ignored) {}
+            }
+
+            // 4. Kiểm tra trong danh sách nhân sự Employee
+            if (response.getBranchId() == null && employeeRepository != null && user.getEmail() != null) {
+                try {
+                    employeeRepository.findByEmail(user.getEmail()).ifPresent(emp -> {
+                        if (emp.getBranch() != null) {
+                            response.setBranchId(emp.getBranch().getId());
+                            response.setBranchName(emp.getBranch().getName());
+                            response.setBranchCode(emp.getBranch().getBranchCode());
+                        }
+                    });
+                } catch (Exception ignored) {}
+            }
+
+            // 5. Tự động đồng bộ branch_id vào bảng users để các lần truy vấn sau nhanh hơn
+            if (response.getBranchId() != null && user.getBranch() == null && branchRepository != null && userRepository != null) {
+                try {
+                    branchRepository.findById(response.getBranchId()).ifPresent(b -> {
+                        user.setBranch(b);
+                        try {
+                            userRepository.save(user);
+                        } catch (Exception ignored) {}
+                    });
+                } catch (Exception ignored) {}
+            }
+        }
+        return response;
     }
 
     @Override

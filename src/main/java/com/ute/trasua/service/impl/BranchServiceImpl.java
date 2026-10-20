@@ -167,6 +167,14 @@ public class BranchServiceImpl implements BranchService {
         Branch saved = branchRepository.save(branch);
         log.info(">>> Created new branch: [{}] {}", saved.getBranchCode(), saved.getName());
 
+        if (saved.getManager() != null) {
+            User mgr = saved.getManager();
+            mgr.setBranch(saved);
+            if (!mgrResult.created()) {
+                userRepository.save(mgr);
+            }
+        }
+
         BranchResponse resp = enrichToResponse(saved);
         if (mgrResult.created()) {
             resp.setGeneratedManagerUsername(mgrResult.username());
@@ -180,6 +188,7 @@ public class BranchServiceImpl implements BranchService {
     @Transactional
     public BranchResponse updateBranch(Long id, BranchRequest request) {
         Branch branch = getBranchEntityById(id);
+        User oldManager = branch.getManager();
 
         if (request.getBranchCode() != null && !request.getBranchCode().trim().isEmpty()) {
             String code = request.getBranchCode().trim().toUpperCase();
@@ -216,6 +225,21 @@ public class BranchServiceImpl implements BranchService {
 
         Branch updated = branchRepository.save(branch);
         log.info(">>> Updated branch ID {}: [{}] {}", id, updated.getBranchCode(), updated.getName());
+
+        if (updated.getManager() != null) {
+            User mgr = updated.getManager();
+            if (mgr.getBranch() == null || !id.equals(mgr.getBranch().getId())) {
+                mgr.setBranch(updated);
+                userRepository.save(mgr);
+            }
+        }
+        if (oldManager != null && (updated.getManager() == null || !oldManager.getId().equals(updated.getManager().getId()))) {
+            if (oldManager.getBranch() != null && id.equals(oldManager.getBranch().getId())) {
+                oldManager.setBranch(null);
+                userRepository.save(oldManager);
+            }
+        }
+
         return enrichToResponse(updated);
     }
 

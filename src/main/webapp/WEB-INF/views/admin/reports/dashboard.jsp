@@ -164,6 +164,10 @@
             .progress-bar-emerald {
               background: linear-gradient(90deg, #10b981, #059669);
             }
+
+            .text-purple {
+              color: #7c3aed !important;
+            }
           </style>
         </head>
 
@@ -304,12 +308,12 @@
             <!-- KPI 3: Lợi Nhuận Gộp Hoạt Động -->
             <div class="col-12 col-sm-6 col-lg-4 col-xl-2">
               <div class="report-kpi-card h-100">
-                <div class="report-kpi-icon bg-icon-teal">
+                <div class="report-kpi-icon bg-icon-purple">
                   <i class="fa-solid fa-chart-pie"></i>
                 </div>
                 <div>
                   <div class="kpi-title">Lợi Nhuận Gộp</div>
-                  <div class="kpi-number" style="font-size: 1.35rem; color: #0d9488;">
+                  <div class="kpi-number" style="font-size: 1.35rem; color: #7c3aed;">
                     ${report.formattedTotalProfit}
                   </div>
                   <div class="mt-1" style="font-size: 0.72rem;">
@@ -510,7 +514,7 @@
                           <td class="text-end fw-bold text-danger font-monospace">
                             ${br.formattedExpenseAmount}
                           </td>
-                          <td class="text-end fw-bold ${br.profitAmount != null && br.profitAmount >= 0 ? 'text-teal' : 'text-danger'} font-monospace" style="color: ${br.profitAmount != null && br.profitAmount >= 0 ? '#0d9488' : '#dc2626'};">
+                          <td class="text-end fw-bold font-monospace ${br.profitAmount != null && br.profitAmount >= 0 ? 'text-purple' : 'text-danger'}">
                             ${br.formattedProfitAmount}
                           </td>
                           <td class="text-center">
@@ -656,7 +660,7 @@
                               <td class="text-end fw-bold text-danger font-monospace small">
                                 ${d.formattedExpenseAmount}
                               </td>
-                              <td class="text-end fw-bold font-monospace small" style="color: ${d.profitAmount != null && d.profitAmount >= 0 ? '#0d9488' : '#dc2626'};">
+                              <td class="text-end fw-bold font-monospace small ${d.profitAmount != null && d.profitAmount >= 0 ? 'text-purple' : 'text-danger'}">
                                 ${d.formattedProfitAmount}
                               </td>
                             </tr>
@@ -767,8 +771,8 @@
                       {
                         label: 'Lợi Nhuận Thuần',
                         data: branchProfits,
-                        backgroundColor: 'rgba(13, 148, 136, 0.85)',
-                        borderColor: '#0f766e',
+                        backgroundColor: 'rgba(147, 51, 234, 0.85)',
+                        borderColor: '#7c3aed',
                         borderWidth: 1.5,
                         borderRadius: 6,
                         yAxisID: 'yRevenue'
@@ -902,8 +906,8 @@
                       {
                         label: 'Lợi Nhuận Thuần',
                         data: timelineProfits,
-                        borderColor: '#0d9488',
-                        backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.12)',
                         borderWidth: 2.5,
                         fill: false,
                         tension: 0.35,

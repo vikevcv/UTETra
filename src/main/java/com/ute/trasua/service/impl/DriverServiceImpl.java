@@ -114,6 +114,7 @@ public class DriverServiceImpl implements DriverService {
                 .email(cleanEmail)
                 .fullName(request.getFullName().trim())
                 .phone(cleanPhone)
+                .branch(branch)
                 .enabled(true)
                 .locked(false)
                 .roles(Set.of("ROLE_DRIVER"))
@@ -167,6 +168,9 @@ public class DriverServiceImpl implements DriverService {
         User user = driver.getUser();
         user.setFullName(request.getFullName().trim());
         user.setPhone(request.getPhone().trim());
+        if (driver.getBranch() != null) {
+            user.setBranch(driver.getBranch());
+        }
         userRepository.save(user);
 
         driver.setLicensePlate(cleanPlate);
