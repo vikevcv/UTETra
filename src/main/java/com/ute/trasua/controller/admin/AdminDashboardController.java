@@ -57,6 +57,7 @@ public class AdminDashboardController {
         long totalDrivers = drivers.size();
         long activeDrivers = drivers.stream().filter(d -> !d.isLocked()).count();
         long onlineDrivers = Math.max(0, (long) Math.ceil(activeDrivers * 0.65));
+        int onlineDriverPercentage = totalDrivers > 0 ? (int) Math.round((onlineDrivers * 100.0) / totalDrivers) : 0;
 
         // 3. Thống kê mạng lưới chi nhánh thực tế
         long totalBranches = branchRepository.count();
@@ -90,6 +91,7 @@ public class AdminDashboardController {
         model.addAttribute("userStats", userStats);
         model.addAttribute("totalDrivers", totalDrivers);
         model.addAttribute("onlineDrivers", onlineDrivers);
+        model.addAttribute("onlineDriverPercentage", onlineDriverPercentage);
         model.addAttribute("totalBranches", totalBranches);
         model.addAttribute("activeBranches", activeBranches);
         model.addAttribute("todayReport", todayReport);

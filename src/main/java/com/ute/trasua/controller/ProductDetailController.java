@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Map;
 
@@ -23,8 +24,11 @@ public class ProductDetailController {
     private final ProductReviewService productReviewService;
 
     @GetMapping("/{id}")
-    public String viewProductDetail(@PathVariable("id") Long id, Model model) {
-        ProductResponse product = productService.getProductById(id);
+    public String viewProductDetail(
+            @PathVariable("id") Long id,
+            @RequestParam(value = "branchId", required = false) Long branchId,
+            Model model) {
+        ProductResponse product = productService.getProductById(id, branchId);
         if (product == null) {
             return "redirect:/";
         }
@@ -33,6 +37,7 @@ public class ProductDetailController {
 
         model.addAttribute("product", product);
         model.addAttribute("reviewSummary", reviewSummary);
+        model.addAttribute("selectedBranchId", branchId);
         model.addAttribute("siteTitle", product.getName() + " — UTETra Zen Gallery");
         return "product/detail";
     }

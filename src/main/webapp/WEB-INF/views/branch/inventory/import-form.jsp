@@ -239,12 +239,12 @@
                   <span class="badge bg-light text-secondary border unit-label" id="unit_0">-</span>
                 </td>
                 <td>
-                  <input type="number" step="0.5" min="0.1" name="items[0].quantity" id="qty_0"
+                  <input type="number" step="any" min="0.001" name="items[0].quantity" id="qty_0"
                          class="form-control form-control-sm text-end fw-bold qty-input" 
                          placeholder="0.0" oninput="calculateRow(0)" required />
                 </td>
                 <td>
-                  <input type="number" step="1000" min="0" name="items[0].unitPrice" id="price_0"
+                  <input type="number" step="any" min="0" name="items[0].unitPrice" id="price_0"
                          class="form-control form-control-sm text-end price-input" 
                          placeholder="0" oninput="calculateRow(0)" required />
                 </td>
@@ -356,12 +356,12 @@
         <span class="badge bg-light text-secondary border unit-label" id="unit_\${idx}">-</span>
       </td>
       <td>
-        <input type="number" step="0.5" min="0.1" name="items[\${idx}].quantity" id="qty_\${idx}"
+        <input type="number" step="any" min="0.001" name="items[\${idx}].quantity" id="qty_\${idx}"
                class="form-control form-control-sm text-end fw-bold qty-input" 
                placeholder="0.0" oninput="calculateRow(\${idx})" required />
       </td>
       <td>
-        <input type="number" step="1000" min="0" name="items[\${idx}].unitPrice" id="price_\${idx}"
+        <input type="number" step="any" min="0" name="items[\${idx}].unitPrice" id="price_\${idx}"
                class="form-control form-control-sm text-end price-input" 
                placeholder="0" oninput="calculateRow(\${idx})" required />
       </td>

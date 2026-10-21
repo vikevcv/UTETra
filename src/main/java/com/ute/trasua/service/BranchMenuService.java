@@ -42,6 +42,8 @@ public interface BranchMenuService {
 
     long countTotalAtBranch(Long branchId);
 
+    boolean isBranchMenuComplete(Long branchId);
+
     // ==========================================
     // UC11: Kitchen / Barista KDS Status & Stocks
     // ==========================================

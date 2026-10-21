@@ -473,14 +473,24 @@
         var badgeEl = document.getElementById('badge-size-' + code);
         var baseAction = deleteForm ? deleteForm.getAttribute('data-base-action') : '';
 
-        fetch(baseAction + '/size/toggle/' + code, {
-          method: 'POST'
+        fetch(baseAction + '/size/toggle/' + encodeURIComponent(code), {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          }
         })
         .then(function(res) {
-          if (!res.ok) throw new Error();
-          location.reload();
+          if (!res.ok) throw new Error('Cập nhật thất bại');
+          return res.json();
         })
-        .catch(function() {
+        .then(function(data) {
+          if (badgeEl && data && typeof data.active !== 'undefined') {
+            badgeEl.className = 'badge ' + (data.active ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle');
+            badgeEl.innerText = data.active ? 'Đang bán' : 'Tạm ngưng';
+          }
+        })
+        .catch(function(err) {
           alert('Cập nhật trạng thái kích cỡ thất bại.');
           el.checked = !el.checked;
         });
@@ -495,14 +505,24 @@
         var badgeEl = document.getElementById('badge-topping-' + id);
         var baseAction = deleteForm ? deleteForm.getAttribute('data-base-action') : '';
 
-        fetch(baseAction + '/topping/toggle/' + id, {
-          method: 'POST'
+        fetch(baseAction + '/topping/toggle/' + encodeURIComponent(id), {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          }
         })
         .then(function(res) {
-          if (!res.ok) throw new Error();
-          location.reload();
+          if (!res.ok) throw new Error('Cập nhật thất bại');
+          return res.json();
         })
-        .catch(function() {
+        .then(function(data) {
+          if (badgeEl && data && typeof data.active !== 'undefined') {
+            badgeEl.className = 'badge ' + (data.active ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle');
+            badgeEl.innerText = data.active ? 'Đang bán' : 'Tạm ngưng';
+          }
+        })
+        .catch(function(err) {
           alert('Cập nhật trạng thái topping thất bại.');
           el.checked = !el.checked;
         });
