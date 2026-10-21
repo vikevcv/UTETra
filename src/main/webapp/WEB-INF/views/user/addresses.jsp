@@ -78,10 +78,18 @@
       text-decoration: none;
       letter-spacing: 0.04em;
     }
-    .btn-zen-add:hover {
+    .btn-zen-add:hover:not(:disabled) {
       background-color: var(--celadon-green);
       border-color: var(--celadon-green);
       color: #FFFFFF;
+    }
+    .btn-zen-add:disabled,
+    .btn-zen-add[disabled] {
+      opacity: 0.45 !important;
+      cursor: not-allowed !important;
+      filter: grayscale(40%);
+      box-shadow: none !important;
+      pointer-events: auto !important;
     }
 
     .btn-action-icon {
@@ -338,8 +346,8 @@
 
       <form id="formAddressModal" method="post" action="${pageContext.request.contextPath}/user/addresses/create">
         <input type="hidden" name="returnUrl" value="${returnUrl}">
-        <input type="hidden" name="latitude" id="modalLat" value="10.85072">
-        <input type="hidden" name="longitude" id="modalLng" value="106.77196">
+        <input type="hidden" name="latitude" id="modalLat" value="">
+        <input type="hidden" name="longitude" id="modalLng" value="">
 
         <div class="modal-body p-4">
 
@@ -359,12 +367,18 @@
             <div class="col-md-6">
               <label class="form-label fw-bold text-muted" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;" for="modalRecipientName">Tên người nhận *</label>
               <input type="text" class="form-control" id="modalRecipientName" name="recipientName" required 
-                     value="${not empty defaultCustomerName ? defaultCustomerName : ''}" placeholder="Ví dụ: Nguyễn Văn A" style="border-radius:var(--radius-sm);">
+                     value="${not empty defaultCustomerName ? defaultCustomerName : ''}" placeholder="Ví dụ: Nguyễn Văn A" style="border-radius:var(--radius-sm);"
+                     oninput="checkAddressModalValidity()">
             </div>
             <div class="col-md-6">
               <label class="form-label fw-bold text-muted" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;" for="modalRecipientPhone">Số điện thoại *</label>
               <input type="tel" class="form-control" id="modalRecipientPhone" name="recipientPhone" required 
-                     value="${not empty defaultCustomerPhone ? defaultCustomerPhone : ''}" placeholder="Ví dụ: 0912345678" style="border-radius:var(--radius-sm);">
+                     value="${not empty defaultCustomerPhone ? defaultCustomerPhone : ''}" placeholder="Ví dụ: 0912345678" style="border-radius:var(--radius-sm);"
+                     oninput="validateAddressModalPhone(this.value); checkAddressModalValidity();"
+                     onblur="validateAddressModalPhone(this.value); checkAddressModalValidity();">
+              <div id="modalPhoneError" class="text-danger mt-1" style="display:none; font-size:0.8rem; font-weight:600;">
+                <i class="fa-solid fa-circle-exclamation me-1"></i> Số điện thoại không hợp lệ (gồm 10 số, bắt đầu bằng 03, 05, 07, 08, 09).
+              </div>
             </div>
           </div>
 
@@ -378,6 +392,11 @@
             </div>
             <small class="text-muted d-block mb-2" style="font-size:0.8rem;">Click hoặc chạm vào bản đồ để ghim chính xác địa điểm giao hàng</small>
             <div id="addressModalMap" style="height: 240px; border-radius:var(--radius-sm); border:1px solid var(--border-hairline);"></div>
+            <div id="modalMapStatus" class="mt-2" style="font-size:0.82rem;">
+              <span class="text-danger fw-semibold">
+                <i class="fa-solid fa-map-pin me-1"></i> Chưa ghim vị trí trên bản đồ (vui lòng bấm vào bản đồ hoặc tìm theo địa chỉ)
+              </span>
+            </div>
           </div>
 
           <!-- Địa chỉ chi tiết -->
@@ -414,7 +433,7 @@
 
         <div class="modal-footer" style="background:var(--zen-sand); border-top:1px solid var(--border-hairline); padding:14px 24px;">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" style="border-radius:var(--radius-sm); font-size:0.88rem;">Hủy Bỏ</button>
-          <button type="submit" class="btn-zen-add">
+          <button type="submit" id="btnSubmitAddressModal" class="btn-zen-add" disabled title="Vui lòng điền đủ thông tin và ghim vị trí trên bản đồ">
             <i class="fa-solid fa-floppy-disk"></i> Lưu Địa Chỉ
           </button>
         </div>
@@ -431,6 +450,55 @@
 <script>
   let modalMap = null;
   let modalMarker = null;
+  let hasUserPinnedLocation = false;
+
+  function updateMapPinBadge(isPinned, lat, lng) {
+    const statusEl = document.getElementById("modalMapStatus");
+    if (!statusEl) return;
+    if (isPinned && lat && lng) {
+      statusEl.innerHTML = '<span class="text-success fw-semibold"><i class="fa-solid fa-circle-check me-1"></i> Đã ghim vị trí giao hàng (' + parseFloat(lat).toFixed(5) + ', ' + parseFloat(lng).toFixed(5) + ')</span>';
+    } else {
+      statusEl.innerHTML = `<span class="text-danger fw-semibold"><i class="fa-solid fa-map-pin me-1"></i> Chưa ghim vị trí trên bản đồ (vui lòng bấm vào bản đồ hoặc tìm theo địa chỉ)</span>`;
+    }
+  }
+
+  function checkAddressModalValidity() {
+    const nameInput = document.getElementById("modalRecipientName");
+    const phoneInput = document.getElementById("modalRecipientPhone");
+    const detailInput = document.getElementById("modalAddressDetail");
+    const latInput = document.getElementById("modalLat");
+    const lngInput = document.getElementById("modalLng");
+    const submitBtn = document.getElementById("btnSubmitAddressModal");
+
+    const name = nameInput ? nameInput.value.trim() : "";
+    const phone = phoneInput ? phoneInput.value.trim() : "";
+    const detail = detailInput ? detailInput.value.trim() : "";
+    const lat = latInput ? latInput.value.trim() : "";
+    const lng = lngInput ? lngInput.value.trim() : "";
+
+    const isNameValid = name.length > 0;
+    const isPhoneValid = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phone);
+    const isDetailValid = detail.length >= 3;
+    const isLocationPinned = Boolean(hasUserPinnedLocation && lat !== "" && lng !== "" && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng)));
+
+    const isAllValid = isNameValid && isPhoneValid && isDetailValid && isLocationPinned;
+
+    if (submitBtn) {
+      submitBtn.disabled = !isAllValid;
+      if (!isAllValid) {
+        let reasons = [];
+        if (!isNameValid) reasons.push("tên người nhận");
+        if (!isPhoneValid) reasons.push("số điện thoại hợp lệ");
+        if (!isDetailValid) reasons.push("địa chỉ chi tiết");
+        if (!isLocationPinned) reasons.push("ghim vị trí trên bản đồ");
+        submitBtn.title = "Vui lòng hoàn tất: " + reasons.join(", ");
+      } else {
+        submitBtn.title = "Lưu địa chỉ giao hàng";
+      }
+    }
+
+    return isAllValid;
+  }
 
   function setAddressLabel(label, el) {
     document.getElementById("modalLabelInput").value = label;
@@ -450,9 +518,25 @@
 
     document.getElementById("modalAddressDetail").value = "";
     document.getElementById("modalIsDefault").checked = false;
+    document.getElementById("modalLat").value = "";
+    document.getElementById("modalLng").value = "";
+    hasUserPinnedLocation = false;
 
-    // Reset to HCMUTE coordinates
-    setModalCoords(10.85072, 106.77196, false);
+    if (modalMarker && modalMap) {
+      modalMap.removeLayer(modalMarker);
+      modalMarker = null;
+    }
+
+    const phoneInput = document.getElementById("modalRecipientPhone");
+    const phoneErr = document.getElementById("modalPhoneError");
+    if (phoneInput) phoneInput.classList.remove("is-invalid", "is-valid");
+    if (phoneErr) phoneErr.style.display = "none";
+
+    const geocodeStatus = document.getElementById("geocodeStatus");
+    if (geocodeStatus) geocodeStatus.innerHTML = "";
+
+    updateMapPinBadge(false);
+    checkAddressModalValidity();
 
     const modal = new bootstrap.Modal(document.getElementById('modalAddressForm'));
     modal.show();
@@ -465,8 +549,8 @@
     const recipientName = btn.getAttribute('data-recipient') || '';
     const recipientPhone = btn.getAttribute('data-phone') || '';
     const addressDetail = btn.getAttribute('data-detail') || '';
-    const lat = parseFloat(btn.getAttribute('data-lat')) || 10.85072;
-    const lng = parseFloat(btn.getAttribute('data-lng')) || 106.77196;
+    const lat = parseFloat(btn.getAttribute('data-lat')) || 0;
+    const lng = parseFloat(btn.getAttribute('data-lng')) || 0;
     const isDefault = btn.getAttribute('data-default') === 'true';
 
     openEditAddressModal(id, label, recipientName, recipientPhone, addressDetail, lat, lng, isDefault);
@@ -487,7 +571,30 @@
     document.getElementById("modalAddressDetail").value = addressDetail;
     document.getElementById("modalIsDefault").checked = (isDefault === true || isDefault === 'true');
 
-    setModalCoords(lat, lng, false);
+    const phoneInput = document.getElementById("modalRecipientPhone");
+    const phoneErr = document.getElementById("modalPhoneError");
+    if (phoneInput) phoneInput.classList.remove("is-invalid", "is-valid");
+    if (phoneErr) phoneErr.style.display = "none";
+
+    const geocodeStatus = document.getElementById("geocodeStatus");
+    if (geocodeStatus) geocodeStatus.innerHTML = "";
+
+    if (lat && lng && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+      hasUserPinnedLocation = true;
+      setModalCoords(lat, lng, false);
+      updateMapPinBadge(true, lat, lng);
+    } else {
+      hasUserPinnedLocation = false;
+      document.getElementById("modalLat").value = "";
+      document.getElementById("modalLng").value = "";
+      if (modalMarker && modalMap) {
+        modalMap.removeLayer(modalMarker);
+        modalMarker = null;
+      }
+      updateMapPinBadge(false);
+    }
+
+    checkAddressModalValidity();
 
     const modal = new bootstrap.Modal(document.getElementById('modalAddressForm'));
     modal.show();
@@ -497,6 +604,7 @@
   let isReverseGeocoding = false;
 
   function onAddressDetailInput(val) {
+    checkAddressModalValidity();
     if (isReverseGeocoding) return;
     clearTimeout(geocodeDebounceTimer);
     const statusEl = document.getElementById("geocodeStatus");
@@ -517,7 +625,6 @@
 
     try {
       let query = val.trim();
-      // Nếu địa chỉ chưa có tên TP/tỉnh, thêm TP. Hồ Chí Minh để ưu tiên tìm kiếm chính xác
       if (!query.toLowerCase().includes('hồ chí minh') && !query.toLowerCase().includes('hcm') && !query.toLowerCase().includes('thủ đức')) {
         query += ', TP. Hồ Chí Minh';
       }
@@ -529,7 +636,10 @@
         if (data && data.length > 0) {
           const lat = parseFloat(data[0].lat);
           const lng = parseFloat(data[0].lon);
+          hasUserPinnedLocation = true;
           setModalCoords(lat, lng, true);
+          updateMapPinBadge(true, lat, lng);
+          checkAddressModalValidity();
           if (statusEl) {
             statusEl.innerHTML = `<span class="text-success"><i class="fa-solid fa-circle-check"></i> Đã định vị toạ độ!</span>`;
             setTimeout(() => { if (statusEl) statusEl.innerHTML = ''; }, 3000);
@@ -538,18 +648,21 @@
         }
       }
       if (statusEl) {
-        statusEl.innerHTML = `<span class="text-muted"><i class="fa-solid fa-circle-info"></i> Bạn có thể click hoặc kéo ghim trên bản đồ</span>`;
-        setTimeout(() => { if (statusEl) statusEl.innerHTML = ''; }, 4000);
+        statusEl.innerHTML = `<span class="text-warning"><i class="fa-solid fa-triangle-exclamation"></i> Không tự động tìm được vị trí, vui lòng click trên bản đồ để ghim</span>`;
       }
+      checkAddressModalValidity();
     } catch (e) {
       console.warn("Geocode error:", e);
       if (statusEl) statusEl.innerHTML = '';
+      checkAddressModalValidity();
     }
   }
 
   function initOrRefreshModalMap() {
-    const lat = parseFloat(document.getElementById("modalLat").value) || 10.85072;
-    const lng = parseFloat(document.getElementById("modalLng").value) || 106.77196;
+    const latVal = document.getElementById("modalLat").value;
+    const lngVal = document.getElementById("modalLng").value;
+    const lat = parseFloat(latVal) || 10.85072;
+    const lng = parseFloat(lngVal) || 106.77196;
 
     if (!modalMap) {
       modalMap = L.map('addressModalMap').setView([lat, lng], 14);
@@ -560,20 +673,32 @@
       modalMap.on('click', async function(e) {
         const cLat = e.latlng.lat;
         const cLng = e.latlng.lng;
+        hasUserPinnedLocation = true;
         setModalCoords(cLat, cLng, true);
+        updateMapPinBadge(true, cLat, cLng);
         isReverseGeocoding = true;
         const addr = await reverseGeocodeModal(cLat, cLng);
         if (addr) {
           document.getElementById("modalAddressDetail").value = addr;
         }
         setTimeout(() => { isReverseGeocoding = false; }, 300);
+        checkAddressModalValidity();
       });
     } else {
       modalMap.invalidateSize();
       modalMap.setView([lat, lng], 14);
     }
 
-    updateModalMarker(lat, lng);
+    if (hasUserPinnedLocation && latVal && lngVal) {
+      updateModalMarker(lat, lng);
+      updateMapPinBadge(true, lat, lng);
+    } else {
+      if (modalMarker && modalMap) {
+        modalMap.removeLayer(modalMarker);
+        modalMarker = null;
+      }
+      updateMapPinBadge(false);
+    }
   }
 
   function updateModalMarker(lat, lng) {
@@ -584,13 +709,16 @@
       modalMarker = L.marker([lat, lng], { draggable: true }).addTo(modalMap);
       modalMarker.on('dragend', async function(e) {
         const pos = modalMarker.getLatLng();
+        hasUserPinnedLocation = true;
         setModalCoords(pos.lat, pos.lng, false);
+        updateMapPinBadge(true, pos.lat, pos.lng);
         isReverseGeocoding = true;
         const addr = await reverseGeocodeModal(pos.lat, pos.lng);
         if (addr) {
           document.getElementById("modalAddressDetail").value = addr;
         }
         setTimeout(() => { isReverseGeocoding = false; }, 300);
+        checkAddressModalValidity();
       });
     }
   }
@@ -598,7 +726,7 @@
   function setModalCoords(lat, lng, pan = false) {
     document.getElementById("modalLat").value = lat;
     document.getElementById("modalLng").value = lng;
-    if (modalMap) {
+    if (modalMap && hasUserPinnedLocation) {
       updateModalMarker(lat, lng);
       if (pan) modalMap.panTo([lat, lng]);
     }
@@ -626,22 +754,69 @@
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
+      hasUserPinnedLocation = true;
       setModalCoords(lat, lng, true);
+      updateMapPinBadge(true, lat, lng);
       const addr = await reverseGeocodeModal(lat, lng);
       if (addr) {
         document.getElementById("modalAddressDetail").value = addr;
       }
+      checkAddressModalValidity();
     }, (err) => {
       alert("Không lấy được toạ độ GPS: " + err.message);
     });
   }
 
-  // Khi modal mở xong thì invalidate map size để hiển thị đầy đủ
+  function validateAddressModalPhone(val) {
+    const input = document.getElementById("modalRecipientPhone");
+    const err = document.getElementById("modalPhoneError");
+    if (!input) return false;
+    const phone = (val !== undefined ? val : input.value).trim();
+    const isValid = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phone);
+    if (!isValid && phone.length > 0) {
+      input.classList.remove("is-valid");
+      input.classList.add("is-invalid");
+      if (err) err.style.display = "block";
+      return false;
+    } else if (isValid) {
+      input.classList.remove("is-invalid");
+      input.classList.add("is-valid");
+      if (err) err.style.display = "none";
+      return true;
+    } else {
+      input.classList.remove("is-invalid", "is-valid");
+      if (err) err.style.display = "none";
+      return false;
+    }
+  }
+
+  // Khi modal mở xong thì invalidate map size để hiển thị đầy đủ và gắn validate submit
   document.addEventListener('DOMContentLoaded', function() {
     const modalEl = document.getElementById('modalAddressForm');
     if (modalEl) {
       modalEl.addEventListener('shown.bs.modal', function () {
         initOrRefreshModalMap();
+        checkAddressModalValidity();
+      });
+    }
+
+    const form = document.getElementById("formAddressModal");
+    if (form) {
+      form.addEventListener("submit", function(e) {
+        if (!checkAddressModalValidity()) {
+          e.preventDefault();
+          e.stopPropagation();
+          const phoneInput = document.getElementById("modalRecipientPhone");
+          const phoneVal = phoneInput ? phoneInput.value.trim() : "";
+          if (!/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phoneVal)) {
+            validateAddressModalPhone(phoneVal);
+            if (phoneInput) phoneInput.focus();
+          } else if (!hasUserPinnedLocation) {
+            const mapEl = document.getElementById("addressModalMap");
+            if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth' });
+          }
+          return false;
+        }
       });
     }
   });

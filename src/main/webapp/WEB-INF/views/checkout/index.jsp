@@ -328,7 +328,10 @@
               <div class="col-md-6 form-group">
                 <label class="form-label-zen" for="customerPhone">Số Điện Thoại *</label>
                 <input type="tel" id="customerPhone" class="form-control-zen" placeholder="Ví dụ: 0912345678"
-                       value="${defaultCustomerPhone}" required>
+                       value="${defaultCustomerPhone}" required oninput="validateCheckoutPhone(this.value)">
+                <div id="checkoutPhoneError" class="text-danger mt-1" style="display:none; font-size:0.8rem; font-weight:600;">
+                  <i class="fa-solid fa-circle-exclamation me-1"></i> Số điện thoại không hợp lệ (gồm 10 số, bắt đầu bằng 03, 05, 07, 08, 09).
+                </div>
               </div>
               <div class="col-12 form-group">
                 <label class="form-label-zen" for="deliveryNotes">Ghi Chú Đơn Hàng (Tùy chọn)</label>
