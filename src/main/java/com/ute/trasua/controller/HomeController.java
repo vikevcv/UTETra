@@ -34,12 +34,20 @@ public class HomeController {
             @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
             @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
             @RequestParam(value = "sort", required = false, defaultValue = "default") String sort,
+            @RequestParam(value = "branchId", required = false) Long branchId,
             Model model) {
 
+        var branches = branchService.getAllActiveBranches();
+        Long effectiveBranchId = branchId;
+        if (effectiveBranchId == null && branches != null && !branches.isEmpty()) {
+            effectiveBranchId = branches.get(0).getId();
+        }
+
         model.addAttribute("siteTitle", "UTETra — Modern Zen Wabi-Sabi & Haute Couture Tea Gallery");
-        model.addAttribute("products", productService.filterProducts(keyword, categoryId, minPrice, maxPrice, sort));
+        model.addAttribute("products", productService.filterProducts(keyword, categoryId, minPrice, maxPrice, sort, effectiveBranchId));
         model.addAttribute("categories", categoryService.getActiveCategories());
-        model.addAttribute("branches", branchService.getAllActiveBranches());
+        model.addAttribute("branches", branches);
+        model.addAttribute("selectedBranchId", effectiveBranchId);
 
         model.addAttribute("selectedKeyword", keyword);
         model.addAttribute("selectedCategoryId", categoryId);

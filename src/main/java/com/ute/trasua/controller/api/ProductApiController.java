@@ -29,13 +29,28 @@ public class ProductApiController {
             @RequestParam(value = "categoryId", required = false) Long categoryId,
             @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
             @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
-            @RequestParam(value = "sort", required = false, defaultValue = "default") String sort) {
+            @RequestParam(value = "sort", required = false, defaultValue = "default") String sort,
+            @RequestParam(value = "branchId", required = false) Long branchId) {
 
-        List<ProductResponse> products = productService.filterProducts(keyword, categoryId, minPrice, maxPrice, sort);
+        List<ProductResponse> products = productService.filterProducts(keyword, categoryId, minPrice, maxPrice, sort, branchId);
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "count", products.size(),
                 "data", products
+        ));
+    }
+
+    @GetMapping("/availability")
+    public ResponseEntity<?> getBranchAvailability(@RequestParam("branchId") Long branchId) {
+        List<ProductResponse> products = productService.filterProducts(null, null, null, null, "default", branchId);
+        java.util.Map<Long, Boolean> map = new java.util.HashMap<>();
+        for (ProductResponse p : products) {
+            map.put(p.getId(), p.getAvailable() != null ? p.getAvailable() : true);
+        }
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "branchId", branchId,
+                "availability", map
         ));
     }
 }

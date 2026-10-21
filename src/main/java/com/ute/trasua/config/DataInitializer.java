@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -183,6 +184,33 @@ public class DataInitializer implements CommandLineRunner {
 
         // Tự động đồng bộ branch_id cho tài khoản Quản lý, Tài xế, Quầy POS nếu đang null
         try {
+            // Chuẩn hóa và làm sạch liên kết 1-1 giữa Quản lý và Chi nhánh:
+            // 1 Quản lý chỉ điều hành 1 chi nhánh tại một thời điểm (ưu tiên chi nhánh mới nhất / id lớn nhất).
+            userRepository.findAll().forEach(u -> {
+                if (u.getRoles() != null && u.getRoles().contains("ROLE_MANAGER")) {
+                    List<Branch> managed = branchRepository.findByManager(u);
+                    if (managed.size() > 1) {
+                        // Sắp xếp chi nhánh theo ID giảm dần -> Chi nhánh ID cao nhất là chi nhánh được gán mới nhất
+                        managed.sort(Comparator.comparing(Branch::getId).reversed());
+                        Branch latest = managed.get(0);
+                        u.setBranch(latest);
+                        userRepository.save(u);
+                        for (int i = 1; i < managed.size(); i++) {
+                            Branch oldBranch = managed.get(i);
+                            oldBranch.setManager(null);
+                            branchRepository.save(oldBranch);
+                            log.info(">>> [DataInitializer] Tự động giải phóng chi nhánh cũ [{}] khỏi quản lý @{} để đảm bảo quản lý cơ sở mới [{}]",
+                                    oldBranch.getBranchCode(), u.getUsername(), latest.getBranchCode());
+                        }
+                    } else if (managed.size() == 1) {
+                        Branch b = managed.get(0);
+                        if (u.getBranch() == null || !b.getId().equals(u.getBranch().getId())) {
+                            u.setBranch(b);
+                            userRepository.save(u);
+                        }
+                    }
+                }
+            });
             branchRepository.findAll().forEach(b -> {
                 if (b.getManager() != null && b.getManager().getBranch() == null) {
                     b.getManager().setBranch(b);
@@ -660,10 +688,40 @@ public class DataInitializer implements CommandLineRunner {
             sizeRepository.save(com.ute.trasua.entity.Size.builder()
                     .name("L")
                     .volumeMl(700)
-                    .extraPrice(new java.math.BigDecimal("8000"))
+                    .extraPrice(new java.math.BigDecimal("6000"))
                     .active(true)
                     .build());
             log.info(">>> Đã khởi tạo danh sách Kích Cỡ ly (M, L)");
+        }
+
+        // Đồng bộ toàn bộ các kích cỡ từ ProductSize (bảng kich_co) sang Size (bảng sizes) để bảo đảm 100% đồng nhất giữa POS và Storefront/Admin
+        for (com.ute.trasua.entity.ProductSize ps : productSizeRepository.findAll()) {
+            String code = ps.getSizeCode() != null ? ps.getSizeCode().trim().toUpperCase() : "M";
+            java.math.BigDecimal price = ps.getAdditionalPrice() != null ? ps.getAdditionalPrice() : java.math.BigDecimal.ZERO;
+            boolean active = ps.isActive();
+            sizeRepository.findByName(code).ifPresentOrElse(
+                    existing -> {
+                        if (existing.getExtraPrice() == null || existing.getExtraPrice().compareTo(price) != 0 || existing.isActive() != active) {
+                            existing.setExtraPrice(price);
+                            existing.setActive(active);
+                            sizeRepository.save(existing);
+                            log.info(">>> Đã đồng bộ giá Size [{}] trong bảng sizes về đúng chuẩn: {}₫", code, price);
+                        }
+                    },
+                    () -> {
+                        Integer vol = 500;
+                        if ("S".equalsIgnoreCase(code)) vol = 350;
+                        else if ("L".equalsIgnoreCase(code)) vol = 700;
+                        else if ("XL".equalsIgnoreCase(code)) vol = 1000;
+                        sizeRepository.save(com.ute.trasua.entity.Size.builder()
+                                .name(code)
+                                .volumeMl(vol)
+                                .extraPrice(price)
+                                .active(active)
+                                .build());
+                        log.info(">>> Đã tạo mới Size [{}] trong bảng sizes với giá: {}₫", code, price);
+                    }
+            );
         }
 
         // 2. Khởi tạo Topping
@@ -879,16 +937,18 @@ public class DataInitializer implements CommandLineRunner {
             productRepository.save(testProd);
         }
 
-        // Đảm bảo món test luôn khả dụng (available = true) tại tất cả các chi nhánh
-        final com.ute.trasua.entity.Product finalTestProd = testProd;
+        // Đảm bảo toàn bộ sản phẩm chuỗi luôn được đồng bộ đầy đủ (available = true) tại tất cả các chi nhánh
+        final java.util.List<com.ute.trasua.entity.Product> allInitProducts = productRepository.findAll();
         branchRepository.findAll().forEach(b -> {
-            if (!branchMenuRepository.existsByBranchIdAndProductId(b.getId(), finalTestProd.getId())) {
-                branchMenuRepository.save(com.ute.trasua.entity.BranchMenu.builder()
-                        .branch(b)
-                        .product(finalTestProd)
-                        .available(true)
-                        .createdAt(java.time.LocalDateTime.now())
-                        .build());
+            for (com.ute.trasua.entity.Product prod : allInitProducts) {
+                if (!branchMenuRepository.existsByBranchIdAndProductId(b.getId(), prod.getId())) {
+                    branchMenuRepository.save(com.ute.trasua.entity.BranchMenu.builder()
+                            .branch(b)
+                            .product(prod)
+                            .available(true)
+                            .createdAt(java.time.LocalDateTime.now())
+                            .build());
+                }
             }
         });
 

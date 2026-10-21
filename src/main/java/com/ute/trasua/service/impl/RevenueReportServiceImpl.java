@@ -97,6 +97,12 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         List<Order> paidOrders = new ArrayList<>();
 
         for (Order order : orders) {
+            // Đơn hàng đã hủy (CANCELLED) không được tính vào doanh thu thực tế và đơn hoàn thành
+            if ("CANCELLED".equalsIgnoreCase(order.getStatus())) {
+                cancelledOrders++;
+                continue;
+            }
+
             boolean isPaid = "PAID".equalsIgnoreCase(order.getPaymentStatus()) ||
                     "PAID".equalsIgnoreCase(order.getStatus()) ||
                     "COMPLETED".equalsIgnoreCase(order.getStatus()) ||
@@ -108,13 +114,15 @@ public class RevenueReportServiceImpl implements RevenueReportService {
 
                 BigDecimal itemTotal = (order.getTotalAmount() != null) ? order.getTotalAmount() : BigDecimal.ZERO;
                 BigDecimal discount = (order.getDiscountAmount() != null) ? order.getDiscountAmount() : BigDecimal.ZERO;
-                BigDecimal finalAmount = (order.getFinalAmount() != null) ? order.getFinalAmount() : itemTotal.subtract(discount);
+                // Thực thu thuần từ bán phẩm trà = Tiền món (Gross) - Giảm giá Voucher (không hạch toán cước vận chuyển của tài xế vào doanh thu bán trà)
+                BigDecimal netAmount = itemTotal.subtract(discount);
+                if (netAmount.compareTo(BigDecimal.ZERO) < 0) {
+                    netAmount = BigDecimal.ZERO;
+                }
 
                 totalGrossRevenue = totalGrossRevenue.add(itemTotal);
                 totalDiscountAmount = totalDiscountAmount.add(discount);
-                totalNetRevenue = totalNetRevenue.add(finalAmount);
-            } else if ("CANCELLED".equalsIgnoreCase(order.getStatus())) {
-                cancelledOrders++;
+                totalNetRevenue = totalNetRevenue.add(netAmount);
             }
         }
 
@@ -266,11 +274,14 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             for (Order o : dayOrders) {
                 BigDecimal it = (o.getTotalAmount() != null) ? o.getTotalAmount() : BigDecimal.ZERO;
                 BigDecimal dc = (o.getDiscountAmount() != null) ? o.getDiscountAmount() : BigDecimal.ZERO;
-                BigDecimal fn = (o.getFinalAmount() != null) ? o.getFinalAmount() : it.subtract(dc);
+                BigDecimal nt = it.subtract(dc);
+                if (nt.compareTo(BigDecimal.ZERO) < 0) {
+                    nt = BigDecimal.ZERO;
+                }
 
                 gross = gross.add(it);
                 discount = discount.add(dc);
-                net = net.add(fn);
+                net = net.add(nt);
             }
 
             // Chi tiêu nhập kho trong ngày
@@ -333,7 +344,12 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             List<Order> bOrders = ordersByBranch.getOrDefault(b.getId(), Collections.emptyList());
             long count = bOrders.size();
             BigDecimal net = bOrders.stream()
-                    .map(o -> o.getFinalAmount() != null ? o.getFinalAmount() : BigDecimal.ZERO)
+                    .map(o -> {
+                        BigDecimal it = (o.getTotalAmount() != null) ? o.getTotalAmount() : BigDecimal.ZERO;
+                        BigDecimal dc = (o.getDiscountAmount() != null) ? o.getDiscountAmount() : BigDecimal.ZERO;
+                        BigDecimal nt = it.subtract(dc);
+                        return nt.compareTo(BigDecimal.ZERO) > 0 ? nt : BigDecimal.ZERO;
+                    })
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             double percentage = 0.0;
@@ -394,7 +410,12 @@ public class RevenueReportServiceImpl implements RevenueReportService {
 
             long count = methodOrders.size();
             BigDecimal net = methodOrders.stream()
-                    .map(o -> o.getFinalAmount() != null ? o.getFinalAmount() : BigDecimal.ZERO)
+                    .map(o -> {
+                        BigDecimal it = (o.getTotalAmount() != null) ? o.getTotalAmount() : BigDecimal.ZERO;
+                        BigDecimal dc = (o.getDiscountAmount() != null) ? o.getDiscountAmount() : BigDecimal.ZERO;
+                        BigDecimal nt = it.subtract(dc);
+                        return nt.compareTo(BigDecimal.ZERO) > 0 ? nt : BigDecimal.ZERO;
+                    })
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             double percentage = 0.0;

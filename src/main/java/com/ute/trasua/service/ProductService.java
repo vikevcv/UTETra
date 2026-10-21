@@ -21,9 +21,13 @@ public interface ProductService {
 
     List<ProductResponse> filterProducts(String keyword, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, String sortBy);
 
+    List<ProductResponse> filterProducts(String keyword, Long categoryId, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, String sortBy, Long branchId);
+
     Page<ProductResponse> searchProducts(String keyword, Long categoryId, String status, Pageable pageable);
 
     ProductResponse getProductById(Long id);
+
+    ProductResponse getProductById(Long id, Long branchId);
 
     Product getProductEntityById(Long id);
 
