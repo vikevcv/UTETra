@@ -85,6 +85,16 @@
                 </button>
             </div>
 
+            <!-- Tùy chọn hình thức phục vụ: Uống tại quán vs Mang đi -->
+            <div class="pos-service-mode-toggle d-flex gap-2 p-2 border-bottom" style="background: var(--zen-bg);">
+                <button type="button" class="pos-service-btn active flex-fill" id="btnTypeDineIn" data-type="POS_DINE_IN">
+                    <i class="fa-solid fa-mug-hot me-1"></i>Uống Tại Quán
+                </button>
+                <button type="button" class="pos-service-btn flex-fill" id="btnTypeTakeAway" data-type="POS_TAKE_AWAY">
+                    <i class="fa-solid fa-bag-shopping me-1"></i>Mang Đi
+                </button>
+            </div>
+
             <!-- Danh sách món đã chọn -->
             <div class="pos-ticket-items" id="posTicketItems">
                 <div class="pos-empty-cart">
@@ -352,6 +362,55 @@
                 <!-- 5. NÚT HỦY MÃ THANH TOÁN -->
                 <button class="btn btn-outline-secondary w-100 py-2 fw-medium" id="btnCancelQrPay" style="border-radius: 10px; font-size: 0.9rem;">
                     <i class="fa-solid fa-xmark me-1"></i>Hủy Mã Thanh Toán
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 5: Xác Nhận Đơn Hàng Thành Công & STT Nhận Nước -->
+    <div class="pos-modal-backdrop" id="posOrderSuccessModal" style="display: none;">
+        <div class="pos-modal" style="max-width: 440px; text-align: center; border-radius: 16px; padding: 24px;">
+            <div class="mb-3">
+                <div style="width: 72px; height: 72px; border-radius: 50%; background: #E8F5E9; color: #2E7D32; display: flex; align-items: center; justify-content: center; font-size: 2.4rem; margin: 0 auto; border: 3px solid #81C784;">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-1 text-success">ĐÃ THANH TOÁN THÀNH CÔNG!</h4>
+            <div class="text-muted small mb-3">Đơn hàng đã được chuyển tới quầy pha chế KDS</div>
+
+            <!-- Khung Số Thứ Tự To Rõ Ràng -->
+            <div class="p-3 mb-3 rounded shadow-sm" style="background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%); border: 2px dashed #FFA000;">
+                <div class="text-uppercase fw-bold text-dark" style="font-size: 0.85rem; letter-spacing: 1px;">SỐ THỨ TỰ LẤY NƯỚC</div>
+                <div class="display-3 fw-bold text-danger my-1" id="successModalQueueNumber">#0</div>
+                <div class="d-flex justify-content-center gap-2 mt-2">
+                    <span class="badge bg-dark font-monospace" id="successModalOrderCode">DH-000000</span>
+                    <span class="badge bg-secondary" id="successModalOrderType">Uống Tại Quán</span>
+                </div>
+            </div>
+
+            <!-- Chi tiết tiền mặt (nếu thanh toán tiền mặt) -->
+            <div id="successModalCashDetails" class="p-2 mb-3 rounded text-start" style="background: #F8F9FA; border: 1px solid #E9ECEF; font-size: 0.88rem; display: none;">
+                <div class="d-flex justify-content-between py-1 border-bottom">
+                    <span class="text-muted">Tổng tiền:</span>
+                    <strong id="successModalTotal" class="text-dark">0₫</strong>
+                </div>
+                <div class="d-flex justify-content-between py-1 border-bottom">
+                    <span class="text-muted">Khách đưa:</span>
+                    <strong id="successModalCustomerGiven" class="text-primary">0₫</strong>
+                </div>
+                <div class="d-flex justify-content-between py-1">
+                    <span class="text-muted">Tiền thối lại:</span>
+                    <strong id="successModalChange" class="text-success fs-6">0₫</strong>
+                </div>
+            </div>
+
+            <!-- Các nút tác vụ -->
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-dark flex-fill py-2 fw-medium" id="btnSuccessReprint">
+                    <i class="fa-solid fa-print me-1"></i>In Lại Hóa Đơn
+                </button>
+                <button type="button" class="btn btn-success flex-fill py-2 fw-bold" id="btnSuccessNextOrder">
+                    <i class="fa-solid fa-plus me-1"></i>Tạo Đơn Kế Tiếp
                 </button>
             </div>
         </div>

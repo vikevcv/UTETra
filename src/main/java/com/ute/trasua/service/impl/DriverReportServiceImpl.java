@@ -39,28 +39,19 @@ public class DriverReportServiceImpl implements DriverReportService {
         List<Order> orders = orderRepository.findByDriverIdAndStatusInOrderByCreatedAtDesc(driverId, statuses);
 
         LocalDate today = LocalDate.now();
-        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        LocalDate thirtyDaysAgo = today.minusDays(30);
 
         List<DriverTripHistoryDto> result = new ArrayList<>();
         for (Order order : orders) {
-            DriverTripHistoryDto dto = mapToTripHistoryDto(order);
-            LocalDate deliveredDate = (order.getDeliveredAt() != null)
-                    ? order.getDeliveredAt().toLocalDate()
-                    : (order.getCreatedAt() != null ? order.getCreatedAt().toLocalDate() : today);
-            if (deliveredDate.isEqual(today)) {
-                dto.setPeriodCategory("TODAY");
-                dto.setDeliveredDateFormatted("Hôm nay");
-            } else if (deliveredDate.isEqual(today.minusDays(1))) {
-                dto.setPeriodCategory("YESTERDAY");
-                dto.setDeliveredDateFormatted("Hôm qua");
-            } else if (deliveredDate.isAfter(today.minusDays(7))) {
-                dto.setPeriodCategory("WEEK");
-                dto.setDeliveredDateFormatted(deliveredDate.format(dateFmt));
-            } else {
-                dto.setPeriodCategory("OLDER");
-                dto.setDeliveredDateFormatted(deliveredDate.format(dateFmt));
+            LocalDateTime deliveredTime = (order.getDeliveredAt() != null)
+                    ? order.getDeliveredAt()
+                    : (order.getCreatedAt() != null ? order.getCreatedAt() : LocalDateTime.now());
+            LocalDate tripDate = deliveredTime.toLocalDate();
+            // Tối đa xem cuốc trong vòng 1 tháng (30 ngày gần nhất)
+            if (tripDate.isBefore(thirtyDaysAgo) || tripDate.isAfter(today)) {
+                continue;
             }
-            result.add(dto);
+            result.add(mapToTripHistoryDto(order));
         }
         return result;
     }
@@ -128,8 +119,29 @@ public class DriverReportServiceImpl implements DriverReportService {
                 ? order.getDeliveredAt()
                 : (order.getCreatedAt() != null ? order.getCreatedAt() : LocalDateTime.now());
 
+        LocalDate today = LocalDate.now();
+        LocalDate tripDate = deliveredTime.toLocalDate();
+        String periodCategory = "OLDER";
+        String dateFormatted;
+
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
+
+        if (tripDate.isEqual(today)) {
+            periodCategory = "TODAY";
+            dateFormatted = "Hôm nay";
+        } else if (tripDate.isEqual(today.minusDays(1))) {
+            periodCategory = "YESTERDAY";
+            dateFormatted = "Hôm qua";
+        } else if (!tripDate.isBefore(today.minusDays(7))) {
+            periodCategory = "WEEK";
+            dateFormatted = tripDate.format(dateFmt);
+        } else {
+            periodCategory = "OLDER";
+            dateFormatted = tripDate.format(dateFmt);
+        }
+
+        String tripDateIso = tripDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         return DriverTripHistoryDto.builder()
                 .orderId(order.getId())
@@ -143,9 +155,10 @@ public class DriverReportServiceImpl implements DriverReportService {
                 .pickupPhotoUrl(order.getPickupPhotoUrl())
                 .deliveryPhotoUrl(order.getDeliveryPhotoUrl())
                 .deliveredAt(deliveredTime)
-                .deliveredDateFormatted(deliveredTime.format(dateFmt))
+                .deliveredDateFormatted(dateFormatted)
                 .deliveredTimeFormatted(deliveredTime.format(timeFmt))
-                .periodCategory("TODAY")
+                .periodCategory(periodCategory)
+                .tripDateIso(tripDateIso)
                 .build();
     }
 }

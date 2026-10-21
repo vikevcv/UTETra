@@ -91,8 +91,8 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
             throw new IllegalStateException("Đơn hàng không ở trạng thái hợp lệ để bàn giao cho khách: " + currentStatus);
         }
 
-        String type = order.getOrderType();
-        if (!"POS_WALK_IN".equalsIgnoreCase(type) && !"PICKUP".equalsIgnoreCase(type)) {
+        String type = (order.getOrderType() != null) ? order.getOrderType().toUpperCase() : "";
+        if (!type.startsWith("POS") && !"PICKUP".equalsIgnoreCase(type)) {
             throw new IllegalStateException("Delivery orders cannot be handed over directly at the counter!");
         }
 
@@ -402,10 +402,22 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
                 ? request.getReasonCode().trim()
                 : "KHONG_LIEN_LAC_DUOC";
 
-        if (request == null || request.getProofPhotoData() == null) {
-            throw new IllegalArgumentException("A verification photo is required before advancing the step!");
+        boolean isBeforePickup = ("OUT_FOR_DELIVERY".equals(currentStatus) || "READY_FOR_DELIVERY".equals(currentStatus))
+                && order.getPickupPhotoUrl() == null;
+
+        boolean isStoreIncident = isBeforePickup && ("XE_HONG".equals(reasonCode) || "SUC_KHOE".equals(reasonCode));
+
+        // Ảnh chụp đối soát:
+        // - Khi báo sự cố tại quán trước khi lấy trà (trả đơn lại cho quầy): KHÔNG bắt buộc ảnh chụp
+        // - Khi đang đi giao ngoài đường mà bị thất bại: Bắt buộc ảnh chụp đối soát
+        if (!isStoreIncident) {
+            if (request == null || request.getProofPhotoData() == null || request.getProofPhotoData().isBlank()) {
+                throw new IllegalArgumentException("A verification photo is required before advancing the step!");
+            }
+            validateProofPhoto(request.getProofPhotoData());
+        } else if (request != null && request.getProofPhotoData() != null && !request.getProofPhotoData().isBlank()) {
+            validateProofPhoto(request.getProofPhotoData());
         }
-        validateProofPhoto(request.getProofPhotoData());
 
         String proofUrl = null;
         if (request != null && request.getProofPhotoData() != null && !request.getProofPhotoData().isBlank()) {
@@ -418,24 +430,57 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         String reasonVi = formatFailureReasonVietnamese(reasonCode);
         String failureSummary = reasonVi + (!note.isBlank() ? ": " + note : "");
 
-        boolean isBeforePickup = ("OUT_FOR_DELIVERY".equals(currentStatus) || "READY_FOR_DELIVERY".equals(currentStatus))
-                && order.getPickupPhotoUrl() == null;
-
         if (isBeforePickup && ("XE_HONG".equals(reasonCode) || "SUC_KHOE".equals(reasonCode))) {
-            // Sự cố cá nhân / xe cộ tại quán trước khi lấy trà: Trả đơn về hàng đợi điều phối để gán tài xế khác
-            order.setStatus("READY_FOR_DELIVERY");
-            order.setDriver(null);
-            order.setIncidentReason(reasonCode);
-            order.setIncidentNote(failureSummary);
-            order.setIncidentReportedAt(LocalDateTime.now());
+            // Sự cố cá nhân / xe cộ tại quán trước khi lấy trà:
+            // Trả TOÀN BỘ các đơn chưa lấy trà trong ca của tài xế này về hàng đợi điều phối của chi nhánh
+            List<Order> unpickedOrders = (reportingDriver != null)
+                    ? new ArrayList<>(orderRepository.findByDriverIdAndStatusInOrderByCreatedAtDesc(
+                            reportingDriver.getId(), List.of("OUT_FOR_DELIVERY", "READY_FOR_DELIVERY")))
+                    : new ArrayList<>(List.of(order));
 
-            // Tài xế gặp sự cố xe/sức khỏe tạm thời chuyển trạng thái sang OFFLINE để không bị chọn lại
+            if (!unpickedOrders.contains(order)) {
+                unpickedOrders.add(order);
+            }
+
+            for (Order o : unpickedOrders) {
+                // Chỉ trả những đơn chưa chụp ảnh lấy trà
+                if (o.getPickupPhotoUrl() == null) {
+                    o.setStatus("READY_FOR_DELIVERY");
+                    o.setDriver(null);
+                    o.setIncidentReason(reasonCode);
+                    o.setIncidentNote(failureSummary);
+                    o.setIncidentReportedAt(LocalDateTime.now());
+                    String existingNotes = o.getDeliveryNotes();
+                    if (existingNotes != null && !existingNotes.isBlank()) {
+                        o.setDeliveryNotes(existingNotes + " | " + failureSummary);
+                    } else {
+                        o.setDeliveryNotes(failureSummary);
+                    }
+                    Order savedOrder = orderRepository.saveAndFlush(o);
+
+                    // Thông báo WebSocket & tự động chuyển đơn cho tài xế khác nếu có
+                    try {
+                        if (orderWebSocketPublisher != null) {
+                            orderWebSocketPublisher.broadcastDriverIncident(savedOrder, reportingDriver, reasonVi, note);
+                        }
+                        if (driverDispatchService != null) {
+                            driverDispatchService.reassignCancelledOrder(savedOrder.getId());
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Lỗi thông báo khi trả đơn {}: {}", savedOrder.getOrderCode(), ex.getMessage());
+                    }
+                }
+            }
+
+            // Tài xế gặp sự cố xe/sức khỏe chuyển trạng thái sang OFFLINE
             if (reportingDriver != null) {
                 reportingDriver.setWorkingStatus("OFFLINE");
                 driverRepository.save(reportingDriver);
             }
 
-            log.info(">>> Tài xế gặp sự cố tại quán ({}), đơn {} được trả lại hàng đợi điều phối", reasonCode, order.getOrderCode());
+            log.info(">>> Tài xế gặp sự cố tại quán ({}), đã trả toàn bộ {} đơn chưa lấy trà về hàng đợi điều phối",
+                    reasonCode, unpickedOrders.size());
+            return mapToHandoverOrderDto(order);
         } else {
             // Đã nhận trà mang đi hoặc quán báo hủy món: Tự động hủy đơn hàng hoàn (CANCELLED)
             order.setFailureReason(reasonCode);

@@ -49,7 +49,7 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
 
         String currentStatus = (order.getStatus() != null) ? order.getStatus().toUpperCase() : "";
         String orderType = (order.getOrderType() != null) ? order.getOrderType().toUpperCase() : "";
-        if ("POS_WALK_IN".equals(orderType) || "PICKUP".equals(orderType)) {
+        if (orderType.startsWith("POS") || "PICKUP".equals(orderType)) {
             throw new IllegalStateException("Counter orders cannot be assigned to a driver!");
         }
         if (!"READY_FOR_DELIVERY".equals(currentStatus)) {

@@ -65,6 +65,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "AND o.status IN :statuses " +
            "ORDER BY o.createdAt ASC")
     List<Order> findByBranchIdAndStatusInOrderByCreatedAtAsc(@Param("branchId") Long branchId, @Param("statuses") List<String> statuses);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderDetails od " +
+           "WHERE (o.branch.id = :branchId OR (:branchId = 1L AND o.branch IS NULL)) " +
+           "AND o.status IN :statuses " +
+           "AND (o.createdAt >= :since OR o.status IN ('PREPARING', 'READY_FOR_PICKUP', 'READY_FOR_DELIVERY')) " +
+           "ORDER BY o.createdAt ASC")
+    List<Order> findByBranchIdAndStatusInAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(
+            @Param("branchId") Long branchId,
+            @Param("statuses") List<String> statuses,
+            @Param("since") LocalDateTime since);
+
     List<Order> findByBranchIdAndStatusOrderByCreatedAtAsc(Long branchId, String status);
     List<Order> findTop30ByBranchIdAndStatusInOrderByCreatedAtDesc(Long branchId, List<String> statuses);
 

@@ -31,4 +31,5 @@ public class DriverTripHistoryDto {
     private String deliveredDateFormatted;
     private String deliveredTimeFormatted;
     private String periodCategory;
+    private String tripDateIso;
 }

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -44,7 +45,9 @@ public class KitchenServiceImpl implements KitchenService {
                 "PREPARED", "READY_FOR_PICKUP", "READY_FOR_DELIVERY"
         );
 
-        List<Order> orders = orderRepository.findByBranchIdAndStatusInOrderByCreatedAtAsc(targetBranchId, activeStatuses);
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        List<Order> orders = orderRepository.findByBranchIdAndStatusInAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(
+                targetBranchId, activeStatuses, startOfDay);
         
         // Auto-advance logic: Đơn hàng đầu tiên cần pha chế tự động chuyển sang PREPARING nếu đang ở trạng thái PAID / AWAITING_PREPARATION / PENDING
         for (Order o : orders) {
@@ -169,8 +172,9 @@ public class KitchenServiceImpl implements KitchenService {
         }
 
         // TỰ ĐỘNG CHUYỂN ĐƠN KẾ TIẾP TRONG QUEUE SANG PREPARING (chỉ đơn đã thanh toán):
-        List<Order> remainingWaiting = orderRepository.findByBranchIdAndStatusInOrderByCreatedAtAsc(
-                targetBranchId, List.of("PENDING", "AWAITING_PREPARATION", "PAID"));
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        List<Order> remainingWaiting = orderRepository.findByBranchIdAndStatusInAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(
+                targetBranchId, List.of("PENDING", "AWAITING_PREPARATION", "PAID"), startOfDay);
         Order nextOrder = remainingWaiting.stream()
                 .filter(o -> "PAID".equalsIgnoreCase(o.getPaymentStatus()))
                 .findFirst().orElse(null);
