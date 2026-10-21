@@ -199,6 +199,18 @@
       border-color: var(--bizen-clay);
     }
 
+    /* Lịch sử đơn hàng: Cố định hiển thị/ẩn với độ ưu tiên tuyệt đối */
+    .history-order-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .history-order-item.history-item-hidden,
+    .history-order-item.d-none {
+      display: none !important;
+    }
+
     .driver-profile-pill img {
       width: 36px;
       height: 36px;
@@ -1760,7 +1772,7 @@
         <button type="button" class="btn-header-history" onclick="openProfileDrawer('tab-history')" title="Xem Tổng Số Cuốc & Lịch Sử Giao Hàng">
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span>Lịch Sử</span>
-          <span class="history-count-badge" id="headerHistoryCount">${completedCount}</span>
+          <span class="history-count-badge" id="headerHistoryCount">${todayCompletedCount}</span>
         </button>
       </div>
     </header>
@@ -1972,7 +1984,7 @@
           <div class="d-flex align-items-center justify-content-between">
             <div style="min-width: 0; flex: 1;">
               <div style="font-size: 0.86rem; font-weight: 800; color: #065F46; text-transform: uppercase; letter-spacing: 0.5px;" id="drawerHistoryTitleText">
-                Tổng số cuốc
+                Tổng số cuốc hôm nay
               </div>
               <div class="d-flex align-items-baseline gap-2 mt-1">
                 <span class="fw-extrabold" style="font-size: 2.6rem; color: #064E3B; line-height: 1;" id="drawerHistoryCompletedCount">
@@ -1985,23 +1997,40 @@
           </div>
         </div>
 
-        <!-- 2. BỘ 3 NÚT LỌC THỜI GIAN: HÔM NAY, HÔM QUA (HÔM LẺ), THEO TUẦN -->
-        <div class="history-period-filter-nav">
-          <button type="button" class="btn-period-filter active" id="btnPeriodToday" onclick="filterHistoryByPeriod('TODAY', this)">
+        <!-- 2. BỘ NÚT LỌC THỜI GIAN: HÔM NAY, HÔM QUA, THEO TUẦN -->
+        <div class="history-period-filter-nav d-flex gap-2 mb-2">
+          <button type="button" class="btn-period-filter active flex-fill" id="btnPeriodToday" onclick="filterHistoryByPeriod('TODAY', this)">
             <i class="fa-solid fa-calendar-day me-1"></i> Hôm nay
           </button>
-          <button type="button" class="btn-period-filter" id="btnPeriodYesterday" onclick="filterHistoryByPeriod('YESTERDAY', this)">
+          <button type="button" class="btn-period-filter flex-fill" id="btnPeriodYesterday" onclick="filterHistoryByPeriod('YESTERDAY', this)">
             <i class="fa-solid fa-calendar-minus me-1"></i> Hôm qua
           </button>
-          <button type="button" class="btn-period-filter" id="btnPeriodWeek" onclick="filterHistoryByPeriod('WEEK', this)">
-            <i class="fa-solid fa-calendar-week me-1"></i> Theo tuần
+          <button type="button" class="btn-period-filter flex-fill" id="btnPeriodWeek" onclick="filterHistoryByPeriod('WEEK', this)">
+            <i class="fa-solid fa-calendar-week me-1"></i> 7 ngày qua
           </button>
         </div>
 
+        <!-- 2.1 BỘ CHỌN NGÀY CỤ THỂ (TỐI ĐA 1 THÁNG) -->
+        <div class="p-2 mb-3 bg-white border rounded-3 d-flex align-items-center justify-content-between gap-2 shadow-sm" style="font-size: 0.82rem;">
+          <div class="d-flex align-items-center gap-2 text-dark fw-bold">
+            <i class="fa-solid fa-calendar-check text-success" style="font-size: 0.95rem;"></i>
+            <span>Chọn ngày (tối đa 30 ngày):</span>
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <input type="date" id="historySpecificDatePicker" class="form-control form-control-sm"
+                   style="width: 140px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1.5px solid #CBD5E1; color: #1E293B;"
+                   min="${minDateMonthAgo}" max="${todayDateIso}"
+                   onchange="filterHistoryBySpecificDate(this.value)">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-2" style="border-radius: 8px; font-size: 0.75rem;" onclick="clearSpecificDateFilter()" title="Quay lại hôm nay">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+          </div>
+        </div>
+
         <!-- 3. Phân đoạn danh sách lịch sử -->
-        <div class="d-flex justify-content-between align-items-center px-1">
-          <span style="font-size: 0.92rem; font-weight: 800; color: #1F2937; text-transform: uppercase; letter-spacing: 0.3px;">
-            <i class="fa-solid fa-list-check me-1 text-success"></i> Danh Sách Các Cuốc Đã Chạy
+        <div class="d-flex justify-content-between align-items-center px-1 mb-2">
+          <span style="font-size: 0.86rem; font-weight: 700; color: #64748B;" id="drawerHistorySubHeader">
+            <i class="fa-solid fa-receipt me-1 text-success"></i> Đơn đã hoàn thành
           </span>
           <span class="badge" style="background: #E5E7EB; color: #374151; font-size: 0.78rem; font-weight: 700;" id="drawerHistoryBadge">
             ${todayCompletedCount} đơn
@@ -2010,13 +2039,20 @@
 
         <!-- 4. Danh sách cuốc đơn tuần tự -->
         <div id="drawerHistoryList" class="d-flex flex-column gap-2">
+          <div id="historyEmptyPeriodState" class="text-center py-4 px-3 bg-white border rounded-3 text-muted shadow-sm" style="display: ${todayCompletedCount eq 0 ? 'block' : 'none'};">
+            <i class="fa-solid fa-calendar-xmark fa-2x mb-2" style="color: #94A3B8;"></i>
+            <div class="fw-bold" style="color: #475569;" id="historyEmptyPeriodTitle">Chưa có cuốc giao nào hôm nay</div>
+            <div class="small text-muted mt-1" id="historyEmptyPeriodDesc">Các đơn giao hoàn tất trong ngày sẽ xuất hiện tại đây.</div>
+          </div>
           <c:choose>
             <c:when test="${not empty completedOrders}">
               <c:forEach items="${completedOrders}" var="co" varStatus="loop">
-                <c:set var="itemPeriod" value="${co.periodCategory != null ? co.periodCategory : 'TODAY'}" />
-                <div class="history-order-item p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center gap-2 shadow-sm"
+                <c:set var="itemPeriod" value="${co.periodCategory != null ? co.periodCategory : 'OLDER'}" />
+                <c:set var="isToday" value="${(not empty co.tripDateIso and not empty todayDateIso) ? (co.tripDateIso eq todayDateIso) : (itemPeriod eq 'TODAY')}" />
+                <div class="history-order-item p-3 bg-white border rounded-3 justify-content-between align-items-center gap-2 shadow-sm ${isToday ? '' : 'history-item-hidden d-none'}"
                      data-period="${itemPeriod}"
-                     style="overflow: hidden; display: ${itemPeriod eq 'TODAY' ? 'flex' : 'none'};">
+                     data-date="${co.tripDateIso}"
+                     style="overflow: hidden; ${isToday ? 'display: flex !important;' : 'display: none !important;'}">
                   <div class="d-flex align-items-center gap-3" style="min-width: 0; flex: 1;">
                     <c:choose>
                       <c:when test="${not empty co.deliveryPhotoUrl}">
@@ -2069,10 +2105,6 @@
                   </div>
                 </div>
               </c:forEach>
-              <div id="historyEmptyPeriodState" style="display: none;" class="p-4 text-center text-muted bg-white rounded-3 border">
-                <i class="fa-solid fa-box-open fa-2x mb-2 text-secondary d-block"></i>
-                Không có cuốc giao nào trong thời gian đã chọn.
-              </div>
             </c:when>
             <c:otherwise>
               <div class="p-4 text-center text-muted bg-white rounded-3 border" style="font-size: 0.9rem;">
@@ -2249,6 +2281,10 @@
 
       // Kích hoạt kết nối WebSocket STOMP nhận thông báo phân công thời gian thực
       initDriverWebSocket();
+
+      // Mặc định lọc lịch sử theo Hôm Nay
+      const todayBtn = document.getElementById('btnPeriodToday');
+      filterHistoryByPeriod('TODAY', todayBtn);
     });
 
     /* ========================================================
@@ -2354,6 +2390,7 @@
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Giao Đến Khách Hàng</div>' +
                 '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng Trà Đạo') + '</div>' +
+                (curr.customerPhone ? '<div class="text-primary small fw-bold mb-1" id="nodeDestPhone0"><i class="fa-solid fa-phone me-1"></i>SĐT: <a href="tel:' + curr.customerPhone + '" class="text-decoration-none text-primary fw-bold">' + curr.customerPhone + '</a></div>' : '') +
                 '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
                 (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-comment-dots text-warning"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
               '</div>' +
@@ -2378,7 +2415,7 @@
               '</span>' +
             '</button>' +
             '<button class="btn-incident-secondary w-100 py-2" style="font-size: 0.82rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố Tại Quán' +
+              '<i class="fa-solid fa-rotate-left me-1"></i> Trả Đơn Lại Cho Quầy (Báo Sự Cố)' +
             '</button>' +
           '</div>';
 
@@ -2403,6 +2440,7 @@
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Giao Đến Khách Hàng</div>' +
                 '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                (curr.customerPhone ? '<div class="text-primary small fw-bold mb-1" id="nodeDestPhone1"><i class="fa-solid fa-phone me-1"></i>SĐT: <a href="tel:' + curr.customerPhone + '" class="text-decoration-none text-primary fw-bold">' + curr.customerPhone + '</a></div>' : '') +
                 '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
               '</div>' +
             '</div>' +
@@ -2437,7 +2475,7 @@
               '<i class="fa-solid fa-store me-2" style="font-size: 1.15rem;"></i> ĐÃ NHẬN HÀNG TỪ QUÁN' +
             '</button>' +
             '<button class="btn-incident-secondary w-100 py-2" style="font-size: 0.82rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố Tại Quán' +
+              '<i class="fa-solid fa-rotate-left me-1"></i> Trả Đơn Lại Cho Quầy (Báo Sự Cố)' +
             '</button>' +
           '</div>';
 
@@ -2450,6 +2488,7 @@
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Điểm Giao Đến Khách Hàng</div>' +
                 '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                (curr.customerPhone ? '<div class="text-primary small fw-bold mb-1" id="nodeDestPhone2"><i class="fa-solid fa-phone me-1"></i>SĐT: <a href="tel:' + curr.customerPhone + '" class="text-decoration-none text-primary fw-bold">' + curr.customerPhone + '</a></div>' : '') +
                 '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
                 (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-comment-dots text-warning"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
               '</div>' +
@@ -2486,7 +2525,7 @@
             '</div>' +
 
             '<button class="btn-incident-secondary w-100 py-1" style="font-size: 0.8rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố Trên Đường' +
+              '<i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i> Báo Giao Thất Bại (3 Lý Do)' +
             '</button>' +
           '</div>';
 
@@ -2499,6 +2538,7 @@
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Tài Xế Đã Đến Nơi Giao</div>' +
                 '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                (curr.customerPhone ? '<div class="text-primary small fw-bold mb-1" id="nodeDestPhone3"><i class="fa-solid fa-phone me-1"></i>SĐT: <a href="tel:' + curr.customerPhone + '" class="text-decoration-none text-primary fw-bold">' + curr.customerPhone + '</a></div>' : '') +
                 '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
                 (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-comment-dots text-warning"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
               '</div>' +
@@ -2522,7 +2562,7 @@
             '</button>' +
 
             '<button class="btn-incident-secondary w-100 py-1" style="font-size: 0.8rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố / Khách Không Nhận' +
+              '<i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i> Báo Giao Thất Bại (3 Lý Do)' +
             '</button>' +
           '</div>';
 
@@ -2556,7 +2596,7 @@
             '</button>' +
 
             '<button class="btn-incident-secondary w-100 py-1" style="font-size: 0.8rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố' +
+              '<i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i> Báo Giao Thất Bại (3 Lý Do)' +
             '</button>' +
           '</div>';
       }
@@ -3214,18 +3254,37 @@
         cleanupModalBackdrop();
         setTimeout(cleanupModalBackdrop, 350);
 
-        if (window.Swal) {
-          if (isAtStore) {
+        if (isAtStore) {
+          const returnedCount = ordersQueue.length;
+          ordersQueue = [];
+          knownOrderIds.clear();
+          orderSteps = {};
+          cupPhotos = {};
+          deliveryPhotos = {};
+          renderWorkbench();
+
+          if (window.Swal) {
             Swal.fire({
               icon: 'info',
               title: 'Đã Báo Cáo Sự Cố Tại Quán',
-              text: 'Đơn hàng #' + orderCode + ' đã được chuyển giao lại cho quầy chi nhánh để phân công tài xế khác.',
+              text: 'Đã hoàn trả toàn bộ ' + returnedCount + ' đơn hàng trong ca trực về quầy chi nhánh để điều phối cho tài xế khác. Ca trực đã tự động chuyển sang TẠM NGHỈ (OFFLINE).',
               confirmButtonColor: '#8C6D53',
               didClose: () => {
                 cleanupModalBackdrop();
               }
             });
           } else {
+            showZenToast('Đã hoàn trả toàn bộ ' + returnedCount + ' đơn hàng về quầy chi nhánh!', 'info');
+          }
+        } else {
+          // Sự cố ngoài đường: hủy đơn này và trượt đơn kế tiếp vào Focus Mode
+          ordersQueue = ordersQueue.filter(function(o) { return o.orderId != orderId; });
+          delete orderSteps[orderId];
+          delete cupPhotos[orderId];
+          delete deliveryPhotos[orderId];
+          renderWorkbench();
+
+          if (window.Swal) {
             Swal.fire({
               icon: 'warning',
               title: 'Hủy Đơn Tự Động Thành Công',
@@ -3235,39 +3294,39 @@
                 cleanupModalBackdrop();
               }
             });
+          } else {
+            showZenToast('Đã xử lý sự cố cho đơn #' + orderCode + '!', 'warning');
           }
-        } else {
-          showZenToast('Đã xử lý sự cố cho đơn #' + orderCode + '!', 'warning');
-        }
 
-        // Bổ sung vào Drawer Lịch Sử
-        const historyList = document.getElementById('drawerHistoryList');
-        if (historyList) {
-          const item = document.createElement('div');
-          item.className = 'p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center gap-2 mb-2';
-          const proofThumb = incidentProofPhoto
-            ? '<img src="' + incidentProofPhoto + '" alt="Proof" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-earth);">'
-            : '<div style="width: 44px; height: 44px; border-radius: 8px; background: #FFF1F0; display: flex; align-items: center; justify-content: center; color: var(--terracotta); font-size: 1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i></div>';
-          item.innerHTML = 
-            '<div class="d-flex align-items-center gap-2">' +
-              proofThumb +
-              '<div>' +
-                '<strong style="font-size: 0.9rem; color: var(--terracotta);">#' + orderCode + ' · Hoàn Trả</strong>' +
-                '<div class="text-muted" style="font-size: 0.76rem; margin-top: 2px;">' +
-                  'Lý do: ' + reasonCode + (detailNote ? ' (' + detailNote + ')' : '') +
+          // Bổ sung vào Drawer Lịch Sử Đơn Thất Bại
+          const historyList = document.getElementById('drawerHistoryList');
+          if (historyList) {
+            const item = document.createElement('div');
+            item.className = 'p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center gap-2 mb-2';
+            const proofThumb = incidentProofPhoto
+              ? '<img src="' + incidentProofPhoto + '" alt="Proof" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-earth);">'
+              : '<div style="width: 44px; height: 44px; border-radius: 8px; background: #FFF1F0; display: flex; align-items: center; justify-content: center; color: var(--terracotta); font-size: 1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i></div>';
+            item.innerHTML = 
+              '<div class="d-flex align-items-center gap-2">' +
+                proofThumb +
+                '<div>' +
+                  '<strong style="font-size: 0.9rem; color: var(--terracotta);">#' + orderCode + ' · Hoàn Trả</strong>' +
+                  '<div class="text-muted" style="font-size: 0.76rem; margin-top: 2px;">' +
+                    'Lý do: ' + reasonCode + (detailNote ? ' (' + detailNote + ')' : '') +
+                  '</div>' +
                 '</div>' +
               '</div>' +
-            '</div>' +
-            '<div class="text-end flex-shrink-0">' +
-              '<span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i> Đã Hủy</span>' +
-            '</div>';
-          const placeholder = historyList.querySelector('.text-center');
-          if (placeholder) placeholder.remove();
-          historyList.prepend(item);
+              '<div class="text-end flex-shrink-0">' +
+                '<span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i> Đã Hủy</span>' +
+              '</div>';
+            const placeholder = historyList.querySelector('.text-center');
+            if (placeholder) placeholder.remove();
+            historyList.prepend(item);
+          }
         }
 
         // Tự động chuyển OFFLINE nếu gặp sự cố xe cộ hoặc sức khỏe
-        if (reasonCode === 'XE_HONG' || reasonCode === 'SUC_KHOE') {
+        if (isAtStore || reasonCode === 'XE_HONG' || reasonCode === 'SUC_KHOE') {
           isOnline = false;
           const capsule = document.getElementById('topSwitchCapsule');
           const label = document.getElementById('switchLabelStatus');
@@ -3289,13 +3348,6 @@
           }
           if (statusBoxSub) statusBoxSub.innerText = 'Tài xế tạm nghỉ do sự cố bất khả kháng';
         }
-
-        // Loại bỏ đơn khỏi queue và trượt đơn kế tiếp vào Focus Mode
-        ordersQueue = ordersQueue.filter(function(o) { return o.orderId != orderId; });
-        delete orderSteps[orderId];
-        delete cupPhotos[orderId];
-        delete deliveryPhotos[orderId];
-        renderWorkbench();
       })
       .catch(err => {
         if (btn) btn.disabled = false;
@@ -3385,58 +3437,136 @@
       if (titleEl) {
         if (tabId === 'tab-history') {
           titleEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-2 text-success"></i>Lịch Sử Giao Hàng';
+          const todayBtn = document.getElementById('btnPeriodToday');
+          filterHistoryByPeriod('TODAY', todayBtn);
         } else {
           titleEl.innerHTML = '<i class="fa-solid fa-id-card me-2 text-primary"></i>Hồ Sơ Tài Xế';
         }
       }
     }
 
-    /* Bộ lọc thời gian cho Lịch Sử Đơn: Hôm nay, Hôm qua (hôm lẻ), Theo tuần */
+    /* Bộ lọc thời gian cho Lịch Sử Đơn: Hôm nay, Hôm qua (hôm lẻ), 7 ngày qua, và Chọn ngày cụ thể (tối đa 1 tháng) */
+    const SHIPPER_TODAY_ISO = "${todayDateIso}";
+    const SHIPPER_YESTERDAY_ISO = "${yesterdayDateIso}";
+
     function filterHistoryByPeriod(period, btn) {
       document.querySelectorAll('.btn-period-filter').forEach(b => b.classList.remove('active'));
       if (btn) btn.classList.add('active');
+
+      const dateInput = document.getElementById('historySpecificDatePicker');
+      if (dateInput) dateInput.value = '';
 
       const items = document.querySelectorAll('.history-order-item');
       let visibleCount = 0;
 
       items.forEach(item => {
         const itemPeriod = item.getAttribute('data-period');
+        const itemDate = item.getAttribute('data-date');
         let shouldShow = false;
+
         if (period === 'WEEK') {
-          shouldShow = true;
+          // 7 ngày qua: TODAY, YESTERDAY, WEEK
+          shouldShow = (itemPeriod === 'TODAY' || itemPeriod === 'YESTERDAY' || itemPeriod === 'WEEK');
         } else if (period === 'YESTERDAY') {
-          shouldShow = (itemPeriod === 'YESTERDAY');
+          // CHỈ hiển thị đơn của HÔM QUA
+          shouldShow = (itemDate && SHIPPER_YESTERDAY_ISO) ? (itemDate === SHIPPER_YESTERDAY_ISO) : (itemPeriod === 'YESTERDAY');
         } else {
-          shouldShow = (itemPeriod === 'TODAY');
+          // CHỈ hiển thị đơn của HÔM NAY
+          shouldShow = (itemDate && SHIPPER_TODAY_ISO) ? (itemDate === SHIPPER_TODAY_ISO) : (itemPeriod === 'TODAY');
         }
 
         if (shouldShow) {
-          item.style.display = 'flex';
+          item.classList.remove('d-none', 'history-item-hidden');
+          item.style.setProperty('display', 'flex', 'important');
           visibleCount++;
         } else {
-          item.style.display = 'none';
+          item.classList.add('d-none', 'history-item-hidden');
+          item.style.setProperty('display', 'none', 'important');
         }
       });
 
-      const countEl = document.getElementById('drawerHistoryCompletedCount');
-      if (countEl) {
-        if (period === 'WEEK') {
-          countEl.innerText = '${completedCount}';
-        } else if (period === 'YESTERDAY') {
-          countEl.innerText = '${yesterdayCompletedCount}';
+      updateHistoryCountUI(visibleCount, period);
+    }
+
+    function filterHistoryBySpecificDate(selectedDate) {
+      if (!selectedDate) return;
+      document.querySelectorAll('.btn-period-filter').forEach(b => b.classList.remove('active'));
+
+      const items = document.querySelectorAll('.history-order-item');
+      let visibleCount = 0;
+
+      items.forEach(item => {
+        const itemDate = item.getAttribute('data-date');
+        const shouldShow = (itemDate === selectedDate);
+        if (shouldShow) {
+          item.classList.remove('d-none', 'history-item-hidden');
+          item.style.setProperty('display', 'flex', 'important');
+          visibleCount++;
         } else {
-          countEl.innerText = '${todayCompletedCount}';
+          item.classList.add('d-none', 'history-item-hidden');
+          item.style.setProperty('display', 'none', 'important');
         }
-      }
+      });
+
+      const parts = selectedDate.split('-');
+      const formattedDate = (parts.length === 3) ? (parts[2] + '/' + parts[1] + '/' + parts[0]) : selectedDate;
+      updateHistoryCountUI(visibleCount, 'DATE', formattedDate);
+    }
+
+    function clearSpecificDateFilter() {
+      const todayBtn = document.getElementById('btnPeriodToday');
+      filterHistoryByPeriod('TODAY', todayBtn);
+    }
+
+    function resetToTodayFilter() {
+      clearSpecificDateFilter();
+    }
+
+    function updateHistoryCountUI(visibleCount, mode, extraLabel) {
+      const countEl = document.getElementById('drawerHistoryCompletedCount');
+      if (countEl) countEl.innerText = visibleCount;
 
       const badgeEl = document.getElementById('drawerHistoryBadge');
-      if (badgeEl) {
-        badgeEl.innerText = visibleCount + ' đơn';
+      if (badgeEl) badgeEl.innerText = visibleCount + ' đơn';
+
+      if (!mode || mode === 'TODAY') {
+        const headerBadge = document.getElementById('headerHistoryCount');
+        if (headerBadge) headerBadge.innerText = visibleCount;
+      }
+
+      const titleEl = document.getElementById('drawerHistoryTitleText');
+      if (titleEl) {
+        if (mode === 'DATE') {
+          titleEl.innerText = 'Số cuốc ngày ' + extraLabel;
+        } else if (mode === 'YESTERDAY') {
+          titleEl.innerText = 'Số cuốc hôm qua';
+        } else if (mode === 'WEEK') {
+          titleEl.innerText = 'Số cuốc 7 ngày qua';
+        } else {
+          titleEl.innerText = 'Tổng số cuốc hôm nay';
+        }
       }
 
       const emptyEl = document.getElementById('historyEmptyPeriodState');
       if (emptyEl) {
         emptyEl.style.display = (visibleCount === 0) ? 'block' : 'none';
+        const titleSpan = document.getElementById('historyEmptyPeriodTitle');
+        const descSpan = document.getElementById('historyEmptyPeriodDesc');
+        if (titleSpan) {
+          if (mode === 'DATE') {
+            titleSpan.innerText = 'Không có cuốc nào ngày ' + extraLabel;
+            if (descSpan) descSpan.innerText = 'Tài xế không có chuyến giao hoàn tất vào ngày này.';
+          } else if (mode === 'YESTERDAY') {
+            titleSpan.innerText = 'Hôm qua không có cuốc giao nào';
+            if (descSpan) descSpan.innerText = 'Tài xế không có chuyến giao hoàn tất vào hôm qua.';
+          } else if (mode === 'WEEK') {
+            titleSpan.innerText = 'Trong 7 ngày qua chưa có cuốc nào';
+            if (descSpan) descSpan.innerText = 'Chưa có cuốc giao nào được hoàn tất trong 7 ngày gần nhất.';
+          } else {
+            titleSpan.innerText = 'Hôm nay chưa có cuốc giao nào';
+            if (descSpan) descSpan.innerText = 'Các cuốc giao hoàn tất trong ngày sẽ xuất hiện tại đây.';
+          }
+        }
       }
     }
 

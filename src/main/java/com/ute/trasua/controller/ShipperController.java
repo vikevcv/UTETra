@@ -16,6 +16,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -81,10 +83,6 @@ public class ShipperController {
                 ? driverReportService.getDriverCompletedTrips(driver.getId())
                 : Collections.emptyList();
 
-        int completedCount = (driver.getCompletedOrders() != null)
-                ? driver.getCompletedOrders()
-                : completedTrips.size();
-
         int todayCompletedCount = (int) completedTrips.stream()
                 .filter(t -> "TODAY".equalsIgnoreCase(t.getPeriodCategory()))
                 .count();
@@ -92,6 +90,8 @@ public class ShipperController {
                 .filter(t -> "YESTERDAY".equalsIgnoreCase(t.getPeriodCategory()))
                 .count();
         int weekCompletedCount = completedTrips.size();
+
+        int completedCount = todayCompletedCount;
 
         boolean isOnline = "ONLINE".equalsIgnoreCase(driver.getWorkingStatus()) || "DELIVERING".equalsIgnoreCase(driver.getWorkingStatus());
 
@@ -103,6 +103,11 @@ public class ShipperController {
         model.addAttribute("todayCompletedCount", todayCompletedCount);
         model.addAttribute("yesterdayCompletedCount", yesterdayCompletedCount);
         model.addAttribute("weekCompletedCount", weekCompletedCount);
+
+        LocalDate today = LocalDate.now();
+        model.addAttribute("todayDateIso", today.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        model.addAttribute("yesterdayDateIso", today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE));
+        model.addAttribute("minDateMonthAgo", today.minusDays(30).format(DateTimeFormatter.ISO_LOCAL_DATE));
 
         String username = (driverUser != null) ? driverUser.getUsername() : (authentication != null ? authentication.getName() : "driver");
         model.addAttribute("username", username);

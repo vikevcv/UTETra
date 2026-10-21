@@ -29,6 +29,8 @@ public class ReceiptResponse {
     private BigDecimal discountAmount;
     private BigDecimal finalAmount;
     private String paymentMethod;
+    private String orderType;
+    private String orderTypeDisplay;
     private BigDecimal cashTendered;
     private BigDecimal changeAmount;
     private String vietQrQuickUrl;
