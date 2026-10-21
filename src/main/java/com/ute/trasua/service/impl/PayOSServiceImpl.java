@@ -57,14 +57,23 @@ public class PayOSServiceImpl implements PayOSService {
         Order order = orderRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng với mã: " + orderCode));
 
-        // Nếu đơn đã thanh toán xong
-        if ("PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+        // Nếu đơn đã thanh toán xong hoặc đơn hàng 0đ
+        if ("PAID".equalsIgnoreCase(order.getPaymentStatus())
+                || (order.getFinalAmount() != null && order.getFinalAmount().compareTo(BigDecimal.ZERO) <= 0)) {
+            if (!"PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+                order.setPaymentStatus("PAID");
+                if ("AWAITING_PAYMENT".equalsIgnoreCase(order.getStatus()) || "PENDING".equalsIgnoreCase(order.getStatus())) {
+                    order.setStatus("AWAITING_PREPARATION");
+                }
+                order.setPaidAt(LocalDateTime.now());
+                orderRepository.save(order);
+            }
             return PayOSCreatePaymentResponse.builder()
                     .success(true)
-                    .message("Đơn hàng đã được thanh toán thành công.")
+                    .message("Đơn hàng 0đ đã được tự động xác nhận thanh toán thành công.")
                     .orderId(order.getId())
                     .orderCode(order.getOrderCode())
-                    .amount(order.getFinalAmount())
+                    .amount(BigDecimal.ZERO)
                     .reused(true)
                     .simulated(false)
                     .build();

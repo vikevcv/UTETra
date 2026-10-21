@@ -26,5 +26,6 @@ public class CancelOrderResponse implements Serializable {
     private BigDecimal compensationAmount;
     private String expiryDateFormatted;
     private boolean restoredOldVoucher;
+    private String restoredVoucherCode;
     private String message;
 }

@@ -437,10 +437,10 @@ public class PromotionServiceImpl implements PromotionService {
             expiryDays = 30;
         }
 
-        // 1. Tính toán số tiền bồi hoàn 80% (dựa trên finalAmount hoặc totalAmount)
-        BigDecimal baseAmount = order.getFinalAmount();
-        if (baseAmount == null || baseAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            baseAmount = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+        // 1. Tính toán số tiền bồi hoàn 80% (dựa trên số tiền khách thực tế chi trả: finalAmount)
+        BigDecimal baseAmount = order.getFinalAmount() != null ? order.getFinalAmount() : BigDecimal.ZERO;
+        if (baseAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("Đơn hàng 0đ hoặc chưa phát sinh thanh toán thực tế, không đủ điều kiện bồi hoàn voucher.");
         }
         BigDecimal compensationAmount = baseAmount.multiply(rate).setScale(0, RoundingMode.HALF_UP);
         if (compensationAmount.compareTo(BigDecimal.ZERO) < 0) {

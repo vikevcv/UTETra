@@ -461,7 +461,7 @@
 
                 <!-- Banner thông báo khi khách vừa hủy trên PayOS -->
                 <c:if test="${param.paymentCancelled == 'true'}">
-                  <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" style="border-radius:10px; font-size:0.9rem;">
+                  <div id="bannerPayosCancelledAlert" class="alert alert-warning d-flex align-items-center gap-2 mb-3" style="border-radius:10px; font-size:0.9rem;">
                     <i class="fa-solid fa-triangle-exclamation text-warning fa-lg"></i>
                     <div>
                       <strong>Bạn đã hủy thao tác tại cổng PayOS.</strong> Đơn hàng vẫn được lưu ở trạng thái chờ thanh toán. Quý khách có thể bấm <strong>"Thanh Toán Ngay"</strong> bên dưới để hoàn tất đơn hàng bất cứ lúc nào.
@@ -501,7 +501,14 @@
                     <span id="cancelOrderHelpText" style="font-size:0.83rem; color:var(--zen-sumi-light);">
                       <c:choose>
                         <c:when test="${tracking.canCancel}">
-                          <i class="fa-solid fa-circle-info text-primary me-1"></i> Quán chưa bắt đầu pha chế. Bạn có thể hủy đơn và nhận lại mã giảm giá bồi hoàn 80%.
+                          <c:choose>
+                            <c:when test="${tracking.paymentStatus == 'PAID' && tracking.finalAmount > 0}">
+                              <i class="fa-solid fa-circle-info text-primary me-1"></i> Quán chưa bắt đầu pha chế. Bạn có thể hủy đơn và nhận lại mã giảm giá bồi hoàn 80%.
+                            </c:when>
+                            <c:otherwise>
+                              <i class="fa-solid fa-circle-info text-primary me-1"></i> Đơn hàng ${tracking.finalAmount <= 0 ? '0đ' : 'chưa thanh toán'}. Bạn có thể hủy đơn bất cứ lúc nào, mã ưu đãi đã dùng sẽ được hoàn trả lại.
+                            </c:otherwise>
+                          </c:choose>
                         </c:when>
                         <c:otherwise>
                           <i class="fa-solid fa-lock text-muted me-1"></i> Quầy đã bắt đầu pha chế, đơn hàng hiện không thể hủy.
@@ -653,7 +660,7 @@
                   <span class="receipt-value" style="color:var(--tea-matcha); font-weight:700; display:inline-flex; align-items:center; gap:6px;">
                     ${tracking.paymentMethod} (${tracking.paymentStatus})
                     <c:if test="${tracking.paymentStatus != 'PAID' && tracking.status != 'CANCELLED' && tracking.status != 'DELIVERY_FAILED' && tracking.status != 'FAILED'}">
-                      <a href="${pageContext.request.contextPath}/checkout/payment?orderCode=${tracking.orderCode}" class="badge bg-warning text-dark text-decoration-none py-1 px-2" style="font-size:0.75rem;">
+                      <a href="${pageContext.request.contextPath}/checkout/payment?orderCode=${tracking.orderCode}" id="receiptPaymentBadge" class="badge bg-warning text-dark text-decoration-none py-1 px-2" style="font-size:0.75rem;">
                         <i class="fa-solid fa-qrcode me-1"></i> Thanh toán
                       </a>
                     </c:if>
@@ -861,15 +868,29 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" style="padding:20px;">
-          <!-- Chính sách bồi hoàn -->
-          <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:12px 14px; margin-bottom:16px; font-size:0.86rem; color:#92400E;">
-            <div style="font-weight:700; margin-bottom:4px;">
-              <i class="fa-solid fa-gift me-1"></i> Chính Sách Bồi Hoàn Voucher (UC28):
-            </div>
-            <div>
-              Quầy chưa tiến hành pha chế. Khi xác nhận hủy đơn, bạn sẽ nhận được mã voucher <strong>bồi hoàn 80%</strong> giá trị đơn hàng (trừ 20% phí nguyên liệu/vận hành dự kiến), thời hạn dùng <strong>30 ngày</strong>.
-            </div>
-          </div>
+          <!-- Chính sách bồi hoàn / hủy đơn -->
+          <c:choose>
+            <c:when test="${tracking.paymentStatus == 'PAID' && tracking.finalAmount > 0}">
+              <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:12px 14px; margin-bottom:16px; font-size:0.86rem; color:#92400E;">
+                <div style="font-weight:700; margin-bottom:4px;">
+                  <i class="fa-solid fa-gift me-1"></i> Chính Sách Bồi Hoàn Voucher (UC28):
+                </div>
+                <div>
+                  Quầy chưa tiến hành pha chế. Khi xác nhận hủy đơn, bạn sẽ nhận được mã voucher <strong>bồi hoàn 80%</strong> giá trị đơn hàng (trừ 20% phí nguyên liệu/vận hành dự kiến), thời hạn dùng <strong>30 ngày</strong>.
+                </div>
+              </div>
+            </c:when>
+            <c:otherwise>
+              <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:8px; padding:12px 14px; margin-bottom:16px; font-size:0.86rem; color:#1E40AF;">
+                <div style="font-weight:700; margin-bottom:4px;">
+                  <i class="fa-solid fa-circle-info me-1"></i> Hủy Đơn Hàng ${tracking.finalAmount <= 0 ? '(0đ)' : 'Chưa Thanh Toán'}:
+                </div>
+                <div>
+                  Đơn hàng ${tracking.finalAmount <= 0 ? 'được áp dụng voucher giảm 100% (0đ)' : 'chưa phát sinh thanh toán'}. Khi xác nhận hủy đơn, hệ thống sẽ hủy đơn hàng và hoàn trả lại lượt dùng mã giảm giá bạn đã áp dụng (nếu có). Quý khách không nhận mã bồi hoàn giá trị đơn vì không phát sinh thanh toán thực tế.
+                </div>
+              </div>
+            </c:otherwise>
+          </c:choose>
 
           <!-- Thông tin đơn -->
           <div style="background:var(--zen-washi); border-radius:8px; padding:12px 14px; margin-bottom:16px; font-size:0.88rem;">
@@ -881,12 +902,24 @@
               <span class="text-muted">Giá trị đơn:</span>
               <span><fmt:formatNumber value="${tracking.finalAmount}" pattern="#,###"/> đ</span>
             </div>
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Ước tính voucher bồi hoàn (80%):</span>
-              <strong style="color:var(--tea-matcha);">
-                <fmt:formatNumber value="${tracking.estimatedCompensationAmount}" pattern="#,###"/> đ
-              </strong>
-            </div>
+            <c:choose>
+              <c:when test="${tracking.paymentStatus == 'PAID' && tracking.finalAmount > 0}">
+                <div class="d-flex justify-content-between">
+                  <span class="text-muted">Ước tính voucher bồi hoàn (80%):</span>
+                  <strong style="color:var(--tea-matcha);">
+                    <fmt:formatNumber value="${tracking.estimatedCompensationAmount}" pattern="#,###"/> đ
+                  </strong>
+                </div>
+              </c:when>
+              <c:otherwise>
+                <c:if test="${not empty tracking.voucherCode}">
+                  <div class="d-flex justify-content-between">
+                    <span class="text-muted">Mã giảm giá sẽ hoàn lại:</span>
+                    <strong style="color:var(--tea-matcha); font-family:monospace;">${tracking.voucherCode}</strong>
+                  </div>
+                </c:if>
+              </c:otherwise>
+            </c:choose>
           </div>
 
           <!-- Form lý do hủy -->
@@ -921,21 +954,21 @@
     </div>
   </div>
 
-  <!-- MODAL BỒI HOÀN VOUCHER THÀNH CÔNG (UC28) -->
+  <!-- MODAL BỒI HOÀN VOUCHER / HỦY ĐƠN THÀNH CÔNG (UC28) -->
   <div class="modal fade" id="modalCancelSuccess" tabindex="-1" aria-labelledby="modalCancelSuccessLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content" style="border-radius:12px; border:none; box-shadow:0 15px 35px rgba(0,0,0,0.2);">
         <div class="modal-body text-center" style="padding:32px 24px;">
-          <div style="width:68px; height:68px; border-radius:50%; background:var(--tea-matcha-soft); color:var(--tea-matcha); display:inline-flex; align-items:center; justify-content:center; font-size:2rem; margin-bottom:16px;">
-            <i class="fa-solid fa-gift"></i>
+          <div id="cancelSuccessIconWrapper" style="width:68px; height:68px; border-radius:50%; background:var(--tea-matcha-soft); color:var(--tea-matcha); display:inline-flex; align-items:center; justify-content:center; font-size:2rem; margin-bottom:16px;">
+            <i class="fa-solid fa-gift" id="cancelSuccessIcon"></i>
           </div>
-          <h4 style="font-weight:700; color:var(--zen-sumi); margin-bottom:8px;">Hủy Đơn Hàng Thành Công</h4>
-          <p style="color:var(--zen-sumi-light); font-size:0.9rem; margin-bottom:20px;">
+          <h4 id="cancelSuccessTitle" style="font-weight:700; color:var(--zen-sumi); margin-bottom:8px;">Hủy Đơn Hàng Thành Công</h4>
+          <p id="cancelSuccessDesc" style="color:var(--zen-sumi-light); font-size:0.9rem; margin-bottom:20px;">
             Hệ thống đã bồi hoàn 80% giá trị đơn hàng vào mã voucher bên dưới:
           </p>
 
-          <!-- Hộp mã Voucher -->
-          <div style="background:#FAF8F5; border:2px dashed var(--tea-matcha); border-radius:10px; padding:16px; margin-bottom:20px; position:relative;">
+          <!-- Hộp mã Voucher (cho đơn PAID) -->
+          <div id="boxCompensationVoucher" style="background:#FAF8F5; border:2px dashed var(--tea-matcha); border-radius:10px; padding:16px; margin-bottom:20px; position:relative;">
             <span style="font-size:0.75rem; text-transform:uppercase; color:var(--zen-sumi-light); letter-spacing:1px; display:block; margin-bottom:4px;">MÃ VOUCHER BỒI HOÀN</span>
             <div id="displayVoucherCode" style="font-family:monospace; font-size:1.65rem; font-weight:800; color:var(--ceramic-bizen); letter-spacing:3px;">
               ------
@@ -947,8 +980,8 @@
             </div>
           </div>
 
-          <!-- Chi tiết Voucher -->
-          <div style="text-align:left; background:#F8FAFC; border-radius:8px; padding:12px 14px; font-size:0.85rem; color:#475569; margin-bottom:20px;">
+          <!-- Chi tiết Voucher (cho đơn PAID) -->
+          <div id="boxCompensationDetails" style="text-align:left; background:#F8FAFC; border-radius:8px; padding:12px 14px; font-size:0.85rem; color:#475569; margin-bottom:20px;">
             <div class="d-flex justify-content-between mb-1">
               <span>Trị giá voucher:</span>
               <strong class="text-success" id="displayVoucherAmount">0 đ</strong>
@@ -963,8 +996,18 @@
             </div>
           </div>
 
+          <!-- Hộp thông báo hoàn trả voucher cũ (cho đơn UNPAID) -->
+          <div id="boxUnpaidRestoredNotice" style="display:none; text-align:left; background:#EFF6FF; border:1px solid #BFDBFE; border-radius:8px; padding:14px; font-size:0.88rem; color:#1E40AF; margin-bottom:20px;">
+            <div style="font-weight:700; margin-bottom:4px;">
+              <i class="fa-solid fa-rotate-left me-1"></i> Hoàn Trả Mã Giảm Giá Thành Công
+            </div>
+            <div id="displayRestoredVoucherText">
+              Mã ưu đãi đã được hoàn trả lại lượt dùng vào tài khoản của bạn và sẵn sàng sử dụng cho đơn hàng mới!
+            </div>
+          </div>
+
           <button type="button" class="btn btn-dark w-100" data-bs-dismiss="modal" style="background:var(--zen-sumi); border-radius:8px; padding:10px 0; font-weight:600;">
-            Đã Lưu Mã & Đóng
+            Đóng
           </button>
         </div>
       </div>
