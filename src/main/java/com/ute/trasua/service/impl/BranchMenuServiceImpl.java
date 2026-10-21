@@ -187,6 +187,23 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         }
 
         log.info(">>> Updated Product ID {} availability at Branch ID {} to: {}", productId, branchId, available);
+
+        try {
+            String prodName = optional.map(b -> b.getProduct().getName())
+                    .orElseGet(() -> productRepository.findById(productId).map(Product::getName).orElse("Món"));
+            Map<String, Object> payload = Map.of(
+                    "type", "PRODUCT_AVAILABILITY_CHANGED",
+                    "branchId", branchId,
+                    "productId", productId,
+                    "isAvailable", available,
+                    "message", "Món [" + prodName + "] vừa được cập nhật thành: " + (available ? "Còn hàng" : "Tạm hết")
+            );
+            messagingTemplate.convertAndSend("/topic/kitchen/" + branchId, (Object) payload);
+            messagingTemplate.convertAndSend("/topic/menu/" + branchId, (Object) payload);
+        } catch (Exception e) {
+            log.warn("Không thể gửi WebSocket event cho updateProductAvailability: {}", e.getMessage());
+        }
+
         return available;
     }
 
@@ -245,6 +262,16 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     @Transactional(readOnly = true)
     public long countTotalAtBranch(Long branchId) {
         return branchMenuRepository.countByBranchId(branchId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isBranchMenuComplete(Long branchId) {
+        if (branchId == null) return true;
+        long masterCount = productRepository.count();
+        if (masterCount == 0) return true;
+        long branchCount = branchMenuRepository.countByBranchId(branchId);
+        return branchCount >= masterCount;
     }
 
     // ==========================================

@@ -40,6 +40,7 @@ Thumbs.db
 **/*.md
 !**/README.md
 !**/readme.md
+!BAOCAO_SUA_LOI_HE_THONG.md
 *.doc
 *.docx
 *.pdf

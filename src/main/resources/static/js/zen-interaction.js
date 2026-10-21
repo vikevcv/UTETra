@@ -28,10 +28,26 @@ let currentModalCup = {
   quantity: 1
 };
 
-let currentSelectedRoom = {
-  id: 1,
-  name: 'Phòng Trà SPKT'
-};
+const SELECTED_BRANCH_KEY = "UTETRA_SELECTED_BRANCH";
+
+function getStoredSelectedRoom() {
+  try {
+    const raw = localStorage.getItem(SELECTED_BRANCH_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  const activeRoomCard = document.querySelector(".room-card.active");
+  if (activeRoomCard) {
+    const btn = activeRoomCard.querySelector(".btn-select-room");
+    if (btn) {
+      const bId = parseInt(btn.getAttribute("data-id")) || 1;
+      const bName = btn.getAttribute("data-name") || "Phòng Trà SPKT";
+      return { id: bId, name: bName };
+    }
+  }
+  return { id: 1, name: 'Phòng Trà SPKT' };
+}
+
+let currentSelectedRoom = getStoredSelectedRoom();
 
 // ==================== TIỆN ÍCH ĐỊNH DẠNG ====================
 function formatMoney(amount) {
@@ -259,6 +275,13 @@ function clearFullCart() {
 
 // ==================== TƯƠNG TÁC MODAL TÙY CHỈNH ====================
 function openZenModal(productId, productName, basePrice, imageUrl) {
+  // Kiểm tra nếu sản phẩm đang tạm hết hàng tại cơ sở đã chọn
+  const card = document.querySelector(`.reserve-card[data-product-id="${productId}"]`);
+  if (card && card.getAttribute("data-available") === "false") {
+    alert(`Phẩm trà '${productName}' hiện đang tạm ngưng phục vụ tại ${currentSelectedRoom.name || 'cơ sở này'}. Quý khách vui lòng chọn cơ sở khác hoặc tham khảo các phẩm trà khác.`);
+    return;
+  }
+
   currentModalCup = {
     productId: productId,
     productName: productName,
@@ -385,6 +408,13 @@ function updateZenLivePrice() {
 }
 
 function confirmAddZen() {
+  const card = document.querySelector(`.reserve-card[data-product-id="${currentModalCup.productId}"]`);
+  if (card && card.getAttribute("data-available") === "false") {
+    alert(`Phẩm trà '${currentModalCup.productName}' hiện đang tạm hết tại cơ sở này. Không thể thêm vào khay trà.`);
+    closeZenModal();
+    return;
+  }
+
   const noteInput = document.getElementById("zenItemNote");
   if (noteInput) {
     currentModalCup.note = noteInput.value.trim();
@@ -754,8 +784,11 @@ function showVoucherFeedback(msg, isSuccess) {
 }
 
 // ==================== ĐIỀU HƯỚNG & PHÒNG TRÀ ====================
-function chooseRoom(id, name) {
-  currentSelectedRoom = { id, name };
+async function chooseRoom(id, name) {
+  const numId = parseInt(id);
+  currentSelectedRoom = { id: numId, name: name };
+  localStorage.setItem(SELECTED_BRANCH_KEY, JSON.stringify(currentSelectedRoom));
+
   document.querySelectorAll(".room-card").forEach(c => {
     c.classList.remove("active");
     const btn = c.querySelector(".btn-select-room");
@@ -768,6 +801,67 @@ function chooseRoom(id, name) {
     const btn = activeCard.querySelector(".btn-select-room");
     if (btn) btn.innerText = "✓ Đang Ghé Thăm";
   }
+
+  // Tự động làm mới trạng thái còn/hết hàng trên lưới sản phẩm tức thì
+  await refreshProductsAvailabilityByBranch(numId);
+  recheckStoredVoucher();
+}
+
+async function refreshProductsAvailabilityByBranch(branchId) {
+  if (!branchId) return;
+  try {
+    const res = await fetch(`${getContextPath()}/api/v1/products/availability?branchId=${branchId}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.availability) {
+        updateGridAvailability(json.availability);
+      }
+    }
+  } catch (err) {
+    console.warn("Không thể tải trạng thái món theo chi nhánh:", err);
+  }
+}
+
+function updateGridAvailability(availMap) {
+  const cards = document.querySelectorAll(".reserve-card");
+  cards.forEach(card => {
+    const pId = parseInt(card.getAttribute("data-product-id"));
+    if (!pId) return;
+    const isAvail = availMap[pId] !== false; // mặc định true nếu không có thông tin
+    card.setAttribute("data-available", isAvail ? "true" : "false");
+
+    const media = card.querySelector(".reserve-media");
+    let badge = media ? media.querySelector(".zen-out-of-stock-badge") : null;
+    const foot = card.querySelector(".reserve-foot");
+    let btn = foot ? foot.querySelector(".btn-zen-select") : null;
+
+    if (!isAvail) {
+      card.classList.add("item-out-of-stock");
+      if (!badge && media) {
+        badge = document.createElement("div");
+        badge.className = "zen-out-of-stock-badge";
+        badge.innerHTML = '<i class="fa-solid fa-ban me-1"></i>Tạm hết';
+        media.insertBefore(badge, media.firstChild);
+      }
+      if (btn) {
+        btn.classList.add("btn-zen-disabled");
+        btn.disabled = true;
+        btn.setAttribute("data-available", "false");
+        btn.innerHTML = '<i class="fa-solid fa-ban me-1"></i> Tạm Hết';
+        btn.title = "Món này đang tạm hết tại cơ sở đã chọn";
+      }
+    } else {
+      card.classList.remove("item-out-of-stock");
+      if (badge) badge.remove();
+      if (btn) {
+        btn.classList.remove("btn-zen-disabled");
+        btn.disabled = false;
+        btn.setAttribute("data-available", "true");
+        btn.innerText = "Chọn Trà";
+        btn.title = "";
+      }
+    }
+  });
 }
 
 function scrollToReserve() {
@@ -786,12 +880,24 @@ function proceedToCheckout() {
     alert("Khay trà của bạn đang trống! Vui lòng chọn ít nhất 1 phẩm trà.");
     return;
   }
+  const branchParam = currentSelectedRoom && currentSelectedRoom.id ? `?branchId=${currentSelectedRoom.id}` : '';
   // Chuyển hướng sang luồng Đặt hàng & Định tuyến Chi nhánh (Module 3 - UC05)
-  window.location.href = `${getContextPath()}/checkout`;
+  window.location.href = `${getContextPath()}/checkout${branchParam}`;
 }
 
 // ==================== KHỞI CHẠY ====================
 document.addEventListener("DOMContentLoaded", () => {
   loadProductOptions();
   updateCartUI();
+
+  // Đồng bộ chi nhánh đã lưu trước đó nếu có
+  if (currentSelectedRoom && currentSelectedRoom.id) {
+    const activeCard = document.getElementById(`roomCard_${currentSelectedRoom.id}`);
+    if (activeCard && !activeCard.classList.contains("active")) {
+      document.querySelectorAll(".room-card").forEach(c => c.classList.remove("active"));
+      activeCard.classList.add("active");
+      const btn = activeCard.querySelector(".btn-select-room");
+      if (btn) btn.innerText = "✓ Đang Ghé Thăm";
+    }
+  }
 });

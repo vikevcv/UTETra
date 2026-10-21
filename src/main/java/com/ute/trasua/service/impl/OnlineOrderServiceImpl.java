@@ -75,6 +75,13 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
             throw new IllegalArgumentException("Tất cả phẩm trà trong giỏ hàng hiện không khả dụng tại chi nhánh này.");
         }
 
+        // Chặn đặt hàng nếu có bất kỳ món nào đang Tạm Ngưng tại chi nhánh được chọn
+        for (CartItemDto item : validatedCart.getItems()) {
+            if (Boolean.FALSE.equals(item.getAvailable())) {
+                throw new IllegalArgumentException("Phẩm trà '" + item.getProductName() + "' hiện đang tạm ngưng phục vụ tại chi nhánh " + branch.getName() + ". Vui lòng xóa món này khỏi giỏ hàng trước khi đặt.");
+            }
+        }
+
         BigDecimal subtotal = validatedCart.getSubtotalAmount();
 
         // 3. Tính toán khoảng cách và cước vận chuyển chuẩn xác (Haversine Distance Engine)

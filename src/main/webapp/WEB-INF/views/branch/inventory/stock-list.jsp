@@ -477,7 +477,7 @@
                     <label class="form-label fw-bold">
                       Ngưỡng Cảnh Báo Tồn Tối Thiểu (<span id="modalUnit"></span>)
                     </label>
-                    <input type="number" step="0.5" min="0" id="modalMinThreshold" name="minThreshold"
+                    <input type="number" step="any" min="0" id="modalMinThreshold" name="minThreshold"
                       class="form-control form-control-lg fw-bold text-primary" required />
                     <small class="text-muted d-block mt-1">
                       Hệ thống sẽ hiển thị cảnh báo đỏ và nhắc nhở lập phiếu nhập khi số lượng tồn thực tế nhỏ hơn hoặc
@@ -526,7 +526,7 @@
                     <label class="form-label fw-bold">
                       Số Lượng Thực Tế Sau Kiểm Kê (<span id="modalStockInputUnit"></span>) <span class="text-danger">*</span>
                     </label>
-                    <input type="number" step="0.01" min="0" id="modalStockNewQuantity" name="stockQuantity"
+                    <input type="number" step="any" min="0" id="modalStockNewQuantity" name="stockQuantity"
                       class="form-control form-control-lg fw-bold text-success" required />
                     <small class="text-muted d-block mt-1">
                       Nhập số lượng thực tế đếm được tại quầy/kho. Số liệu này sẽ lập tức được cập nhật vào hệ thống để Admin và Báo cáo theo dõi.

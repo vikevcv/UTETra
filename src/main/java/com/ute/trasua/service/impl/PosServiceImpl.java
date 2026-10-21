@@ -28,6 +28,7 @@ public class PosServiceImpl implements PosService {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final SizeRepository sizeRepository;
+    private final ProductSizeRepository productSizeRepository;
     private final ToppingRepository toppingRepository;
     private final OrderRepository orderRepository;
     private final OrderDetailRepository orderDetailRepository;
@@ -44,6 +45,7 @@ public class PosServiceImpl implements PosService {
             CategoryRepository categoryRepository,
             ProductRepository productRepository,
             SizeRepository sizeRepository,
+            ProductSizeRepository productSizeRepository,
             ToppingRepository toppingRepository,
             OrderRepository orderRepository,
             OrderDetailRepository orderDetailRepository,
@@ -59,6 +61,7 @@ public class PosServiceImpl implements PosService {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.sizeRepository = sizeRepository;
+        this.productSizeRepository = productSizeRepository;
         this.toppingRepository = toppingRepository;
         this.orderRepository = orderRepository;
         this.orderDetailRepository = orderDetailRepository;
@@ -146,16 +149,29 @@ public class PosServiceImpl implements PosService {
 
         java.util.Map<String, Integer> cupStocks = branchMenuService.getBranchCupStocks(targetBranchId);
 
+        java.util.Map<String, ProductSize> productSizeMap = productSizeRepository.findAll().stream()
+                .collect(Collectors.toMap(ps -> ps.getSizeCode().toUpperCase(), ps -> ps, (a, b) -> a));
+
         List<PosMenuResponse.SizeDto> sizes = sizeRepository.findAllByActiveTrueOrderByExtraPriceAsc()
                 .stream()
                 .map(s -> {
                     String cleanName = s.getName() != null ? s.getName().trim().toUpperCase() : "M";
                     int cStock = cupStocks.getOrDefault(cleanName, 50);
+                    BigDecimal price = s.getExtraPrice();
+                    ProductSize ps = productSizeMap.get(cleanName);
+                    if (ps != null && ps.getAdditionalPrice() != null) {
+                        price = ps.getAdditionalPrice();
+                        if (s.getExtraPrice() == null || s.getExtraPrice().compareTo(price) != 0) {
+                            s.setExtraPrice(price);
+                            sizeRepository.save(s);
+                            log.info(">>> Auto-synced POS size [{}] extraPrice to {}đ", cleanName, price);
+                        }
+                    }
                     return PosMenuResponse.SizeDto.builder()
                             .id(s.getId())
                             .name(s.getName())
                             .volumeMl(s.getVolumeMl())
-                            .extraPrice(s.getExtraPrice())
+                            .extraPrice(price)
                             .cupStock(cStock)
                             .isCupAvailable(cStock > 0)
                             .build();
@@ -243,8 +259,17 @@ public class PosServiceImpl implements PosService {
                 }
 
                 BigDecimal unitPrice = product.getBasePrice();
-                if (size != null && size.getExtraPrice() != null) {
-                    unitPrice = unitPrice.add(size.getExtraPrice());
+                if (size != null) {
+                    BigDecimal extra = size.getExtraPrice();
+                    if (size.getName() != null) {
+                        ProductSize ps = productSizeRepository.findById(size.getName().trim().toUpperCase()).orElse(null);
+                        if (ps != null && ps.getAdditionalPrice() != null) {
+                            extra = ps.getAdditionalPrice();
+                        }
+                    }
+                    if (extra != null) {
+                        unitPrice = unitPrice.add(extra);
+                    }
                 }
 
                 List<Topping> toppings = new ArrayList<>();

@@ -36,6 +36,8 @@ public class BranchServiceImpl implements BranchService {
     private final PosAccountRepository posAccountRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.ute.trasua.repository.ProductRepository productRepository;
+    private final com.ute.trasua.repository.BranchMenuRepository branchMenuRepository;
 
     public BranchServiceImpl(
             BranchRepository branchRepository,
@@ -44,11 +46,26 @@ public class BranchServiceImpl implements BranchService {
             UserRepository userRepository,
             PasswordEncoder passwordEncoder
     ) {
+        this(branchRepository, employeeRepository, posAccountRepository, userRepository, passwordEncoder, null, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public BranchServiceImpl(
+            BranchRepository branchRepository,
+            EmployeeRepository employeeRepository,
+            PosAccountRepository posAccountRepository,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            com.ute.trasua.repository.ProductRepository productRepository,
+            com.ute.trasua.repository.BranchMenuRepository branchMenuRepository
+    ) {
         this.branchRepository = branchRepository;
         this.employeeRepository = employeeRepository;
         this.posAccountRepository = posAccountRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.productRepository = productRepository;
+        this.branchMenuRepository = branchMenuRepository;
     }
 
     @Override
@@ -128,12 +145,29 @@ public class BranchServiceImpl implements BranchService {
     @Override
     @Transactional(readOnly = true)
     public Optional<BranchResponse> getBranchByManagerUsername(String username) {
-        Optional<Branch> branchOpt = branchRepository.findFirstByManagerUsername(username);
-        if (branchOpt.isEmpty() && username != null) {
-            branchOpt = userRepository.findByUsername(username)
-                    .map(User::getBranch);
+        if (username == null || username.isBlank()) {
+            return Optional.empty();
         }
-        return branchOpt.map(this::enrichToResponse);
+
+        // 1. Nguồn chân lý số 1: user.getBranch() (chi nhánh trực thuộc được gán trực tiếp trên User)
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user != null && user.getBranch() != null) {
+            return Optional.of(enrichToResponse(user.getBranch()));
+        }
+
+        // 2. Nguồn chân lý số 2: Tìm các chi nhánh có manager = user, ưu tiên cơ sở mới nhất (ID lớn nhất)
+        if (user != null) {
+            List<Branch> branches = branchRepository.findByManager(user);
+            if (!branches.isEmpty()) {
+                Branch latest = branches.stream()
+                        .max(Comparator.comparing(Branch::getId))
+                        .orElse(branches.get(0));
+                return Optional.of(enrichToResponse(latest));
+            }
+        }
+
+        // 3. Fallback theo findFirstByManagerUsername
+        return branchRepository.findFirstByManagerUsername(username).map(this::enrichToResponse);
     }
 
     @Override
@@ -171,8 +205,36 @@ public class BranchServiceImpl implements BranchService {
             User mgr = saved.getManager();
             mgr.setBranch(saved);
             if (!mgrResult.created()) {
+                // Gỡ bỏ manager này khỏi bất kỳ chi nhánh cũ nào khác để đảm bảo 1 manager chỉ quản lý 1 chi nhánh
+                List<Branch> oldBranches = branchRepository.findByManager(mgr);
+                for (Branch oldB : oldBranches) {
+                    if (!oldB.getId().equals(saved.getId())) {
+                        oldB.setManager(null);
+                        branchRepository.save(oldB);
+                        log.info(">>> Đã giải phóng chi nhánh cũ [{}] khỏi quản lý @{} khi tạo cơ sở mới [{}]",
+                                oldB.getBranchCode(), mgr.getUsername(), saved.getBranchCode());
+                    }
+                }
                 userRepository.save(mgr);
             }
+        }
+
+        // Tự động gán và đồng bộ toàn bộ món từ thực đơn chuỗi vào chi nhánh mới thành lập
+        try {
+            List<com.ute.trasua.entity.Product> allProducts = productRepository.findAll();
+            for (com.ute.trasua.entity.Product prod : allProducts) {
+                if (!branchMenuRepository.existsByBranchIdAndProductId(saved.getId(), prod.getId())) {
+                    branchMenuRepository.save(com.ute.trasua.entity.BranchMenu.builder()
+                            .branch(saved)
+                            .product(prod)
+                            .available(true)
+                            .createdAt(java.time.LocalDateTime.now())
+                            .build());
+                }
+            }
+            log.info(">>> Đã đồng bộ {} món từ thực đơn chuỗi vào chi nhánh mới [{}]", allProducts.size(), saved.getBranchCode());
+        } catch (Exception e) {
+            log.warn("Không thể tự động đồng bộ thực đơn cho chi nhánh mới: {}", e.getMessage());
         }
 
         BranchResponse resp = enrichToResponse(saved);
@@ -228,10 +290,18 @@ public class BranchServiceImpl implements BranchService {
 
         if (updated.getManager() != null) {
             User mgr = updated.getManager();
-            if (mgr.getBranch() == null || !id.equals(mgr.getBranch().getId())) {
-                mgr.setBranch(updated);
-                userRepository.save(mgr);
+            // Gỡ bỏ manager này khỏi bất kỳ chi nhánh cũ nào khác để đảm bảo tính duy nhất 1-1
+            List<Branch> oldBranches = branchRepository.findByManager(mgr);
+            for (Branch oldB : oldBranches) {
+                if (!oldB.getId().equals(updated.getId())) {
+                    oldB.setManager(null);
+                    branchRepository.save(oldB);
+                    log.info(">>> Đã giải phóng chi nhánh cũ [{}] khỏi quản lý @{} khi điều chuyển sang [{}]",
+                            oldB.getBranchCode(), mgr.getUsername(), updated.getBranchCode());
+                }
             }
+            mgr.setBranch(updated);
+            userRepository.save(mgr);
         }
         if (oldManager != null && (updated.getManager() == null || !oldManager.getId().equals(updated.getManager().getId()))) {
             if (oldManager.getBranch() != null && id.equals(oldManager.getBranch().getId())) {
