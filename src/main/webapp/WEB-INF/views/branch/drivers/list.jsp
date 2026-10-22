@@ -428,6 +428,9 @@
     // Xác nhận gửi lại email mật khẩu
     document.querySelectorAll('.form-resend').forEach(function(form) {
       form.addEventListener('submit', function(e) {
+        if (form.dataset.confirmed === 'true') {
+          return;
+        }
         e.preventDefault();
         var btn = form.querySelector('button');
         var name = btn ? btn.getAttribute('data-name') : 'tài xế';
@@ -443,11 +446,8 @@
           customClass: { popup: 'rounded-4 shadow border-0' }
         }).then(function(result) {
           if (result.isConfirmed) {
-            if (form.requestSubmit) {
-              form.requestSubmit();
-            } else {
-              form.submit();
-            }
+            form.dataset.confirmed = 'true';
+            form.submit();
           }
         });
       });
@@ -456,6 +456,9 @@
     // Xác nhận khóa / mở khóa tài xế
     document.querySelectorAll('.form-toggle').forEach(function(form) {
       form.addEventListener('submit', function(e) {
+        if (form.dataset.confirmed === 'true') {
+          return;
+        }
         e.preventDefault();
         var btn = form.querySelector('button');
         var name = btn ? btn.getAttribute('data-name') : 'tài xế';
@@ -473,11 +476,8 @@
           customClass: { popup: 'rounded-4 shadow border-0' }
         }).then(function(result) {
           if (result.isConfirmed) {
-            if (form.requestSubmit) {
-              form.requestSubmit();
-            } else {
-              form.submit();
-            }
+            form.dataset.confirmed = 'true';
+            form.submit();
           }
         });
       });
