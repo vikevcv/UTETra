@@ -1382,6 +1382,7 @@ public class DataInitializer implements CommandLineRunner {
                 .note("Đơn hàng tại quầy phục vụ khách")
                 .createdAt(createdAt)
                 .paidAt(createdAt.plusMinutes(2))
+                .orderDetails(new ArrayList<>())
                 .build();
 
         // Chọn ngẫu nhiên 1 đến 2 sản phẩm
