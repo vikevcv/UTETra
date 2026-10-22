@@ -571,8 +571,13 @@
                     ? `<span class="badge bg-danger ms-1" title="Lý do: \${escapeHtml(order.incidentReason)}"><i class="fa-solid fa-triangle-exclamation me-1"></i>Sự cố</span>`
                     : '';
 
+                // Đơn đã dán tem nhưng chưa có tài xế -> đang nằm trong hàng đợi ghép đôi
+                const waitingBadge = (!order.driverId && order.handedOverAt)
+                    ? `<span class="badge bg-warning text-dark ms-1" title="Đã dán tem, đang chờ hệ thống ghép tài xế"><i class="fa-solid fa-hourglass-half me-1"></i>Chờ ghép tài xế</span>`
+                    : '';
+
                 const typeBadge = isDelivery
-                    ? `<span class="badge bg-primary"><i class="fa-solid fa-motorcycle me-1"></i>Giao Tận Nơi</span>\${incidentBadge}`
+                    ? `<span class="badge bg-primary"><i class="fa-solid fa-motorcycle me-1"></i>Giao Tận Nơi</span>\${incidentBadge}\${waitingBadge}`
                     : `<span class="badge bg-success"><i class="fa-solid fa-store me-1"></i>Khách Lấy Quầy</span>`;
 
                 html += `
@@ -904,13 +909,25 @@
                 const resultDto = await res.json();
                 const assignedName = resultDto.driverName || 'Tài xế nhận đơn';
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Bàn Giao Thành Công!',
-                    html: `Đơn hàng <strong>\${activeSelectedOrder.orderCode}</strong> đã được điều phối tự động cho tài xế: <strong>\${escapeHtml(assignedName)}</strong>.<br>Hệ thống STOMP đã báo chuông cho tài xế.`,
-                    timer: 2500,
-                    showConfirmButton: false
-                });
+                if (resultDto.driverId) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Bàn Giao Thành Công!',
+                        html: `Đơn hàng <strong>\${activeSelectedOrder.orderCode}</strong> đã được điều phối tự động cho tài xế: <strong>\${escapeHtml(assignedName)}</strong>.<br>Hệ thống STOMP đã báo chuông cho tài xế.`,
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                } else {
+                    // Chưa có tài xế khả dụng: đơn đã dán tem và vào hàng đợi ghép, KHÔNG phải lỗi
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Đã Dán Tem — Vào Hàng Đợi Ghép',
+                        html: 'Đơn <strong>' + escapeHtml(activeSelectedOrder.orderCode) + '</strong> đã được ghi nhận bàn giao nhưng hiện chưa có tài xế trực ca nhận được.<br>'
+                            + 'Đơn đã nằm trong <strong>hàng đợi ghép tài xế</strong> — hệ thống tự ghép ngay khi có tài xế rảnh, <strong>không cần bấm lại</strong>.',
+                        confirmButtonColor: '#8C6D53',
+                        confirmButtonText: 'Đã hiểu'
+                    });
+                }
 
                 // Reset giao diện chi tiết
                 activeSelectedOrder = null;

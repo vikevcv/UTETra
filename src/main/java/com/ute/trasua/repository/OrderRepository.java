@@ -141,6 +141,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "ORDER BY o.createdAt ASC")
     List<Order> findUnassignedDeliveryQueue(@Param("branchId") Long branchId);
 
+    /** Hàng đợi ghép đôi: đơn ĐÃ DÁN TEM bàn giao (handedOverAt khác null) mà chưa có tài xế, xếp theo giờ dán tem. */
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "WHERE (:branchId IS NULL OR o.branch.id = :branchId OR (:branchId = 1L AND o.branch IS NULL)) " +
+           "AND o.status = 'READY_FOR_DELIVERY' AND o.driver IS NULL AND o.handedOverAt IS NOT NULL " +
+           "ORDER BY o.handedOverAt ASC")
+    List<Order> findSealedDeliveryQueue(@Param("branchId") Long branchId);
+
+    /** Các chi nhánh đang có đơn đã dán tem chờ ghép tài xế (vòng quét nền chỉ hỏi 1 query rỗng khi không có đơn). */
+    @Query("SELECT DISTINCT COALESCE(o.branch.id, 1L) FROM Order o " +
+           "WHERE o.status = 'READY_FOR_DELIVERY' AND o.driver IS NULL AND o.handedOverAt IS NOT NULL")
+    List<Long> findBranchIdsWithSealedDelivery();
+
     /** Đếm tải đang giao của nhiều tài xế trong 1 query (tránh N+1 khi chọn tài xế). */
     @Query("SELECT o.driver.id, COUNT(o) FROM Order o " +
            "WHERE o.driver.id IN :driverIds AND o.status IN :statuses " +

@@ -2278,6 +2278,7 @@
 
       // Bắt đầu chu trình Polling nhẹ nhàng mỗi 12 giây
       setInterval(pollActiveOrders, 12000);
+      syncShiftStatusFromServer();
 
       // Kích hoạt kết nối WebSocket STOMP nhận thông báo phân công thời gian thực
       initDriverWebSocket();
@@ -2978,6 +2979,11 @@
     /* ========================================================
        5. CÔNG TẮC GẠT BẬT / TẮT CA TRỰC
        ======================================================== */
+
+    /**
+     * Vẽ trạng thái công tắc (THUẦN UI, không gọi mạng, không toast).
+     * Tên hàm giữ theo nhánh develop để các nơi gọi cũ vẫn chạy được.
+     */
     function applyShiftSwitchUi(online) {
       const capsule = document.getElementById('topSwitchCapsule');
       const label = document.getElementById('switchLabelStatus');
@@ -3015,38 +3021,66 @@
       }
     }
 
+    /**
+     * Gạt công tắc BẬT/TẮT ca trực.
+     * SERVER TRƯỚC, CLIENT SAU: chỉ đổi giao diện khi server trả 2xx.
+     * Nếu server từ chối (ví dụ đang giữ đơn nên không cho tắt ca) thì giữ nguyên
+     * trạng thái cũ và hiện lý do — tránh cảnh tab hiện TẮT trong khi DB vẫn giao đơn.
+     */
     function toggleShiftStatus() {
-      const prevOnline = isOnline;
-      isOnline = !isOnline;
-      applyShiftSwitchUi(isOnline);
-
-      if (isOnline) {
-        showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
-        if ('Notification' in window && Notification.permission === 'default') {
-          Notification.requestPermission();
-        }
-      } else {
-        showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
-      }
+      const target = !isOnline;
 
       fetch('${pageContext.request.contextPath}/shipper/api/toggle-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ online: isOnline })
-      }).then(function(res) {
-        if (!res.ok) {
-          throw new Error('Lỗi máy chủ (HTTP ' + res.status + ')');
-        }
-        return res.json();
-      }).then(function(data) {
-        console.log('Đã đồng bộ trạng thái ca trực với CSDL:', data);
-      }).catch(function(err) {
-        console.error('Không thể cập nhật trạng thái ca trực:', err);
-        // Hoàn tác lại giao diện công tắc
-        isOnline = prevOnline;
-        applyShiftSwitchUi(isOnline);
-        showZenToast('Không thể cập nhật trạng thái: ' + (err.message || 'Lỗi kết nối'), 'danger');
-      });
+        body: JSON.stringify({ online: target })
+      })
+        .then(function(res) {
+          return res.json().catch(function() { return {}; }).then(function(data) {
+            if (!res.ok) {
+              throw new Error(data.message || ('Lỗi máy chủ (HTTP ' + res.status + ')'));
+            }
+            return data;
+          });
+        })
+        .then(function() {
+          isOnline = target;
+          applyShiftSwitchUi(isOnline);
+          if (isOnline) {
+            showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
+            if ('Notification' in window && Notification.permission === 'default') {
+              Notification.requestPermission();
+            }
+          } else {
+            showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
+          }
+        })
+        .catch(function(err) {
+          console.error('Không thể cập nhật trạng thái ca trực:', err);
+          showZenToast(err.message || 'Không thể cập nhật trạng thái: lỗi kết nối', 'danger');
+          // Đồng bộ lại theo server để không hiển thị sai
+          syncShiftStatusFromServer();
+        });
+    }
+
+    /**
+     * Đồng bộ công tắc BẬT/TẮT theo trạng thái THẬT trong DB.
+     * Chống trường hợp tab cũ (hoặc tab thứ 2) hiển thị "TẮT" nhưng server vẫn coi tài xế đang trực
+     * -> quán bấm Bàn Giao và đơn vẫn chạy về tài xế mà người dùng tưởng đã offline.
+     */
+    function syncShiftStatusFromServer() {
+      fetch('${pageContext.request.contextPath}/shipper/api/shift-status')
+        .then(function(res) { return res.ok ? res.json() : null; })
+        .then(function(data) {
+          if (!data || typeof data.online !== 'boolean') return;
+          if (data.online === isOnline) return;
+          isOnline = data.online;
+          applyShiftSwitchUi(isOnline);
+          showZenToast(data.online
+            ? 'Đồng bộ: ca trực đang BẬT (hệ thống vẫn có thể giao đơn cho bạn).'
+            : 'Đồng bộ: ca trực đang TẮT.', 'info');
+        })
+        .catch(function() {});
     }
 
     /* ========================================================
@@ -3082,6 +3116,8 @@
           }
         })
         .catch(err => console.log('Polling check:', err));
+
+      syncShiftStatusFromServer();
     }
 
     function refreshOrders(isManual) {
@@ -3246,6 +3282,13 @@
       }
       const detailNote = document.getElementById('incidentDetailNote').value;
 
+      // Đang giao ngoài đường (đã lấy trà) thì BẮT BUỘC có ảnh đối soát — chặn ngay ở client
+      // để tài xế không bấm mãi mà server trả 400 (giống hệt rule phía server).
+      if (!isAtStore && !incidentProofPhoto) {
+        showZenToast('Vui lòng chụp ảnh đối soát trước khi báo giao thất bại!', 'warning');
+        return;
+      }
+
       const btn = document.getElementById('btnSubmitIncident');
       if (btn) btn.disabled = true;
 
@@ -3261,10 +3304,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      .then(res => {
-        if (!res.ok) throw new Error('Mã phản hồi: ' + res.status);
-        return res.json();
-      })
+      .then(res => res.json().catch(() => ({})).then(body => {
+        if (!res.ok) throw new Error(body.message || ('Mã phản hồi: ' + res.status));
+        return body;
+      }))
       .then(data => {
         if (btn) btn.disabled = false;
         if (incidentModalInstance) {
@@ -3346,28 +3389,11 @@
           }
         }
 
-        // Tự động chuyển OFFLINE nếu gặp sự cố xe cộ hoặc sức khỏe
+        // Sau sự cố: trạng thái ca trực lấy theo SERVER (server mới là nguồn sự thật).
+        // Server tự chuyển OFFLINE khi hỏng xe / sức khỏe; các lý do khác (khách không liên lạc được...)
+        // tài xế vẫn đang trực nên KHÔNG được tự tắt công tắc ở client.
         if (isAtStore || reasonCode === 'XE_HONG' || reasonCode === 'SUC_KHOE') {
-          isOnline = false;
-          const capsule = document.getElementById('topSwitchCapsule');
-          const label = document.getElementById('switchLabelStatus');
-          const knobIcon = document.getElementById('knobIcon');
-          const avatarDot = document.getElementById('headerAvatarDot');
-          const onlineTextWrap = document.getElementById('headerOnlineTextWrap');
-          const onlineText = document.getElementById('headerOnlineText');
-          const statusBoxText = document.getElementById('statusBoxText');
-          const statusBoxSub = document.getElementById('statusBoxSub');
-          if (capsule) capsule.classList.remove('online');
-          if (label) label.innerText = 'TẮT';
-          if (knobIcon) knobIcon.className = 'fa-solid fa-power-off';
-          if (avatarDot) avatarDot.classList.remove('online');
-          if (onlineTextWrap) onlineTextWrap.className = 'text-secondary';
-          if (onlineText) onlineText.innerText = 'Tạm nghỉ';
-          if (statusBoxText) {
-            statusBoxText.innerText = 'Tạm Nghỉ Ca';
-            statusBoxText.style.color = 'var(--text-sepia)';
-          }
-          if (statusBoxSub) statusBoxSub.innerText = 'Tài xế tạm nghỉ do sự cố bất khả kháng';
+          syncShiftStatusFromServer();
         }
       })
       .catch(err => {

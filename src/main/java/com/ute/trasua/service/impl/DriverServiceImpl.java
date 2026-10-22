@@ -1,5 +1,7 @@
 package com.ute.trasua.service.impl;
 
+import com.ute.trasua.util.NoteText;
+
 import com.ute.trasua.dto.CreateDriverRequest;
 import com.ute.trasua.dto.DriverResponse;
 import com.ute.trasua.dto.UpdateDriverRequest;
@@ -38,6 +40,7 @@ public class DriverServiceImpl implements DriverService {
     private final PasswordEncoder passwordEncoder;
     private final com.ute.trasua.repository.OrderRepository orderRepository;
     private final com.ute.trasua.service.DispatchNotifier dispatchNotifier;
+    private final com.ute.trasua.service.DriverDispatchService driverDispatchService;
 
     public DriverServiceImpl(
             DriverRepository driverRepository,
@@ -46,7 +49,8 @@ public class DriverServiceImpl implements DriverService {
             EmailService emailService,
             PasswordEncoder passwordEncoder,
             com.ute.trasua.repository.OrderRepository orderRepository,
-            com.ute.trasua.service.DispatchNotifier dispatchNotifier
+            com.ute.trasua.service.DispatchNotifier dispatchNotifier,
+            com.ute.trasua.service.DriverDispatchService driverDispatchService
     ) {
         this.driverRepository = driverRepository;
         this.userRepository = userRepository;
@@ -55,6 +59,7 @@ public class DriverServiceImpl implements DriverService {
         this.passwordEncoder = passwordEncoder;
         this.orderRepository = orderRepository;
         this.dispatchNotifier = dispatchNotifier;
+        this.driverDispatchService = driverDispatchService;
     }
 
     private static final String CHAR_LOWER = "abcdefghijklmnopqrstuvwxyz";
@@ -313,13 +318,35 @@ public class DriverServiceImpl implements DriverService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài xế ID: " + driverId));
 
         boolean available = Boolean.TRUE.equals(isAvailable);
-        driver.setWorkingStatus(available ? "ONLINE" : "OFFLINE");
-        Driver saved = driverRepository.save(driver);
 
         if (!available) {
-            long stillActive = orderRepository.countByDriverIdAndStatusIn(driverId, List.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED"));
-            if (stillActive > 0) {
-                log.warn(">>> CẢNH BÁO: Tài xế {} tắt ca trực nhưng vẫn còn {} đơn đang giao!", driverId, stillActive);
+            // RULE: ĐANG GIỮ ĐƠN THÌ KHÔNG ĐƯỢC TẮT CA (kể cả đơn chưa lấy trà).
+            // Nếu cho tắt, đơn sẽ nằm trên người đã nghỉ ca: quầy POS không còn thấy trong hàng chờ
+            // và tài xế khác cũng không nhận được -> đơn mồ côi.
+            // Muốn nghỉ giữa chừng thì phải giao xong, hoặc bấm "Trả đơn lại cho quầy" (báo sự cố).
+            List<com.ute.trasua.entity.Order> holding = orderRepository.findByDriverIdAndStatusInOrderByCreatedAtDesc(
+                    driverId, List.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED", "READY_FOR_DELIVERY"));
+            if (!holding.isEmpty()) {
+                boolean hasPicked = holding.stream().anyMatch(o -> o.getPickupPhotoUrl() != null);
+                throw new IllegalStateException(hasPicked
+                        ? "Bạn đang giữ " + holding.size() + " đơn chưa hoàn tất (có ly đã lấy) — hãy giao xong hoặc báo sự cố trước khi tắt ca trực!"
+                        : "Bạn đang giữ " + holding.size() + " đơn chưa hoàn tất — hãy giao xong hoặc bấm \"Trả đơn lại cho quầy\" trước khi tắt ca trực!");
+            }
+        }
+
+        driver.setWorkingStatus(available ? "ONLINE" : "OFFLINE");
+        // FLUSH ngay: bộ chọn tài xế chỉ lấy người ONLINE/DELIVERING, không flush là đơn sẽ quay lại chính anh ta
+        Driver saved = driverRepository.saveAndFlush(driver);
+
+        if (available && saved.getBranch() != null) {
+            // Vừa bật ca: gán ngay các đơn đang chờ thay vì để tài xế đợi vòng quét nền 15s
+            try {
+                int assigned = driverDispatchService.autoDispatchReadyOrders(saved.getBranch().getId());
+                if (assigned > 0) {
+                    log.info(">>> Tài xế {} bật ca, tự động gán {} đơn đang chờ", driverId, assigned);
+                }
+            } catch (Exception e) {
+                log.warn(">>> Không gán được đơn chờ khi tài xế {} bật ca: {}", driverId, e.getMessage());
             }
         }
 
@@ -358,7 +385,8 @@ public class DriverServiceImpl implements DriverService {
         boolean isCustomerCancelled = "KHACH_HUY".equals(cleanReason);
 
         order.setIncidentReason(cleanReason);
-        order.setIncidentNote(note != null && !note.isBlank() ? note.trim() : null);
+        order.setIncidentNote(note != null && !note.isBlank()
+                ? NoteText.truncate(note.trim(), NoteText.INCIDENT_NOTE_MAX) : null);
         order.setIncidentReportedAt(LocalDateTime.now());
         order.setStatus(isCustomerCancelled ? "CANCELLED" : "READY_FOR_DELIVERY");
         order.setDriver(null);
