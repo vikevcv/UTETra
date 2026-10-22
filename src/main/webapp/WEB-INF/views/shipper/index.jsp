@@ -2278,6 +2278,7 @@
 
       // Bắt đầu chu trình Polling nhẹ nhàng mỗi 12 giây
       setInterval(pollActiveOrders, 12000);
+      syncShiftStatusFromServer();
 
       // Kích hoạt kết nối WebSocket STOMP nhận thông báo phân công thời gian thực
       initDriverWebSocket();
@@ -2979,7 +2980,29 @@
        5. CÔNG TẮC GẠT BẬT / TẮT CA TRỰC
        ======================================================== */
     function toggleShiftStatus() {
-      isOnline = !isOnline;
+      const target = !isOnline;
+
+      // Gọi server TRƯỚC, chỉ đổi giao diện khi server chấp nhận
+      fetch('${pageContext.request.contextPath}/shipper/api/toggle-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ online: target })
+      })
+        .then(function(res) {
+          if (!res.ok) {
+            return res.json().catch(function() { return {}; }).then(function(data) {
+              showZenToast(data.message || 'Không đổi được ca trực. Vui lòng thử lại!', 'warning');
+            });
+          }
+          isOnline = target;
+          applyShiftStatusUI(true);
+        })
+        .catch(function() {
+          showZenToast('Mất kết nối — chưa đổi được ca trực.', 'warning');
+        });
+    }
+
+    function applyShiftStatusUI(announce) {
       const capsule = document.getElementById('topSwitchCapsule');
       const label = document.getElementById('switchLabelStatus');
       const knobIcon = document.getElementById('knobIcon');
@@ -3001,7 +3024,7 @@
           statusBoxText.style.color = 'var(--matcha-deep)';
         }
         if (statusBoxSub) statusBoxSub.innerText = 'Đang bật nhận đơn từ quán';
-        showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
+        if (announce) showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
 
         if ('Notification' in window && Notification.permission === 'default') {
           Notification.requestPermission();
@@ -3018,14 +3041,29 @@
           statusBoxText.style.color = 'var(--text-sepia)';
         }
         if (statusBoxSub) statusBoxSub.innerText = 'Gạt công tắc trên để trực';
-        showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
+        if (announce) showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
       }
+    }
 
-      fetch('${pageContext.request.contextPath}/shipper/api/toggle-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ online: isOnline })
-      }).catch(err => console.log('Toggle synced'));
+
+    /**
+     * Đồng bộ công tắc BẬT/TẮT theo trạng thái THẬT trong DB.
+     * Chống trường hợp tab cũ (hoặc tab thứ 2) hiển thị "TẮT" nhưng server vẫn coi tài xế đang trực
+     * -> quán bấm Bàn Giao và đơn vẫn chạy về tài xế mà người dùng tưởng đã offline.
+     */
+    function syncShiftStatusFromServer() {
+      fetch('${pageContext.request.contextPath}/shipper/api/shift-status')
+        .then(function(res) { return res.ok ? res.json() : null; })
+        .then(function(data) {
+          if (!data || typeof data.online !== 'boolean') return;
+          if (data.online === isOnline) return;
+          isOnline = data.online;
+          applyShiftStatusUI(false);
+          showZenToast(data.online
+            ? 'Đồng bộ: ca trực đang BẬT (hệ thống vẫn có thể giao đơn cho bạn).'
+            : 'Đồng bộ: ca trực đang TẮT.', 'info');
+        })
+        .catch(function() {});
     }
 
     /* ========================================================
@@ -3061,6 +3099,8 @@
           }
         })
         .catch(err => console.log('Polling check:', err));
+
+      syncShiftStatusFromServer();
     }
 
     function refreshOrders(isManual) {
@@ -3225,6 +3265,13 @@
       }
       const detailNote = document.getElementById('incidentDetailNote').value;
 
+      // Đang giao ngoài đường (đã lấy trà) thì BẮT BUỘC có ảnh đối soát — chặn ngay ở client
+      // để tài xế không bấm mãi mà server trả 400 (giống hệt rule phía server).
+      if (!isAtStore && !incidentProofPhoto) {
+        showZenToast('Vui lòng chụp ảnh đối soát trước khi báo giao thất bại!', 'warning');
+        return;
+      }
+
       const btn = document.getElementById('btnSubmitIncident');
       if (btn) btn.disabled = true;
 
@@ -3240,10 +3287,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      .then(res => {
-        if (!res.ok) throw new Error('Mã phản hồi: ' + res.status);
-        return res.json();
-      })
+      .then(res => res.json().catch(() => ({})).then(body => {
+        if (!res.ok) throw new Error(body.message || ('Mã phản hồi: ' + res.status));
+        return body;
+      }))
       .then(data => {
         if (btn) btn.disabled = false;
         if (incidentModalInstance) {

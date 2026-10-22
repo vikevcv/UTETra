@@ -1,5 +1,7 @@
 package com.ute.trasua.service.impl;
 
+import com.ute.trasua.util.NoteText;
+
 import com.ute.trasua.dto.dispatch.DispatchResultDto;
 import com.ute.trasua.dto.handover.HandoverOrderDto;
 import com.ute.trasua.entity.Branch;
@@ -40,6 +42,50 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
     private final DriverRepository driverRepository;
     private final DispatchNotifier dispatchNotifier;
 
+    /**
+     * Chống spam WebSocket: vòng quét nền chạy liên tục, nên chỉ cảnh báo quán
+     * khi danh sách đơn chờ thật sự thay đổi (có đơn mới kẹt / vừa gán được đơn).
+     */
+    private final Map<Long, String> lastUnassignedSignature = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private void notifyUnassignedIfChanged(Long branchId, List<String> orderCodes) {
+        String signature = String.join(",", orderCodes);
+        String previous = lastUnassignedSignature.put(branchId, signature);
+        if (signature.equals(previous)) {
+            return;
+        }
+        dispatchNotifier.notifyQueueUnassigned(branchId, orderCodes.size(), orderCodes);
+    }
+
+    /**
+     * Chưa có tài xế khả dụng: vẫn ghi nhận "đã dán tem bàn giao" (mốc handedOverAt) và đưa đơn
+     * vào hàng đợi ghép đôi, KHÔNG báo lỗi cho nhân viên. Vòng quét nền sẽ tự ghép khi có tài xế.
+     */
+    private DispatchResultDto queueSealedOrder(Order order, String message) {
+        if (order.getHandedOverAt() == null) {
+            order.setHandedOverAt(LocalDateTime.now());
+        }
+        Order saved = orderRepository.save(order);
+
+        Long branchId = (saved.getBranch() != null) ? saved.getBranch().getId() : 1L;
+        List<String> codes = orderRepository.findSealedDeliveryQueue(branchId).stream()
+                .map(Order::getOrderCode)
+                .collect(Collectors.toList());
+        notifyUnassignedIfChanged(branchId, codes);
+
+        log.info(">>> [GHÉP ĐÔI] Đơn {} đã dán tem, vào hàng đợi chờ tài xế ({} đơn đang chờ ghép)",
+                saved.getOrderCode(), codes.size());
+
+        return DispatchResultDto.builder()
+                .orderId(saved.getId())
+                .orderCode(saved.getOrderCode())
+                .orderStatus(saved.getStatus())
+                .queued(true)
+                .reassigned(false)
+                .message(message)
+                .build();
+    }
+
     @Override
     @Transactional
     public DispatchResultDto dispatchMandatoryOrder(Long orderId, Long driverId, String note) {
@@ -67,7 +113,8 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
             // Tự động phân công theo thuật toán 3 tầng tối ưu (Ít tải nhất -> KPI cao nhất -> Hoàn thành nhiều nhất)
             List<Driver> candidates = driverRepository.lockEligibleDriversForBranch(orderBranchId);
             if (candidates.isEmpty()) {
-                throw new IllegalStateException("Chi nhánh hiện không có tài xế nào đang BẬT CA TRỰC (ONLINE) để bàn giao đơn!");
+                return queueSealedOrder(order,
+                        "Đã dán tem bàn giao. Chi nhánh hiện chưa có tài xế trực ca — đơn đã vào hàng đợi, hệ thống sẽ tự ghép khi có tài xế.");
             }
             List<Long> driverIds = candidates.stream().map(Driver::getId).collect(Collectors.toList());
             Map<Long, Long> loadByDriver = new HashMap<>();
@@ -77,7 +124,8 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
             }
             driver = selectBestDriver(candidates, loadByDriver);
             if (driver == null) {
-                throw new IllegalStateException("Tất cả tài xế trực tuyến của chi nhánh đều đã đầy tải (tối đa 3 đơn/ca)!");
+                return queueSealedOrder(order,
+                        "Đã dán tem bàn giao. Tất cả tài xế đang giao đủ tải — đơn đã vào hàng đợi, hệ thống sẽ tự ghép khi có tài xế trống.");
             }
         } else {
             // Khóa bi quan dòng tài xế chỉ định
@@ -109,17 +157,21 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
                     + " đã đạt trần tối đa " + MAX_QUEUE_PER_DRIVER + " đơn trong ca trực!");
         }
 
-        // Thực hiện gán đơn bắt buộc
+        // Thực hiện gán đơn bắt buộc (giữ nguyên mốc dán tem nếu đơn đã vào hàng đợi từ trước)
         order.setDriver(driver);
         order.setStatus("OUT_FOR_DELIVERY");
-        order.setHandedOverAt(LocalDateTime.now());
+        if (order.getHandedOverAt() == null) {
+            order.setHandedOverAt(LocalDateTime.now());
+        }
 
         if (note != null && !note.isBlank()) {
             String existingNotes = order.getDeliveryNotes();
             if (existingNotes != null && !existingNotes.isBlank()) {
-                order.setDeliveryNotes(existingNotes + " | Điều phối: " + note.trim());
+                order.setDeliveryNotes(NoteText.append(existingNotes, "Điều phối: " + note.trim(),
+                        NoteText.DELIVERY_NOTES_MAX));
             } else {
-                order.setDeliveryNotes("Điều phối: " + note.trim());
+                order.setDeliveryNotes(NoteText.append(null, "Điều phối: " + note.trim(),
+                        NoteText.DELIVERY_NOTES_MAX));
             }
         }
 
@@ -127,7 +179,7 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
         driver.setWorkingStatus("DELIVERING");
         driverRepository.save(driver);
 
-        Order saved = orderRepository.save(order);
+        Order saved = orderRepository.saveAndFlush(order);
         int newQueueSize = (int) currentLoad + 1;
 
         log.info(">>> [MANDATORY DISPATCH] Đã gán đơn {} (STT #{}) cho tài xế {} (Tải ca: {}/{})",
@@ -154,60 +206,45 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
     @Override
     @Transactional
     public int autoDispatchReadyOrders(Long branchId) {
+        // Chỉ ghép đơn ĐÃ DÁN TEM bàn giao (handedOverAt khác null).
+        // Đơn vừa pha chế xong mà nhân viên chưa bấm nút thì tuyệt đối không bị tự động đẩy đi.
         Long targetBranchId = (branchId != null) ? branchId : 1L;
-        List<Order> unassignedQueue = orderRepository.findUnassignedDeliveryQueue(targetBranchId);
+        List<Order> unassignedQueue = orderRepository.findSealedDeliveryQueue(targetBranchId);
         if (unassignedQueue.isEmpty()) {
+            lastUnassignedSignature.remove(targetBranchId);
             return 0;
-        }
-
-        // Khóa bi quan toàn bộ tài xế khả dụng của chi nhánh
-        List<Driver> candidates = driverRepository.lockEligibleDriversForBranch(targetBranchId);
-        if (candidates.isEmpty()) {
-            log.warn(">>> [AUTO-DISPATCH] Chi nhánh {} có {} đơn chờ nhưng không có tài xế nào ONLINE",
-                    targetBranchId, unassignedQueue.size());
-            List<String> codes = unassignedQueue.stream().map(Order::getOrderCode).collect(Collectors.toList());
-            dispatchNotifier.notifyQueueUnassigned(targetBranchId, unassignedQueue.size(), codes);
-            return 0;
-        }
-
-        // Lấy trước map tải số đơn đang giao của các tài xế trong 1 query (tránh N+1)
-        List<Long> driverIds = candidates.stream().map(Driver::getId).collect(Collectors.toList());
-        Map<Long, Long> loadByDriver = new HashMap<>();
-        List<Object[]> loadRows = orderRepository.countActiveOrdersByDriverIds(driverIds, ACTIVE_DELIVERY_STATUSES);
-        for (Object[] row : loadRows) {
-            loadByDriver.put((Long) row[0], (Long) row[1]);
         }
 
         int dispatchedCount = 0;
+        List<String> stillUnassignedCodes = new ArrayList<>();
         for (Order order : unassignedQueue) {
-            Driver bestDriver = selectBestDriver(candidates, loadByDriver);
-            if (bestDriver == null) {
-                // Toàn bộ tài xế đều đã chạm trần 3 đơn
-                log.warn(">>> [AUTO-DISPATCH] Tất cả tài xế chi nhánh {} đều đã đạt trần {} đơn, tạm dừng gán",
-                        targetBranchId, MAX_QUEUE_PER_DRIVER);
-                break;
-            }
+            try {
+                // Đi qua dispatchMandatoryOrder(auto) để MỌI luồng có cùng thứ tự khóa: Order -> Driver.
+                // (Khóa batch driver ở đây rồi mới khóa Order là nguồn deadlock AB-BA với POS handover /
+                //  nhánh xử lý sự cố, vì 2 luồng kia khóa Order trước rồi mới khóa driver.)
+                DispatchResultDto result = dispatchMandatoryOrder(order.getId(), null,
+                        "Tự động ghép tài xế cho đơn đã dán tem");
 
-            dispatchMandatoryOrder(order.getId(), bestDriver.getId(), "Tự động phân công khi hoàn tất pha chế");
-            dispatchedCount++;
-
-            // Cập nhật bộ đếm tải tạm thời
-            long newLoad = loadByDriver.getOrDefault(bestDriver.getId(), 0L) + 1;
-            loadByDriver.put(bestDriver.getId(), newLoad);
-
-            if (newLoad >= MAX_QUEUE_PER_DRIVER) {
-                candidates.removeIf(d -> d.getId().equals(bestDriver.getId()));
+                if (result.getDriverId() != null) {
+                    dispatchedCount++;
+                } else {
+                    stillUnassignedCodes.add(order.getOrderCode());
+                }
+            } catch (RuntimeException e) {
+                // Đơn có thể vừa được nhân viên gán tay hoặc tài xế vừa tắt ca:
+                // bỏ qua đơn này để không chặn các đơn phía sau, chu kỳ sau quét lại.
+                log.warn(">>> [AUTO-DISPATCH] Bỏ qua đơn {}: {}", order.getOrderCode(), e.getMessage());
+                stillUnassignedCodes.add(order.getOrderCode());
             }
         }
 
         // Nếu còn đơn chưa thể gán do thiếu tài xế
-        if (dispatchedCount < unassignedQueue.size()) {
-            int remaining = unassignedQueue.size() - dispatchedCount;
-            List<String> remainingCodes = unassignedQueue.stream()
-                    .skip(dispatchedCount)
-                    .map(Order::getOrderCode)
-                    .collect(Collectors.toList());
-            dispatchNotifier.notifyQueueUnassigned(targetBranchId, remaining, remainingCodes);
+        if (!stillUnassignedCodes.isEmpty()) {
+            log.debug(">>> [AUTO-DISPATCH] Chi nhánh {} còn {} đơn chờ tài xế trực ca",
+                    targetBranchId, stillUnassignedCodes.size());
+            notifyUnassignedIfChanged(targetBranchId, stillUnassignedCodes);
+        } else {
+            lastUnassignedSignature.remove(targetBranchId);
         }
 
         return dispatchedCount;
@@ -226,7 +263,7 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
         Long branchId = (order.getBranch() != null) ? order.getBranch().getId() : 1L;
         List<Driver> candidates = driverRepository.lockEligibleDriversForBranch(branchId);
         if (candidates.isEmpty()) {
-            dispatchNotifier.notifyQueueUnassigned(branchId, 1, List.of(order.getOrderCode()));
+            notifyUnassignedIfChanged(branchId, List.of(order.getOrderCode()));
             return DispatchResultDto.builder()
                     .orderId(order.getId())
                     .orderCode(order.getOrderCode())
@@ -245,7 +282,7 @@ public class DriverDispatchServiceImpl implements DriverDispatchService {
 
         Driver bestDriver = selectBestDriver(candidates, loadByDriver);
         if (bestDriver == null) {
-            dispatchNotifier.notifyQueueUnassigned(branchId, 1, List.of(order.getOrderCode()));
+            notifyUnassignedIfChanged(branchId, List.of(order.getOrderCode()));
             return DispatchResultDto.builder()
                     .orderId(order.getId())
                     .orderCode(order.getOrderCode())

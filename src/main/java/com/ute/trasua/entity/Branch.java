@@ -52,6 +52,10 @@ public class Branch {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manager_id")
+    @ToString.Exclude
+    // Cắt vòng đệ quy Branch.hashCode() -> User.hashCode() -> User.branch -> Branch.hashCode()
+    // (Hibernate băm phần tử collection khi flush -> StackOverflowError nếu để vòng này)
+    @lombok.EqualsAndHashCode.Exclude
     private User manager;
 
     @Column(name = "created_at", updatable = false)

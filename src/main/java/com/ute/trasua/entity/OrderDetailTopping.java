@@ -20,6 +20,7 @@ public class OrderDetailTopping {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_detail_id", nullable = false)
     @ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
     private OrderDetail orderDetail;
 
     @ManyToOne(fetch = FetchType.LAZY)

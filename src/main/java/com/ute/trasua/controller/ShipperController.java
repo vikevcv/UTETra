@@ -305,7 +305,16 @@ public class ShipperController {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
         if (driver != null) {
-            driverService.toggleDriverAvailability(driver.getId(), online);
+            try {
+                driverService.toggleDriverAvailability(driver.getId(), online);
+            } catch (IllegalStateException | org.springframework.dao.DataAccessException e) {
+                // Ví dụ: còn ly trà đã lấy trên tay -> không cho tắt ca ngang
+                return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                        .body(Map.of(
+                                "success", false,
+                                "online", !online,
+                                "message", e.getMessage() != null ? e.getMessage() : "Không đổi được ca trực, thử lại sau!"));
+            }
         }
         log.info("Shipper cập nhật trạng thái hoạt động: {}", online ? "BẬT (Online)" : "TẮT (Offline)");
         return ResponseEntity.ok(Map.of(
@@ -313,6 +322,25 @@ public class ShipperController {
                 "online", online,
                 "message", online ? "Đã bật ca trực, sẵn sàng tiếp nhận phân công đơn" : "Đã tắt ca trực, tạm ngưng nhận đơn"
         ));
+    }
+
+    /**
+     * API trả về trạng thái trực ca THẬT trong DB của tài xế đang đăng nhập.
+     * Dùng để giao diện tự đồng bộ lại công tắc (tránh cảnh tab hiển thị "TẮT" nhưng server vẫn giao đơn).
+     */
+    @GetMapping("/api/shift-status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> shiftStatus(Authentication authentication) {
+        Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
+        String status = (driver != null && driver.getWorkingStatus() != null)
+                ? driver.getWorkingStatus().toUpperCase() : "OFFLINE";
+        boolean online = "ONLINE".equals(status) || "DELIVERING".equals(status);
+        return ResponseEntity.ok(Map.of(
+                "online", online,
+                "workingStatus", status));
     }
 
     private Driver resolveCurrentDriver(Authentication authentication, Long requestedDriverId) {
