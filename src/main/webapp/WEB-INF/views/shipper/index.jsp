@@ -2978,8 +2978,7 @@
     /* ========================================================
        5. CÔNG TẮC GẠT BẬT / TẮT CA TRỰC
        ======================================================== */
-    function toggleShiftStatus() {
-      isOnline = !isOnline;
+    function applyShiftSwitchUi(online) {
       const capsule = document.getElementById('topSwitchCapsule');
       const label = document.getElementById('switchLabelStatus');
       const knobIcon = document.getElementById('knobIcon');
@@ -2989,7 +2988,7 @@
       const statusBoxText = document.getElementById('statusBoxText');
       const statusBoxSub = document.getElementById('statusBoxSub');
 
-      if (isOnline) {
+      if (online) {
         if (capsule) capsule.classList.add('online');
         if (label) label.innerText = 'BẬT';
         if (knobIcon) knobIcon.className = 'fa-solid fa-check';
@@ -3001,11 +3000,6 @@
           statusBoxText.style.color = 'var(--matcha-deep)';
         }
         if (statusBoxSub) statusBoxSub.innerText = 'Đang bật nhận đơn từ quán';
-        showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
-
-        if ('Notification' in window && Notification.permission === 'default') {
-          Notification.requestPermission();
-        }
       } else {
         if (capsule) capsule.classList.remove('online');
         if (label) label.innerText = 'TẮT';
@@ -3018,6 +3012,20 @@
           statusBoxText.style.color = 'var(--text-sepia)';
         }
         if (statusBoxSub) statusBoxSub.innerText = 'Gạt công tắc trên để trực';
+      }
+    }
+
+    function toggleShiftStatus() {
+      const prevOnline = isOnline;
+      isOnline = !isOnline;
+      applyShiftSwitchUi(isOnline);
+
+      if (isOnline) {
+        showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+      } else {
         showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
       }
 
@@ -3025,7 +3033,20 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ online: isOnline })
-      }).catch(err => console.log('Toggle synced'));
+      }).then(function(res) {
+        if (!res.ok) {
+          throw new Error('Lỗi máy chủ (HTTP ' + res.status + ')');
+        }
+        return res.json();
+      }).then(function(data) {
+        console.log('Đã đồng bộ trạng thái ca trực với CSDL:', data);
+      }).catch(function(err) {
+        console.error('Không thể cập nhật trạng thái ca trực:', err);
+        // Hoàn tác lại giao diện công tắc
+        isOnline = prevOnline;
+        applyShiftSwitchUi(isOnline);
+        showZenToast('Không thể cập nhật trạng thái: ' + (err.message || 'Lỗi kết nối'), 'danger');
+      });
     }
 
     /* ========================================================

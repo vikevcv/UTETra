@@ -320,8 +320,18 @@ public class ShipperController {
     }
 
     private boolean isOwnDriver(Authentication authentication, Driver driver) {
-        return driver != null && driver.getUser() != null && authentication != null
+        if (driver == null || authentication == null) {
+            return false;
+        }
+        if (authentication.getAuthorities() != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority())
+                        || "ADMIN".equalsIgnoreCase(a.getAuthority())
+                        || "ROLE_MANAGER".equalsIgnoreCase(a.getAuthority())
+                        || "ROLE_BRANCH_MANAGER".equalsIgnoreCase(a.getAuthority()))) {
+            return true;
+        }
+        return driver.getUser() != null
                 && authentication.getName() != null
-                && authentication.getName().equals(driver.getUser().getUsername());
+                && authentication.getName().equalsIgnoreCase(driver.getUser().getUsername());
     }
 }

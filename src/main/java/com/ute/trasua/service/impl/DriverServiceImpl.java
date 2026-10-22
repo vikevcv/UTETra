@@ -196,6 +196,8 @@ public class DriverServiceImpl implements DriverService {
         driver.setWorkingStatus(locked ? "OFFLINE" : "ONLINE");
         driver = driverRepository.save(driver);
 
+        dispatchNotifier.notifyDriverStatusChanged(driver);
+
         return DriverResponse.fromEntity(driver);
     }
 
@@ -207,6 +209,9 @@ public class DriverServiceImpl implements DriverService {
 
         driver.setWorkingStatus(newStatus);
         driver = driverRepository.save(driver);
+
+        dispatchNotifier.notifyDriverStatusChanged(driver);
+
         return DriverResponse.fromEntity(driver);
     }
 
@@ -241,15 +246,35 @@ public class DriverServiceImpl implements DriverService {
     @Transactional(readOnly = true)
     public Map<String, Object> getBranchDriverStatistics(Long branchId) {
         long total = driverRepository.countByBranchId(branchId);
-        long online = driverRepository.countByBranchIdAndWorkingStatus(branchId, "ONLINE");
-        long delivering = driverRepository.countByBranchIdAndWorkingStatus(branchId, "DELIVERING");
+        long online = driverRepository.countActiveOnlineByBranchId(branchId);
+        long delivering = driverRepository.countActiveDeliveringByBranchId(branchId);
         long suspended = driverRepository.countSuspendedByBranchId(branchId);
+        long offline = driverRepository.countActiveOfflineByBranchId(branchId);
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("total", total);
         stats.put("online", online);
         stats.put("delivering", delivering);
         stats.put("suspended", suspended);
+        stats.put("offline", offline);
+        return stats;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getAllDriverStatistics() {
+        long total = driverRepository.countTotalDrivers();
+        long online = driverRepository.countActiveOnlineDrivers();
+        long delivering = driverRepository.countActiveDeliveringDrivers();
+        long suspended = driverRepository.countSuspendedDrivers();
+        long offline = driverRepository.countActiveOfflineDrivers();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", total);
+        stats.put("online", online);
+        stats.put("delivering", delivering);
+        stats.put("suspended", suspended);
+        stats.put("offline", offline);
         return stats;
     }
 
@@ -291,6 +316,8 @@ public class DriverServiceImpl implements DriverService {
                 log.warn(">>> CẢNH BÁO: Tài xế {} tắt ca trực nhưng vẫn còn {} đơn đang giao!", driverId, stillActive);
             }
         }
+
+        dispatchNotifier.notifyDriverStatusChanged(saved);
 
         log.info(">>> Tài xế {} đã chuyển trạng thái trực ca: {}", driverId, saved.getWorkingStatus());
         return DriverResponse.fromEntity(saved);
