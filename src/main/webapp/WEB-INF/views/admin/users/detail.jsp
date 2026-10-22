@@ -395,9 +395,14 @@
           </div>
           <div class="col-6 col-md-3">
             <div class="kpi-mini-card" style="border-left: 4px solid #f59e0b;">
-              <div class="text-muted small fw-semibold text-uppercase">Điểm Đánh Giá KPI</div>
-              <div class="fs-4 fw-bold text-warning mt-1">
-                ${driverSummary.kpiScore} <i class="fa-solid fa-star fs-6"></i>
+              <div class="text-muted small fw-semibold text-uppercase">Tỷ Lệ Hoàn Tất</div>
+              <div class="fs-4 fw-bold text-dark mt-1">
+                <c:choose>
+                  <c:when test="${driverSummary.totalTrips > 0}">
+                    <fmt:formatNumber value="${(driverSummary.completedTrips * 100.0) / driverSummary.totalTrips}" maxFractionDigits="0" />%
+                  </c:when>
+                  <c:otherwise>100%</c:otherwise>
+                </c:choose>
               </div>
               <div class="small text-muted">Đang giao: <strong>${driverSummary.deliveringTrips}</strong> • Hủy/Lỗi: <strong>${driverSummary.failedTrips}</strong></div>
             </div>

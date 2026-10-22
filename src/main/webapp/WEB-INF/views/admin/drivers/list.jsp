@@ -6,6 +6,9 @@
 <html>
 <head>
   <title>Giám Sát Đội Ngũ Giao Hàng — UTETra Admin</title>
+  <!-- SockJS & STOMP Client for Real-time Driver Sync -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 <body>
 
@@ -36,7 +39,7 @@
         </div>
         <div>
           <div class="kpi-label">Tổng Số Tài Xế</div>
-          <div class="kpi-value">${stats.total != null ? stats.total : 0}</div>
+          <div class="kpi-value" id="kpiAdminTotal">${stats.total != null ? stats.total : 0}</div>
         </div>
       </div>
     </div>
@@ -48,7 +51,9 @@
         </div>
         <div>
           <div class="kpi-label">Đang Trực Tuyến</div>
-          <div class="kpi-value text-success">${stats.online != null ? stats.online : 0} <span style="font-size: 0.85rem; font-weight: normal;">sẵn sàng</span></div>
+          <div class="kpi-value text-success">
+            <span id="kpiAdminOnline">${stats.online != null ? stats.online : 0}</span> <span style="font-size: 0.85rem; font-weight: normal;">sẵn sàng</span>
+          </div>
         </div>
       </div>
     </div>
@@ -60,7 +65,9 @@
         </div>
         <div>
           <div class="kpi-label">Đang Giao Hàng</div>
-          <div class="kpi-value text-warning">${stats.delivering != null ? stats.delivering : 0} <span style="font-size: 0.85rem; font-weight: normal;">chuyến</span></div>
+          <div class="kpi-value text-warning">
+            <span id="kpiAdminDelivering">${stats.delivering != null ? stats.delivering : 0}</span> <span style="font-size: 0.85rem; font-weight: normal;">chuyến</span>
+          </div>
         </div>
       </div>
     </div>
@@ -72,7 +79,7 @@
         </div>
         <div>
           <div class="kpi-label">Đã Tạm Dừng / Khóa</div>
-          <div class="kpi-value text-danger">${stats.suspended != null ? stats.suspended : 0}</div>
+          <div class="kpi-value text-danger" id="kpiAdminSuspended">${stats.suspended != null ? stats.suspended : 0}</div>
         </div>
       </div>
     </div>
@@ -119,7 +126,6 @@
             <th>Tài Xế</th>
             <th>Phương Tiện & Biển Số</th>
             <th>Khu Vực Phụ Trách</th>
-            <th>Hiệu Suất Giao Hàng</th>
             <th>Trạng Thái</th>
             <th class="text-end">Kiểm Soát Quyền</th>
           </tr>
@@ -128,7 +134,7 @@
           <c:choose>
             <c:when test="${driversPage.hasContent()}">
               <c:forEach var="d" items="${driversPage.content}">
-                <tr>
+                <tr id="admin-driver-row-${d.id}" data-driver-id="${d.id}" data-status="${d.workingStatus}" data-locked="${d.locked}">
                   <!-- Driver Info -->
                   <td>
                     <div class="d-flex align-items-center gap-2">
@@ -162,19 +168,8 @@
                     <div class="text-muted small">Ngày tham gia: ${d.formattedCreatedAt}</div>
                   </td>
 
-                  <!-- Deliveries & Rating -->
-                  <td>
-                    <div>
-                      <strong class="text-dark">${d.totalOrders}</strong> <span class="text-muted small">đơn thành công</span>
-                    </div>
-                    <div class="small text-warning mt-1">
-                      <i class="fa-solid fa-star"></i>
-                      <strong class="text-dark">${d.rating}</strong> / 5.0
-                    </div>
-                  </td>
-
                   <!-- Status -->
-                  <td>
+                  <td id="admin-driver-status-cell-${d.id}">
                     <span class="zen-badge ${d.statusBadgeClass}">
                       <c:choose>
                         <c:when test="${d.workingStatus == 'ONLINE'}">
@@ -223,7 +218,7 @@
             </c:when>
             <c:otherwise>
               <tr>
-                <td colspan="6" class="text-center py-5 text-muted">
+                <td colspan="5" class="text-center py-5 text-muted">
                   <i class="fa-solid fa-motorcycle fs-2 mb-2 d-block text-secondary"></i>
                   Hiện chưa có tài xế nào phù hợp với từ khóa tìm kiếm.
                 </td>
@@ -276,6 +271,91 @@
       document.getElementById('driverLockForm').action = '${pageContext.request.contextPath}/admin/drivers/' + id + '/toggle-lock';
       const modal = new bootstrap.Modal(document.getElementById('driverLockModal'));
       modal.show();
+    }
+
+    // Kết nối STOMP WebSocket để giám sát trạng thái tài xế Real-Time
+    (function initAdminDriverLiveSync() {
+      try {
+        if (typeof SockJS === 'undefined' || typeof Stomp === 'undefined') return;
+        var socket = new SockJS('${pageContext.request.contextPath}/ws-kds');
+        var stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+        stompClient.connect({}, function() {
+          console.log('Admin Driver Live Sync connected to /topic/drivers');
+          stompClient.subscribe('/topic/drivers', function(message) {
+            try {
+              var data = JSON.parse(message.body);
+              if (!data || !data.driverId) return;
+
+              var cell = document.getElementById('admin-driver-status-cell-' + data.driverId);
+              var row = document.getElementById('admin-driver-row-' + data.driverId);
+
+              if (cell) {
+                var badgeHtml = '';
+                if (data.locked) {
+                  badgeHtml = '<span class="zen-badge badge-danger"><i class="fa-solid fa-lock" style="font-size: 0.65rem;"></i> ĐÃ TẠM KHÓA</span>';
+                } else if (data.workingStatus === 'ONLINE') {
+                  badgeHtml = '<span class="zen-badge badge-success"><i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> TRỰC TUYẾN</span>';
+                } else if (data.workingStatus === 'DELIVERING') {
+                  badgeHtml = '<span class="zen-badge badge-warning"><i class="fa-solid fa-box-open" style="font-size: 0.65rem;"></i> ĐANG GIAO ĐƠN</span>';
+                } else {
+                  badgeHtml = '<span class="zen-badge badge-secondary"><i class="fa-regular fa-circle" style="font-size: 0.5rem;"></i> NGOẠI TUYẾN</span>';
+                }
+                cell.innerHTML = badgeHtml;
+              }
+
+              if (row) {
+                row.setAttribute('data-status', data.workingStatus);
+                row.setAttribute('data-locked', data.locked);
+                var origBg = row.style.backgroundColor;
+                row.style.transition = 'background-color 0.4s ease';
+                row.style.backgroundColor = (data.workingStatus === 'ONLINE') ? '#ecfdf5' : '#f8fafc';
+                setTimeout(function() {
+                  row.style.backgroundColor = origBg || '';
+                }, 2500);
+              }
+
+              // Cập nhật lại số liệu trên các thẻ KPI Admin
+              recalculateAdminKpis();
+            } catch (e) {
+              console.error('Lỗi nhận dữ liệu STOMP admin:', e);
+            }
+          });
+        }, function(err) {
+          setTimeout(initAdminDriverLiveSync, 6000);
+        });
+      } catch (e) {
+        console.warn('Admin live sync fallback:', e);
+      }
+    })();
+
+    function recalculateAdminKpis() {
+      var rows = document.querySelectorAll('tr[id^="admin-driver-row-"]');
+      if (!rows.length) return;
+      var total = rows.length;
+      var online = 0;
+      var delivering = 0;
+      var suspended = 0;
+
+      rows.forEach(function(r) {
+        var isLocked = r.getAttribute('data-locked') === 'true';
+        var st = (r.getAttribute('data-status') || '').toUpperCase();
+        if (isLocked) {
+          suspended++;
+        } else if (st === 'ONLINE') {
+          online++;
+        } else if (st === 'DELIVERING') {
+          delivering++;
+        }
+      });
+
+      var kpiOnline = document.getElementById('kpiAdminOnline');
+      var kpiDelivering = document.getElementById('kpiAdminDelivering');
+      var kpiSuspended = document.getElementById('kpiAdminSuspended');
+
+      if (kpiOnline) kpiOnline.innerText = online;
+      if (kpiDelivering) kpiDelivering.innerText = delivering;
+      if (kpiSuspended) kpiSuspended.innerText = suspended;
     }
   </script>
 
