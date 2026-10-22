@@ -1327,16 +1327,19 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     }
 
-    /* TOAST NOTIFICATION CONTAINER */
+    /* TOAST NOTIFICATION CONTAINER - ĐẨY LÊN ĐỈNH MÀN HÌNH (TRÊN KHU VỰC NÚT ONL, KHÔNG CHE NÚT SỰ CỐ DƯỚI ĐÁY) */
     .toast-container-zen {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 1090;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2100;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      max-width: 380px;
+      gap: 8px;
+      width: calc(100% - 24px);
+      max-width: 460px;
+      pointer-events: none;
     }
 
     .zen-toast {
@@ -1344,12 +1347,14 @@
       border: 1px solid var(--border-earth);
       border-left: 5px solid var(--matcha-deep);
       border-radius: var(--radius-md);
-      padding: 14px 18px;
-      box-shadow: var(--shadow-floating);
+      padding: 12px 16px;
+      box-shadow: 0 10px 25px rgba(15, 16, 17, 0.2);
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 12px;
-      animation: slideInToast 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: auto;
+      cursor: pointer;
+      animation: slideDownToast 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .zen-toast.toast-warning {
@@ -1360,9 +1365,16 @@
       border-left-color: var(--terracotta);
     }
 
-    @keyframes slideInToast {
-      from { transform: translateX(110%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+    .zen-toast.toast-order {
+      background: #FFFFFF;
+      border: 1.5px solid #F59E0B;
+      border-left: 6px solid #D97706;
+      box-shadow: 0 12px 28px rgba(217, 119, 6, 0.22);
+    }
+
+    @keyframes slideDownToast {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
     .camera-upload-box {
@@ -2976,6 +2988,39 @@
       showZenToast('Đã phát chuông âm thanh và gửi tín hiệu rung điện thoại!', 'success');
     }
 
+    /**
+     * Bắn thông báo hoàn chỉnh (Toast trên cùng + Web Notification + Chuông + Rung)
+     * cho TỪNG đơn hàng mới được giao hoặc gán khi bật ca.
+     */
+    function notifyOrderArrival(order, delayMs) {
+      setTimeout(function() {
+        playNotificationSound();
+        triggerPhoneVibration();
+
+        const orderCode = order.orderCode || ('#' + (order.orderId || ''));
+        const address = order.deliveryAddress || order.recipientAddress || 'Khách hàng';
+        const cups = order.cupCount || 2;
+        const bodyMsg = 'Giao đến: ' + address + ' (' + cups + ' ly)';
+
+        // 1. Web Notification trình duyệt
+        triggerWebNotification('UTETra Shipper — Đơn Mới #' + orderCode, bodyMsg);
+
+        // 2. Toast in-app trên đỉnh màn hình (phía trên khu vực nút ON)
+        showZenToast('<strong>CÓ ĐƠN MỚI #' + orderCode + '</strong> (' + cups + ' ly)<div style="font-size: 0.78rem; opacity: 0.9; margin-top: 2px;">' + address + '</div>', 'order');
+      }, delayMs || 0);
+    }
+
+    /**
+     * Phát thông báo lần lượt cho danh sách nhiều đơn hàng mới
+     * (ví dụ 3 đơn khi vừa bật ca hoặc được gán chùm) với khoảng đệm so le 600ms.
+     */
+    function notifyMultipleOrders(newOrders) {
+      if (!newOrders || !Array.isArray(newOrders) || newOrders.length === 0) return;
+      newOrders.forEach(function(o, idx) {
+        notifyOrderArrival(o, idx * 600);
+      });
+    }
+
     /* ========================================================
        5. CÔNG TẮC GẠT BẬT / TẮT CA TRỰC
        ======================================================== */
@@ -3051,6 +3096,10 @@
             if ('Notification' in window && Notification.permission === 'default') {
               Notification.requestPermission();
             }
+            // Gọi refresh ngay sau 350ms để phát hiện và thông báo từng đơn chờ vừa được server tự động gán!
+            setTimeout(function() {
+              refreshOrders(false, true);
+            }, 350);
           } else {
             showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
           }
@@ -3092,26 +3141,19 @@
         .then(orders => {
           if (!Array.isArray(orders)) return;
 
-          let hasNewOrder = false;
-          let newestOrder = null;
+          let newOrders = [];
 
           orders.forEach(function(o) {
             if (!knownOrderIds.has(o.orderId)) {
-              hasNewOrder = true;
-              newestOrder = o;
+              newOrders.push(o);
               knownOrderIds.add(o.orderId);
               ordersQueue.push(o);
             }
           });
 
-          if (hasNewOrder && newestOrder) {
-            playNotificationSound();
-            triggerPhoneVibration();
-            triggerWebNotification(
-              'UTETra Shipper — Đơn Hàng Mới Cần Giao!',
-              'Đơn #' + newestOrder.orderCode + ' đến ' + newestOrder.deliveryAddress + ' (' + (newestOrder.cupCount || 2) + ' ly).'
-            );
-            showZenToast('CÓ ĐƠN HÀNG MỚI: #' + newestOrder.orderCode + ' (' + (newestOrder.cupCount || 2) + ' ly)', 'success');
+          if (newOrders.length > 0) {
+            // Thông báo tuần tự cho từng đơn mới (ví dụ 3 đơn -> 3 thông báo riêng rẽ)
+            notifyMultipleOrders(newOrders);
             renderWorkbench();
           }
         })
@@ -3120,7 +3162,7 @@
       syncShiftStatusFromServer();
     }
 
-    function refreshOrders(isManual) {
+    function refreshOrders(isManual, notifyNewOrders) {
       const icon = document.getElementById('refreshIcon');
       if (icon) icon.classList.add('fa-spin');
 
@@ -3129,15 +3171,23 @@
         .then(orders => {
           if (icon) icon.classList.remove('fa-spin');
           if (Array.isArray(orders)) {
-            // Cập nhật lại ordersQueue đồng bộ với server
-            ordersQueue = orders;
-            ordersQueue.forEach(function(o) {
-              knownOrderIds.add(o.orderId);
+            let newlyArrived = [];
+            orders.forEach(function(o) {
+              if (!knownOrderIds.has(o.orderId)) {
+                newlyArrived.push(o);
+                knownOrderIds.add(o.orderId);
+              }
               if (orderSteps[o.orderId] === undefined) {
                 orderSteps[o.orderId] = (o.status === 'ARRIVED') ? 3 : (o.status === 'DELIVERING' ? 2 : 0);
               }
             });
+            ordersQueue = orders;
             renderWorkbench();
+
+            // Nếu bật cờ notifyNewOrders và có đơn mới -> bắn thông báo cho từng đơn
+            if (notifyNewOrders && newlyArrived.length > 0) {
+              notifyMultipleOrders(newlyArrived);
+            }
           }
           if (isManual) {
             showZenToast('Đã làm mới danh sách đơn hàng giao vận.', 'success');
@@ -3418,12 +3468,26 @@
             try {
               const eventData = JSON.parse(message.body);
               console.log('Driver real-time notification received:', eventData);
-              playNotificationSound();
-              triggerPhoneVibration();
-              if (eventData.message) {
-                showZenToast(eventData.message, 'info');
+
+              if (eventData.eventType === 'DISPATCHED') {
+                // Đơn hàng mới được điều phối cho tài xế: thông báo đầy đủ
+                const orderCode = eventData.orderCode || ('#' + (eventData.orderId || ''));
+                notifyOrderArrival({
+                  orderId: eventData.orderId,
+                  orderCode: orderCode,
+                  deliveryAddress: eventData.branchName ? ('Từ ' + eventData.branchName) : 'Quán UTETra',
+                  cupCount: 2
+                }, 0);
+              } else {
+                playNotificationSound();
+                triggerPhoneVibration();
+                const displayMsg = eventData.statusMessage || eventData.statusTitle || eventData.message;
+                if (displayMsg) {
+                  showZenToast(displayMsg, 'info');
+                }
               }
-              refreshOrders(false);
+              // Làm mới danh sách đơn hàng (không phát lại thông báo vì WebSocket đã báo rồi)
+              refreshOrders(false, false);
             } catch (err) {
               console.error('Error parsing STOMP driver payload:', err);
             }
@@ -3638,8 +3702,8 @@
 
     function showZenToast(message, type) {
       const now = Date.now();
-      // Ngăn chặn spam trùng lặp cùng 1 thông báo trong vòng 2.5 giây
-      if (message === lastToastMessage && (now - lastToastTime) < 2500) {
+      // Ngăn chặn spam trùng lặp cùng 1 thông báo trong vòng 2 giây (trừ đơn hàng mới khác nhau)
+      if (type !== 'order' && message === lastToastMessage && (now - lastToastTime) < 2000) {
         return;
       }
       lastToastMessage = message;
@@ -3654,22 +3718,30 @@
       }
 
       const toast = document.createElement('div');
-      toast.className = 'zen-toast ' + (type === 'danger' ? 'toast-danger' : (type === 'warning' ? 'toast-warning' : ''));
+      toast.className = 'zen-toast ' + (type === 'danger' ? 'toast-danger' : (type === 'warning' ? 'toast-warning' : (type === 'order' ? 'toast-order' : '')));
 
-      let iconHtml = '<i class="fa-solid fa-circle-check text-success" style="font-size: 1.2rem;"></i>';
-      if (type === 'danger') iconHtml = '<i class="fa-solid fa-circle-xmark text-danger" style="font-size: 1.2rem;"></i>';
-      if (type === 'warning') iconHtml = '<i class="fa-solid fa-triangle-exclamation text-warning" style="font-size: 1.2rem;"></i>';
+      let iconHtml = '<i class="fa-solid fa-circle-check text-success" style="font-size: 1.25rem;"></i>';
+      if (type === 'danger') iconHtml = '<i class="fa-solid fa-circle-xmark text-danger" style="font-size: 1.25rem;"></i>';
+      if (type === 'warning') iconHtml = '<i class="fa-solid fa-triangle-exclamation text-warning" style="font-size: 1.25rem;"></i>';
+      if (type === 'order') iconHtml = '<i class="fa-solid fa-bell text-warning fa-shake" style="font-size: 1.35rem; color: #D97706 !important;"></i>';
 
       toast.innerHTML = iconHtml + '<div style="flex: 1; font-size: 0.86rem; font-weight: 600; color: var(--text-charcoal); line-height: 1.4;">' + message + '</div>';
+
+      // Chạm/click để đóng nhanh toast
+      toast.onclick = function() {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)';
+        setTimeout(() => toast.remove(), 250);
+      };
 
       container.appendChild(toast);
 
       setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
+        toast.style.transform = 'translateY(-20px)';
         toast.style.transition = 'all 0.3s ease';
         setTimeout(() => toast.remove(), 300);
-      }, 4200);
+      }, 5000);
     }
   </script>
 </body>
