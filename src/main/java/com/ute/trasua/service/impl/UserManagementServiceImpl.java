@@ -5,6 +5,7 @@ import com.ute.trasua.dto.UserSearchRequest;
 import com.ute.trasua.dto.UserUpdateRequest;
 import com.ute.trasua.dto.user.UserDriverTripDto;
 import com.ute.trasua.dto.user.UserOrderHistoryDto;
+import com.ute.trasua.entity.Driver;
 import com.ute.trasua.entity.Order;
 import com.ute.trasua.entity.OrderDetail;
 import com.ute.trasua.entity.User;
