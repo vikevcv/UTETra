@@ -17,6 +17,8 @@
     <script>
         window.POS_BRANCH_ID = ${branchId != null ? branchId : 1};
         window.POS_CASHIER_USERNAME = "${cashierUsername != null ? cashierUsername : 'pos_td01'}";
+        // Server-side shift state: tránh race condition khi checkShiftStatus() chưa kịp resolve
+        window.POS_SHIFT_ACTIVE = ${shiftActive != null ? shiftActive : false};
     </script>
 </head>
 <body>

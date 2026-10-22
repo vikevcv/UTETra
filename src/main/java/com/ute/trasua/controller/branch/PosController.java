@@ -219,6 +219,12 @@ public class PosController {
         model.addAttribute("branchId", activeBranchId);
         model.addAttribute("branchName", currentBranch.getName());
 
+        // Inject trạng thái ca trực ngay từ server để tránh race condition phía JS
+        @SuppressWarnings("unchecked")
+        List<Long> activeShiftIds = (List<Long>) session.getAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS");
+        boolean shiftActive = (activeShiftIds != null && !activeShiftIds.isEmpty());
+        model.addAttribute("shiftActive", shiftActive);
+
         return "pos/index";
     }
 
