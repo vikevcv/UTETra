@@ -16,6 +16,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -81,10 +83,6 @@ public class ShipperController {
                 ? driverReportService.getDriverCompletedTrips(driver.getId())
                 : Collections.emptyList();
 
-        int completedCount = (driver.getCompletedOrders() != null)
-                ? driver.getCompletedOrders()
-                : completedTrips.size();
-
         int todayCompletedCount = (int) completedTrips.stream()
                 .filter(t -> "TODAY".equalsIgnoreCase(t.getPeriodCategory()))
                 .count();
@@ -92,6 +90,8 @@ public class ShipperController {
                 .filter(t -> "YESTERDAY".equalsIgnoreCase(t.getPeriodCategory()))
                 .count();
         int weekCompletedCount = completedTrips.size();
+
+        int completedCount = todayCompletedCount;
 
         boolean isOnline = "ONLINE".equalsIgnoreCase(driver.getWorkingStatus()) || "DELIVERING".equalsIgnoreCase(driver.getWorkingStatus());
 
@@ -103,6 +103,11 @@ public class ShipperController {
         model.addAttribute("todayCompletedCount", todayCompletedCount);
         model.addAttribute("yesterdayCompletedCount", yesterdayCompletedCount);
         model.addAttribute("weekCompletedCount", weekCompletedCount);
+
+        LocalDate today = LocalDate.now();
+        model.addAttribute("todayDateIso", today.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        model.addAttribute("yesterdayDateIso", today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE));
+        model.addAttribute("minDateMonthAgo", today.minusDays(30).format(DateTimeFormatter.ISO_LOCAL_DATE));
 
         String username = (driverUser != null) ? driverUser.getUsername() : (authentication != null ? authentication.getName() : "driver");
         model.addAttribute("username", username);
@@ -300,7 +305,16 @@ public class ShipperController {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
         if (driver != null) {
-            driverService.toggleDriverAvailability(driver.getId(), online);
+            try {
+                driverService.toggleDriverAvailability(driver.getId(), online);
+            } catch (IllegalStateException | org.springframework.dao.DataAccessException e) {
+                // Ví dụ: còn ly trà đã lấy trên tay -> không cho tắt ca ngang
+                return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT)
+                        .body(Map.of(
+                                "success", false,
+                                "online", !online,
+                                "message", e.getMessage() != null ? e.getMessage() : "Không đổi được ca trực, thử lại sau!"));
+            }
         }
         log.info("Shipper cập nhật trạng thái hoạt động: {}", online ? "BẬT (Online)" : "TẮT (Offline)");
         return ResponseEntity.ok(Map.of(
@@ -310,13 +324,42 @@ public class ShipperController {
         ));
     }
 
+    /**
+     * API trả về trạng thái trực ca THẬT trong DB của tài xế đang đăng nhập.
+     * Dùng để giao diện tự đồng bộ lại công tắc (tránh cảnh tab hiển thị "TẮT" nhưng server vẫn giao đơn).
+     */
+    @GetMapping("/api/shift-status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> shiftStatus(Authentication authentication) {
+        Driver driver = resolveCurrentDriver(authentication, null);
+        if (!isOwnDriver(authentication, driver)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
+        String status = (driver != null && driver.getWorkingStatus() != null)
+                ? driver.getWorkingStatus().toUpperCase() : "OFFLINE";
+        boolean online = "ONLINE".equals(status) || "DELIVERING".equals(status);
+        return ResponseEntity.ok(Map.of(
+                "online", online,
+                "workingStatus", status));
+    }
+
     private Driver resolveCurrentDriver(Authentication authentication, Long requestedDriverId) {
         return driverService.resolveCurrentDriver(authentication, requestedDriverId);
     }
 
     private boolean isOwnDriver(Authentication authentication, Driver driver) {
-        return driver != null && driver.getUser() != null && authentication != null
+        if (driver == null || authentication == null) {
+            return false;
+        }
+        if (authentication.getAuthorities() != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority())
+                        || "ADMIN".equalsIgnoreCase(a.getAuthority())
+                        || "ROLE_MANAGER".equalsIgnoreCase(a.getAuthority())
+                        || "ROLE_BRANCH_MANAGER".equalsIgnoreCase(a.getAuthority()))) {
+            return true;
+        }
+        return driver.getUser() != null
                 && authentication.getName() != null
-                && authentication.getName().equals(driver.getUser().getUsername());
+                && authentication.getName().equalsIgnoreCase(driver.getUser().getUsername());
     }
 }

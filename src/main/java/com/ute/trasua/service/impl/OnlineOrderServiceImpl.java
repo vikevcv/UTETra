@@ -43,6 +43,7 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
     private final CartService cartService;
     private final ShippingService shippingService;
     private final PromotionService promotionService;
+    private final PaymentRepository paymentRepository;
     private final com.ute.trasua.service.OrderWebSocketPublisher orderWebSocketPublisher;
 
     @Override
@@ -73,6 +74,13 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
         CartDto validatedCart = cartService.validateCartItems(request.getItems(), branch.getId());
         if (validatedCart.getItems() == null || validatedCart.getItems().isEmpty()) {
             throw new IllegalArgumentException("Tất cả phẩm trà trong giỏ hàng hiện không khả dụng tại chi nhánh này.");
+        }
+
+        // Chặn đặt hàng nếu có bất kỳ món nào đang Tạm Ngưng tại chi nhánh được chọn
+        for (CartItemDto item : validatedCart.getItems()) {
+            if (Boolean.FALSE.equals(item.getAvailable())) {
+                throw new IllegalArgumentException("Phẩm trà '" + item.getProductName() + "' hiện đang tạm ngưng phục vụ tại chi nhánh " + branch.getName() + ". Vui lòng xóa món này khỏi giỏ hàng trước khi đặt.");
+            }
         }
 
         BigDecimal subtotal = validatedCart.getSubtotalAmount();
@@ -116,6 +124,13 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
             finalAmount = BigDecimal.ZERO;
         }
 
+        boolean isZeroAmount = finalAmount.compareTo(BigDecimal.ZERO) == 0;
+        String initialStatus = isZeroAmount ? "AWAITING_PREPARATION" : "AWAITING_PAYMENT";
+        String initialPaymentStatus = isZeroAmount ? "PAID" : "UNPAID";
+        String paymentMethod = (isZeroAmount && appliedVoucher != null && !appliedVoucher.isBlank())
+                ? "VOUCHER"
+                : (request.getPaymentMethod() != null ? request.getPaymentMethod() : "PAYOS");
+
         // 6. Sinh số thứ tự lấy nước trong ngày và mã đơn hàng duy nhất
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
@@ -130,9 +145,10 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
                 .orderCode(orderCode)
                 .dailyQueueNumber(queueNumber)
                 .orderType("ONLINE_DELIVERY")
-                .status("AWAITING_PAYMENT")
-                .paymentStatus("UNPAID")
-                .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "PAYOS")
+                .status(initialStatus)
+                .paymentStatus(initialPaymentStatus)
+                .paidAt(isZeroAmount ? LocalDateTime.now() : null)
+                .paymentMethod(paymentMethod)
                 .branch(branch)
                 .user(currentUser)
                 .customerName(request.getCustomerName().trim())
@@ -212,17 +228,36 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
             }
         }
 
+        // Tự động tạo bản ghi Payment nếu đơn 0đ (thanh toán hoàn tất bằng voucher)
+        if (isZeroAmount) {
+            Payment payment = Payment.builder()
+                    .order(savedOrder)
+                    .paymentMethod(savedOrder.getPaymentMethod())
+                    .amount(BigDecimal.ZERO)
+                    .transactionCode("VOUCHER-" + savedOrder.getOrderCode())
+                    .status("SUCCESS")
+                    .paidAt(LocalDateTime.now())
+                    .build();
+            paymentRepository.save(payment);
+        }
+
         // 10. Phát sự kiện WebSocket STOMP thời gian thực tới Khách Hàng và Bếp KDS
         try {
             orderWebSocketPublisher.broadcastOrderCreated(savedOrder);
-
+            if (isZeroAmount) {
+                orderWebSocketPublisher.broadcastOnlineOrderPaid(savedOrder);
+            }
         } catch (Exception e) {
             log.warn("Lỗi phát WebSocket sự kiện đơn mới: {}", e.getMessage());
         }
 
+        String paymentUrl = isZeroAmount
+                ? "/checkout/success?orderCode=" + savedOrder.getOrderCode()
+                : "/checkout/payment?orderCode=" + savedOrder.getOrderCode();
+
         return CheckoutResponse.builder()
                 .success(true)
-                .message("Đặt hàng trực tuyến thành công!")
+                .message(isZeroAmount ? "Đặt hàng thành công! Đơn hàng 0đ đã được tự động thanh toán qua voucher." : "Đặt hàng trực tuyến thành công!")
                 .orderId(savedOrder.getId())
                 .orderCode(savedOrder.getOrderCode())
                 .dailyQueueNumber(savedOrder.getDailyQueueNumber())
@@ -240,7 +275,7 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
                 .finalAmount(savedOrder.getFinalAmount())
                 .paymentMethod(savedOrder.getPaymentMethod())
                 .paymentStatus(savedOrder.getPaymentStatus())
-                .paymentUrl("/checkout/payment?orderCode=" + savedOrder.getOrderCode())
+                .paymentUrl(paymentUrl)
                 .build();
     }
 
@@ -272,12 +307,12 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
         Order order = orderRepository.findByOrderCode(cleanCode)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng với mã: " + cleanCode));
 
-        // 1. Kiểm tra trạng thái: Nghiêm ngặt chỉ cho phép hủy khi chưa bắt đầu pha chế (PENDING, AWAITING_PREPARATION, PAID)
+        // 1. Kiểm tra trạng thái: Nghiêm ngặt chỉ cho phép hủy khi chưa bắt đầu pha chế (PENDING, AWAITING_PAYMENT, AWAITING_PREPARATION, PAID)
         String currentStatus = order.getStatus() != null ? order.getStatus().trim().toUpperCase() : "PENDING";
         boolean isCancelable = "PENDING".equals(currentStatus)
+                || "AWAITING_PAYMENT".equals(currentStatus)
                 || "AWAITING_PREPARATION".equals(currentStatus)
                 || "PAID".equals(currentStatus);
-
         if (!isCancelable) {
             if ("CANCELLED".equals(currentStatus)) {
                 throw new IllegalStateException("Đơn hàng này đã được hủy trước đó.");
@@ -310,22 +345,48 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
 
         // 4. Phục hồi lượt sử dụng voucher cũ (nếu đơn có dùng voucher)
         boolean restoredOldVoucher = false;
+        String restoredVoucherCode = null;
         if (order.getVoucherCode() != null && !order.getVoucherCode().trim().isEmpty()) {
             try {
                 promotionService.restoreVoucherUsage(order.getVoucherCode().trim());
                 restoredOldVoucher = true;
+                restoredVoucherCode = order.getVoucherCode().trim().toUpperCase();
+                log.info(">>> [CANCEL ORDER] Đã phục hồi lượt sử dụng voucher cũ: {} cho đơn {}", restoredVoucherCode, order.getOrderCode());
             } catch (Exception e) {
-                log.warn(">>> [UC28] Không thể phục hồi voucher cũ {}: {}", order.getVoucherCode(), e.getMessage());
+                log.warn(">>> [CANCEL ORDER] Không thể phục hồi voucher cũ {}: {}", order.getVoucherCode(), e.getMessage());
             }
         }
 
-        // 5. Tự động sinh voucher bồi hoàn 80% (Triple-Shield Anti-Collision, ngẫu nhiên hoàn toàn 10 ký tự, hạn 30 ngày)
-        Promotion compVoucher = promotionService.createCompensationVoucher(order, new BigDecimal("0.80"), 30);
+        // 5. Kiểm tra trạng thái thanh toán để quyết định cấp voucher bồi hoàn hay không:
+        // Chỉ cấp voucher bồi hoàn khi đơn ĐÃ THANH TOÁN và có phát sinh số tiền thực tế (> 0)
+        boolean isPaid = "PAID".equalsIgnoreCase(order.getPaymentStatus())
+                && order.getFinalAmount() != null
+                && order.getFinalAmount().compareTo(BigDecimal.ZERO) > 0;
+        Promotion compVoucher = null;
+        String expiryFormatted = null;
+        String message;
+
+        if (isPaid) {
+            // Đơn ĐÃ THANH TOÁN (UC28): Tự động sinh voucher bồi hoàn 80% (Triple-Shield Anti-Collision, ngẫu nhiên hoàn toàn 10 ký tự, hạn 30 ngày)
+            compVoucher = promotionService.createCompensationVoucher(order, new BigDecimal("0.80"), 30);
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            expiryFormatted = compVoucher.getEndDate() != null
+                    ? compVoucher.getEndDate().format(dtf)
+                    : "30 ngày sau";
+            message = "Hủy đơn hàng thành công! Quý khách được bồi hoàn voucher 80% giá trị đơn hàng.";
+            log.info(">>> [UC28] Hủy đơn hàng ĐÃ THANH TOÁN {} thành công. Đã cấp voucher bồi hoàn {} ({}đ)",
+                    order.getOrderCode(), compVoucher.getVoucherCode(), compVoucher.getDiscountValue());
+        } else {
+            // Đơn CHƯA THANH TOÁN: Tuyệt đối KHÔNG sinh voucher bồi hoàn. Hoàn trả voucher cũ nếu có.
+            message = restoredOldVoucher
+                    ? "Hủy đơn hàng chưa thanh toán thành công! Mã ưu đãi [" + restoredVoucherCode + "] đã được hoàn trả lại cho quý khách."
+                    : "Hủy đơn hàng chưa thanh toán thành công!";
+            log.info(">>> [CANCEL UNPAID] Hủy đơn hàng CHƯA THANH TOÁN {}. Không cấp voucher bồi hoàn. Phục hồi voucher cũ: {}",
+                    order.getOrderCode(), restoredOldVoucher ? restoredVoucherCode : "Không có");
+        }
 
         // 6. Lưu trạng thái đơn hàng đã hủy vào DB ngay lập tức
         Order savedOrder = orderRepository.saveAndFlush(order);
-        log.info(">>> [UC28] Hủy đơn hàng {} thành công. Đã cấp voucher bồi hoàn {} ({}đ)",
-                savedOrder.getOrderCode(), compVoucher.getVoucherCode(), compVoucher.getDiscountValue());
 
         // 7. Đồng bộ WebSocket STOMP tới Khách Hàng, Bếp KDS và Bàn giao
         try {
@@ -334,20 +395,17 @@ public class OnlineOrderServiceImpl implements OnlineOrderService {
             log.warn(">>> [UC28] Lỗi phát WebSocket hủy đơn: {}", e.getMessage());
         }
 
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        String expiryFormatted = compVoucher.getEndDate() != null
-                ? compVoucher.getEndDate().format(dtf)
-                : "30 ngày sau";
 
         return CancelOrderResponse.builder()
                 .success(true)
                 .orderCode(savedOrder.getOrderCode())
                 .status("CANCELLED")
-                .compensationVoucherCode(compVoucher.getVoucherCode())
-                .compensationAmount(compVoucher.getDiscountValue())
+                .compensationVoucherCode(compVoucher != null ? compVoucher.getVoucherCode() : null)
+                .compensationAmount(compVoucher != null ? compVoucher.getDiscountValue() : BigDecimal.ZERO)
                 .expiryDateFormatted(expiryFormatted)
                 .restoredOldVoucher(restoredOldVoucher)
-                .message("Hủy đơn hàng thành công! Quý khách được bồi hoàn voucher 80% giá trị đơn hàng.")
+                .restoredVoucherCode(restoredVoucherCode)
+                .message(message)
                 .build();
     }
 }

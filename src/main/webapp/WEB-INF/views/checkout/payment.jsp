@@ -165,28 +165,6 @@
       box-shadow: 0 4px 12px rgba(45,90,39,0.25);
     }
 
-    .btn-dev-skip {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      background: #1E293B;
-      color: #F8FAFC;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 12px 24px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-      width: 100%;
-    }
-    .btn-dev-skip:hover {
-      background: #0F172A;
-      border-color: #64748B;
-      color: #38BDF8;
-      box-shadow: 0 4px 12px rgba(30,41,59,0.3);
-    }
-
     /* Pulse animation cho tín hiệu chờ */
     .pulse-dot {
       width: 10px;
@@ -262,7 +240,7 @@
               <strong style="font-size:1.05rem; color:#92400E;">Hệ thống đang hoạt động ở chế độ Demo Thử Nghiệm</strong>
               <p style="margin:4px 0 8px; font-size:0.88rem; color:#78350F;">
                 Thông tin API Key PayOS trong file cấu hình <code>application.properties</code> hiện đang để trống.
-                Bạn có thể nhấn nút <strong>"⚡ Bỏ Qua Thanh Toán (Dev Test)"</strong> ở bên dưới để giả lập thanh toán thành công và kiểm thử toàn bộ tính năng tiếp theo (Bếp làm nước, quầy POS, giao hàng shipper) mà không cần chuyển tiền thật.
+                Vui lòng cấu hình đầy đủ tài khoản PayOS để kích hoạt cổng thanh toán trực tuyến.
               </p>
             </div>
           </div>
@@ -327,12 +305,6 @@
               <button type="button" class="btn-check-payment" id="btnCheckPayment" onclick="manualCheckPayment()">
                 <i class="fa-solid fa-rotate"></i>
                 <span>Tôi Đã Chuyển Khoản Xong</span>
-              </button>
-
-              <!-- NÚT SKIP DEV TEST THEO YÊU CẦU -->
-              <button type="button" class="btn-dev-skip" id="btnDevSkip" onclick="triggerDevSkipPayment()">
-                <i class="fa-solid fa-bolt text-warning"></i>
-                <span>⚡ Bỏ Qua Thanh Toán (Dev Test)</span>
               </button>
 
               <a href="${pageContext.request.contextPath}/order/tracking/${order.orderCode}?paymentCancelled=true" 
@@ -578,39 +550,7 @@
           });
       };
 
-      // 6. NÚT BỎ QUA THANH TOÁN (DEV TEST)
-      window.triggerDevSkipPayment = function() {
-        const btn = document.getElementById("btnDevSkip");
-        if (btn) {
-          btn.disabled = true;
-          btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin text-warning'></i> Đang giả lập thanh toán...";
-        }
-
-        fetch(contextPath + "/api/v1/payments/dev-skip?orderCode=" + encodeURIComponent(orderCode), {
-          method: "POST"
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-          if (data && data.success) {
-            onPaymentSuccess();
-          } else {
-            alert("Không thể giả lập thanh toán: " + (data.message || "Lỗi không xác định"));
-            if (btn) {
-              btn.disabled = false;
-              btn.innerHTML = "<i class='fa-solid fa-bolt text-warning'></i> <span>⚡ Bỏ Qua Thanh Toán (Dev Test)</span>";
-            }
-          }
-        })
-        .catch(function(err) {
-          alert("Lỗi gọi API Dev Skip: " + err.message);
-          if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = "<i class='fa-solid fa-bolt text-warning'></i> <span>⚡ Bỏ Qua Thanh Toán (Dev Test)</span>";
-          }
-        });
-      };
-
-      // 7. TIỆN ÍCH SAO CHÉP TEXT
+      // 6. TIỆN ÍCH SAO CHÉP TEXT
       window.copyText = function(elementId) {
         const el = document.getElementById(elementId);
         if (!el) return;

@@ -119,21 +119,15 @@
                            placeholder="Nhập mã máy POS (VD: pos_td01)..." required autofocus>
                 </div>
 
-                <!-- Gợi ý quầy nhanh -->
-                <div class="mb-3">
-                    <small class="text-muted d-block mb-1" style="font-size: 0.75rem;">CHỌN NHANH QUẦY THU NGÂN:</small>
-                    <div class="account-chip" onclick="fillPos('thuduc', '123123')">
-                        <i class="fa-solid fa-store me-1 text-warning"></i>Quầy Thủ Đức (thuduc / 123123)
-                    </div>
-                    <div class="account-chip" onclick="fillPos('quan1', '123123')">
-                        <i class="fa-solid fa-store me-1 text-primary"></i>Quầy Quận 1 (quan1 / 123123)
-                    </div>
-                </div>
-
                 <div class="mb-4">
                     <label class="form-label fw-bold small text-muted">MẬT KHẨU CA TRỰC</label>
-                    <input type="password" name="password" id="posPasswordInput" class="form-control form-control-lg fs-6" 
-                           placeholder="Nhập mật khẩu máy POS..." required>
+                    <div class="input-group">
+                        <input type="password" name="password" id="posPasswordInput" class="form-control form-control-lg fs-6" 
+                               placeholder="Nhập mật khẩu máy POS..." required>
+                        <button class="btn btn-outline-secondary" type="button" id="btnTogglePassword" style="border-color: #ced4da;" title="Hiện/ẩn mật khẩu">
+                            <i class="fa-regular fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn-pos-login">
@@ -150,9 +144,15 @@
     </div>
 
     <script>
-        function fillPos(u, p) {
-            document.getElementById('posUsernameInput').value = u;
-            document.getElementById('posPasswordInput').value = p;
+        const toggleBtn = document.getElementById('btnTogglePassword');
+        const passInput = document.getElementById('posPasswordInput');
+        const eyeIcon = document.getElementById('eyeIcon');
+        if (toggleBtn && passInput && eyeIcon) {
+            toggleBtn.addEventListener('click', function() {
+                const isPass = passInput.getAttribute('type') === 'password';
+                passInput.setAttribute('type', isPass ? 'text' : 'password');
+                eyeIcon.className = isPass ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+            });
         }
     </script>
 </body>

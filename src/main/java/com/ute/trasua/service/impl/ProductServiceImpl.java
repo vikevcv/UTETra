@@ -84,12 +84,30 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductResponse> filterProducts(String keyword, Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, String sortBy) {
+        return filterProducts(keyword, categoryId, minPrice, maxPrice, sortBy, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductResponse> filterProducts(String keyword, Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, String sortBy, Long branchId) {
         String kw = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
         List<Product> products = productRepository.filterActiveProducts(kw, categoryId, minPrice, maxPrice);
 
         List<ProductResponse> responses = products.stream()
                 .map(ProductResponse::fromEntity)
                 .collect(Collectors.toList());
+
+        if (branchId != null) {
+            java.util.Map<Long, Boolean> branchAvailability = branchMenuRepository.findByBranchId(branchId).stream()
+                    .collect(Collectors.toMap(bm -> bm.getProduct().getId(), BranchMenu::isAvailable, (v1, v2) -> v1));
+            for (ProductResponse resp : responses) {
+                Boolean isAvail = branchAvailability.get(resp.getId());
+                if (isAvail != null) {
+                    resp.setAvailable(isAvail);
+                }
+                resp.setBranchId(branchId);
+            }
+        }
 
         if (sortBy != null && !sortBy.trim().isEmpty()) {
             switch (sortBy.toLowerCase().trim()) {
@@ -140,10 +158,21 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public ProductResponse getProductById(Long id) {
+        return getProductById(id, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductResponse getProductById(Long id, Long branchId) {
         Product product = getProductEntityById(id);
         ProductResponse res = ProductResponse.fromEntity(product);
         if (res != null) {
             res.setRecipes(recipeService.getRecipesByProductId(id));
+            if (branchId != null) {
+                branchMenuRepository.findByBranchIdAndProductId(branchId, id)
+                        .ifPresent(bm -> res.setAvailable(bm.isAvailable()));
+                res.setBranchId(branchId);
+            }
         }
         return res;
     }

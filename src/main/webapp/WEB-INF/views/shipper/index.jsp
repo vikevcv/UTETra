@@ -199,6 +199,18 @@
       border-color: var(--bizen-clay);
     }
 
+    /* Lịch sử đơn hàng: Cố định hiển thị/ẩn với độ ưu tiên tuyệt đối */
+    .history-order-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .history-order-item.history-item-hidden,
+    .history-order-item.d-none {
+      display: none !important;
+    }
+
     .driver-profile-pill img {
       width: 36px;
       height: 36px;
@@ -1315,16 +1327,19 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     }
 
-    /* TOAST NOTIFICATION CONTAINER */
+    /* TOAST NOTIFICATION CONTAINER - ĐẨY LÊN ĐỈNH MÀN HÌNH (TRÊN KHU VỰC NÚT ONL, KHÔNG CHE NÚT SỰ CỐ DƯỚI ĐÁY) */
     .toast-container-zen {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 1090;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2100;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      max-width: 380px;
+      gap: 8px;
+      width: calc(100% - 24px);
+      max-width: 460px;
+      pointer-events: none;
     }
 
     .zen-toast {
@@ -1332,12 +1347,14 @@
       border: 1px solid var(--border-earth);
       border-left: 5px solid var(--matcha-deep);
       border-radius: var(--radius-md);
-      padding: 14px 18px;
-      box-shadow: var(--shadow-floating);
+      padding: 12px 16px;
+      box-shadow: 0 10px 25px rgba(15, 16, 17, 0.2);
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 12px;
-      animation: slideInToast 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: auto;
+      cursor: pointer;
+      animation: slideDownToast 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .zen-toast.toast-warning {
@@ -1348,9 +1365,16 @@
       border-left-color: var(--terracotta);
     }
 
-    @keyframes slideInToast {
-      from { transform: translateX(110%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+    .zen-toast.toast-order {
+      background: #FFFFFF;
+      border: 1.5px solid #F59E0B;
+      border-left: 6px solid #D97706;
+      box-shadow: 0 12px 28px rgba(217, 119, 6, 0.22);
+    }
+
+    @keyframes slideDownToast {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
     .camera-upload-box {
@@ -1760,7 +1784,7 @@
         <button type="button" class="btn-header-history" onclick="openProfileDrawer('tab-history')" title="Xem Tổng Số Cuốc & Lịch Sử Giao Hàng">
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span>Lịch Sử</span>
-          <span class="history-count-badge" id="headerHistoryCount">${completedCount}</span>
+          <span class="history-count-badge" id="headerHistoryCount">${todayCompletedCount}</span>
         </button>
       </div>
     </header>
@@ -1972,7 +1996,7 @@
           <div class="d-flex align-items-center justify-content-between">
             <div style="min-width: 0; flex: 1;">
               <div style="font-size: 0.86rem; font-weight: 800; color: #065F46; text-transform: uppercase; letter-spacing: 0.5px;" id="drawerHistoryTitleText">
-                Tổng số cuốc
+                Tổng số cuốc hôm nay
               </div>
               <div class="d-flex align-items-baseline gap-2 mt-1">
                 <span class="fw-extrabold" style="font-size: 2.6rem; color: #064E3B; line-height: 1;" id="drawerHistoryCompletedCount">
@@ -1985,23 +2009,40 @@
           </div>
         </div>
 
-        <!-- 2. BỘ 3 NÚT LỌC THỜI GIAN: HÔM NAY, HÔM QUA (HÔM LẺ), THEO TUẦN -->
-        <div class="history-period-filter-nav">
-          <button type="button" class="btn-period-filter active" id="btnPeriodToday" onclick="filterHistoryByPeriod('TODAY', this)">
+        <!-- 2. BỘ NÚT LỌC THỜI GIAN: HÔM NAY, HÔM QUA, THEO TUẦN -->
+        <div class="history-period-filter-nav d-flex gap-2 mb-2">
+          <button type="button" class="btn-period-filter active flex-fill" id="btnPeriodToday" onclick="filterHistoryByPeriod('TODAY', this)">
             <i class="fa-solid fa-calendar-day me-1"></i> Hôm nay
           </button>
-          <button type="button" class="btn-period-filter" id="btnPeriodYesterday" onclick="filterHistoryByPeriod('YESTERDAY', this)">
+          <button type="button" class="btn-period-filter flex-fill" id="btnPeriodYesterday" onclick="filterHistoryByPeriod('YESTERDAY', this)">
             <i class="fa-solid fa-calendar-minus me-1"></i> Hôm qua
           </button>
-          <button type="button" class="btn-period-filter" id="btnPeriodWeek" onclick="filterHistoryByPeriod('WEEK', this)">
-            <i class="fa-solid fa-calendar-week me-1"></i> Theo tuần
+          <button type="button" class="btn-period-filter flex-fill" id="btnPeriodWeek" onclick="filterHistoryByPeriod('WEEK', this)">
+            <i class="fa-solid fa-calendar-week me-1"></i> 7 ngày qua
           </button>
         </div>
 
+        <!-- 2.1 BỘ CHỌN NGÀY CỤ THỂ (TỐI ĐA 1 THÁNG) -->
+        <div class="p-2 mb-3 bg-white border rounded-3 d-flex align-items-center justify-content-between gap-2 shadow-sm" style="font-size: 0.82rem;">
+          <div class="d-flex align-items-center gap-2 text-dark fw-bold">
+            <i class="fa-solid fa-calendar-check text-success" style="font-size: 0.95rem;"></i>
+            <span>Chọn ngày (tối đa 30 ngày):</span>
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <input type="date" id="historySpecificDatePicker" class="form-control form-control-sm"
+                   style="width: 140px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1.5px solid #CBD5E1; color: #1E293B;"
+                   min="${minDateMonthAgo}" max="${todayDateIso}"
+                   onchange="filterHistoryBySpecificDate(this.value)">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-2" style="border-radius: 8px; font-size: 0.75rem;" onclick="clearSpecificDateFilter()" title="Quay lại hôm nay">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+          </div>
+        </div>
+
         <!-- 3. Phân đoạn danh sách lịch sử -->
-        <div class="d-flex justify-content-between align-items-center px-1">
-          <span style="font-size: 0.92rem; font-weight: 800; color: #1F2937; text-transform: uppercase; letter-spacing: 0.3px;">
-            <i class="fa-solid fa-list-check me-1 text-success"></i> Danh Sách Các Cuốc Đã Chạy
+        <div class="d-flex justify-content-between align-items-center px-1 mb-2">
+          <span style="font-size: 0.86rem; font-weight: 700; color: #64748B;" id="drawerHistorySubHeader">
+            <i class="fa-solid fa-receipt me-1 text-success"></i> Đơn đã hoàn thành
           </span>
           <span class="badge" style="background: #E5E7EB; color: #374151; font-size: 0.78rem; font-weight: 700;" id="drawerHistoryBadge">
             ${todayCompletedCount} đơn
@@ -2010,13 +2051,20 @@
 
         <!-- 4. Danh sách cuốc đơn tuần tự -->
         <div id="drawerHistoryList" class="d-flex flex-column gap-2">
+          <div id="historyEmptyPeriodState" class="text-center py-4 px-3 bg-white border rounded-3 text-muted shadow-sm" style="display: ${todayCompletedCount eq 0 ? 'block' : 'none'};">
+            <i class="fa-solid fa-calendar-xmark fa-2x mb-2" style="color: #94A3B8;"></i>
+            <div class="fw-bold" style="color: #475569;" id="historyEmptyPeriodTitle">Chưa có cuốc giao nào hôm nay</div>
+            <div class="small text-muted mt-1" id="historyEmptyPeriodDesc">Các đơn giao hoàn tất trong ngày sẽ xuất hiện tại đây.</div>
+          </div>
           <c:choose>
             <c:when test="${not empty completedOrders}">
               <c:forEach items="${completedOrders}" var="co" varStatus="loop">
-                <c:set var="itemPeriod" value="${co.periodCategory != null ? co.periodCategory : 'TODAY'}" />
-                <div class="history-order-item p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center gap-2 shadow-sm"
+                <c:set var="itemPeriod" value="${co.periodCategory != null ? co.periodCategory : 'OLDER'}" />
+                <c:set var="isToday" value="${(not empty co.tripDateIso and not empty todayDateIso) ? (co.tripDateIso eq todayDateIso) : (itemPeriod eq 'TODAY')}" />
+                <div class="history-order-item p-3 bg-white border rounded-3 justify-content-between align-items-center gap-2 shadow-sm ${isToday ? '' : 'history-item-hidden d-none'}"
                      data-period="${itemPeriod}"
-                     style="overflow: hidden; display: ${itemPeriod eq 'TODAY' ? 'flex' : 'none'};">
+                     data-date="${co.tripDateIso}"
+                     style="overflow: hidden; ${isToday ? 'display: flex !important;' : 'display: none !important;'}">
                   <div class="d-flex align-items-center gap-3" style="min-width: 0; flex: 1;">
                     <c:choose>
                       <c:when test="${not empty co.deliveryPhotoUrl}">
@@ -2069,10 +2117,6 @@
                   </div>
                 </div>
               </c:forEach>
-              <div id="historyEmptyPeriodState" style="display: none;" class="p-4 text-center text-muted bg-white rounded-3 border">
-                <i class="fa-solid fa-box-open fa-2x mb-2 text-secondary d-block"></i>
-                Không có cuốc giao nào trong thời gian đã chọn.
-              </div>
             </c:when>
             <c:otherwise>
               <div class="p-4 text-center text-muted bg-white rounded-3 border" style="font-size: 0.9rem;">
@@ -2246,9 +2290,14 @@
 
       // Bắt đầu chu trình Polling nhẹ nhàng mỗi 12 giây
       setInterval(pollActiveOrders, 12000);
+      syncShiftStatusFromServer();
 
       // Kích hoạt kết nối WebSocket STOMP nhận thông báo phân công thời gian thực
       initDriverWebSocket();
+
+      // Mặc định lọc lịch sử theo Hôm Nay
+      const todayBtn = document.getElementById('btnPeriodToday');
+      filterHistoryByPeriod('TODAY', todayBtn);
     });
 
     /* ========================================================
@@ -2354,6 +2403,7 @@
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Giao Đến Khách Hàng</div>' +
                 '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng Trà Đạo') + '</div>' +
+                (curr.customerPhone ? '<div class="text-primary small fw-bold mb-1" id="nodeDestPhone0"><i class="fa-solid fa-phone me-1"></i>SĐT: <a href="tel:' + curr.customerPhone + '" class="text-decoration-none text-primary fw-bold">' + curr.customerPhone + '</a></div>' : '') +
                 '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
                 (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-comment-dots text-warning"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
               '</div>' +
@@ -2378,7 +2428,7 @@
               '</span>' +
             '</button>' +
             '<button class="btn-incident-secondary w-100 py-2" style="font-size: 0.82rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố Tại Quán' +
+              '<i class="fa-solid fa-rotate-left me-1"></i> Trả Đơn Lại Cho Quầy (Báo Sự Cố)' +
             '</button>' +
           '</div>';
 
@@ -2403,6 +2453,7 @@
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Giao Đến Khách Hàng</div>' +
                 '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                (curr.customerPhone ? '<div class="text-primary small fw-bold mb-1" id="nodeDestPhone1"><i class="fa-solid fa-phone me-1"></i>SĐT: <a href="tel:' + curr.customerPhone + '" class="text-decoration-none text-primary fw-bold">' + curr.customerPhone + '</a></div>' : '') +
                 '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
               '</div>' +
             '</div>' +
@@ -2437,7 +2488,7 @@
               '<i class="fa-solid fa-store me-2" style="font-size: 1.15rem;"></i> ĐÃ NHẬN HÀNG TỪ QUÁN' +
             '</button>' +
             '<button class="btn-incident-secondary w-100 py-2" style="font-size: 0.82rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố Tại Quán' +
+              '<i class="fa-solid fa-rotate-left me-1"></i> Trả Đơn Lại Cho Quầy (Báo Sự Cố)' +
             '</button>' +
           '</div>';
 
@@ -2450,6 +2501,7 @@
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Điểm Giao Đến Khách Hàng</div>' +
                 '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                (curr.customerPhone ? '<div class="text-primary small fw-bold mb-1" id="nodeDestPhone2"><i class="fa-solid fa-phone me-1"></i>SĐT: <a href="tel:' + curr.customerPhone + '" class="text-decoration-none text-primary fw-bold">' + curr.customerPhone + '</a></div>' : '') +
                 '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
                 (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-comment-dots text-warning"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
               '</div>' +
@@ -2486,7 +2538,7 @@
             '</div>' +
 
             '<button class="btn-incident-secondary w-100 py-1" style="font-size: 0.8rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố Trên Đường' +
+              '<i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i> Báo Giao Thất Bại (3 Lý Do)' +
             '</button>' +
           '</div>';
 
@@ -2499,6 +2551,7 @@
               '<div class="node-content-wrap">' +
                 '<div class="node-label">Tài Xế Đã Đến Nơi Giao</div>' +
                 '<div class="node-dest-name">' + (curr.customerName || 'Khách Hàng') + '</div>' +
+                (curr.customerPhone ? '<div class="text-primary small fw-bold mb-1" id="nodeDestPhone3"><i class="fa-solid fa-phone me-1"></i>SĐT: <a href="tel:' + curr.customerPhone + '" class="text-decoration-none text-primary fw-bold">' + curr.customerPhone + '</a></div>' : '') +
                 '<div class="node-dest-address">' + curr.deliveryAddress + '</div>' +
                 (curr.deliveryNotes ? '<div class="customer-note-callout"><i class="fa-solid fa-comment-dots text-warning"></i> <span><strong>Khách dặn:</strong> ' + curr.deliveryNotes + '</span></div>' : '') +
               '</div>' +
@@ -2522,7 +2575,7 @@
             '</button>' +
 
             '<button class="btn-incident-secondary w-100 py-1" style="font-size: 0.8rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố / Khách Không Nhận' +
+              '<i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i> Báo Giao Thất Bại (3 Lý Do)' +
             '</button>' +
           '</div>';
 
@@ -2556,7 +2609,7 @@
             '</button>' +
 
             '<button class="btn-incident-secondary w-100 py-1" style="font-size: 0.8rem;" onclick="openIncidentModal(' + curr.orderId + ', \'' + curr.orderCode + '\')">' +
-              '<i class="fa-solid fa-triangle-exclamation me-1"></i> Báo Sự Cố' +
+              '<i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i> Báo Giao Thất Bại (3 Lý Do)' +
             '</button>' +
           '</div>';
       }
@@ -2935,11 +2988,48 @@
       showZenToast('Đã phát chuông âm thanh và gửi tín hiệu rung điện thoại!', 'success');
     }
 
+    /**
+     * Bắn thông báo hoàn chỉnh (Toast trên cùng + Web Notification + Chuông + Rung)
+     * cho TỪNG đơn hàng mới được giao hoặc gán khi bật ca.
+     */
+    function notifyOrderArrival(order, delayMs) {
+      setTimeout(function() {
+        playNotificationSound();
+        triggerPhoneVibration();
+
+        const orderCode = order.orderCode || ('#' + (order.orderId || ''));
+        const address = order.deliveryAddress || order.recipientAddress || 'Khách hàng';
+        const cups = order.cupCount || 2;
+        const bodyMsg = 'Giao đến: ' + address + ' (' + cups + ' ly)';
+
+        // 1. Web Notification trình duyệt
+        triggerWebNotification('UTETra Shipper — Đơn Mới #' + orderCode, bodyMsg);
+
+        // 2. Toast in-app trên đỉnh màn hình (phía trên khu vực nút ON)
+        showZenToast('<strong>CÓ ĐƠN MỚI #' + orderCode + '</strong> (' + cups + ' ly)<div style="font-size: 0.78rem; opacity: 0.9; margin-top: 2px;">' + address + '</div>', 'order');
+      }, delayMs || 0);
+    }
+
+    /**
+     * Phát thông báo lần lượt cho danh sách nhiều đơn hàng mới
+     * (ví dụ 3 đơn khi vừa bật ca hoặc được gán chùm) với khoảng đệm so le 600ms.
+     */
+    function notifyMultipleOrders(newOrders) {
+      if (!newOrders || !Array.isArray(newOrders) || newOrders.length === 0) return;
+      newOrders.forEach(function(o, idx) {
+        notifyOrderArrival(o, idx * 600);
+      });
+    }
+
     /* ========================================================
        5. CÔNG TẮC GẠT BẬT / TẮT CA TRỰC
        ======================================================== */
-    function toggleShiftStatus() {
-      isOnline = !isOnline;
+
+    /**
+     * Vẽ trạng thái công tắc (THUẦN UI, không gọi mạng, không toast).
+     * Tên hàm giữ theo nhánh develop để các nơi gọi cũ vẫn chạy được.
+     */
+    function applyShiftSwitchUi(online) {
       const capsule = document.getElementById('topSwitchCapsule');
       const label = document.getElementById('switchLabelStatus');
       const knobIcon = document.getElementById('knobIcon');
@@ -2949,7 +3039,7 @@
       const statusBoxText = document.getElementById('statusBoxText');
       const statusBoxSub = document.getElementById('statusBoxSub');
 
-      if (isOnline) {
+      if (online) {
         if (capsule) capsule.classList.add('online');
         if (label) label.innerText = 'BẬT';
         if (knobIcon) knobIcon.className = 'fa-solid fa-check';
@@ -2961,11 +3051,6 @@
           statusBoxText.style.color = 'var(--matcha-deep)';
         }
         if (statusBoxSub) statusBoxSub.innerText = 'Đang bật nhận đơn từ quán';
-        showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
-
-        if ('Notification' in window && Notification.permission === 'default') {
-          Notification.requestPermission();
-        }
       } else {
         if (capsule) capsule.classList.remove('online');
         if (label) label.innerText = 'TẮT';
@@ -2978,14 +3063,73 @@
           statusBoxText.style.color = 'var(--text-sepia)';
         }
         if (statusBoxSub) statusBoxSub.innerText = 'Gạt công tắc trên để trực';
-        showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
       }
+    }
+
+    /**
+     * Gạt công tắc BẬT/TẮT ca trực.
+     * SERVER TRƯỚC, CLIENT SAU: chỉ đổi giao diện khi server trả 2xx.
+     * Nếu server từ chối (ví dụ đang giữ đơn nên không cho tắt ca) thì giữ nguyên
+     * trạng thái cũ và hiện lý do — tránh cảnh tab hiện TẮT trong khi DB vẫn giao đơn.
+     */
+    function toggleShiftStatus() {
+      const target = !isOnline;
 
       fetch('${pageContext.request.contextPath}/shipper/api/toggle-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ online: isOnline })
-      }).catch(err => console.log('Toggle synced'));
+        body: JSON.stringify({ online: target })
+      })
+        .then(function(res) {
+          return res.json().catch(function() { return {}; }).then(function(data) {
+            if (!res.ok) {
+              throw new Error(data.message || ('Lỗi máy chủ (HTTP ' + res.status + ')'));
+            }
+            return data;
+          });
+        })
+        .then(function() {
+          isOnline = target;
+          applyShiftSwitchUi(isOnline);
+          if (isOnline) {
+            showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
+            if ('Notification' in window && Notification.permission === 'default') {
+              Notification.requestPermission();
+            }
+            // Gọi refresh ngay sau 350ms để phát hiện và thông báo từng đơn chờ vừa được server tự động gán!
+            setTimeout(function() {
+              refreshOrders(false, true);
+            }, 350);
+          } else {
+            showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
+          }
+        })
+        .catch(function(err) {
+          console.error('Không thể cập nhật trạng thái ca trực:', err);
+          showZenToast(err.message || 'Không thể cập nhật trạng thái: lỗi kết nối', 'danger');
+          // Đồng bộ lại theo server để không hiển thị sai
+          syncShiftStatusFromServer();
+        });
+    }
+
+    /**
+     * Đồng bộ công tắc BẬT/TẮT theo trạng thái THẬT trong DB.
+     * Chống trường hợp tab cũ (hoặc tab thứ 2) hiển thị "TẮT" nhưng server vẫn coi tài xế đang trực
+     * -> quán bấm Bàn Giao và đơn vẫn chạy về tài xế mà người dùng tưởng đã offline.
+     */
+    function syncShiftStatusFromServer() {
+      fetch('${pageContext.request.contextPath}/shipper/api/shift-status')
+        .then(function(res) { return res.ok ? res.json() : null; })
+        .then(function(data) {
+          if (!data || typeof data.online !== 'boolean') return;
+          if (data.online === isOnline) return;
+          isOnline = data.online;
+          applyShiftSwitchUi(isOnline);
+          showZenToast(data.online
+            ? 'Đồng bộ: ca trực đang BẬT (hệ thống vẫn có thể giao đơn cho bạn).'
+            : 'Đồng bộ: ca trực đang TẮT.', 'info');
+        })
+        .catch(function() {});
     }
 
     /* ========================================================
@@ -2997,33 +3141,28 @@
         .then(orders => {
           if (!Array.isArray(orders)) return;
 
-          let hasNewOrder = false;
-          let newestOrder = null;
+          let newOrders = [];
 
           orders.forEach(function(o) {
             if (!knownOrderIds.has(o.orderId)) {
-              hasNewOrder = true;
-              newestOrder = o;
+              newOrders.push(o);
               knownOrderIds.add(o.orderId);
               ordersQueue.push(o);
             }
           });
 
-          if (hasNewOrder && newestOrder) {
-            playNotificationSound();
-            triggerPhoneVibration();
-            triggerWebNotification(
-              'UTETra Shipper — Đơn Hàng Mới Cần Giao!',
-              'Đơn #' + newestOrder.orderCode + ' đến ' + newestOrder.deliveryAddress + ' (' + (newestOrder.cupCount || 2) + ' ly).'
-            );
-            showZenToast('CÓ ĐƠN HÀNG MỚI: #' + newestOrder.orderCode + ' (' + (newestOrder.cupCount || 2) + ' ly)', 'success');
+          if (newOrders.length > 0) {
+            // Thông báo tuần tự cho từng đơn mới (ví dụ 3 đơn -> 3 thông báo riêng rẽ)
+            notifyMultipleOrders(newOrders);
             renderWorkbench();
           }
         })
         .catch(err => console.log('Polling check:', err));
+
+      syncShiftStatusFromServer();
     }
 
-    function refreshOrders(isManual) {
+    function refreshOrders(isManual, notifyNewOrders) {
       const icon = document.getElementById('refreshIcon');
       if (icon) icon.classList.add('fa-spin');
 
@@ -3032,15 +3171,23 @@
         .then(orders => {
           if (icon) icon.classList.remove('fa-spin');
           if (Array.isArray(orders)) {
-            // Cập nhật lại ordersQueue đồng bộ với server
-            ordersQueue = orders;
-            ordersQueue.forEach(function(o) {
-              knownOrderIds.add(o.orderId);
+            let newlyArrived = [];
+            orders.forEach(function(o) {
+              if (!knownOrderIds.has(o.orderId)) {
+                newlyArrived.push(o);
+                knownOrderIds.add(o.orderId);
+              }
               if (orderSteps[o.orderId] === undefined) {
                 orderSteps[o.orderId] = (o.status === 'ARRIVED') ? 3 : (o.status === 'DELIVERING' ? 2 : 0);
               }
             });
+            ordersQueue = orders;
             renderWorkbench();
+
+            // Nếu bật cờ notifyNewOrders và có đơn mới -> bắn thông báo cho từng đơn
+            if (notifyNewOrders && newlyArrived.length > 0) {
+              notifyMultipleOrders(newlyArrived);
+            }
           }
           if (isManual) {
             showZenToast('Đã làm mới danh sách đơn hàng giao vận.', 'success');
@@ -3185,6 +3332,13 @@
       }
       const detailNote = document.getElementById('incidentDetailNote').value;
 
+      // Đang giao ngoài đường (đã lấy trà) thì BẮT BUỘC có ảnh đối soát — chặn ngay ở client
+      // để tài xế không bấm mãi mà server trả 400 (giống hệt rule phía server).
+      if (!isAtStore && !incidentProofPhoto) {
+        showZenToast('Vui lòng chụp ảnh đối soát trước khi báo giao thất bại!', 'warning');
+        return;
+      }
+
       const btn = document.getElementById('btnSubmitIncident');
       if (btn) btn.disabled = true;
 
@@ -3200,10 +3354,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      .then(res => {
-        if (!res.ok) throw new Error('Mã phản hồi: ' + res.status);
-        return res.json();
-      })
+      .then(res => res.json().catch(() => ({})).then(body => {
+        if (!res.ok) throw new Error(body.message || ('Mã phản hồi: ' + res.status));
+        return body;
+      }))
       .then(data => {
         if (btn) btn.disabled = false;
         if (incidentModalInstance) {
@@ -3214,18 +3368,37 @@
         cleanupModalBackdrop();
         setTimeout(cleanupModalBackdrop, 350);
 
-        if (window.Swal) {
-          if (isAtStore) {
+        if (isAtStore) {
+          const returnedCount = ordersQueue.length;
+          ordersQueue = [];
+          knownOrderIds.clear();
+          orderSteps = {};
+          cupPhotos = {};
+          deliveryPhotos = {};
+          renderWorkbench();
+
+          if (window.Swal) {
             Swal.fire({
               icon: 'info',
               title: 'Đã Báo Cáo Sự Cố Tại Quán',
-              text: 'Đơn hàng #' + orderCode + ' đã được chuyển giao lại cho quầy chi nhánh để phân công tài xế khác.',
+              text: 'Đã hoàn trả toàn bộ ' + returnedCount + ' đơn hàng trong ca trực về quầy chi nhánh để điều phối cho tài xế khác. Ca trực đã tự động chuyển sang TẠM NGHỈ (OFFLINE).',
               confirmButtonColor: '#8C6D53',
               didClose: () => {
                 cleanupModalBackdrop();
               }
             });
           } else {
+            showZenToast('Đã hoàn trả toàn bộ ' + returnedCount + ' đơn hàng về quầy chi nhánh!', 'info');
+          }
+        } else {
+          // Sự cố ngoài đường: hủy đơn này và trượt đơn kế tiếp vào Focus Mode
+          ordersQueue = ordersQueue.filter(function(o) { return o.orderId != orderId; });
+          delete orderSteps[orderId];
+          delete cupPhotos[orderId];
+          delete deliveryPhotos[orderId];
+          renderWorkbench();
+
+          if (window.Swal) {
             Swal.fire({
               icon: 'warning',
               title: 'Hủy Đơn Tự Động Thành Công',
@@ -3235,67 +3408,43 @@
                 cleanupModalBackdrop();
               }
             });
+          } else {
+            showZenToast('Đã xử lý sự cố cho đơn #' + orderCode + '!', 'warning');
           }
-        } else {
-          showZenToast('Đã xử lý sự cố cho đơn #' + orderCode + '!', 'warning');
-        }
 
-        // Bổ sung vào Drawer Lịch Sử
-        const historyList = document.getElementById('drawerHistoryList');
-        if (historyList) {
-          const item = document.createElement('div');
-          item.className = 'p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center gap-2 mb-2';
-          const proofThumb = incidentProofPhoto
-            ? '<img src="' + incidentProofPhoto + '" alt="Proof" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-earth);">'
-            : '<div style="width: 44px; height: 44px; border-radius: 8px; background: #FFF1F0; display: flex; align-items: center; justify-content: center; color: var(--terracotta); font-size: 1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i></div>';
-          item.innerHTML = 
-            '<div class="d-flex align-items-center gap-2">' +
-              proofThumb +
-              '<div>' +
-                '<strong style="font-size: 0.9rem; color: var(--terracotta);">#' + orderCode + ' · Hoàn Trả</strong>' +
-                '<div class="text-muted" style="font-size: 0.76rem; margin-top: 2px;">' +
-                  'Lý do: ' + reasonCode + (detailNote ? ' (' + detailNote + ')' : '') +
+          // Bổ sung vào Drawer Lịch Sử Đơn Thất Bại
+          const historyList = document.getElementById('drawerHistoryList');
+          if (historyList) {
+            const item = document.createElement('div');
+            item.className = 'p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center gap-2 mb-2';
+            const proofThumb = incidentProofPhoto
+              ? '<img src="' + incidentProofPhoto + '" alt="Proof" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-earth);">'
+              : '<div style="width: 44px; height: 44px; border-radius: 8px; background: #FFF1F0; display: flex; align-items: center; justify-content: center; color: var(--terracotta); font-size: 1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i></div>';
+            item.innerHTML = 
+              '<div class="d-flex align-items-center gap-2">' +
+                proofThumb +
+                '<div>' +
+                  '<strong style="font-size: 0.9rem; color: var(--terracotta);">#' + orderCode + ' · Hoàn Trả</strong>' +
+                  '<div class="text-muted" style="font-size: 0.76rem; margin-top: 2px;">' +
+                    'Lý do: ' + reasonCode + (detailNote ? ' (' + detailNote + ')' : '') +
+                  '</div>' +
                 '</div>' +
               '</div>' +
-            '</div>' +
-            '<div class="text-end flex-shrink-0">' +
-              '<span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i> Đã Hủy</span>' +
-            '</div>';
-          const placeholder = historyList.querySelector('.text-center');
-          if (placeholder) placeholder.remove();
-          historyList.prepend(item);
-        }
-
-        // Tự động chuyển OFFLINE nếu gặp sự cố xe cộ hoặc sức khỏe
-        if (reasonCode === 'XE_HONG' || reasonCode === 'SUC_KHOE') {
-          isOnline = false;
-          const capsule = document.getElementById('topSwitchCapsule');
-          const label = document.getElementById('switchLabelStatus');
-          const knobIcon = document.getElementById('knobIcon');
-          const avatarDot = document.getElementById('headerAvatarDot');
-          const onlineTextWrap = document.getElementById('headerOnlineTextWrap');
-          const onlineText = document.getElementById('headerOnlineText');
-          const statusBoxText = document.getElementById('statusBoxText');
-          const statusBoxSub = document.getElementById('statusBoxSub');
-          if (capsule) capsule.classList.remove('online');
-          if (label) label.innerText = 'TẮT';
-          if (knobIcon) knobIcon.className = 'fa-solid fa-power-off';
-          if (avatarDot) avatarDot.classList.remove('online');
-          if (onlineTextWrap) onlineTextWrap.className = 'text-secondary';
-          if (onlineText) onlineText.innerText = 'Tạm nghỉ';
-          if (statusBoxText) {
-            statusBoxText.innerText = 'Tạm Nghỉ Ca';
-            statusBoxText.style.color = 'var(--text-sepia)';
+              '<div class="text-end flex-shrink-0">' +
+                '<span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i> Đã Hủy</span>' +
+              '</div>';
+            const placeholder = historyList.querySelector('.text-center');
+            if (placeholder) placeholder.remove();
+            historyList.prepend(item);
           }
-          if (statusBoxSub) statusBoxSub.innerText = 'Tài xế tạm nghỉ do sự cố bất khả kháng';
         }
 
-        // Loại bỏ đơn khỏi queue và trượt đơn kế tiếp vào Focus Mode
-        ordersQueue = ordersQueue.filter(function(o) { return o.orderId != orderId; });
-        delete orderSteps[orderId];
-        delete cupPhotos[orderId];
-        delete deliveryPhotos[orderId];
-        renderWorkbench();
+        // Sau sự cố: trạng thái ca trực lấy theo SERVER (server mới là nguồn sự thật).
+        // Server tự chuyển OFFLINE khi hỏng xe / sức khỏe; các lý do khác (khách không liên lạc được...)
+        // tài xế vẫn đang trực nên KHÔNG được tự tắt công tắc ở client.
+        if (isAtStore || reasonCode === 'XE_HONG' || reasonCode === 'SUC_KHOE') {
+          syncShiftStatusFromServer();
+        }
       })
       .catch(err => {
         if (btn) btn.disabled = false;
@@ -3319,12 +3468,26 @@
             try {
               const eventData = JSON.parse(message.body);
               console.log('Driver real-time notification received:', eventData);
-              playNotificationSound();
-              triggerPhoneVibration();
-              if (eventData.message) {
-                showZenToast(eventData.message, 'info');
+
+              if (eventData.eventType === 'DISPATCHED') {
+                // Đơn hàng mới được điều phối cho tài xế: thông báo đầy đủ
+                const orderCode = eventData.orderCode || ('#' + (eventData.orderId || ''));
+                notifyOrderArrival({
+                  orderId: eventData.orderId,
+                  orderCode: orderCode,
+                  deliveryAddress: eventData.branchName ? ('Từ ' + eventData.branchName) : 'Quán UTETra',
+                  cupCount: 2
+                }, 0);
+              } else {
+                playNotificationSound();
+                triggerPhoneVibration();
+                const displayMsg = eventData.statusMessage || eventData.statusTitle || eventData.message;
+                if (displayMsg) {
+                  showZenToast(displayMsg, 'info');
+                }
               }
-              refreshOrders(false);
+              // Làm mới danh sách đơn hàng (không phát lại thông báo vì WebSocket đã báo rồi)
+              refreshOrders(false, false);
             } catch (err) {
               console.error('Error parsing STOMP driver payload:', err);
             }
@@ -3385,58 +3548,136 @@
       if (titleEl) {
         if (tabId === 'tab-history') {
           titleEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-2 text-success"></i>Lịch Sử Giao Hàng';
+          const todayBtn = document.getElementById('btnPeriodToday');
+          filterHistoryByPeriod('TODAY', todayBtn);
         } else {
           titleEl.innerHTML = '<i class="fa-solid fa-id-card me-2 text-primary"></i>Hồ Sơ Tài Xế';
         }
       }
     }
 
-    /* Bộ lọc thời gian cho Lịch Sử Đơn: Hôm nay, Hôm qua (hôm lẻ), Theo tuần */
+    /* Bộ lọc thời gian cho Lịch Sử Đơn: Hôm nay, Hôm qua (hôm lẻ), 7 ngày qua, và Chọn ngày cụ thể (tối đa 1 tháng) */
+    const SHIPPER_TODAY_ISO = "${todayDateIso}";
+    const SHIPPER_YESTERDAY_ISO = "${yesterdayDateIso}";
+
     function filterHistoryByPeriod(period, btn) {
       document.querySelectorAll('.btn-period-filter').forEach(b => b.classList.remove('active'));
       if (btn) btn.classList.add('active');
+
+      const dateInput = document.getElementById('historySpecificDatePicker');
+      if (dateInput) dateInput.value = '';
 
       const items = document.querySelectorAll('.history-order-item');
       let visibleCount = 0;
 
       items.forEach(item => {
         const itemPeriod = item.getAttribute('data-period');
+        const itemDate = item.getAttribute('data-date');
         let shouldShow = false;
+
         if (period === 'WEEK') {
-          shouldShow = true;
+          // 7 ngày qua: TODAY, YESTERDAY, WEEK
+          shouldShow = (itemPeriod === 'TODAY' || itemPeriod === 'YESTERDAY' || itemPeriod === 'WEEK');
         } else if (period === 'YESTERDAY') {
-          shouldShow = (itemPeriod === 'YESTERDAY');
+          // CHỈ hiển thị đơn của HÔM QUA
+          shouldShow = (itemDate && SHIPPER_YESTERDAY_ISO) ? (itemDate === SHIPPER_YESTERDAY_ISO) : (itemPeriod === 'YESTERDAY');
         } else {
-          shouldShow = (itemPeriod === 'TODAY');
+          // CHỈ hiển thị đơn của HÔM NAY
+          shouldShow = (itemDate && SHIPPER_TODAY_ISO) ? (itemDate === SHIPPER_TODAY_ISO) : (itemPeriod === 'TODAY');
         }
 
         if (shouldShow) {
-          item.style.display = 'flex';
+          item.classList.remove('d-none', 'history-item-hidden');
+          item.style.setProperty('display', 'flex', 'important');
           visibleCount++;
         } else {
-          item.style.display = 'none';
+          item.classList.add('d-none', 'history-item-hidden');
+          item.style.setProperty('display', 'none', 'important');
         }
       });
 
-      const countEl = document.getElementById('drawerHistoryCompletedCount');
-      if (countEl) {
-        if (period === 'WEEK') {
-          countEl.innerText = '${completedCount}';
-        } else if (period === 'YESTERDAY') {
-          countEl.innerText = '${yesterdayCompletedCount}';
+      updateHistoryCountUI(visibleCount, period);
+    }
+
+    function filterHistoryBySpecificDate(selectedDate) {
+      if (!selectedDate) return;
+      document.querySelectorAll('.btn-period-filter').forEach(b => b.classList.remove('active'));
+
+      const items = document.querySelectorAll('.history-order-item');
+      let visibleCount = 0;
+
+      items.forEach(item => {
+        const itemDate = item.getAttribute('data-date');
+        const shouldShow = (itemDate === selectedDate);
+        if (shouldShow) {
+          item.classList.remove('d-none', 'history-item-hidden');
+          item.style.setProperty('display', 'flex', 'important');
+          visibleCount++;
         } else {
-          countEl.innerText = '${todayCompletedCount}';
+          item.classList.add('d-none', 'history-item-hidden');
+          item.style.setProperty('display', 'none', 'important');
         }
-      }
+      });
+
+      const parts = selectedDate.split('-');
+      const formattedDate = (parts.length === 3) ? (parts[2] + '/' + parts[1] + '/' + parts[0]) : selectedDate;
+      updateHistoryCountUI(visibleCount, 'DATE', formattedDate);
+    }
+
+    function clearSpecificDateFilter() {
+      const todayBtn = document.getElementById('btnPeriodToday');
+      filterHistoryByPeriod('TODAY', todayBtn);
+    }
+
+    function resetToTodayFilter() {
+      clearSpecificDateFilter();
+    }
+
+    function updateHistoryCountUI(visibleCount, mode, extraLabel) {
+      const countEl = document.getElementById('drawerHistoryCompletedCount');
+      if (countEl) countEl.innerText = visibleCount;
 
       const badgeEl = document.getElementById('drawerHistoryBadge');
-      if (badgeEl) {
-        badgeEl.innerText = visibleCount + ' đơn';
+      if (badgeEl) badgeEl.innerText = visibleCount + ' đơn';
+
+      if (!mode || mode === 'TODAY') {
+        const headerBadge = document.getElementById('headerHistoryCount');
+        if (headerBadge) headerBadge.innerText = visibleCount;
+      }
+
+      const titleEl = document.getElementById('drawerHistoryTitleText');
+      if (titleEl) {
+        if (mode === 'DATE') {
+          titleEl.innerText = 'Số cuốc ngày ' + extraLabel;
+        } else if (mode === 'YESTERDAY') {
+          titleEl.innerText = 'Số cuốc hôm qua';
+        } else if (mode === 'WEEK') {
+          titleEl.innerText = 'Số cuốc 7 ngày qua';
+        } else {
+          titleEl.innerText = 'Tổng số cuốc hôm nay';
+        }
       }
 
       const emptyEl = document.getElementById('historyEmptyPeriodState');
       if (emptyEl) {
         emptyEl.style.display = (visibleCount === 0) ? 'block' : 'none';
+        const titleSpan = document.getElementById('historyEmptyPeriodTitle');
+        const descSpan = document.getElementById('historyEmptyPeriodDesc');
+        if (titleSpan) {
+          if (mode === 'DATE') {
+            titleSpan.innerText = 'Không có cuốc nào ngày ' + extraLabel;
+            if (descSpan) descSpan.innerText = 'Tài xế không có chuyến giao hoàn tất vào ngày này.';
+          } else if (mode === 'YESTERDAY') {
+            titleSpan.innerText = 'Hôm qua không có cuốc giao nào';
+            if (descSpan) descSpan.innerText = 'Tài xế không có chuyến giao hoàn tất vào hôm qua.';
+          } else if (mode === 'WEEK') {
+            titleSpan.innerText = 'Trong 7 ngày qua chưa có cuốc nào';
+            if (descSpan) descSpan.innerText = 'Chưa có cuốc giao nào được hoàn tất trong 7 ngày gần nhất.';
+          } else {
+            titleSpan.innerText = 'Hôm nay chưa có cuốc giao nào';
+            if (descSpan) descSpan.innerText = 'Các cuốc giao hoàn tất trong ngày sẽ xuất hiện tại đây.';
+          }
+        }
       }
     }
 
@@ -3461,8 +3702,8 @@
 
     function showZenToast(message, type) {
       const now = Date.now();
-      // Ngăn chặn spam trùng lặp cùng 1 thông báo trong vòng 2.5 giây
-      if (message === lastToastMessage && (now - lastToastTime) < 2500) {
+      // Ngăn chặn spam trùng lặp cùng 1 thông báo trong vòng 2 giây (trừ đơn hàng mới khác nhau)
+      if (type !== 'order' && message === lastToastMessage && (now - lastToastTime) < 2000) {
         return;
       }
       lastToastMessage = message;
@@ -3477,22 +3718,30 @@
       }
 
       const toast = document.createElement('div');
-      toast.className = 'zen-toast ' + (type === 'danger' ? 'toast-danger' : (type === 'warning' ? 'toast-warning' : ''));
+      toast.className = 'zen-toast ' + (type === 'danger' ? 'toast-danger' : (type === 'warning' ? 'toast-warning' : (type === 'order' ? 'toast-order' : '')));
 
-      let iconHtml = '<i class="fa-solid fa-circle-check text-success" style="font-size: 1.2rem;"></i>';
-      if (type === 'danger') iconHtml = '<i class="fa-solid fa-circle-xmark text-danger" style="font-size: 1.2rem;"></i>';
-      if (type === 'warning') iconHtml = '<i class="fa-solid fa-triangle-exclamation text-warning" style="font-size: 1.2rem;"></i>';
+      let iconHtml = '<i class="fa-solid fa-circle-check text-success" style="font-size: 1.25rem;"></i>';
+      if (type === 'danger') iconHtml = '<i class="fa-solid fa-circle-xmark text-danger" style="font-size: 1.25rem;"></i>';
+      if (type === 'warning') iconHtml = '<i class="fa-solid fa-triangle-exclamation text-warning" style="font-size: 1.25rem;"></i>';
+      if (type === 'order') iconHtml = '<i class="fa-solid fa-bell text-warning fa-shake" style="font-size: 1.35rem; color: #D97706 !important;"></i>';
 
       toast.innerHTML = iconHtml + '<div style="flex: 1; font-size: 0.86rem; font-weight: 600; color: var(--text-charcoal); line-height: 1.4;">' + message + '</div>';
+
+      // Chạm/click để đóng nhanh toast
+      toast.onclick = function() {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)';
+        setTimeout(() => toast.remove(), 250);
+      };
 
       container.appendChild(toast);
 
       setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
+        toast.style.transform = 'translateY(-20px)';
         toast.style.transition = 'all 0.3s ease';
         setTimeout(() => toast.remove(), 300);
-      }, 4200);
+      }, 5000);
     }
   </script>
 </body>

@@ -217,6 +217,36 @@
     border-radius: 16px;
     color: var(--text-muted);
   }
+  .item-out-of-stock .reserve-media {
+    position: relative;
+    filter: grayscale(45%);
+    opacity: 0.85;
+  }
+  .zen-out-of-stock-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(15, 23, 42, 0.90);
+    backdrop-filter: blur(4px);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    z-index: 5;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .btn-zen-disabled {
+    background: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    border: 1px solid #cbd5e1 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    pointer-events: none;
+  }
 </style>
 
 <!-- Section: Private Reserve Gallery -->
@@ -293,8 +323,9 @@
       <c:choose>
         <c:when test="${not empty products}">
           <c:forEach items="${products}" var="p">
-            <div class="reserve-card"
+            <div class="reserve-card ${p.available != null && !p.available ? 'item-out-of-stock' : ''}"
                  data-product-id="${p.id}"
+                 data-available="${p.available != null ? p.available : true}"
                  data-category-id="${p.categoryId != null ? p.categoryId : ''}"
                  data-price="${p.basePrice != null ? p.basePrice : 0}"
                  data-rating="${p.averageRating != null ? p.averageRating : 0}"
@@ -302,7 +333,12 @@
                  data-name="<c:out value="${p.name}"/>"
                  data-desc="<c:out value="${p.description != null ? p.description : ''}"/>">
               <div class="reserve-media">
-                <a href="${pageContext.request.contextPath}/product/${p.id}" style="display:block; width:100%; height:100%;">
+                <c:if test="${p.available != null && !p.available}">
+                  <div class="zen-out-of-stock-badge">
+                    <i class="fa-solid fa-ban me-1"></i>Tạm hết
+                  </div>
+                </c:if>
+                <a href="${pageContext.request.contextPath}/product/${p.id}?branchId=${selectedBranchId}" style="display:block; width:100%; height:100%;">
                   <c:choose>
                     <c:when test="${not empty p.imageUrl}">
                       <img src="${p.imageUrl}" alt="${p.name}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
@@ -320,12 +356,12 @@
               </div>
               <div class="reserve-body">
                 <h4 class="reserve-item-title">
-                  <a href="${pageContext.request.contextPath}/product/${p.id}" style="text-decoration:none; color:inherit;">${p.name}</a>
+                  <a href="${pageContext.request.contextPath}/product/${p.id}?branchId=${selectedBranchId}" style="text-decoration:none; color:inherit;">${p.name}</a>
                 </h4>
                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:0.82rem; color:var(--text-muted);">
                   <c:choose>
                     <c:when test="${p.reviewCount != null && p.reviewCount > 0}">
-                      <a href="${pageContext.request.contextPath}/product/${p.id}#reviewsSection" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:6px;">
+                      <a href="${pageContext.request.contextPath}/product/${p.id}?branchId=${selectedBranchId}#reviewsSection" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:6px;">
                         <span style="color:#D97706; font-weight:700;">★ <fmt:formatNumber value="${p.averageRating}" pattern="0.0"/></span>
                         <span>(${p.reviewCount})</span>
                       </a>
@@ -338,14 +374,27 @@
                 <p class="reserve-desc">${p.description}</p>
                 <div class="reserve-foot">
                   <span class="reserve-price"><fmt:formatNumber value="${p.basePrice}" pattern="#,###"/> đ</span>
-                  <button class="btn-zen-select" type="button"
-                          data-id="${p.id}"
-                          data-name="<c:out value="${p.name}"/>"
-                          data-price="${p.basePrice}"
-                          data-image="<c:out value="${p.imageUrl != null ? p.imageUrl : ''}"/>"
-                          onclick="handleSelectZenTea(this)">
-                    Chọn Trà
-                  </button>
+                  <c:choose>
+                    <c:when test="${p.available != null && !p.available}">
+                      <button class="btn-zen-select btn-zen-disabled" type="button" disabled
+                              data-id="${p.id}"
+                              data-available="false"
+                              title="Món này đang tạm hết tại cơ sở đã chọn">
+                        <i class="fa-solid fa-ban me-1"></i> Tạm Hết
+                      </button>
+                    </c:when>
+                    <c:otherwise>
+                      <button class="btn-zen-select" type="button"
+                              data-id="${p.id}"
+                              data-name="<c:out value="${p.name}"/>"
+                              data-price="${p.basePrice}"
+                              data-image="<c:out value="${p.imageUrl != null ? p.imageUrl : ''}"/>"
+                              data-available="true"
+                              onclick="handleSelectZenTea(this)">
+                        Chọn Trà
+                      </button>
+                    </c:otherwise>
+                  </c:choose>
                 </div>
               </div>
             </div>

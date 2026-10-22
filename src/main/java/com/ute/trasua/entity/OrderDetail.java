@@ -22,6 +22,8 @@ public class OrderDetail {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     @ToString.Exclude
+    // Cắt vòng đệ quy Order.hashCode() -> orderDetails -> OrderDetail.hashCode() -> order -> ...
+    @lombok.EqualsAndHashCode.Exclude
     private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)

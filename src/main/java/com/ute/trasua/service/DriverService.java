@@ -19,9 +19,11 @@ public interface DriverService {
 
     DriverResponse updateWorkingStatus(Long driverId, String newStatus);
 
-    void resendDriverCredentials(Long driverId);
+    String resendDriverCredentials(Long driverId);
 
     Map<String, Object> getBranchDriverStatistics(Long branchId);
+
+    Map<String, Object> getAllDriverStatistics();
 
     com.ute.trasua.dto.DriverResponse toggleDriverAvailability(Long driverId, Boolean isAvailable);
 

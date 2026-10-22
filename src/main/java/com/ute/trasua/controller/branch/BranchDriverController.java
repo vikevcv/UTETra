@@ -188,9 +188,11 @@ public class BranchDriverController {
         Long effectiveBranchId = currentBranch != null ? currentBranch.getId() : branchId;
 
         try {
-            driverService.resendDriverCredentials(id);
-            redirectAttributes.addFlashAttribute("successMessage", "Đã cấp lại mật khẩu và gửi email kích hoạt thành công!");
+            String newPassword = driverService.resendDriverCredentials(id);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Cấp lại mật khẩu thành công! Mật khẩu tạm mới: " + newPassword + " (Đã gửi email thông báo tới tài xế)");
         } catch (Exception e) {
+            log.error("Lỗi cấp lại mật khẩu tài xế [ID: {}]: {}", id, e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/branch/drivers" + (effectiveBranchId != null ? "?branchId=" + effectiveBranchId : "");

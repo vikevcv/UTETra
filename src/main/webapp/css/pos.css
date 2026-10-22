@@ -279,6 +279,7 @@ body {
     cursor: pointer;
     display: flex;
     flex-direction: column;
+    min-height: 205px;
     transition: transform 0.15s, box-shadow 0.15s;
     box-shadow: var(--zen-shadow);
 }
@@ -305,19 +306,56 @@ body {
 .pos-product-title {
     font-size: 0.88rem;
     font-weight: 600;
-    color: var(--zen-dark);
-    line-height: 1.25;
+    color: #1C1D1F !important;
+    line-height: 1.3;
     margin-bottom: 0.4rem;
+    min-height: 2.3rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    word-break: break-word;
 }
 
 .pos-product-price {
     font-size: 0.95rem;
     font-weight: 700;
     color: var(--zen-bizen);
+}
+
+/* Service Mode Toggle (Uống Tại Quán vs Mang Đi) */
+.pos-service-mode-toggle {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: var(--zen-bg, #F7F5F0);
+    border-bottom: 1px solid var(--zen-border, #E0DDD5);
+}
+
+.pos-service-btn {
+    border: 1.5px solid var(--zen-border, #E0DDD5);
+    background: #FFFFFF;
+    color: var(--zen-dark, #0F1011);
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pos-service-btn:hover {
+    background: #EFECE6;
+}
+
+.pos-service-btn.active {
+    background: var(--zen-charcoal, #1C1D1F);
+    color: #FFFFFF;
+    border-color: var(--zen-charcoal, #1C1D1F);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
 /* Right Section: Ticket / Bill */
@@ -667,6 +705,9 @@ body {
         color: #000000 !important;
         background: #FFFFFF !important;
         box-sizing: border-box;
+    }
+    .pos-modal-backdrop {
+        display: none !important;
     }
 }
 

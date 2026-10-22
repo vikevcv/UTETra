@@ -32,6 +32,10 @@ public class ProductResponse {
     private LocalDateTime updatedAt;
     private java.util.List<RecipeItemDto> recipes;
 
+    @Builder.Default
+    private Boolean available = true;
+    private Long branchId;
+
     public static ProductResponse fromEntity(Product p) {
         if (p == null) return null;
 

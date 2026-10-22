@@ -76,9 +76,9 @@ public class BranchMenuController {
         int availabilityRate = 0;
 
         if (targetBranchId != null) {
-            // Tự động đồng bộ thực đơn nếu chi nhánh chưa có dữ liệu menu
-            if (branchMenuService.countTotalAtBranch(targetBranchId) == 0) {
-                log.info(">>> Branch {} has empty menu. Auto-syncing from master product catalog...", targetBranchId);
+            // Tự động bù đắp và đồng bộ nếu chi nhánh chưa có hoặc đang thiếu món so với toàn chuỗi
+            if (!branchMenuService.isBranchMenuComplete(targetBranchId)) {
+                log.info(">>> Branch {} has incomplete menu. Auto-syncing missing items from master catalog...", targetBranchId);
                 branchMenuService.syncAllProductsToBranch(targetBranchId);
             }
 

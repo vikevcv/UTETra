@@ -5,6 +5,7 @@ import com.ute.trasua.dto.UserSearchRequest;
 import com.ute.trasua.dto.UserUpdateRequest;
 import com.ute.trasua.dto.user.UserDriverTripDto;
 import com.ute.trasua.dto.user.UserOrderHistoryDto;
+import com.ute.trasua.entity.Driver;
 import com.ute.trasua.entity.Order;
 import com.ute.trasua.entity.OrderDetail;
 import com.ute.trasua.entity.User;
@@ -39,6 +40,7 @@ public class UserManagementServiceImpl implements UserManagementService {
     private final com.ute.trasua.repository.DriverRepository driverRepository;
     private final com.ute.trasua.repository.EmployeeRepository employeeRepository;
     private final OrderRepository orderRepository;
+    private final com.ute.trasua.service.DispatchNotifier dispatchNotifier;
 
     public UserManagementServiceImpl(
             UserRepository userRepository,
@@ -46,13 +48,15 @@ public class UserManagementServiceImpl implements UserManagementService {
             com.ute.trasua.repository.PosAccountRepository posAccountRepository,
             com.ute.trasua.repository.DriverRepository driverRepository,
             com.ute.trasua.repository.EmployeeRepository employeeRepository,
-            OrderRepository orderRepository) {
+            OrderRepository orderRepository,
+            com.ute.trasua.service.DispatchNotifier dispatchNotifier) {
         this.userRepository = userRepository;
         this.branchRepository = branchRepository;
         this.posAccountRepository = posAccountRepository;
         this.driverRepository = driverRepository;
         this.employeeRepository = employeeRepository;
         this.orderRepository = orderRepository;
+        this.dispatchNotifier = dispatchNotifier;
     }
 
     private static final DecimalFormat CURRENCY_FMT = new DecimalFormat("#,### đ");
@@ -113,6 +117,21 @@ public class UserManagementServiceImpl implements UserManagementService {
         }
 
         userRepository.save(user);
+
+        // Đồng bộ trạng thái trực tuyến của Driver nếu người dùng này có vai trò Tài xế
+        if (user.getRoles() != null && user.getRoles().contains("ROLE_DRIVER") && driverRepository != null) {
+            try {
+                driverRepository.findByUserId(id).ifPresent(d -> {
+                    d.setWorkingStatus(lock ? "OFFLINE" : "ONLINE");
+                    Driver saved = driverRepository.save(d);
+                    if (dispatchNotifier != null) {
+                        dispatchNotifier.notifyDriverStatusChanged(saved);
+                    }
+                });
+            } catch (Exception e) {
+                log.warn("Không thể đồng bộ workingStatus cho tài xế userId {}: {}", id, e.getMessage());
+            }
+        }
     }
 
     @Override

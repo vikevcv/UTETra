@@ -80,10 +80,16 @@ public class ReceiptServiceImpl implements ReceiptService {
         java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         String formattedTime = (order.getCreatedAt() != null) ? order.getCreatedAt().format(dtf) : java.time.LocalDateTime.now().format(dtf);
 
+        String oType = (order.getOrderType() != null) ? order.getOrderType().toUpperCase() : "POS_DINE_IN";
+        String oTypeDisplay = "POS_TAKE_AWAY".equals(oType) ? "Mang Đi"
+                : ("DELIVERY".equals(oType) ? "Giao Hàng" : "Uống Tại Quán");
+
         return ReceiptResponse.builder()
                 .orderId(order.getId())
                 .orderCode(order.getOrderCode())
                 .dailyQueueNumber(order.getDailyQueueNumber())
+                .orderType(oType)
+                .orderTypeDisplay(oTypeDisplay)
                 .branchName(branchName)
                 .branchAddress(branchAddress)
                 .branchHotline(branchHotline)

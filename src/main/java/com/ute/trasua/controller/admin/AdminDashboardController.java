@@ -5,9 +5,10 @@ import com.ute.trasua.dto.RevenueReportRequest;
 import com.ute.trasua.dto.RevenueReportResponse;
 import com.ute.trasua.dto.UserResponse;
 import com.ute.trasua.dto.UserSearchRequest;
-import com.ute.trasua.entity.User;
+import com.ute.trasua.entity.Driver;
 import com.ute.trasua.repository.BranchRepository;
 import com.ute.trasua.repository.CategoryRepository;
+import com.ute.trasua.repository.DriverRepository;
 import com.ute.trasua.repository.IngredientRepository;
 import com.ute.trasua.repository.ProductRepository;
 import com.ute.trasua.repository.UserRepository;
@@ -38,6 +39,7 @@ public class AdminDashboardController {
 
     private final UserManagementService userService;
     private final UserRepository userRepository;
+    private final DriverRepository driverRepository;
     private final BranchRepository branchRepository;
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
@@ -52,11 +54,10 @@ public class AdminDashboardController {
         // 1. Thống kê số lượng người dùng từ DB
         Map<String, Object> userStats = userService.getUserStatistics();
 
-        // 2. Thống kê đội ngũ tài xế
-        List<User> drivers = userRepository.findAll((root, query, cb) -> cb.isMember("ROLE_DRIVER", root.get("roles")));
-        long totalDrivers = drivers.size();
-        long activeDrivers = drivers.stream().filter(d -> !d.isLocked()).count();
-        long onlineDrivers = Math.max(0, (long) Math.ceil(activeDrivers * 0.65));
+        // 2. Thống kê đội ngũ tài xế đồng bộ thực tế từ Database
+        long totalDrivers = driverRepository.countTotalDrivers();
+        long onlineDrivers = driverRepository.countActiveOnlineDrivers();
+        int onlineDriverPercentage = totalDrivers > 0 ? (int) Math.round((onlineDrivers * 100.0) / totalDrivers) : 0;
 
         // 3. Thống kê mạng lưới chi nhánh thực tế
         long totalBranches = branchRepository.count();
@@ -81,15 +82,16 @@ public class AdminDashboardController {
                 .sortDir("desc")
                 .build());
 
-        // 7. Lấy top 3 tài xế đang trực tuyến
-        Page<User> recentDriversPage = userRepository.searchDrivers(null, PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "id")));
-        List<DriverResponse> topDrivers = recentDriversPage.getContent().stream()
-                .map(DriverResponse::fromUser)
+        // 7. Lấy top 3 tài xế hoạt động thực tế từ Database
+        List<Driver> activeDriversList = driverRepository.findTopActiveDrivers(PageRequest.of(0, 3));
+        List<DriverResponse> topDrivers = activeDriversList.stream()
+                .map(DriverResponse::fromEntity)
                 .toList();
 
         model.addAttribute("userStats", userStats);
         model.addAttribute("totalDrivers", totalDrivers);
         model.addAttribute("onlineDrivers", onlineDrivers);
+        model.addAttribute("onlineDriverPercentage", onlineDriverPercentage);
         model.addAttribute("totalBranches", totalBranches);
         model.addAttribute("activeBranches", activeBranches);
         model.addAttribute("todayReport", todayReport);

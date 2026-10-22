@@ -17,6 +17,8 @@ public class PosOrderRequest {
     private Long branchId;
     private String cashierUsername;
     private String note;
+    @Builder.Default
+    private String orderType = "POS_DINE_IN";
     
     @Builder.Default
     private List<PosOrderItemRequest> items = new ArrayList<>();

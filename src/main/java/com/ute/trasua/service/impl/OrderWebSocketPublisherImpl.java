@@ -423,4 +423,40 @@ public class OrderWebSocketPublisherImpl implements OrderWebSocketPublisher {
             log.warn("Lỗi phát WebSocket tới /topic/shipper/{}: {}", driverId, e.getMessage());
         }
     }
+
+    @Override
+    public void broadcastDriverStatusChanged(Driver driver) {
+        if (driver == null) return;
+        Long branchId = (driver.getBranch() != null) ? driver.getBranch().getId() : 1L;
+        String status = (driver.getWorkingStatus() != null) ? driver.getWorkingStatus() : "OFFLINE";
+        boolean locked = (driver.getUser() != null && driver.getUser().isLocked());
+        String fullName = (driver.getUser() != null && driver.getUser().getFullName() != null)
+                ? driver.getUser().getFullName() : "Tài xế";
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", "DRIVER_STATUS_CHANGED");
+        payload.put("driverId", driver.getId());
+        payload.put("workingStatus", status);
+        payload.put("locked", locked);
+        payload.put("branchId", branchId);
+        payload.put("driverName", fullName);
+        payload.put("licensePlate", driver.getLicensePlate() != null ? driver.getLicensePlate() : "");
+        payload.put("timestamp", LocalDateTime.now().format(TIME_FORMATTER));
+
+        // 1. Phát tới kênh Quản trị viên (/topic/drivers)
+        try {
+            messagingTemplate.convertAndSend("/topic/drivers", (Object) payload);
+            log.info(">>> [WebSocket] Phát sự kiện thay đổi trạng thái tài xế {} ({}) tới /topic/drivers", driver.getId(), status);
+        } catch (Exception e) {
+            log.warn("Lỗi phát WebSocket tới /topic/drivers: {}", e.getMessage());
+        }
+
+        // 2. Phát tới kênh Chi nhánh (/topic/branch/{branchId}/drivers)
+        try {
+            messagingTemplate.convertAndSend("/topic/branch/" + branchId + "/drivers", (Object) payload);
+            log.info(">>> [WebSocket] Phát sự kiện thay đổi trạng thái tài xế {} ({}) tới /topic/branch/{}/drivers", driver.getId(), status, branchId);
+        } catch (Exception e) {
+            log.warn("Lỗi phát WebSocket tới /topic/branch/{}/drivers: {}", branchId, e.getMessage());
+        }
+    }
 }

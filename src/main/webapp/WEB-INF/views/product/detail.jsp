@@ -137,17 +137,34 @@
           </p>
 
           <!-- Nút Đặt Trà / Tùy Chỉnh -->
-          <div>
-            <button type="button" class="btn-zen-primary" style="padding:12px 28px; font-size:0.95rem; font-weight:700; border-radius:8px;"
-                    id="btnDetailOrder"
-                    data-product-id="${product.id}"
-                    data-product-name="<c:out value="${product.name}"/>"
-                    data-product-price="${product.basePrice}"
-                    data-product-image="<c:out value="${product.imageUrl != null ? product.imageUrl : ''}"/>"
-                    onclick="handleOrderZen(this)">
-              <i class="fa-solid fa-mug-hot me-2"></i> Thưởng Trà & Đặt Mua
-            </button>
-          </div>
+          <c:choose>
+            <c:when test="${product.available != null && !product.available}">
+              <div class="alert py-2 px-3 mb-3 d-inline-flex align-items-center gap-2 rounded-3 border-danger-subtle bg-danger-subtle text-danger" style="max-width:540px;">
+                <i class="fa-solid fa-circle-exclamation fs-5"></i>
+                <div style="font-size:0.9rem;">
+                  <strong>Tạm ngưng phục vụ:</strong> Phẩm trà này hiện đang tạm hết tại cơ sở đã chọn. Quý khách vui lòng chọn cơ sở khác hoặc tham khảo các phẩm trà khác.
+                </div>
+              </div>
+              <div>
+                <button type="button" class="btn btn-secondary px-4 py-2 fw-bold" disabled style="cursor:not-allowed; opacity:0.75;">
+                  <i class="fa-solid fa-ban me-2"></i> Tạm Hết Hàng
+                </button>
+              </div>
+            </c:when>
+            <c:otherwise>
+              <div>
+                <button type="button" class="btn-zen-primary" style="padding:12px 28px; font-size:0.95rem; font-weight:700; border-radius:8px;"
+                        id="btnDetailOrder"
+                        data-product-id="${product.id}"
+                        data-product-name="<c:out value="${product.name}"/>"
+                        data-product-price="${product.basePrice}"
+                        data-product-image="<c:out value="${product.imageUrl != null ? product.imageUrl : ''}"/>"
+                        onclick="handleOrderZen(this)">
+                  <i class="fa-solid fa-mug-hot me-2"></i> Thưởng Trà & Đặt Mua
+                </button>
+              </div>
+            </c:otherwise>
+          </c:choose>
         </div>
       </div>
     </div>

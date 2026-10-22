@@ -1,3 +1,21 @@
+function validateCheckoutPhone(val) {
+  const el = document.getElementById("customerPhone");
+  const err = document.getElementById("checkoutPhoneError");
+  if (!el) return false;
+  const phone = (val !== undefined ? val : el.value).trim();
+  const isValid = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phone);
+  if (!isValid && phone.length > 0) {
+    el.style.borderColor = "#DC2626";
+    if (err) err.style.display = "block";
+    return false;
+  } else {
+    el.style.borderColor = "";
+    if (err) err.style.display = "none";
+    return isValid;
+  }
+}
+window.validateCheckoutPhone = validateCheckoutPhone;
+
 /**
  * UTETra — Checkout & Smart Shipping Engine Interaction (Module 3 - UC05)
  * Handles Leaflet Mini-Map, GPS Geolocation, Haversine Shipping Fee calculation,
@@ -19,12 +37,24 @@ document.addEventListener("DOMContentLoaded", () => {
   initCheckoutPage();
 });
 
+let checkoutUnavailableItems = [];
+
 function initCheckoutPage() {
   const cart = getStoredCart();
   if (!cart || cart.length === 0) {
     alert("Khay trà của bạn đang trống! Vui lòng chọn món trước khi thanh toán.");
     window.location.href = `${getContextPath()}/`;
     return;
+  }
+
+  // Pre-select chi nhánh nếu được truyền từ trang chủ / giỏ hàng
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramBranchId = urlParams.get('branchId');
+  if (paramBranchId) {
+    const branchSelect = document.getElementById("branchSelect");
+    if (branchSelect) {
+      branchSelect.value = paramBranchId;
+    }
   }
 
   // Render danh sách món
@@ -70,13 +100,18 @@ function renderCheckoutItems(cart) {
 
     const toppingText = (item.toppings || []).map(t => t.toppingName).join(", ");
 
+    const isUnavailable = checkoutUnavailableItems.includes(item.productName) || item.available === false;
+
     return `
-      <div class="cup-mini-row">
-        <div style="width:40px; height:40px; border-radius:6px; overflow:hidden; background:#F5F5F4; flex-shrink:0; display:flex; align-items:center; justify-content:center;">
-          ${item.imageUrl ? `<img src="${item.imageUrl}" style="width:100%; height:100%; object-fit:cover;" alt="${item.productName}">` : `<i class="fa-solid fa-mug-hot text-muted"></i>`}
+      <div class="cup-mini-row" style="${isUnavailable ? 'background: #FFF5F5; border: 1px dashed #FEB2B2; border-radius: 8px; padding: 6px; margin-bottom: 6px;' : ''}">
+        <div style="width:40px; height:40px; border-radius:6px; overflow:hidden; background:#F5F5F4; flex-shrink:0; display:flex; align-items:center; justify-content:center; position:relative;">
+          ${item.imageUrl ? `<img src="${item.imageUrl}" style="width:100%; height:100%; object-fit:cover; ${isUnavailable ? 'filter: grayscale(80%);' : ''}" alt="${item.productName}">` : `<i class="fa-solid fa-mug-hot text-muted"></i>`}
         </div>
         <div style="flex-grow:1; min-width:0;">
-          <strong style="display:block; font-size:0.88rem; color:var(--zen-sumi); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.productName}</strong>
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <strong style="font-size:0.88rem; color:${isUnavailable ? '#C53030' : 'var(--zen-sumi)'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.productName}</strong>
+            ${isUnavailable ? `<span class="badge bg-danger" style="font-size:0.68rem; padding: 2px 6px;"><i class="fa-solid fa-ban me-1"></i>Tạm hết tại CN</span>` : ''}
+          </div>
           <div style="font-size:0.75rem; color:var(--zen-sumi-light);">
             Size ${item.sizeCode} | ${item.sugarLevel} đường, ${item.iceLevel} đá
             ${toppingText ? ` | ${toppingText}` : ''}
@@ -173,11 +208,52 @@ function onBranchSelected() {
     map.panTo([lat, lng]);
   }
 
+  // Kiểm tra tính khả dụng của các món trong giỏ hàng theo chi nhánh này
+  validateCartAvailabilityForBranch(opt.value);
+
   // Nếu đã có toạ độ khách thì tính lại cước
   if (currentLat && currentLng) {
     calculateShippingApi(opt.value, currentLat, currentLng);
   }
   validateCheckoutFormState();
+}
+
+/**
+ * Gọi API kiểm tra tính khả dụng của món theo chi nhánh (UC04/UC05)
+ */
+async function validateCartAvailabilityForBranch(branchId) {
+  if (!branchId) return;
+  const cart = getStoredCart();
+  if (!cart || cart.length === 0) return;
+
+  try {
+    const res = await fetch(`${getContextPath()}/api/v1/cart/validate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        branchId: parseInt(branchId),
+        items: cart
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      checkoutUnavailableItems = [];
+      if (data && data.items) {
+        data.items.forEach(it => {
+          if (it.available === false) {
+            checkoutUnavailableItems.push(it.productName);
+          }
+        });
+      }
+      renderCheckoutItems(cart);
+      validateCheckoutFormState();
+    }
+  } catch (e) {
+    console.warn("Lỗi kiểm tra tính khả dụng của món tại chi nhánh:", e);
+  }
 }
 
 async function getCurrentLocation() {
@@ -448,6 +524,11 @@ async function submitOnlineOrder() {
     return;
   }
 
+  if (checkoutUnavailableItems.length > 0) {
+    alert(`Món "${checkoutUnavailableItems.join(', ')}" hiện đang tạm ngưng phục vụ tại chi nhánh đã chọn. Vui lòng chọn chi nhánh khác hoặc cập nhật lại giỏ hàng.`);
+    return;
+  }
+
   const voucher = getStoredVoucher();
   const btn = document.getElementById("btnSubmitOrder");
   if (btn) {
@@ -556,6 +637,9 @@ function validateCheckoutFormState() {
   if (!hasCart) {
     isValid = false;
     hint = "Khay trà của bạn đang trống";
+  } else if (checkoutUnavailableItems.length > 0) {
+    isValid = false;
+    hint = `Món "${checkoutUnavailableItems.join(', ')}" hiện đang tạm ngưng tại chi nhánh này. Vui lòng đổi chi nhánh hoặc xóa món để tiếp tục.`;
   } else if (!addr || !currentLat || !currentLng) {
     isValid = false;
     hint = "Vui lòng chọn một địa chỉ nhận hàng từ danh sách có sẵn";

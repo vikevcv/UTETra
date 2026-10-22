@@ -444,12 +444,30 @@ document.addEventListener("DOMContentLoaded", () => {
         showPosZenToast("Đã làm trống giỏ hàng quầy", "info", 1800);
     });
 
+    // Chế độ phục vụ: Uống tại quán vs Mang đi
+    let currentServiceType = "POS_DINE_IN";
+
+    document.getElementById("btnTypeDineIn")?.addEventListener("click", () => {
+        currentServiceType = "POS_DINE_IN";
+        document.getElementById("btnTypeDineIn")?.classList.add("active");
+        document.getElementById("btnTypeTakeAway")?.classList.remove("active");
+        activePendingOrder = null;
+    });
+
+    document.getElementById("btnTypeTakeAway")?.addEventListener("click", () => {
+        currentServiceType = "POS_TAKE_AWAY";
+        document.getElementById("btnTypeTakeAway")?.classList.add("active");
+        document.getElementById("btnTypeDineIn")?.classList.remove("active");
+        activePendingOrder = null;
+    });
+
     // Helper tạo payload OrderRequest từ giỏ hàng
     function buildOrderPayload() {
         return {
             branchId: currentBranchId,
             cashierUsername: window.POS_CASHIER_USERNAME || "pos_td01",
-            note: "Bán lẻ tại quầy POS",
+            orderType: currentServiceType,
+            note: currentServiceType === "POS_TAKE_AWAY" ? "Bán mang đi tại quầy POS" : "Uống tại quán tại quầy POS",
             items: cart.map(item => ({
                 productId: item.productId,
                 sizeId: item.sizeId,
@@ -844,6 +862,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // In Hóa Đơn K80 Chuẩn Quầy & Reset Đơn
+    let lastReceiptPrintHtml = "";
     async function printReceiptAndFinish(orderId) {
         try {
             const res = await fetch(`/api/pos/orders/${orderId}/receipt`);
@@ -928,10 +947,44 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="font-size: 9px; color: #666; margin-top: 4px;">Wifi: UTETra_Guest | Pass: utetra8888</div>
                     </div>
                 `;
+                lastReceiptPrintHtml = printArea.innerHTML;
             }
 
-            // Kích hoạt hộp thoại in của trình duyệt
-            window.print();
+            // Hiển thị Modal thông báo thành công kèm STT to rõ trên màn hình Web
+            const successModal = document.getElementById("posOrderSuccessModal");
+            if (successModal) {
+                const qNoEl = document.getElementById("successModalQueueNumber");
+                const codeEl = document.getElementById("successModalOrderCode");
+                const typeEl = document.getElementById("successModalOrderType");
+                const cashDetails = document.getElementById("successModalCashDetails");
+
+                if (qNoEl) qNoEl.textContent = "#" + (r.dailyQueueNumber || "01");
+                if (codeEl) codeEl.textContent = r.orderCode || "-";
+                if (typeEl) typeEl.textContent = r.orderTypeDisplay || (currentServiceType === "POS_TAKE_AWAY" ? "Mang Đi" : "Uống Tại Quán");
+
+                if (cashDetails) {
+                    if (r.cashTendered) {
+                        cashDetails.style.display = "block";
+                        const totEl = document.getElementById("successModalTotal");
+                        const givEl = document.getElementById("successModalCustomerGiven");
+                        const chgEl = document.getElementById("successModalChange");
+                        if (totEl) totEl.textContent = formatCurrency(r.finalAmount);
+                        if (givEl) givEl.textContent = formatCurrency(r.cashTendered);
+                        if (chgEl) chgEl.textContent = formatCurrency(r.changeAmount || 0);
+                    } else {
+                        cashDetails.style.display = "none";
+                    }
+                }
+
+                successModal.style.display = "flex";
+            }
+
+            // Kích hoạt hộp thoại in của trình duyệt (an toàn)
+            try {
+                window.print();
+            } catch (pErr) {
+                console.warn("Không thể kích hoạt hộp thoại in:", pErr);
+            }
 
             // Reset giỏ hàng và trạng thái đơn
             cart = [];
@@ -942,6 +995,24 @@ document.addEventListener("DOMContentLoaded", () => {
             showPosZenToast("Đã thanh toán thành công nhưng có lỗi nạp dữ liệu in hóa đơn: " + err.message, "warning", 3000);
         }
     }
+
+    // Nút in lại hóa đơn và tạo đơn tiếp theo trong modal thành công
+    document.getElementById("btnSuccessReprint")?.addEventListener("click", () => {
+        try {
+            const printArea = document.getElementById("receiptPrintArea");
+            if (printArea && lastReceiptPrintHtml) {
+                printArea.innerHTML = lastReceiptPrintHtml;
+            }
+            window.print();
+        } catch (e) {
+            console.error("Lỗi khi in lại hóa đơn:", e);
+        }
+    });
+
+    document.getElementById("btnSuccessNextOrder")?.addEventListener("click", () => {
+        const successModal = document.getElementById("posOrderSuccessModal");
+        if (successModal) successModal.style.display = "none";
+    });
 
     // ========================================================
     // ZEN WABI-SABI TOAST NOTIFICATION (Hiệu ứng tinh tế, tự tan, hạn chế click)
@@ -995,7 +1066,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // ========================================================
     // QUẢN LÝ TRỰC CA & ĐIỂM DANH QUẦY POS
     // ========================================================
-    let shiftState = { active: false, count: 0, summary: "Quầy Sẵn Sàng", employees: [] };
+    // Khởi tạo từ giá trị server-side render để tránh race condition:
+    // pos.js chạy lại sau mỗi full-page navigation, nếu init active=false và fetch checkShiftStatus()
+    // chưa kịp resolve thì user ấn món sẽ bị bật modal chọn nhân viên dù đã điểm danh rồi.
+    // ponytail: đọc window.POS_SHIFT_ACTIVE từ JSP, upgrade when chuyển sang SPA routing
+    let shiftState = {
+        active: window.POS_SHIFT_ACTIVE === true,
+        count: 0,
+        summary: window.POS_SHIFT_ACTIVE === true ? (window.POS_CASHIER_USERNAME || "Đang trực ca") : "Quầy Sẵn Sàng",
+        employees: []
+    };
 
     // Kiểm tra trạng thái trực ca của quầy POS
     async function checkShiftStatus() {

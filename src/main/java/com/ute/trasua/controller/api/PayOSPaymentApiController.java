@@ -88,32 +88,6 @@ public class PayOSPaymentApiController {
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * Nút Bỏ Qua Thanh Toán (Dev Test) để kiểm thử toàn diện luồng sau thanh toán.
-     */
-    @PostMapping("/dev-skip")
-    public ResponseEntity<?> skipPaymentForTesting(
-            @RequestParam("orderCode") String orderCode,
-            org.springframework.security.core.Authentication authentication) {
-        log.info(">>> API kích hoạt Dev Test Skip Payment cho đơn: {}", orderCode);
-        com.ute.trasua.entity.User currentUser = resolveCurrentUser(authentication);
-        if (currentUser == null) {
-            return ResponseEntity.status(401).body(Map.of(
-                    "success", false,
-                    "message", "Vui lòng đăng nhập."
-            ));
-        }
-
-        if (!orderSecurityService.canAccessOrder(orderCode, currentUser)) {
-            return ResponseEntity.status(403).body(Map.of(
-                    "success", false,
-                    "message", "Bạn không có quyền thao tác trên đơn hàng này."
-            ));
-        }
-
-        PayOSCreatePaymentResponse response = payosService.skipPaymentForTesting(orderCode);
-        return ResponseEntity.ok(response);
-    }
 
     private com.ute.trasua.entity.User resolveCurrentUser(org.springframework.security.core.Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {

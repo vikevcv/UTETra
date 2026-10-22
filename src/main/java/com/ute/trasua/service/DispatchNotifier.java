@@ -37,6 +37,10 @@ public class DispatchNotifier {
         dispatchAfterCommit(() -> orderWebSocketPublisher.broadcastQueueUnassigned(branchId, unassignedCount, orderCodes));
     }
 
+    public void notifyDriverStatusChanged(Driver driver) {
+        dispatchAfterCommit(() -> orderWebSocketPublisher.broadcastDriverStatusChanged(driver));
+    }
+
     private void dispatchAfterCommit(Runnable action) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.net.URLEncoder;
@@ -18,6 +20,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,6 +31,7 @@ public class PosServiceImpl implements PosService {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final SizeRepository sizeRepository;
+    private final ProductSizeRepository productSizeRepository;
     private final ToppingRepository toppingRepository;
     private final OrderRepository orderRepository;
     private final OrderDetailRepository orderDetailRepository;
@@ -44,6 +48,7 @@ public class PosServiceImpl implements PosService {
             CategoryRepository categoryRepository,
             ProductRepository productRepository,
             SizeRepository sizeRepository,
+            ProductSizeRepository productSizeRepository,
             ToppingRepository toppingRepository,
             OrderRepository orderRepository,
             OrderDetailRepository orderDetailRepository,
@@ -59,6 +64,7 @@ public class PosServiceImpl implements PosService {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.sizeRepository = sizeRepository;
+        this.productSizeRepository = productSizeRepository;
         this.toppingRepository = toppingRepository;
         this.orderRepository = orderRepository;
         this.orderDetailRepository = orderDetailRepository;
@@ -146,16 +152,29 @@ public class PosServiceImpl implements PosService {
 
         java.util.Map<String, Integer> cupStocks = branchMenuService.getBranchCupStocks(targetBranchId);
 
+        java.util.Map<String, ProductSize> productSizeMap = productSizeRepository.findAll().stream()
+                .collect(Collectors.toMap(ps -> ps.getSizeCode().toUpperCase(), ps -> ps, (a, b) -> a));
+
         List<PosMenuResponse.SizeDto> sizes = sizeRepository.findAllByActiveTrueOrderByExtraPriceAsc()
                 .stream()
                 .map(s -> {
                     String cleanName = s.getName() != null ? s.getName().trim().toUpperCase() : "M";
                     int cStock = cupStocks.getOrDefault(cleanName, 50);
+                    BigDecimal price = s.getExtraPrice();
+                    ProductSize ps = productSizeMap.get(cleanName);
+                    if (ps != null && ps.getAdditionalPrice() != null) {
+                        price = ps.getAdditionalPrice();
+                        if (s.getExtraPrice() == null || s.getExtraPrice().compareTo(price) != 0) {
+                            s.setExtraPrice(price);
+                            sizeRepository.save(s);
+                            log.info(">>> Auto-synced POS size [{}] extraPrice to {}đ", cleanName, price);
+                        }
+                    }
                     return PosMenuResponse.SizeDto.builder()
                             .id(s.getId())
                             .name(s.getName())
                             .volumeMl(s.getVolumeMl())
-                            .extraPrice(s.getExtraPrice())
+                            .extraPrice(price)
                             .cupStock(cStock)
                             .isCupAvailable(cStock > 0)
                             .build();
@@ -210,10 +229,13 @@ public class PosServiceImpl implements PosService {
             cashierUsername = cashierUsername.substring(0, 47) + "...";
         }
 
+        String requestedType = (request.getOrderType() != null) ? request.getOrderType().trim().toUpperCase() : "";
+        String orderType = ("POS_TAKE_AWAY".equals(requestedType)) ? "POS_TAKE_AWAY" : "POS_DINE_IN";
+
         Order order = Order.builder()
                 .orderCode(orderCode)
                 .dailyQueueNumber(queueNumber)
-                .orderType("POS_WALK_IN")
+                .orderType(orderType)
                 .status("PENDING")
                 .paymentStatus("UNPAID")
                 .cashierUsername(cashierUsername)
@@ -243,8 +265,17 @@ public class PosServiceImpl implements PosService {
                 }
 
                 BigDecimal unitPrice = product.getBasePrice();
-                if (size != null && size.getExtraPrice() != null) {
-                    unitPrice = unitPrice.add(size.getExtraPrice());
+                if (size != null) {
+                    BigDecimal extra = size.getExtraPrice();
+                    if (size.getName() != null) {
+                        ProductSize ps = productSizeRepository.findById(size.getName().trim().toUpperCase()).orElse(null);
+                        if (ps != null && ps.getAdditionalPrice() != null) {
+                            extra = ps.getAdditionalPrice();
+                        }
+                    }
+                    if (extra != null) {
+                        unitPrice = unitPrice.add(extra);
+                    }
                 }
 
                 List<Topping> toppings = new ArrayList<>();
@@ -414,18 +445,31 @@ public class PosServiceImpl implements PosService {
 
     private void broadcastNewOrder(Order order) {
         if (order == null || order.getBranch() == null) return;
-        try {
-            messagingTemplate.convertAndSend("/topic/kitchen/" + order.getBranch().getId(),
-                    (Object) java.util.Map.of(
-                            "type", "NEW_ORDER_PAID",
-                            "branchId", order.getBranch().getId(),
-                            "orderId", order.getId(),
-                            "orderCode", order.getOrderCode(),
-                            "queueNumber", order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : 1,
-                            "timestamp", System.currentTimeMillis()
-                    ));
-        } catch (Exception e) {
-            log.warn("Không thể gửi WebSocket event NEW_ORDER_PAID: {}", e.getMessage());
+        Runnable task = () -> {
+            try {
+                messagingTemplate.convertAndSend("/topic/kitchen/" + order.getBranch().getId(),
+                        (Object) java.util.Map.of(
+                                "type", "NEW_ORDER_PAID",
+                                "branchId", order.getBranch().getId(),
+                                "orderId", order.getId(),
+                                "orderCode", order.getOrderCode(),
+                                "queueNumber", order.getDailyQueueNumber() != null ? order.getDailyQueueNumber() : 1,
+                                "timestamp", System.currentTimeMillis()
+                        ));
+            } catch (Exception e) {
+                log.warn("Không thể gửi WebSocket event NEW_ORDER_PAID: {}", e.getMessage());
+            }
+        };
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
         }
     }
 

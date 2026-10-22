@@ -65,6 +65,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "AND o.status IN :statuses " +
            "ORDER BY o.createdAt ASC")
     List<Order> findByBranchIdAndStatusInOrderByCreatedAtAsc(@Param("branchId") Long branchId, @Param("statuses") List<String> statuses);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderDetails od " +
+           "WHERE (o.branch.id = :branchId OR (:branchId = 1L AND o.branch IS NULL)) " +
+           "AND o.status IN :statuses " +
+           "AND (o.createdAt >= :since OR o.status IN ('PREPARING', 'READY_FOR_PICKUP', 'READY_FOR_DELIVERY')) " +
+           "ORDER BY o.createdAt ASC")
+    List<Order> findByBranchIdAndStatusInAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(
+            @Param("branchId") Long branchId,
+            @Param("statuses") List<String> statuses,
+            @Param("since") LocalDateTime since);
+
     List<Order> findByBranchIdAndStatusOrderByCreatedAtAsc(Long branchId, String status);
     List<Order> findTop30ByBranchIdAndStatusInOrderByCreatedAtDesc(Long branchId, List<String> statuses);
 
@@ -113,6 +125,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "JOIN d.order o " +
            "WHERE (:branchId IS NULL OR o.branch.id = :branchId) AND " +
            "o.createdAt >= :start AND o.createdAt < :end AND " +
+           "o.status != 'CANCELLED' AND " +
            "(o.paymentStatus = 'PAID' OR o.status = 'PAID' OR o.status = 'COMPLETED' OR o.status = 'DELIVERED') " +
            "GROUP BY d.product.id, d.productName " +
            "ORDER BY SUM(d.quantity) DESC")
@@ -127,6 +140,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "AND o.status = 'READY_FOR_DELIVERY' AND o.driver IS NULL " +
            "ORDER BY o.createdAt ASC")
     List<Order> findUnassignedDeliveryQueue(@Param("branchId") Long branchId);
+
+    /** Hàng đợi ghép đôi: đơn ĐÃ DÁN TEM bàn giao (handedOverAt khác null) mà chưa có tài xế, xếp theo giờ dán tem. */
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.orderDetails " +
+           "WHERE (:branchId IS NULL OR o.branch.id = :branchId OR (:branchId = 1L AND o.branch IS NULL)) " +
+           "AND o.status = 'READY_FOR_DELIVERY' AND o.driver IS NULL AND o.handedOverAt IS NOT NULL " +
+           "ORDER BY o.handedOverAt ASC")
+    List<Order> findSealedDeliveryQueue(@Param("branchId") Long branchId);
+
+    /** Các chi nhánh đang có đơn đã dán tem chờ ghép tài xế (vòng quét nền chỉ hỏi 1 query rỗng khi không có đơn). */
+    @Query("SELECT DISTINCT COALESCE(o.branch.id, 1L) FROM Order o " +
+           "WHERE o.status = 'READY_FOR_DELIVERY' AND o.driver IS NULL AND o.handedOverAt IS NOT NULL")
+    List<Long> findBranchIdsWithSealedDelivery();
 
     /** Đếm tải đang giao của nhiều tài xế trong 1 query (tránh N+1 khi chọn tài xế). */
     @Query("SELECT o.driver.id, COUNT(o) FROM Order o " +

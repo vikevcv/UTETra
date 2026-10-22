@@ -22,4 +22,5 @@ public class DispatchResultDto {
     private Integer driverQueueSize;
     private String message;
     private Boolean reassigned; // true nếu là điều phối lại sau sự cố
+    private Boolean queued; // true nếu chưa có tài xế khả dụng, đơn đã dán tem và vào hàng đợi ghép
 }

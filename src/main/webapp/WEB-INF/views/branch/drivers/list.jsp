@@ -6,6 +6,9 @@
 <head>
   <title>${pageTitle}</title>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- SockJS & STOMP Client for Real-time Driver Status Sync -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
   <style>
     .driver-stat-card {
       background: #ffffff;
@@ -102,7 +105,7 @@
           <i class="fa-solid fa-id-card-clip"></i>
         </div>
         <div>
-          <div class="driver-stat-val">${stats.total != null ? stats.total : 0}</div>
+          <div class="driver-stat-val" id="kpiTotalDrivers">${stats.total != null ? stats.total : 0}</div>
           <div class="driver-stat-label">Tổng Tài Xế</div>
         </div>
       </div>
@@ -113,7 +116,7 @@
           <i class="fa-solid fa-signal"></i>
         </div>
         <div>
-          <div class="driver-stat-val text-primary">${stats.online != null ? stats.online : 0}</div>
+          <div class="driver-stat-val text-primary" id="kpiOnlineDrivers">${stats.online != null ? stats.online : 0}</div>
           <div class="driver-stat-label">Trực Tuyến</div>
         </div>
       </div>
@@ -124,7 +127,7 @@
           <i class="fa-solid fa-route"></i>
         </div>
         <div>
-          <div class="driver-stat-val text-warning">${stats.delivering != null ? stats.delivering : 0}</div>
+          <div class="driver-stat-val text-warning" id="kpiDeliveringDrivers">${stats.delivering != null ? stats.delivering : 0}</div>
           <div class="driver-stat-label">Đang Giao</div>
         </div>
       </div>
@@ -135,7 +138,7 @@
           <i class="fa-solid fa-user-lock"></i>
         </div>
         <div>
-          <div class="driver-stat-val text-danger">${stats.suspended != null ? stats.suspended : 0}</div>
+          <div class="driver-stat-val text-danger" id="kpiSuspendedDrivers">${stats.suspended != null ? stats.suspended : 0}</div>
           <div class="driver-stat-label">Tạm Ngưng</div>
         </div>
       </div>
@@ -187,7 +190,6 @@
             <th>Biển Số</th>
             <th>Lương Cứng</th>
             <th class="text-center">Trạng Thái</th>
-            <th>Hiệu Suất</th>
             <th class="text-end pe-4">Thao Tác</th>
           </tr>
         </thead>
@@ -195,7 +197,7 @@
           <c:choose>
             <c:when test="${not empty driversPage.content}">
               <c:forEach var="d" items="${driversPage.content}">
-                <tr>
+                <tr id="driver-row-${d.id}" data-driver-id="${d.id}" data-status="${d.workingStatus}" data-locked="${d.locked}">
                   <td class="ps-4">
                     <div class="d-flex align-items-center gap-2">
                       <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px;">
@@ -227,7 +229,7 @@
                       </c:otherwise>
                     </c:choose>
                   </td>
-                  <td class="text-center">
+                  <td class="text-center" id="driver-status-cell-${d.id}">
                     <c:choose>
                       <c:when test="${d.locked}">
                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Đã khóa</span>
@@ -242,10 +244,6 @@
                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Ngoại tuyến</span>
                       </c:otherwise>
                     </c:choose>
-                  </td>
-                  <td>
-                    <div class="small fw-semibold text-dark"><i class="fa-solid fa-star text-warning me-1"></i>${d.rating} / 5.0</div>
-                    <small class="text-muted">${d.totalOrders} đơn</small>
                   </td>
                   <td class="text-end pe-4">
                     <button type="button" class="btn btn-sm btn-outline-primary me-1 btn-edit-driver"
@@ -280,7 +278,7 @@
             </c:when>
             <c:otherwise>
               <tr>
-                <td colspan="8" class="text-center py-5 text-muted">
+                <td colspan="6" class="text-center py-5 text-muted">
                   <i class="fa-solid fa-motorcycle fs-2 text-secondary opacity-50 mb-2 d-block"></i>
                   Chưa có tài xế nào tại chi nhánh này.
                 </td>
@@ -430,6 +428,9 @@
     // Xác nhận gửi lại email mật khẩu
     document.querySelectorAll('.form-resend').forEach(function(form) {
       form.addEventListener('submit', function(e) {
+        if (form.dataset.confirmed === 'true') {
+          return;
+        }
         e.preventDefault();
         var btn = form.querySelector('button');
         var name = btn ? btn.getAttribute('data-name') : 'tài xế';
@@ -445,11 +446,8 @@
           customClass: { popup: 'rounded-4 shadow border-0' }
         }).then(function(result) {
           if (result.isConfirmed) {
-            if (form.requestSubmit) {
-              form.requestSubmit();
-            } else {
-              form.submit();
-            }
+            form.dataset.confirmed = 'true';
+            form.submit();
           }
         });
       });
@@ -458,6 +456,9 @@
     // Xác nhận khóa / mở khóa tài xế
     document.querySelectorAll('.form-toggle').forEach(function(form) {
       form.addEventListener('submit', function(e) {
+        if (form.dataset.confirmed === 'true') {
+          return;
+        }
         e.preventDefault();
         var btn = form.querySelector('button');
         var name = btn ? btn.getAttribute('data-name') : 'tài xế';
@@ -475,16 +476,117 @@
           customClass: { popup: 'rounded-4 shadow border-0' }
         }).then(function(result) {
           if (result.isConfirmed) {
-            if (form.requestSubmit) {
-              form.requestSubmit();
-            } else {
-              form.submit();
-            }
+            form.dataset.confirmed = 'true';
+            form.submit();
           }
         });
       });
     });
   });
+
+  // Lắng nghe cập nhật trạng thái tài xế Real-Time qua WebSocket STOMP
+  (function initDriverLiveSync() {
+    try {
+      if (typeof SockJS === 'undefined' || typeof Stomp === 'undefined') return;
+      var socket = new SockJS('${pageContext.request.contextPath}/ws-kds');
+      var stompClient = Stomp.over(socket);
+      stompClient.debug = null;
+      stompClient.connect({}, function() {
+        console.log('Driver Live Sync STOMP connected for branch ${currentBranch.id}');
+        var branchTopic = '/topic/branch/${currentBranch.id}/drivers';
+        var handleUpdate = function(message) {
+          try {
+            var data = JSON.parse(message.body);
+            if (!data || !data.driverId) return;
+
+            var cell = document.getElementById('driver-status-cell-' + data.driverId);
+            var row = document.getElementById('driver-row-' + data.driverId);
+            if (cell) {
+              if (data.locked) {
+                cell.innerHTML = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Đã khóa</span>';
+              } else if (data.workingStatus === 'ONLINE') {
+                cell.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fa-solid fa-circle me-1 small"></i>Sẵn sàng</span>';
+              } else if (data.workingStatus === 'DELIVERING') {
+                cell.innerHTML = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="fa-solid fa-route me-1 small"></i>Đang giao</span>';
+              } else {
+                cell.innerHTML = '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Ngoại tuyến</span>';
+              }
+            }
+            if (row) {
+              row.setAttribute('data-status', data.workingStatus);
+              row.setAttribute('data-locked', data.locked);
+              var origBg = row.style.backgroundColor;
+              row.style.transition = 'background-color 0.4s ease';
+              row.style.backgroundColor = (data.workingStatus === 'ONLINE') ? '#ecfdf5' : '#f8fafc';
+              setTimeout(function() {
+                row.style.backgroundColor = origBg || '';
+              }, 2500);
+            }
+
+            // Đồng bộ lại thẻ KPI số liệu
+            recalculateDriverKpis();
+
+            // Hiển thị thông báo nhỏ Toast
+            var driverName = data.driverName || ('Tài xế #' + data.driverId);
+            var statusText = (data.workingStatus === 'ONLINE') ? 'Vừa BẬT ca trực (Sẵn sàng)' : 'Vừa TẮT ca trực (Ngoại tuyến)';
+            if (typeof Swal !== 'undefined') {
+              const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3500,
+                timerProgressBar: true
+              });
+              Toast.fire({
+                icon: (data.workingStatus === 'ONLINE') ? 'success' : 'info',
+                title: driverName + ': ' + statusText
+              });
+            }
+          } catch (e) {
+            console.error('Lỗi phân tích gói tin WebSocket tài xế:', e);
+          }
+        };
+
+        stompClient.subscribe(branchTopic, handleUpdate);
+        stompClient.subscribe('/topic/drivers', handleUpdate);
+      }, function(err) {
+        setTimeout(initDriverLiveSync, 6000);
+      });
+    } catch (e) {
+      console.warn('Live sync fallback:', e);
+    }
+  })();
+
+  function recalculateDriverKpis() {
+    var rows = document.querySelectorAll('tr[id^="driver-row-"]');
+    if (!rows.length) return;
+    var total = rows.length;
+    var online = 0;
+    var delivering = 0;
+    var suspended = 0;
+
+    rows.forEach(function(r) {
+      var isLocked = r.getAttribute('data-locked') === 'true';
+      var st = (r.getAttribute('data-status') || '').toUpperCase();
+      if (isLocked) {
+        suspended++;
+      } else if (st === 'ONLINE') {
+        online++;
+      } else if (st === 'DELIVERING') {
+        delivering++;
+      }
+    });
+
+    var kpiTotal = document.getElementById('kpiTotalDrivers');
+    var kpiOnline = document.getElementById('kpiOnlineDrivers');
+    var kpiDelivering = document.getElementById('kpiDeliveringDrivers');
+    var kpiSuspended = document.getElementById('kpiSuspendedDrivers');
+
+    if (kpiTotal) kpiTotal.innerText = total;
+    if (kpiOnline) kpiOnline.innerText = online;
+    if (kpiDelivering) kpiDelivering.innerText = delivering;
+    if (kpiSuspended) kpiSuspended.innerText = suspended;
+  }
 </script>
 </body>
 </html>

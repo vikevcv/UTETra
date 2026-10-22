@@ -287,7 +287,18 @@ function handleOrderStatusEvent(event) {
 
     const pendingPaymentWrapper = document.getElementById("pendingPaymentActionWrapper");
     if (pendingPaymentWrapper) {
-      pendingPaymentWrapper.style.display = "none";
+      pendingPaymentWrapper.classList.remove("d-flex");
+      pendingPaymentWrapper.classList.add("d-none");
+      pendingPaymentWrapper.style.setProperty("display", "none", "important");
+      pendingPaymentWrapper.remove();
+    }
+    const receiptPaymentBadge = document.getElementById("receiptPaymentBadge");
+    if (receiptPaymentBadge) {
+      receiptPaymentBadge.remove();
+    }
+    const payosBanner = document.getElementById("bannerPayosCancelledAlert");
+    if (payosBanner) {
+      payosBanner.remove();
     }
 
     const boxActions = document.getElementById("boxCompletedOrderActions");
@@ -616,10 +627,40 @@ async function submitCancelOrder() {
       const codeDisplay = document.getElementById("displayVoucherCode");
       const amountDisplay = document.getElementById("displayVoucherAmount");
       const expiryDisplay = document.getElementById("displayVoucherExpiry");
+      const boxCompensationVoucher = document.getElementById("boxCompensationVoucher");
+      const boxCompensationDetails = document.getElementById("boxCompensationDetails");
+      const boxUnpaidRestoredNotice = document.getElementById("boxUnpaidRestoredNotice");
+      const cancelSuccessIcon = document.getElementById("cancelSuccessIcon");
+      const cancelSuccessDesc = document.getElementById("cancelSuccessDesc");
+      const displayRestoredVoucherText = document.getElementById("displayRestoredVoucherText");
 
-      if (codeDisplay) codeDisplay.innerText = data.compensationVoucherCode;
-      if (amountDisplay) amountDisplay.innerText = Number(data.compensationAmount).toLocaleString("vi-VN") + " đ";
-      if (expiryDisplay) expiryDisplay.innerText = data.expiryDateFormatted;
+      if (data.compensationVoucherCode) {
+        if (codeDisplay) codeDisplay.innerText = data.compensationVoucherCode;
+        if (amountDisplay) amountDisplay.innerText = Number(data.compensationAmount).toLocaleString("vi-VN") + " đ";
+        if (expiryDisplay) expiryDisplay.innerText = data.expiryDateFormatted;
+        if (boxCompensationVoucher) boxCompensationVoucher.style.display = "block";
+        if (boxCompensationDetails) boxCompensationDetails.style.display = "block";
+        if (boxUnpaidRestoredNotice) boxUnpaidRestoredNotice.style.display = "none";
+        if (cancelSuccessIcon) cancelSuccessIcon.className = "fa-solid fa-gift";
+        if (cancelSuccessDesc) cancelSuccessDesc.innerText = "Hệ thống đã bồi hoàn 80% giá trị đơn hàng vào mã voucher bên dưới:";
+      } else {
+        if (boxCompensationVoucher) boxCompensationVoucher.style.display = "none";
+        if (boxCompensationDetails) boxCompensationDetails.style.display = "none";
+        if (cancelSuccessIcon) cancelSuccessIcon.className = "fa-solid fa-circle-check text-success";
+        if (cancelSuccessDesc) cancelSuccessDesc.innerText = "Đơn hàng chưa thanh toán đã được hủy bỏ an toàn.";
+
+        if (data.restoredOldVoucher) {
+          if (boxUnpaidRestoredNotice) boxUnpaidRestoredNotice.style.display = "block";
+          if (displayRestoredVoucherText) {
+            const vCode = data.restoredVoucherCode || "";
+            displayRestoredVoucherText.innerHTML = vCode
+              ? `Mã ưu đãi <strong>${vCode}</strong> đã được phục hồi lượt sử dụng vào tài khoản của bạn.`
+              : `Mã ưu đãi áp dụng đã được phục hồi lượt sử dụng vào tài khoản của bạn.`;
+          }
+        } else {
+          if (boxUnpaidRestoredNotice) boxUnpaidRestoredNotice.style.display = "none";
+        }
+      }
 
       // 3. Mở modal thành công
       const successModalEl = document.getElementById("modalCancelSuccess");
@@ -641,18 +682,37 @@ async function submitCancelOrder() {
       }
 
       // 4. Cập nhật giao diện đơn hàng
+      const cancelMessage = data.compensationVoucherCode
+        ? `Đơn hàng đã được hủy. Quý khách đã nhận được mã voucher bồi hoàn 80% (${data.compensationVoucherCode}).`
+        : (data.message || "Đơn hàng chưa thanh toán đã được hủy bỏ an toàn.");
+
       handleOrderStatusEvent({
         eventType: "CANCELLED",
         status: "CANCELLED",
         statusLabel: "Đã Hủy",
         statusStep: -1,
         statusTitle: "Đơn Hàng Đã Bị Hủy",
-        statusMessage: `Đơn hàng đã được hủy. Quý khách đã nhận được mã voucher bồi hoàn 80% (${data.compensationVoucherCode}).`
+        statusMessage: cancelMessage
       });
 
-      // 5. Ẩn nút hủy đơn
+      // 5. Ẩn nút hủy đơn & toàn bộ nút/banner thanh toán
       const cancelWrapper = document.getElementById("cancelOrderActionWrapper");
       if (cancelWrapper) cancelWrapper.style.display = "none";
+      const pendingPaymentWrapper = document.getElementById("pendingPaymentActionWrapper");
+      if (pendingPaymentWrapper) {
+        pendingPaymentWrapper.classList.remove("d-flex");
+        pendingPaymentWrapper.classList.add("d-none");
+        pendingPaymentWrapper.style.setProperty("display", "none", "important");
+        pendingPaymentWrapper.remove();
+      }
+      const receiptPaymentBadge = document.getElementById("receiptPaymentBadge");
+      if (receiptPaymentBadge) {
+        receiptPaymentBadge.remove();
+      }
+      const payosBanner = document.getElementById("bannerPayosCancelledAlert");
+      if (payosBanner) {
+        payosBanner.remove();
+      }
 
     } else {
       if (errorMsg) {

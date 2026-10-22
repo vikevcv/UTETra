@@ -1,5 +1,7 @@
 package com.ute.trasua.service.impl;
 
+import com.ute.trasua.util.NoteText;
+
 import com.ute.trasua.dto.handover.HandoverActionRequest;
 import com.ute.trasua.dto.handover.HandoverOrderDto;
 import com.ute.trasua.dto.handover.HandoverSlipDto;
@@ -7,6 +9,7 @@ import com.ute.trasua.entity.Branch;
 import com.ute.trasua.entity.Driver;
 import com.ute.trasua.entity.Order;
 import com.ute.trasua.entity.OrderDetail;
+import com.ute.trasua.entity.OrderDetailTopping;
 import com.ute.trasua.entity.User;
 import com.ute.trasua.repository.BranchRepository;
 import com.ute.trasua.repository.DriverRepository;
@@ -17,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,8 +95,8 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
             throw new IllegalStateException("Đơn hàng không ở trạng thái hợp lệ để bàn giao cho khách: " + currentStatus);
         }
 
-        String type = order.getOrderType();
-        if (!"POS_WALK_IN".equalsIgnoreCase(type) && !"PICKUP".equalsIgnoreCase(type)) {
+        String type = (order.getOrderType() != null) ? order.getOrderType().toUpperCase() : "";
+        if (!type.startsWith("POS") && !"PICKUP".equalsIgnoreCase(type)) {
             throw new IllegalStateException("Delivery orders cannot be handed over directly at the counter!");
         }
 
@@ -395,6 +399,13 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         if ("CANCELLED".equals(currentStatus)) {
             return mapToHandoverOrderDto(order); // Idempotent
         }
+        // Chỉ đơn đang trong luồng giao vận mới được báo sự cố.
+        // Chặn COMPLETED: nếu không, một đơn đã giao xong bị gửi lại /failure sẽ bị đổi sang CANCELLED,
+        // làm sai doanh thu và sinh thêm đơn pha lại 0đ.
+        if (!List.of("READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED").contains(currentStatus)) {
+            throw new IllegalStateException("Đơn " + order.getOrderCode() + " đang ở trạng thái " + currentStatus
+                    + " — không thể báo sự cố giao hàng!");
+        }
 
         Driver reportingDriver = (driverId != null) ? driverRepository.findById(driverId).orElse(null) : null;
 
@@ -402,10 +413,24 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
                 ? request.getReasonCode().trim()
                 : "KHONG_LIEN_LAC_DUOC";
 
-        if (request == null || request.getProofPhotoData() == null) {
-            throw new IllegalArgumentException("A verification photo is required before advancing the step!");
+        boolean isBeforePickup = ("OUT_FOR_DELIVERY".equals(currentStatus) || "READY_FOR_DELIVERY".equals(currentStatus))
+                && order.getPickupPhotoUrl() == null;
+
+        boolean isStoreIncident = isBeforePickup && ("XE_HONG".equals(reasonCode) || "SUC_KHOE".equals(reasonCode));
+        boolean isBreakdown = "XE_HONG".equals(reasonCode) || "SUC_KHOE".equals(reasonCode);
+
+        // Ảnh chụp đối soát:
+        // - Khi báo sự cố tại quán trước khi lấy trà (trả đơn lại cho quầy): KHÔNG bắt buộc ảnh chụp
+        // - Khi đang đi giao ngoài đường mà bị thất bại: Bắt buộc ảnh chụp đối soát
+        if (!isStoreIncident) {
+            if (request == null || request.getProofPhotoData() == null || request.getProofPhotoData().isBlank()) {
+                throw new IllegalArgumentException(
+                        "Vui lòng chụp ảnh đối soát (ly trà / hiện trường) trước khi báo giao thất bại!");
+            }
+            validateProofPhoto(request.getProofPhotoData());
+        } else if (request != null && request.getProofPhotoData() != null && !request.getProofPhotoData().isBlank()) {
+            validateProofPhoto(request.getProofPhotoData());
         }
-        validateProofPhoto(request.getProofPhotoData());
 
         String proofUrl = null;
         if (request != null && request.getProofPhotoData() != null && !request.getProofPhotoData().isBlank()) {
@@ -418,24 +443,62 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         String reasonVi = formatFailureReasonVietnamese(reasonCode);
         String failureSummary = reasonVi + (!note.isBlank() ? ": " + note : "");
 
-        boolean isBeforePickup = ("OUT_FOR_DELIVERY".equals(currentStatus) || "READY_FOR_DELIVERY".equals(currentStatus))
-                && order.getPickupPhotoUrl() == null;
-
         if (isBeforePickup && ("XE_HONG".equals(reasonCode) || "SUC_KHOE".equals(reasonCode))) {
-            // Sự cố cá nhân / xe cộ tại quán trước khi lấy trà: Trả đơn về hàng đợi điều phối để gán tài xế khác
-            order.setStatus("READY_FOR_DELIVERY");
-            order.setDriver(null);
-            order.setIncidentReason(reasonCode);
-            order.setIncidentNote(failureSummary);
-            order.setIncidentReportedAt(LocalDateTime.now());
+            // Sự cố cá nhân / xe cộ tại quán trước khi lấy trà:
+            // Trả TOÀN BỘ các đơn chưa lấy trà trong ca của tài xế này về hàng đợi điều phối của chi nhánh
+            List<Order> unpickedOrders = (reportingDriver != null)
+                    ? new ArrayList<>(orderRepository.findByDriverIdAndStatusInOrderByCreatedAtDesc(
+                            reportingDriver.getId(), List.of("OUT_FOR_DELIVERY", "READY_FOR_DELIVERY")))
+                    : new ArrayList<>(List.of(order));
 
-            // Tài xế gặp sự cố xe/sức khỏe tạm thời chuyển trạng thái sang OFFLINE để không bị chọn lại
-            if (reportingDriver != null) {
-                reportingDriver.setWorkingStatus("OFFLINE");
-                driverRepository.save(reportingDriver);
+            if (!unpickedOrders.contains(order)) {
+                unpickedOrders.add(order);
             }
 
-            log.info(">>> Tài xế gặp sự cố tại quán ({}), đơn {} được trả lại hàng đợi điều phối", reasonCode, order.getOrderCode());
+            // BẮT BUỘC: chuyển tài xế sang OFFLINE và FLUSH xuống DB TRƯỚC khi điều phối lại.
+            // Nếu để sau vòng lặp, lockEligibleDriversForBranch() vẫn thấy anh ta ONLINE
+            // và trả đơn về lại chính tài xế vừa báo sự cố -> đơn kẹt trên người đã nghỉ ca.
+            if (reportingDriver != null) {
+                reportingDriver.setWorkingStatus("OFFLINE");
+                driverRepository.saveAndFlush(reportingDriver);
+            }
+
+            for (Order o : unpickedOrders) {
+                // Chỉ trả những đơn chưa chụp ảnh lấy trà
+                if (o.getPickupPhotoUrl() == null) {
+                    o.setStatus("READY_FOR_DELIVERY");
+                    o.setDriver(null);
+                    o.setIncidentReason(reasonCode);
+                    o.setIncidentNote(NoteText.truncate(failureSummary, NoteText.INCIDENT_NOTE_MAX));
+                    o.setIncidentReportedAt(LocalDateTime.now());
+                    String existingNotes = o.getDeliveryNotes();
+                    if (existingNotes != null && !existingNotes.isBlank()) {
+                        o.setDeliveryNotes(NoteText.append(existingNotes, failureSummary,
+                                NoteText.DELIVERY_NOTES_MAX));
+                    } else {
+                        o.setDeliveryNotes(NoteText.append(null, failureSummary,
+                                NoteText.DELIVERY_NOTES_MAX));
+                    }
+                    Order savedOrder = orderRepository.saveAndFlush(o);
+
+                    // Thông báo WebSocket & tự động chuyển đơn cho tài xế khác nếu có
+                    try {
+                        if (orderWebSocketPublisher != null) {
+                            orderWebSocketPublisher.broadcastDriverIncident(savedOrder, reportingDriver, reasonVi, note);
+                        }
+                        if (driverDispatchService != null) {
+                            driverDispatchService.reassignCancelledOrder(savedOrder.getId());
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Lỗi thông báo khi trả đơn {}: {}", savedOrder.getOrderCode(), ex.getMessage());
+                    }
+                }
+            }
+
+            // Tài xế gặp sự cố xe/sức khỏe đã được chuyển OFFLINE trước vòng lặp điều phối lại
+            log.info(">>> Tài xế gặp sự cố tại quán ({}), đã trả toàn bộ {} đơn chưa lấy trà về hàng đợi điều phối",
+                    reasonCode, unpickedOrders.size());
+            return mapToHandoverOrderDto(order);
         } else {
             // Đã nhận trà mang đi hoặc quán báo hủy món: Tự động hủy đơn hàng hoàn (CANCELLED)
             order.setFailureReason(reasonCode);
@@ -443,13 +506,17 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
             order.setReturnedAt(LocalDateTime.now());
             order.setStatus("CANCELLED");
 
-            // Giải phóng trạng thái tài xế nếu không còn đơn khác đang giao
+            // Hỏng xe / sức khỏe: tài xế nghỉ ca hẳn. Ngược lại chỉ giải phóng khi không còn đơn khác đang giao
             if (reportingDriver != null) {
-                List<Order> remaining = orderRepository.findByDriverIdAndStatusInOrderByCreatedAtDesc(
-                        reportingDriver.getId(), List.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED"));
-                boolean hasOtherActive = remaining.stream().anyMatch(o -> !o.getId().equals(order.getId()));
-                reportingDriver.setWorkingStatus(hasOtherActive ? "DELIVERING" : "ONLINE");
-                driverRepository.save(reportingDriver);
+                if (isBreakdown) {
+                    reportingDriver.setWorkingStatus("OFFLINE");
+                } else {
+                    List<Order> remaining = orderRepository.findByDriverIdAndStatusInOrderByCreatedAtDesc(
+                            reportingDriver.getId(), List.of("OUT_FOR_DELIVERY", "DELIVERING", "ARRIVED"));
+                    boolean hasOtherActive = remaining.stream().anyMatch(o -> !o.getId().equals(order.getId()));
+                    reportingDriver.setWorkingStatus(hasOtherActive ? "DELIVERING" : "ONLINE");
+                }
+                driverRepository.saveAndFlush(reportingDriver);
             }
 
             log.info(">>> Đã ghi nhận giao hàng thất bại & tự động hủy đơn {} (Lý do: {})", order.getOrderCode(), reasonCode);
@@ -457,12 +524,31 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
 
         String existingNotes = order.getDeliveryNotes();
         if (existingNotes != null && !existingNotes.isBlank()) {
-            order.setDeliveryNotes(existingNotes + " | " + failureSummary);
+            order.setDeliveryNotes(NoteText.append(existingNotes, failureSummary,
+                    NoteText.DELIVERY_NOTES_MAX));
         } else {
-            order.setDeliveryNotes(failureSummary);
+            order.setDeliveryNotes(NoteText.append(null, failureSummary,
+                    NoteText.DELIVERY_NOTES_MAX));
         }
 
         Order saved = orderRepository.saveAndFlush(order);
+
+        // Sự cố hỏng xe / sức khỏe khi ĐÃ lấy trà: tài xế nghỉ ca, trả các đơn CHƯA LẤY TRÀ của anh ta
+        // về hàng đợi ghép tài xế khác (ly của các đơn đó vẫn còn nguyên ở quán).
+        if (isBreakdown && !isStoreIncident && reportingDriver != null) {
+            releaseUnpickedOrdersOfDriver(reportingDriver, saved.getId(), reasonCode, failureSummary);
+        }
+
+        // Đơn tài xế đang cầm trên tay không cứu được nữa -> quán pha lại đơn MỚI, khách không trả tiền lần hai.
+        if (isBreakdown && !isStoreIncident) {
+            Order remake = createRemakeOrder(saved, reasonCode);
+            if (remake != null) {
+                String notes = saved.getDeliveryNotes();
+                String trail = "Đã pha lại: " + remake.getOrderCode();
+                saved.setDeliveryNotes((notes != null && !notes.isBlank()) ? notes + " | " + trail : trail);
+                orderRepository.save(saved);
+            }
+        }
 
         // Phát WebSocket & Điều phối lại tự động cho tài xế khác nếu ở Trường hợp 1
         try {
@@ -497,12 +583,143 @@ public class OrderHandoverServiceImpl implements OrderHandoverService {
         return mapToHandoverOrderDto(saved);
     }
 
+    /**
+     * Sự cố trên đường (hỏng xe / sức khỏe) khi tài xế đã cầm ly: quán pha lại một đơn MỚI
+     * và đẩy vào hàng đợi KDS, KHÔNG thu tiền lần hai.
+     * <ul>
+     *   <li>Giữ nguyên STT trong ngày để khách nhận đúng số cũ.</li>
+     *   <li>Tổng tiền = 0 để không đội doanh thu (đơn gốc đã ghi nhận tiền).</li>
+     *   <li>Mã đơn = {@code <mã gốc>-R1}, ghi chú nêu rõ đơn gốc để barista đối soát.</li>
+     * </ul>
+     */
+    private Order createRemakeOrder(Order original, String reasonCode) {
+        if (original.getOrderDetails() == null || original.getOrderDetails().isEmpty()) {
+            return null;
+        }
+
+        String baseCode = (original.getOrderCode() != null) ? original.getOrderCode() : "ORD";
+        String remakeCode = baseCode + "-R1";
+        if (remakeCode.length() > 50) {
+            remakeCode = remakeCode.substring(0, 50);
+        }
+        if (orderRepository.findByOrderCode(remakeCode).isPresent()) {
+            // ponytail: chống bấm/gọi trùng tạo 2 đơn pha lại, chỉ cần 1 bản ghi là đủ
+            return null;
+        }
+
+        String reasonLabel = "XE_HONG".equals(reasonCode) ? "hỏng xe" : "sức khỏe tài xế";
+
+        Order remake = Order.builder()
+                .orderCode(remakeCode)
+                .dailyQueueNumber(original.getDailyQueueNumber())
+                .orderType(original.getOrderType())
+                .status("PENDING")
+                .paymentStatus("PAID") // tiền đã thu ở đơn gốc -> KDS nhận pha ngay
+                .paymentMethod(original.getPaymentMethod())
+                .paidAt(LocalDateTime.now())
+                .cashierUsername(original.getCashierUsername())
+                .branch(original.getBranch())
+                .customerName(original.getCustomerName())
+                .customerPhone(original.getCustomerPhone())
+                .deliveryAddress(original.getDeliveryAddress())
+                .latitude(original.getLatitude())
+                .longitude(original.getLongitude())
+                .distanceKm(original.getDistanceKm())
+                .note("Pha lại do sự cố đơn " + baseCode + " (" + reasonLabel + ")")
+                .totalAmount(BigDecimal.ZERO)
+                .discountAmount(BigDecimal.ZERO)
+                .finalAmount(BigDecimal.ZERO)
+                .shippingFee(BigDecimal.ZERO)
+                .orderDetails(new ArrayList<>())
+                .build();
+
+        for (OrderDetail detail : original.getOrderDetails()) {
+            OrderDetail copy = OrderDetail.builder()
+                    .order(remake)
+                    .product(detail.getProduct())
+                    .productName(detail.getProductName())
+                    .size(detail.getSize())
+                    .sizeName(detail.getSizeName())
+                    .quantity(detail.getQuantity())
+                    .sugarLevel(detail.getSugarLevel())
+                    .iceLevel(detail.getIceLevel())
+                    .unitPrice(BigDecimal.ZERO)
+                    .subtotal(BigDecimal.ZERO)
+                    .note(detail.getNote())
+                    .toppings(new ArrayList<>())
+                    .build();
+
+            if (detail.getToppings() != null) {
+                for (OrderDetailTopping topping : detail.getToppings()) {
+                    copy.getToppings().add(OrderDetailTopping.builder()
+                            .orderDetail(copy)
+                            .topping(topping.getTopping())
+                            .toppingName(topping.getToppingName())
+                            .price(BigDecimal.ZERO)
+                            .build());
+                }
+            }
+            remake.getOrderDetails().add(copy);
+        }
+
+        Order saved = orderRepository.saveAndFlush(remake);
+        log.info(">>> [PHA LẠI] Đơn {} gặp sự cố ({}) -> đã tạo đơn pha lại {} (STT #{})",
+                baseCode, reasonCode, saved.getOrderCode(), saved.getDailyQueueNumber());
+
+        try {
+            if (orderWebSocketPublisher != null) {
+                orderWebSocketPublisher.broadcastOrderCreated(saved); // báo KDS + màn hình khách
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi phát WebSocket đơn pha lại {}: {}", saved.getOrderCode(), e.getMessage());
+        }
+
+        return saved;
+    }
+
+    /**
+     * Tài xế gặp sự cố hỏng xe / sức khỏe: trả toàn bộ đơn CHƯA LẤY TRÀ trong ca của anh ta
+     * về hàng đợi ghép tài xế khác, rồi thử ghép ngay cho tài xế đang trực ca.
+     */
+    private void releaseUnpickedOrdersOfDriver(Driver driver, Long currentOrderId, String reasonCode, String failureSummary) {
+        List<Order> others = orderRepository.findByDriverIdAndStatusInOrderByCreatedAtDesc(
+                driver.getId(), List.of("OUT_FOR_DELIVERY", "READY_FOR_DELIVERY"));
+
+        for (Order other : others) {
+            if (other.getId().equals(currentOrderId) || other.getPickupPhotoUrl() != null) {
+                continue;
+            }
+
+            other.setStatus("READY_FOR_DELIVERY");
+            other.setDriver(null);
+            other.setIncidentReason(reasonCode);
+            other.setIncidentNote(NoteText.truncate(failureSummary, NoteText.INCIDENT_NOTE_MAX));
+            other.setIncidentReportedAt(LocalDateTime.now());
+            Order savedOther = orderRepository.saveAndFlush(other);
+
+            log.info(">>> [SỰ CỐ TÀI XẾ] Trả đơn {} (chưa lấy trà) của tài xế #{} về hàng đợi ghép",
+                    savedOther.getOrderCode(), driver.getId());
+
+            try {
+                if (orderWebSocketPublisher != null) {
+                    orderWebSocketPublisher.broadcastDriverIncident(savedOther, driver, failureSummary, null);
+                }
+                if (driverDispatchService != null) {
+                    driverDispatchService.reassignCancelledOrder(savedOther.getId());
+                }
+            } catch (Exception ex) {
+                log.warn("Lỗi trả đơn {} về hàng đợi ghép: {}", savedOther.getOrderCode(), ex.getMessage());
+            }
+        }
+    }
+
     private void validateProofPhoto(String photoData) {
         if (photoData == null || photoData.isBlank() || photoData.length() < 100) {
-            throw new IllegalArgumentException("A verification photo is required before advancing the step!");
+            throw new IllegalArgumentException(
+                    "Vui lòng chụp ảnh đối soát (ly trà / hiện trường) trước khi báo giao thất bại!");
         }
         if (photoData.length() > 7_000_000) {
-            throw new IllegalArgumentException("Photo exceeds the allowed size (max 5MB)!");
+            throw new IllegalArgumentException("Ảnh đối soát quá lớn (tối đa 5MB), vui lòng chụp lại!");
         }
     }
 

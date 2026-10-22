@@ -60,7 +60,7 @@
                   <div class="kpi-label">Tài Xế Trực Tuyến</div>
                   <div class="kpi-value text-warning">${onlineDrivers} / ${totalDrivers}</div>
                   <div class="text-muted small mt-1">
-                    <span class="text-success fw-bold"><i class="fa-solid fa-signal"></i> 65%</span> sẵn sàng nhận đơn
+                    <span class="text-success fw-bold"><i class="fa-solid fa-signal"></i> ${onlineDriverPercentage != null ? onlineDriverPercentage : (totalDrivers > 0 ? Math.round((onlineDrivers * 100.0) / totalDrivers) : 0)}%</span> sẵn sàng nhận đơn
                   </div>
                 </div>
               </div>
@@ -284,9 +284,6 @@
                       <span class="zen-badge ${d.statusBadgeClass}" style="font-size: 0.68rem;">
                         ${d.workingStatus}
                       </span>
-                      <div class="text-warning small" style="font-size: 0.72rem;">
-                        <i class="fa-solid fa-star"></i> ${d.rating}
-                      </div>
                     </div>
                   </div>
                 </c:forEach>
