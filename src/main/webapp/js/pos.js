@@ -1066,7 +1066,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // ========================================================
     // QUẢN LÝ TRỰC CA & ĐIỂM DANH QUẦY POS
     // ========================================================
-    let shiftState = { active: false, count: 0, summary: "Quầy Sẵn Sàng", employees: [] };
+    // Khởi tạo từ giá trị server-side render để tránh race condition:
+    // pos.js chạy lại sau mỗi full-page navigation, nếu init active=false và fetch checkShiftStatus()
+    // chưa kịp resolve thì user ấn món sẽ bị bật modal chọn nhân viên dù đã điểm danh rồi.
+    // ponytail: đọc window.POS_SHIFT_ACTIVE từ JSP, upgrade when chuyển sang SPA routing
+    let shiftState = {
+        active: window.POS_SHIFT_ACTIVE === true,
+        count: 0,
+        summary: window.POS_SHIFT_ACTIVE === true ? (window.POS_CASHIER_USERNAME || "Đang trực ca") : "Quầy Sẵn Sàng",
+        employees: []
+    };
 
     // Kiểm tra trạng thái trực ca của quầy POS
     async function checkShiftStatus() {
