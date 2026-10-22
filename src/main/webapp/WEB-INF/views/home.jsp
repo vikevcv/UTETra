@@ -41,10 +41,6 @@
         <path d="M105 35C115 20 95 15 105 0" stroke="#8C6D53" stroke-width="2" stroke-linecap="round"/>
       </svg>
 
-      <div class="zen-cup-caption">
-        <h4>Bạch Hạc Shan Tuyết Cổ Thụ</h4>
-        <span class="zen-price-val">65.000 đ</span>
-      </div>
     </div>
   </div>
 </section>
