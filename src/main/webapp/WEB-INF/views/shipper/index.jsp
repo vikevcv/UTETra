@@ -2979,30 +2979,12 @@
     /* ========================================================
        5. CÔNG TẮC GẠT BẬT / TẮT CA TRỰC
        ======================================================== */
-    function toggleShiftStatus() {
-      const target = !isOnline;
 
-      // Gọi server TRƯỚC, chỉ đổi giao diện khi server chấp nhận
-      fetch('${pageContext.request.contextPath}/shipper/api/toggle-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ online: target })
-      })
-        .then(function(res) {
-          if (!res.ok) {
-            return res.json().catch(function() { return {}; }).then(function(data) {
-              showZenToast(data.message || 'Không đổi được ca trực. Vui lòng thử lại!', 'warning');
-            });
-          }
-          isOnline = target;
-          applyShiftStatusUI(true);
-        })
-        .catch(function() {
-          showZenToast('Mất kết nối — chưa đổi được ca trực.', 'warning');
-        });
-    }
-
-    function applyShiftStatusUI(announce) {
+    /**
+     * Vẽ trạng thái công tắc (THUẦN UI, không gọi mạng, không toast).
+     * Tên hàm giữ theo nhánh develop để các nơi gọi cũ vẫn chạy được.
+     */
+    function applyShiftSwitchUi(online) {
       const capsule = document.getElementById('topSwitchCapsule');
       const label = document.getElementById('switchLabelStatus');
       const knobIcon = document.getElementById('knobIcon');
@@ -3012,7 +2994,7 @@
       const statusBoxText = document.getElementById('statusBoxText');
       const statusBoxSub = document.getElementById('statusBoxSub');
 
-      if (isOnline) {
+      if (online) {
         if (capsule) capsule.classList.add('online');
         if (label) label.innerText = 'BẬT';
         if (knobIcon) knobIcon.className = 'fa-solid fa-check';
@@ -3024,11 +3006,6 @@
           statusBoxText.style.color = 'var(--matcha-deep)';
         }
         if (statusBoxSub) statusBoxSub.innerText = 'Đang bật nhận đơn từ quán';
-        if (announce) showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
-
-        if ('Notification' in window && Notification.permission === 'default') {
-          Notification.requestPermission();
-        }
       } else {
         if (capsule) capsule.classList.remove('online');
         if (label) label.innerText = 'TẮT';
@@ -3041,10 +3018,50 @@
           statusBoxText.style.color = 'var(--text-sepia)';
         }
         if (statusBoxSub) statusBoxSub.innerText = 'Gạt công tắc trên để trực';
-        if (announce) showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
       }
     }
 
+    /**
+     * Gạt công tắc BẬT/TẮT ca trực.
+     * SERVER TRƯỚC, CLIENT SAU: chỉ đổi giao diện khi server trả 2xx.
+     * Nếu server từ chối (ví dụ đang giữ đơn nên không cho tắt ca) thì giữ nguyên
+     * trạng thái cũ và hiện lý do — tránh cảnh tab hiện TẮT trong khi DB vẫn giao đơn.
+     */
+    function toggleShiftStatus() {
+      const target = !isOnline;
+
+      fetch('${pageContext.request.contextPath}/shipper/api/toggle-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ online: target })
+      })
+        .then(function(res) {
+          return res.json().catch(function() { return {}; }).then(function(data) {
+            if (!res.ok) {
+              throw new Error(data.message || ('Lỗi máy chủ (HTTP ' + res.status + ')'));
+            }
+            return data;
+          });
+        })
+        .then(function() {
+          isOnline = target;
+          applyShiftSwitchUi(isOnline);
+          if (isOnline) {
+            showZenToast('Đã BẬT ca trực. Sẵn sàng tiếp nhận phân công đơn giao hàng!', 'success');
+            if ('Notification' in window && Notification.permission === 'default') {
+              Notification.requestPermission();
+            }
+          } else {
+            showZenToast('Đã TẮT ca trực. Tạm ngưng nhận đơn hàng mới.', 'warning');
+          }
+        })
+        .catch(function(err) {
+          console.error('Không thể cập nhật trạng thái ca trực:', err);
+          showZenToast(err.message || 'Không thể cập nhật trạng thái: lỗi kết nối', 'danger');
+          // Đồng bộ lại theo server để không hiển thị sai
+          syncShiftStatusFromServer();
+        });
+    }
 
     /**
      * Đồng bộ công tắc BẬT/TẮT theo trạng thái THẬT trong DB.
@@ -3058,7 +3075,7 @@
           if (!data || typeof data.online !== 'boolean') return;
           if (data.online === isOnline) return;
           isOnline = data.online;
-          applyShiftStatusUI(false);
+          applyShiftSwitchUi(isOnline);
           showZenToast(data.online
             ? 'Đồng bộ: ca trực đang BẬT (hệ thống vẫn có thể giao đơn cho bạn).'
             : 'Đồng bộ: ca trực đang TẮT.', 'info');
@@ -3372,28 +3389,11 @@
           }
         }
 
-        // Tự động chuyển OFFLINE nếu gặp sự cố xe cộ hoặc sức khỏe
+        // Sau sự cố: trạng thái ca trực lấy theo SERVER (server mới là nguồn sự thật).
+        // Server tự chuyển OFFLINE khi hỏng xe / sức khỏe; các lý do khác (khách không liên lạc được...)
+        // tài xế vẫn đang trực nên KHÔNG được tự tắt công tắc ở client.
         if (isAtStore || reasonCode === 'XE_HONG' || reasonCode === 'SUC_KHOE') {
-          isOnline = false;
-          const capsule = document.getElementById('topSwitchCapsule');
-          const label = document.getElementById('switchLabelStatus');
-          const knobIcon = document.getElementById('knobIcon');
-          const avatarDot = document.getElementById('headerAvatarDot');
-          const onlineTextWrap = document.getElementById('headerOnlineTextWrap');
-          const onlineText = document.getElementById('headerOnlineText');
-          const statusBoxText = document.getElementById('statusBoxText');
-          const statusBoxSub = document.getElementById('statusBoxSub');
-          if (capsule) capsule.classList.remove('online');
-          if (label) label.innerText = 'TẮT';
-          if (knobIcon) knobIcon.className = 'fa-solid fa-power-off';
-          if (avatarDot) avatarDot.classList.remove('online');
-          if (onlineTextWrap) onlineTextWrap.className = 'text-secondary';
-          if (onlineText) onlineText.innerText = 'Tạm nghỉ';
-          if (statusBoxText) {
-            statusBoxText.innerText = 'Tạm Nghỉ Ca';
-            statusBoxText.style.color = 'var(--text-sepia)';
-          }
-          if (statusBoxSub) statusBoxSub.innerText = 'Tài xế tạm nghỉ do sự cố bất khả kháng';
+          syncShiftStatusFromServer();
         }
       })
       .catch(err => {

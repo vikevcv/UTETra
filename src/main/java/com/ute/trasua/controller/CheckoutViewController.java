@@ -16,6 +16,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -95,8 +97,17 @@ public class CheckoutViewController {
                 return "redirect:/?accessDenied=true";
             }
 
-            // Nếu đơn đã thanh toán xong từ trước, chuyển ngay sang trang thành công
-            if ("PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+            // Nếu đơn đã thanh toán xong từ trước hoặc là đơn 0đ, chuyển ngay sang trang thành công
+            if ("PAID".equalsIgnoreCase(order.getPaymentStatus())
+                    || (order.getFinalAmount() != null && order.getFinalAmount().compareTo(BigDecimal.ZERO) <= 0)) {
+                if (!"PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+                    order.setPaymentStatus("PAID");
+                    if ("AWAITING_PAYMENT".equalsIgnoreCase(order.getStatus()) || "PENDING".equalsIgnoreCase(order.getStatus())) {
+                        order.setStatus("AWAITING_PREPARATION");
+                    }
+                    order.setPaidAt(LocalDateTime.now());
+                    orderRepository.save(order);
+                }
                 return "redirect:/checkout/success?orderCode=" + order.getOrderCode();
             }
 

@@ -183,6 +183,8 @@ public class DriverServiceImpl implements DriverService {
         driver.setBaseSalary(request.getBaseSalary() != null ? request.getBaseSalary() : BigDecimal.ZERO);
         driver = driverRepository.save(driver);
 
+        dispatchNotifier.notifyDriverStatusChanged(driver);
+
         log.info(">>> Đã cập nhật tài xế [ID: {} - {}], lương mới: {}", driverId, user.getFullName(), driver.getBaseSalary());
         return DriverResponse.fromEntity(driver);
     }
@@ -201,6 +203,8 @@ public class DriverServiceImpl implements DriverService {
         driver.setWorkingStatus(locked ? "OFFLINE" : "ONLINE");
         driver = driverRepository.save(driver);
 
+        dispatchNotifier.notifyDriverStatusChanged(driver);
+
         return DriverResponse.fromEntity(driver);
     }
 
@@ -212,12 +216,15 @@ public class DriverServiceImpl implements DriverService {
 
         driver.setWorkingStatus(newStatus);
         driver = driverRepository.save(driver);
+
+        dispatchNotifier.notifyDriverStatusChanged(driver);
+
         return DriverResponse.fromEntity(driver);
     }
 
     @Override
     @Transactional
-    public void resendDriverCredentials(Long driverId) {
+    public String resendDriverCredentials(Long driverId) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài xế với ID: " + driverId));
 
@@ -228,33 +235,57 @@ public class DriverServiceImpl implements DriverService {
 
         log.info(">>> Đã reset mật khẩu tài xế [{}]: Mật khẩu mới: [{}]", user.getUsername(), newPassword);
 
+        String branchName = (driver.getBranch() != null && driver.getBranch().getName() != null)
+                ? driver.getBranch().getName() : "UTETra";
+
         try {
             emailService.sendDriverWelcomeEmail(
                     user.getEmail(),
                     user.getFullName(),
                     user.getUsername(),
                     newPassword,
-                    driver.getBranch().getName()
+                    branchName
             );
         } catch (Exception e) {
-            log.error("Lỗi gửi lại email mật khẩu tài xế: {}", e.getMessage());
-            throw new RuntimeException("Lỗi gửi email: " + e.getMessage());
+            log.warn("Không thể gửi email thông báo mật khẩu cho tài xế {}: {}", user.getUsername(), e.getMessage());
         }
+
+        return newPassword;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> getBranchDriverStatistics(Long branchId) {
         long total = driverRepository.countByBranchId(branchId);
-        long online = driverRepository.countByBranchIdAndWorkingStatus(branchId, "ONLINE");
-        long delivering = driverRepository.countByBranchIdAndWorkingStatus(branchId, "DELIVERING");
+        long online = driverRepository.countActiveOnlineByBranchId(branchId);
+        long delivering = driverRepository.countActiveDeliveringByBranchId(branchId);
         long suspended = driverRepository.countSuspendedByBranchId(branchId);
+        long offline = driverRepository.countActiveOfflineByBranchId(branchId);
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("total", total);
         stats.put("online", online);
         stats.put("delivering", delivering);
         stats.put("suspended", suspended);
+        stats.put("offline", offline);
+        return stats;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getAllDriverStatistics() {
+        long total = driverRepository.countTotalDrivers();
+        long online = driverRepository.countActiveOnlineDrivers();
+        long delivering = driverRepository.countActiveDeliveringDrivers();
+        long suspended = driverRepository.countSuspendedDrivers();
+        long offline = driverRepository.countActiveOfflineDrivers();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", total);
+        stats.put("online", online);
+        stats.put("delivering", delivering);
+        stats.put("suspended", suspended);
+        stats.put("offline", offline);
         return stats;
     }
 
@@ -318,6 +349,8 @@ public class DriverServiceImpl implements DriverService {
                 log.warn(">>> Không gán được đơn chờ khi tài xế {} bật ca: {}", driverId, e.getMessage());
             }
         }
+
+        dispatchNotifier.notifyDriverStatusChanged(saved);
 
         log.info(">>> Tài xế {} đã chuyển trạng thái trực ca: {}", driverId, saved.getWorkingStatus());
         return DriverResponse.fromEntity(saved);

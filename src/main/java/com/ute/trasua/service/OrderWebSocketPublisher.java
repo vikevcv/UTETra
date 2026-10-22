@@ -66,4 +66,13 @@ public interface OrderWebSocketPublisher {
      * - Báo trình duyệt khách hàng (/topic/order/{orderCode})
      */
     void broadcastOnlineOrderPaid(Order order);
+
+    /**
+     * Phát sự kiện WebSocket STOMP khi tài xế bật/tắt ca trực (ONLINE / OFFLINE)
+     * hoặc bị thay đổi quyền nhận đơn (Locked / Unlocked).
+     * Gửi tới:
+     * - /topic/drivers (Quản trị viên toàn hệ thống)
+     * - /topic/branch/{branchId}/drivers (Quản lý chi nhánh)
+     */
+    void broadcastDriverStatusChanged(Driver driver);
 }

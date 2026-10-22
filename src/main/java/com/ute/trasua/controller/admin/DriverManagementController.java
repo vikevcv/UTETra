@@ -1,8 +1,9 @@
 package com.ute.trasua.controller.admin;
 
 import com.ute.trasua.dto.DriverResponse;
-import com.ute.trasua.entity.User;
-import com.ute.trasua.repository.UserRepository;
+import com.ute.trasua.entity.Driver;
+import com.ute.trasua.repository.DriverRepository;
+import com.ute.trasua.service.DriverService;
 import com.ute.trasua.service.UserManagementService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +16,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,11 +27,13 @@ import java.util.Map;
 @Slf4j
 public class DriverManagementController {
 
-    private final UserRepository userRepository;
+    private final DriverRepository driverRepository;
+    private final DriverService driverService;
     private final UserManagementService userService;
 
     /**
      * Màn hình danh sách tài xế, tình trạng trực tuyến, biển số xe và đánh giá (UC25).
+     * Dữ liệu 100% đồng bộ thực tế từ Database.
      */
     @GetMapping
     public String listDrivers(
@@ -46,22 +47,11 @@ public class DriverManagementController {
         Pageable pageable = PageRequest.of(pageIndex, pageSize, Sort.by(Sort.Direction.DESC, "id"));
 
         String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        Page<User> driverEntities = userRepository.searchDrivers(cleanKeyword, pageable);
-        Page<DriverResponse> driversPage = driverEntities.map(DriverResponse::fromUser);
+        Page<Driver> driverEntities = driverRepository.searchAllDrivers(cleanKeyword, pageable);
+        Page<DriverResponse> driversPage = driverEntities.map(DriverResponse::fromEntity);
 
-        // Tính toán số liệu thống kê đội ngũ tài xế
-        List<User> allDrivers = userRepository.findAll((root, query, cb) -> cb.isMember("ROLE_DRIVER", root.get("roles")));
-        long totalDrivers = allDrivers.size();
-        long lockedDrivers = allDrivers.stream().filter(User::isLocked).count();
-        long activeDrivers = totalDrivers - lockedDrivers;
-        long onlineDrivers = Math.max(0, (long) Math.ceil(activeDrivers * 0.65));
-        long deliveringDrivers = activeDrivers - onlineDrivers;
-
-        Map<String, Object> driverStats = new HashMap<>();
-        driverStats.put("total", totalDrivers);
-        driverStats.put("online", onlineDrivers);
-        driverStats.put("delivering", deliveringDrivers);
-        driverStats.put("suspended", lockedDrivers);
+        // Số liệu thống kê đội ngũ tài xế đồng bộ thực tế từ Database
+        Map<String, Object> driverStats = driverService.getAllDriverStatistics();
 
         model.addAttribute("driversPage", driversPage);
         model.addAttribute("stats", driverStats);
@@ -82,7 +72,23 @@ public class DriverManagementController {
             RedirectAttributes redirectAttributes
     ) {
         try {
-            userService.toggleLock(id, locked, reason);
+            // Kiểm tra xem id là driverId hay userId
+            Driver driver = driverRepository.findById(id).orElse(null);
+            if (driver != null) {
+                if (driver.getUser() != null) {
+                    userService.toggleLock(driver.getUser().getId(), locked, reason);
+                }
+                driver.setWorkingStatus(locked ? "OFFLINE" : "ONLINE");
+                driverRepository.save(driver);
+            } else {
+                // Xử lý khi id là userId
+                userService.toggleLock(id, locked, reason);
+                driverRepository.findByUserId(id).ifPresent(d -> {
+                    d.setWorkingStatus(locked ? "OFFLINE" : "ONLINE");
+                    driverRepository.save(d);
+                });
+            }
+
             String message = locked 
                     ? "Đã tạm dừng quyền nhận đơn của tài xế!" 
                     : "Đã kích hoạt lại trạng thái hoạt động cho tài xế!";

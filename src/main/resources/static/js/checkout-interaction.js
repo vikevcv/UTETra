@@ -1,3 +1,21 @@
+function validateCheckoutPhone(val) {
+  const el = document.getElementById("customerPhone");
+  const err = document.getElementById("checkoutPhoneError");
+  if (!el) return false;
+  const phone = (val !== undefined ? val : el.value).trim();
+  const isValid = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phone);
+  if (!isValid && phone.length > 0) {
+    el.style.borderColor = "#DC2626";
+    if (err) err.style.display = "block";
+    return false;
+  } else {
+    el.style.borderColor = "";
+    if (err) err.style.display = "none";
+    return isValid;
+  }
+}
+window.validateCheckoutPhone = validateCheckoutPhone;
+
 /**
  * UTETra — Checkout & Smart Shipping Engine Interaction (Module 3 - UC05)
  * Handles Leaflet Mini-Map, GPS Geolocation, Haversine Shipping Fee calculation,
