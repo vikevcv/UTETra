@@ -61,6 +61,13 @@ public interface BranchMenuRepository extends JpaRepository<BranchMenu, Long> {
     void deleteByBranchIdAndProductId(Long branchId, Long productId);
 
     @Modifying
+    @Query("UPDATE BranchMenu bm SET bm.available = :available WHERE bm.product.id = :productId")
+    int updateAvailabilityByProductId(@Param("productId") Long productId,
+                                      @Param("available") boolean available);
+
+    List<BranchMenu> findByProductId(Long productId);
+
+    @Modifying
     @Query("DELETE FROM BranchMenu bm WHERE bm.product.id = :productId")
     void deleteByProductId(@Param("productId") Long productId);
 }

@@ -16,7 +16,9 @@ public interface ProductRecipeRepository extends JpaRepository<ProductRecipe, Lo
     @Query("SELECT pr FROM ProductRecipe pr JOIN FETCH pr.ingredient WHERE pr.product.id = :productId")
     List<ProductRecipe> findByProductIdWithIngredient(@Param("productId") Long productId);
 
-    void deleteByProductId(Long productId);
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM ProductRecipe pr WHERE pr.product.id = :productId")
+    void deleteByProductId(@Param("productId") Long productId);
 
     List<ProductRecipe> findByIngredientId(Long ingredientId);
 }

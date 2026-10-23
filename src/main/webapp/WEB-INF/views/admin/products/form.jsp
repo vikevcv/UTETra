@@ -91,9 +91,24 @@
     </div>
   </div>
 
+  <!-- Thông báo kết quả / lỗi -->
+  <c:if test="${not empty errorMessage}">
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+      <i class="fa-solid fa-triangle-exclamation me-2"></i><strong>Lỗi:</strong> ${errorMessage}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  </c:if>
+  <c:if test="${not empty successMessage}">
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+      <i class="fa-solid fa-circle-check me-2"></i>${successMessage}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  </c:if>
+
   <!-- Product Form -->
+  <c:url var="formAction" value="${isEdit ? '/admin/products/'.concat(product.id).concat('/update') : '/admin/products/create'}" />
   <form id="productForm" 
-        action="${isEdit ? pageContext.request.contextPath.concat('/admin/products/').concat(product.id).concat('/update') : pageContext.request.contextPath.concat('/admin/products/create')}" 
+        action="${formAction}" 
         method="post" 
         enctype="multipart/form-data">
 
@@ -542,10 +557,10 @@
           select.focus();
           return false;
         }
-        // Nếu dòng trống hoàn toàn, gỡ bỏ name để không gửi param rỗng lên server
+        // Nếu dòng trống hoàn toàn, tạm disable để không gửi param rỗng lên server
         if (ingVal === '' && qtyStr === '') {
-          if (select) select.removeAttribute('name');
-          if (qtyInput) qtyInput.removeAttribute('name');
+          if (select) select.disabled = true;
+          if (qtyInput) qtyInput.disabled = true;
         }
       }
     });

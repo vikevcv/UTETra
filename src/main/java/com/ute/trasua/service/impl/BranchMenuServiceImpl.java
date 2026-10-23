@@ -288,6 +288,12 @@ public class BranchMenuServiceImpl implements BranchMenuService {
                 .collect(Collectors.toMap(bm -> bm.getProduct().getId(), BranchMenu::isAvailable, (v1, v2) -> v1));
 
         List<BranchInventory> inventories = branchInventoryRepository.findByBranchId(targetBranchId);
+        Map<Long, BigDecimal> invMap = new HashMap<>();
+        for (BranchInventory inv : inventories) {
+            if (inv.getIngredient() != null && inv.getIngredient().getId() != null) {
+                invMap.put(inv.getIngredient().getId(), inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO);
+            }
+        }
 
         List<BranchMenuStatusDto> list = new ArrayList<>();
 
@@ -296,26 +302,51 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             boolean isDbAvail = productAvailMap.getOrDefault(p.getId(), true);
             String prodName = p.getName() != null ? p.getName().toLowerCase() : "";
 
-            // Tính tồn kho ước tính dựa trên nguyên liệu trà trong kho chi nhánh (mỗi ly ~ 0.02 Kg trà)
-            BigDecimal mainTeaStock = BigDecimal.ZERO;
-            for (BranchInventory inv : inventories) {
-                if (inv.getIngredient() == null) continue;
-                String name = inv.getIngredient().getName() != null ? inv.getIngredient().getName().toLowerCase() : "";
-                String code = inv.getIngredient().getCode() != null ? inv.getIngredient().getCode().toUpperCase() : "";
+            int currentStock = 0;
+            List<com.ute.trasua.entity.ProductRecipe> recipes = productRecipeRepository.findByProductIdWithIngredient(p.getId());
+            if (recipes != null && !recipes.isEmpty()) {
+                int minCups = Integer.MAX_VALUE;
+                for (com.ute.trasua.entity.ProductRecipe recipe : recipes) {
+                    if (recipe.getIngredient() == null) continue;
+                    BigDecimal portion = recipe.getQuantity() != null ? recipe.getQuantity() : BigDecimal.ZERO;
+                    if (portion.compareTo(BigDecimal.ZERO) <= 0) continue;
+                    Long ingId = recipe.getIngredient().getId();
+                    BigDecimal ingStock = invMap.getOrDefault(ingId, BigDecimal.ZERO);
+                    int cups = ingStock.divide(portion, 0, RoundingMode.FLOOR).intValue();
+                    if (cups < minCups) {
+                        minCups = cups;
+                    }
+                }
+                currentStock = (minCups != Integer.MAX_VALUE) ? Math.max(0, minCups) : 50;
+            } else {
+                BigDecimal mainTeaStock = BigDecimal.ZERO;
+                boolean matchedKeyword = false;
+                for (BranchInventory inv : inventories) {
+                    if (inv.getIngredient() == null) continue;
+                    String name = inv.getIngredient().getName() != null ? inv.getIngredient().getName().toLowerCase() : "";
+                    String code = inv.getIngredient().getCode() != null ? inv.getIngredient().getCode().toUpperCase() : "";
 
-                if (prodName.contains("ô long") && (code.equals("NL003") || name.contains("ô long"))) {
-                    mainTeaStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
-                    break;
-                } else if ((prodName.contains("lục trà") || prodName.contains("nhài")) && (code.equals("NL002") || name.contains("lục trà"))) {
-                    mainTeaStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
-                    break;
-                } else if ((code.equals("NL001") || name.contains("trà đen")) && mainTeaStock.compareTo(BigDecimal.ZERO) == 0) {
-                    mainTeaStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                    if (prodName.contains("ô long") && (code.equals("NL003") || name.contains("ô long"))) {
+                        mainTeaStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                        matchedKeyword = true;
+                        break;
+                    } else if ((prodName.contains("lục trà") || prodName.contains("nhài")) && (code.equals("NL002") || name.contains("lục trà"))) {
+                        mainTeaStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                        matchedKeyword = true;
+                        break;
+                    } else if ((code.equals("NL001") || name.contains("trà đen")) && mainTeaStock.compareTo(BigDecimal.ZERO) == 0) {
+                        mainTeaStock = inv.getStockQuantity() != null ? inv.getStockQuantity() : BigDecimal.ZERO;
+                        matchedKeyword = true;
+                    }
+                }
+                if (matchedKeyword && mainTeaStock.compareTo(BigDecimal.ZERO) > 0) {
+                    currentStock = mainTeaStock.divide(BigDecimal.valueOf(0.02), 0, RoundingMode.FLOOR).intValue();
+                } else {
+                    currentStock = isDbAvail ? 50 : 0;
                 }
             }
 
-            int estimatedCups = mainTeaStock.divide(BigDecimal.valueOf(0.02), 0, RoundingMode.FLOOR).intValue();
-            int currentStock = isDbAvail ? Math.max(0, estimatedCups) : 0;
+            currentStock = isDbAvail ? currentStock : 0;
             boolean isAvail = isDbAvail && (currentStock > 0);
 
             list.add(BranchMenuStatusDto.builder()
