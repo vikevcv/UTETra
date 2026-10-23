@@ -44,19 +44,26 @@ public class RecipeServiceImpl implements RecipeService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy món với ID: " + productId));
 
-        // Xóa công thức cũ
+        // 1. Xóa công thức cũ bằng bulk query và flush ngay lập tức để MySQL không bị xung đột khóa ngoại/khóa duy nhất
         productRecipeRepository.deleteByProductId(productId);
+        productRecipeRepository.flush();
 
         if (recipeItems == null || recipeItems.isEmpty()) {
             log.info("Món ID {} không có công thức nguyên liệu nào.", productId);
             return;
         }
 
-        List<ProductRecipe> toSave = new ArrayList<>();
+        // 2. Chuẩn hóa và loại bỏ trùng lặp nguyên liệu từ input (tránh gửi nhiều dòng cùng 1 nguyên liệu vi phạm uk_product_ingredient)
+        java.util.Map<Long, RecipeItemDto> uniqueItems = new java.util.LinkedHashMap<>();
         for (RecipeItemDto item : recipeItems) {
             if (item.getIngredientId() == null || item.getQuantity() == null || item.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
+            uniqueItems.put(item.getIngredientId(), item);
+        }
+
+        List<ProductRecipe> toSave = new ArrayList<>();
+        for (RecipeItemDto item : uniqueItems.values()) {
             Ingredient ingredient = ingredientRepository.findById(item.getIngredientId()).orElse(null);
             if (ingredient == null) {
                 log.warn("Bỏ qua nguyên liệu không tồn tại ID: {}", item.getIngredientId());
@@ -74,6 +81,7 @@ public class RecipeServiceImpl implements RecipeService {
 
         if (!toSave.isEmpty()) {
             productRecipeRepository.saveAll(toSave);
+            productRecipeRepository.flush();
             log.info("Đã lưu {} nguyên liệu trong công thức cho món '{}' (ID: {})", toSave.size(), product.getName(), productId);
         }
     }
@@ -83,6 +91,7 @@ public class RecipeServiceImpl implements RecipeService {
     public void deleteRecipesByProductId(Long productId) {
         if (productId != null) {
             productRecipeRepository.deleteByProductId(productId);
+            productRecipeRepository.flush();
         }
     }
 

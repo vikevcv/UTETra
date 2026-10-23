@@ -218,8 +218,18 @@ public class ProductServiceImpl implements ProductService {
 
         String imageUrl = request.getCurrentImageUrl();
         if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
-            log.info(">>> Uploading new product image to Cloudinary...");
-            imageUrl = cloudinaryService.uploadImage(request.getImageFile(), "products");
+            try {
+                log.info(">>> Uploading new product image to Cloudinary...");
+                String uploaded = cloudinaryService.uploadImage(request.getImageFile(), "products");
+                if (uploaded != null && !uploaded.isBlank()) {
+                    imageUrl = uploaded;
+                }
+            } catch (Exception e) {
+                log.warn(">>> Không thể tải ảnh lên Cloudinary khi thêm món: {}. Sử dụng ảnh mặc định.", e.getMessage());
+            }
+        }
+        if (imageUrl == null || imageUrl.isBlank()) {
+            imageUrl = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511985/utetra/defaults/default-tea-zen.jpg";
         }
 
         Product product = Product.builder()
@@ -290,18 +300,29 @@ public class ProductServiceImpl implements ProductService {
 
         if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
             String oldImageUrl = product.getImageUrl();
-            log.info(">>> Uploading replacement image to Cloudinary for product ID: {}", id);
-            String newImageUrl = cloudinaryService.uploadImage(request.getImageFile(), "products");
-            product.setImageUrl(newImageUrl);
+            try {
+                log.info(">>> Uploading replacement image to Cloudinary for product ID: {}", id);
+                String newImageUrl = cloudinaryService.uploadImage(request.getImageFile(), "products");
+                if (newImageUrl != null && !newImageUrl.isBlank()) {
+                    product.setImageUrl(newImageUrl);
+                }
 
-            // Xóa ảnh cũ trên Cloudinary nếu có để dọn dẹp dung lượng
-            if (oldImageUrl != null && oldImageUrl.contains("cloudinary.com")) {
-                String oldPublicId = cloudinaryService.extractPublicId(oldImageUrl);
-                if (!oldPublicId.isBlank()) {
-                    cloudinaryService.deleteImage(oldPublicId);
+                // Xóa ảnh cũ trên Cloudinary nếu có để dọn dẹp dung lượng
+                if (oldImageUrl != null && oldImageUrl.contains("cloudinary.com")) {
+                    String oldPublicId = cloudinaryService.extractPublicId(oldImageUrl);
+                    if (!oldPublicId.isBlank()) {
+                        cloudinaryService.deleteImage(oldPublicId);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn(">>> Không thể tải ảnh lên Cloudinary khi cập nhật món: {}. Giữ ảnh hiện tại.", e.getMessage());
+                if (product.getImageUrl() == null || product.getImageUrl().isBlank()) {
+                    if (request.getCurrentImageUrl() != null && !request.getCurrentImageUrl().isBlank()) {
+                        product.setImageUrl(request.getCurrentImageUrl().trim());
+                    }
                 }
             }
-        } else if (request.getCurrentImageUrl() != null) {
+        } else if (request.getCurrentImageUrl() != null && !request.getCurrentImageUrl().isBlank()) {
             product.setImageUrl(request.getCurrentImageUrl().trim());
         }
 
@@ -314,6 +335,15 @@ public class ProductServiceImpl implements ProductService {
 
         Product updated = productRepository.save(product);
         log.info(">>> Updated Product: [{}] {}", updated.getProductCode(), updated.getName());
+
+        // Đồng bộ sản phẩm vào thực đơn tất cả chi nhánh nếu chưa tồn tại
+        syncProductToAllBranches(updated);
+
+        // Đồng bộ trạng thái khả dụng tương ứng với trạng thái kinh doanh của chuỗi
+        boolean isChainActive = "ACTIVE".equalsIgnoreCase(updated.getStatus());
+        if (!isChainActive) {
+            branchMenuRepository.updateAvailabilityByProductId(updated.getId(), false);
+        }
 
         // Cập nhật công thức pha chế nếu có
         List<com.ute.trasua.dto.RecipeItemDto> recipes = request.getRecipes();
@@ -340,7 +370,15 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus(newStatus);
         productRepository.save(product);
         log.info(">>> Toggled Product ID {} status to: {}", id, newStatus);
-        return "ACTIVE".equalsIgnoreCase(newStatus);
+
+        boolean willBeActive = "ACTIVE".equalsIgnoreCase(newStatus);
+        if (!willBeActive) {
+            branchMenuRepository.updateAvailabilityByProductId(id, false);
+        } else {
+            syncProductToAllBranches(product);
+            branchMenuRepository.updateAvailabilityByProductId(id, true);
+        }
+        return willBeActive;
     }
 
     @Override
