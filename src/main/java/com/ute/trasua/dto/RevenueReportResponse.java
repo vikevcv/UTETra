@@ -129,6 +129,16 @@ public class RevenueReportResponse {
         private String formattedNetAmount;
         private double percentage; // % đóng góp doanh thu
 
+        /** Tổng thu trước giảm giá / doanh thu gộp */
+        @Builder.Default
+        private BigDecimal grossAmount = BigDecimal.ZERO;
+        private String formattedGrossAmount;
+
+        /** Tiền chiết khấu / voucher của chi nhánh */
+        @Builder.Default
+        private BigDecimal discountAmount = BigDecimal.ZERO;
+        private String formattedDiscountAmount;
+
         /** Chi tiêu nhập kho của chi nhánh */
         @Builder.Default
         private BigDecimal expenseAmount = BigDecimal.ZERO;

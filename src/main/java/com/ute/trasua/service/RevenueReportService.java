@@ -19,4 +19,14 @@ public interface RevenueReportService {
      * Xuất báo cáo doanh thu ra file Excel chuẩn biểu mẫu BM1 (Apache POI).
      */
     byte[] exportRevenueExcelBM1(RevenueReportRequest request);
+
+    /**
+     * Xuất báo cáo xếp hạng hiệu quả chi nhánh (thu, chi voucher, chi phí, lợi nhuận) ra Excel.
+     */
+    byte[] exportBranchRankingExcel(RevenueReportRequest request);
+
+    /**
+     * Xuất báo cáo doanh thu, chi tiêu và lợi nhuận theo ngày ra Excel.
+     */
+    byte[] exportDailyRevenueExcel(RevenueReportRequest request);
 }

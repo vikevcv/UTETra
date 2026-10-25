@@ -343,6 +343,12 @@ public class RevenueReportServiceImpl implements RevenueReportService {
 
             List<Order> bOrders = ordersByBranch.getOrDefault(b.getId(), Collections.emptyList());
             long count = bOrders.size();
+            BigDecimal gross = bOrders.stream()
+                    .map(o -> o.getTotalAmount() != null ? o.getTotalAmount() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal discount = bOrders.stream()
+                    .map(o -> o.getDiscountAmount() != null ? o.getDiscountAmount() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal net = bOrders.stream()
                     .map(o -> {
                         BigDecimal it = (o.getTotalAmount() != null) ? o.getTotalAmount() : BigDecimal.ZERO;
@@ -377,6 +383,10 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                     .branchCode(b.getBranchCode())
                     .branchName(b.getName())
                     .orderCount(count)
+                    .grossAmount(gross)
+                    .formattedGrossAmount(CURRENCY_FORMAT.format(gross))
+                    .discountAmount(discount)
+                    .formattedDiscountAmount(CURRENCY_FORMAT.format(discount))
                     .netAmount(net)
                     .formattedNetAmount(CURRENCY_FORMAT.format(net))
                     .percentage(percentage)
@@ -485,5 +495,19 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     public byte[] exportRevenueExcelBM1(RevenueReportRequest request) {
         RevenueReportResponse report = generateRevenueReport(request);
         return excelExportService.exportRevenueReportBM1(report);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportBranchRankingExcel(RevenueReportRequest request) {
+        RevenueReportResponse report = generateRevenueReport(request);
+        return excelExportService.exportBranchRankingReport(report);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportDailyRevenueExcel(RevenueReportRequest request) {
+        RevenueReportResponse report = generateRevenueReport(request);
+        return excelExportService.exportDailyRevenueReport(report);
     }
 }
