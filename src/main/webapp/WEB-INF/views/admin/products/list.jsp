@@ -352,11 +352,6 @@
                          class="action-btn-circle edit" title="Chỉnh sửa món nước">
                         <i class="fa-solid fa-pen"></i>
                       </a>
-                      <button type="button" class="action-btn-circle delete" title="Xóa món nước" 
-                              data-id="${p.id}" data-name="${fn:escapeXml(p.name)}"
-                              onclick="confirmDeleteProduct(this)">
-                        <i class="fa-solid fa-trash"></i>
-                      </button>
                     </div>
                   </td>
                 </tr>
