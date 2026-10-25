@@ -28,7 +28,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Service implementation xử lý nghiệp vụ quản lý người dùng và giám sát tài xế toàn chuỗi (Module 11 - UC20, UC25).
+ * Service implementation xử lý nghiệp vụ quản lý người dùng và giám sát tài xế
+ * toàn chuỗi (Module 11 - UC20, UC25).
  */
 @Service
 @Slf4j
@@ -67,15 +68,15 @@ public class UserManagementServiceImpl implements UserManagementService {
     public Page<UserResponse> searchUsers(UserSearchRequest request) {
         int page = Math.max(0, request.getPage());
         int size = request.getSize() > 0 ? request.getSize() : 10;
-        
-        Sort.Direction direction = "asc".equalsIgnoreCase(request.getSortDir()) 
-                ? Sort.Direction.ASC 
+
+        Sort.Direction direction = "asc".equalsIgnoreCase(request.getSortDir())
+                ? Sort.Direction.ASC
                 : Sort.Direction.DESC;
-        
-        String sortBy = (request.getSortBy() != null && !request.getSortBy().isBlank()) 
-                ? request.getSortBy() 
+
+        String sortBy = (request.getSortBy() != null && !request.getSortBy().isBlank())
+                ? request.getSortBy()
                 : "id";
-        
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
 
         String keyword = (request.getKeyword() != null) ? request.getKeyword().trim() : null;
@@ -107,8 +108,8 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         user.setLocked(lock);
         if (lock) {
-            user.setLockReason(reason != null && !reason.isBlank() 
-                    ? reason 
+            user.setLockReason(reason != null && !reason.isBlank()
+                    ? reason
                     : "Tài khoản bị khóa bởi Quản trị viên");
             log.info("User {} (ID: {}) bị khóa với lý do: {}", user.getUsername(), id, user.getLockReason());
         } else {
@@ -153,8 +154,8 @@ public class UserManagementServiceImpl implements UserManagementService {
         // Cập nhật vai trò (roles) và chi nhánh trực thuộc
         if (request.getRoles() != null && !request.getRoles().isEmpty()) {
             Set<String> newRoles = new HashSet<>(request.getRoles());
-            boolean requiresBranch = newRoles.contains("ROLE_MANAGER") 
-                    || newRoles.contains("ROLE_STAFF") 
+            boolean requiresBranch = newRoles.contains("ROLE_MANAGER")
+                    || newRoles.contains("ROLE_STAFF")
                     || newRoles.contains("ROLE_DRIVER");
 
             if (requiresBranch) {
@@ -169,11 +170,13 @@ public class UserManagementServiceImpl implements UserManagementService {
                     }
                 }
                 if (branchId == null) {
-                    throw new IllegalArgumentException("Vui lòng chỉ định Chi nhánh trực thuộc khi phân quyền Quản lý, Nhân viên hoặc Tài xế!");
+                    throw new IllegalArgumentException(
+                            "Vui lòng chỉ định Chi nhánh trực thuộc khi phân quyền Quản lý, Nhân viên hoặc Tài xế!");
                 }
                 final Long targetBranchId = branchId;
                 com.ute.trasua.entity.Branch branch = branchRepository.findById(targetBranchId)
-                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh với ID: " + targetBranchId));
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Không tìm thấy chi nhánh với ID: " + targetBranchId));
 
                 user.setRoles(newRoles);
                 user.setBranch(branch);
@@ -210,7 +213,9 @@ public class UserManagementServiceImpl implements UserManagementService {
                     } else {
                         com.ute.trasua.entity.PosAccount newPos = com.ute.trasua.entity.PosAccount.builder()
                                 .username(user.getUsername())
-                                .counterName(user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : (user.getUsername() + " (Quầy POS)"))
+                                .counterName(
+                                        user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName()
+                                                : (user.getUsername() + " (Quầy POS)"))
                                 .password(user.getPassword() != null ? user.getPassword() : "123456")
                                 .branch(branch)
                                 .user(user)
@@ -254,7 +259,8 @@ public class UserManagementServiceImpl implements UserManagementService {
         } else if (request.getBranchId() != null) {
             // Trường hợp không đổi role nhưng cập nhật chi nhánh
             com.ute.trasua.entity.Branch branch = branchRepository.findById(request.getBranchId())
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh với ID: " + request.getBranchId()));
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Không tìm thấy chi nhánh với ID: " + request.getBranchId()));
             user.setBranch(branch);
             if (user.getRoles() != null && user.getRoles().contains("ROLE_MANAGER")) {
                 java.util.List<com.ute.trasua.entity.Branch> oldBranches = branchRepository.findByManager(user);
@@ -285,14 +291,15 @@ public class UserManagementServiceImpl implements UserManagementService {
         int pageIndex = Math.max(0, page);
         int pageSize = size > 0 ? size : 10;
         Pageable pageable = PageRequest.of(pageIndex, pageSize, Sort.by(Sort.Direction.DESC, "id"));
-        
+
         String cleanKeyword = (keyword != null) ? keyword.trim() : null;
         Page<User> driverPage = userRepository.searchDrivers(cleanKeyword, pageable);
         return driverPage.map(this::toUserResponse);
     }
 
     private UserResponse toUserResponse(User user) {
-        if (user == null) return null;
+        if (user == null)
+            return null;
         UserResponse response = UserResponse.fromEntity(user);
         if (response.getBranchId() == null) {
             // 1. Kiểm tra nếu là tài xế (ROLE_DRIVER)
@@ -305,7 +312,8 @@ public class UserManagementServiceImpl implements UserManagementService {
                             response.setBranchCode(driver.getBranch().getBranchCode());
                         }
                     });
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
 
             // 2. Kiểm tra nếu là quản lý (ROLE_MANAGER)
@@ -318,7 +326,8 @@ public class UserManagementServiceImpl implements UserManagementService {
                         response.setBranchName(b.getName());
                         response.setBranchCode(b.getBranchCode());
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
 
             // 3. Kiểm tra nếu là nhân viên quầy POS / Staff
@@ -333,7 +342,8 @@ public class UserManagementServiceImpl implements UserManagementService {
                                     response.setBranchCode(pos.getBranch().getBranchCode());
                                 }
                             });
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
 
             // 4. Kiểm tra trong danh sách nhân sự Employee
@@ -346,19 +356,23 @@ public class UserManagementServiceImpl implements UserManagementService {
                             response.setBranchCode(emp.getBranch().getBranchCode());
                         }
                     });
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
 
             // 5. Tự động đồng bộ branch_id vào bảng users để các lần truy vấn sau nhanh hơn
-            if (response.getBranchId() != null && user.getBranch() == null && branchRepository != null && userRepository != null) {
+            if (response.getBranchId() != null && user.getBranch() == null && branchRepository != null
+                    && userRepository != null) {
                 try {
                     branchRepository.findById(response.getBranchId()).ifPresent(b -> {
                         user.setBranch(b);
                         try {
                             userRepository.save(user);
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     });
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
         }
         return response;
@@ -387,7 +401,8 @@ public class UserManagementServiceImpl implements UserManagementService {
     @Override
     @Transactional(readOnly = true)
     public List<UserOrderHistoryDto> getUserOrderHistory(Long userId) {
-        if (userId == null) return Collections.emptyList();
+        if (userId == null)
+            return Collections.emptyList();
         List<Order> orders = orderRepository.findAllByUserIdWithDetailsOrderByCreatedAtDesc(userId);
         List<UserOrderHistoryDto> result = new ArrayList<>();
 
@@ -485,7 +500,8 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         for (Order o : orders) {
             String s = (o.getStatus() != null) ? o.getStatus().toUpperCase() : "";
-            if ("COMPLETED".equals(s) || "DELIVERED".equals(s) || "PAID".equals(s) || "PAID".equalsIgnoreCase(o.getPaymentStatus())) {
+            if ("COMPLETED".equals(s) || "DELIVERED".equals(s) || "PAID".equals(s)
+                    || "PAID".equalsIgnoreCase(o.getPaymentStatus())) {
                 completedOrders++;
                 if (o.getFinalAmount() != null) {
                     totalSpent = totalSpent.add(o.getFinalAmount());
@@ -507,9 +523,11 @@ public class UserManagementServiceImpl implements UserManagementService {
     @Override
     @Transactional(readOnly = true)
     public List<UserDriverTripDto> getDriverTripHistory(Long userId) {
-        if (userId == null) return Collections.emptyList();
+        if (userId == null)
+            return Collections.emptyList();
         com.ute.trasua.entity.Driver driver = driverRepository.findByUserId(userId).orElse(null);
-        if (driver == null) return Collections.emptyList();
+        if (driver == null)
+            return Collections.emptyList();
 
         List<Order> orders = orderRepository.findAllByDriverIdWithDetailsOrderByCreatedAtDesc(driver.getId());
         List<UserDriverTripDto> result = new ArrayList<>();
@@ -616,7 +634,8 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
     private String mapOrderType(String type) {
-        if (type == null) return "Đặt hàng";
+        if (type == null)
+            return "Đặt hàng";
         return switch (type.toUpperCase()) {
             case "ONLINE_DELIVERY" -> "Giao hàng tận nơi";
             case "POS_WALK_IN" -> "Tại quầy (POS)";
@@ -626,7 +645,8 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
     private String mapPaymentMethod(String pm) {
-        if (pm == null) return "Chưa xác định";
+        if (pm == null)
+            return "Chưa xác định";
         return switch (pm.toUpperCase()) {
             case "CASH" -> "Tiền mặt";
             case "VIETQR", "BANK_TRANSFER" -> "Chuyển khoản VietQR";
@@ -637,7 +657,8 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
     private String mapOrderStatus(String status) {
-        if (status == null) return "Đang xử lý";
+        if (status == null)
+            return "Đang xử lý";
         return switch (status.toUpperCase()) {
             case "PENDING" -> "Chờ xác nhận";
             case "CONFIRMED" -> "Đã xác nhận";
@@ -652,7 +673,8 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
     private String mapOrderStatusBadge(String status) {
-        if (status == null) return "zen-badge-secondary";
+        if (status == null)
+            return "zen-badge-secondary";
         return switch (status.toUpperCase()) {
             case "PENDING" -> "zen-badge-warning";
             case "CONFIRMED", "PREPARING" -> "zen-badge-info";
