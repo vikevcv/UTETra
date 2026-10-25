@@ -33,14 +33,17 @@ public interface BranchMenuRepository extends JpaRepository<BranchMenu, Long> {
            "JOIN FETCH bm.product p " +
            "LEFT JOIN FETCH p.category c " +
            "WHERE bm.branch.id = :branchId AND " +
+           "UPPER(p.status) = 'ACTIVE' AND " +
            "(:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(p.productCode) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
            "(:categoryId IS NULL OR p.category.id = :categoryId) AND " +
            "(:available IS NULL OR bm.available = :available) " +
            "ORDER BY c.displayOrder ASC, p.name ASC",
            countQuery = "SELECT COUNT(bm) FROM BranchMenu bm " +
+           "JOIN bm.product p " +
            "WHERE bm.branch.id = :branchId AND " +
-           "(:keyword IS NULL OR LOWER(bm.product.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(bm.product.productCode) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
-           "(:categoryId IS NULL OR bm.product.category.id = :categoryId) AND " +
+           "UPPER(p.status) = 'ACTIVE' AND " +
+           "(:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(p.productCode) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:categoryId IS NULL OR p.category.id = :categoryId) AND " +
            "(:available IS NULL OR bm.available = :available)")
     Page<BranchMenu> searchBranchMenus(@Param("branchId") Long branchId,
                                        @Param("keyword") String keyword,
@@ -53,6 +56,12 @@ public interface BranchMenuRepository extends JpaRepository<BranchMenu, Long> {
     int updateAvailability(@Param("branchId") Long branchId,
                            @Param("productId") Long productId,
                            @Param("available") boolean available);
+
+    @Query("SELECT COUNT(bm) FROM BranchMenu bm JOIN bm.product p WHERE bm.branch.id = :branchId AND UPPER(p.status) = 'ACTIVE'")
+    long countActiveProductsByBranchId(@Param("branchId") Long branchId);
+
+    @Query("SELECT COUNT(bm) FROM BranchMenu bm JOIN bm.product p WHERE bm.branch.id = :branchId AND UPPER(p.status) = 'ACTIVE' AND bm.available = true")
+    long countActiveAndAvailableByBranchId(@Param("branchId") Long branchId);
 
     long countByBranchIdAndAvailableTrue(Long branchId);
 
