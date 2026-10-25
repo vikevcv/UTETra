@@ -197,7 +197,8 @@ public class AdminReportController {
             @RequestParam(value = "startDate", required = false) String startDateStr,
             @RequestParam(value = "endDate", required = false) String endDateStr
     ) {
-        RevenueReportRequest request = buildReportRequest(branchId, period, startDateStr, endDateStr);
+        // Bảng xếp hạng chi nhánh luôn xuất toàn bộ tất cả chi nhánh trong chuỗi
+        RevenueReportRequest request = buildReportRequest(null, period, startDateStr, endDateStr);
         byte[] excelData = revenueReportService.exportBranchRankingExcel(request);
 
         String dateSuffix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));

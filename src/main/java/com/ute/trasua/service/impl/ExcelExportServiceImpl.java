@@ -234,8 +234,8 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             tNet.setCellStyle(styles.totalRowHighlightCurrencyStyle);
             tExp.setCellStyle(styles.totalRowCurrencyStyle);
             tProfit.setCellStyle(styles.totalRowHighlightCurrencyStyle);
-            tMargin.setCellStyle(styles.totalRowPercentStyle != null ? styles.totalRowPercentStyle : styles.cellPercent);
-            tShare.setCellStyle(styles.totalRowPercentStyle != null ? styles.totalRowPercentStyle : styles.cellPercent);
+            tMargin.setCellStyle(styles.totalRowPercentStyle);
+            tShare.setCellStyle(styles.totalRowPercentStyle);
 
             // 5. Khung chữ ký
             int signRowStart = currentRow + 3;
@@ -1005,6 +1005,14 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         s.totalRowHighlightCurrencyStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         setTotalBorders(s.totalRowHighlightCurrencyStyle);
 
+        s.totalRowPercentStyle = workbook.createCellStyle();
+        s.totalRowPercentStyle.setFont(totalFont);
+        s.totalRowPercentStyle.setAlignment(HorizontalAlignment.RIGHT);
+        s.totalRowPercentStyle.setDataFormat(format.getFormat("0.0%"));
+        s.totalRowPercentStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        s.totalRowPercentStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        setTotalBorders(s.totalRowPercentStyle);
+
         // 5. KPI Box Styles
         Font kpiLabelFont = workbook.createFont();
         kpiLabelFont.setFontName(FONT_NAME);
@@ -1092,6 +1100,7 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         CellStyle totalRowNumberStyle;
         CellStyle totalRowCurrencyStyle;
         CellStyle totalRowHighlightCurrencyStyle;
+        CellStyle totalRowPercentStyle;
         CellStyle kpiLabelStyle;
         CellStyle kpiValueNumberStyle;
         CellStyle kpiValueCurrencyStyle;
