@@ -312,11 +312,6 @@
                               data-id="${cat.id}" onclick="openEditCategoryModal(this)">
                         <i class="fa-solid fa-pen"></i>
                       </button>
-                      <button type="button" class="action-btn-circle delete" title="Xóa danh mục" 
-                              data-id="${cat.id}" data-name="${fn:escapeXml(cat.name)}" data-products="${cat.totalProducts}"
-                              onclick="confirmDeleteCategory(this)">
-                        <i class="fa-solid fa-trash"></i>
-                      </button>
                     </div>
                   </td>
                 </tr>

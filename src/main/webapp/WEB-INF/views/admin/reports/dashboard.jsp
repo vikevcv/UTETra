@@ -463,8 +463,9 @@
                 <span class="text-muted small">Đánh giá thành tích kinh doanh và tỷ trọng đóng góp của từng điểm bán
                   trong chuỗi</span>
               </div>
-              <a href="${pageContext.request.contextPath}/admin/reports/export-excel?period=${selectedPeriod}&branchId=${selectedBranchId != null ? selectedBranchId : ''}&startDate=${startDate != null ? startDate : (report.startDate != null ? report.startDate : '')}&endDate=${endDate != null ? endDate : (report.endDate != null ? report.endDate : '')}"
-                class="btn btn-sm btn-outline-success">
+              <a href="${pageContext.request.contextPath}/admin/reports/export-branches-excel?period=${selectedPeriod}&branchId=${selectedBranchId != null ? selectedBranchId : ''}&startDate=${startDate != null ? startDate : (report.startDate != null ? report.startDate : '')}&endDate=${endDate != null ? endDate : (report.endDate != null ? report.endDate : '')}"
+                class="btn btn-sm btn-outline-success"
+                title="Tải bảng Excel xếp hạng chi nhánh (thu, chi voucher, chi phí, lợi nhuận)">
                 <i class="fa-solid fa-download me-1"></i> Tải Bảng Excel
               </a>
             </div>
@@ -625,8 +626,8 @@
                   </div>
                   <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-light text-secondary border">${fn:length(report.dailyRevenues)} ngày</span>
-                    <a href="${pageContext.request.contextPath}/admin/reports/export-excel?period=${selectedPeriod}&branchId=${selectedBranchId != null ? selectedBranchId : ''}&startDate=${startDate != null ? startDate : (report.startDate != null ? report.startDate : '')}&endDate=${endDate != null ? endDate : (report.endDate != null ? report.endDate : '')}"
-                      class="btn btn-sm btn-outline-success" title="Tải bảng doanh thu ngày chuẩn BM1">
+                    <a href="${pageContext.request.contextPath}/admin/reports/export-daily-excel?period=${selectedPeriod}&branchId=${selectedBranchId != null ? selectedBranchId : ''}&startDate=${startDate != null ? startDate : (report.startDate != null ? report.startDate : '')}&endDate=${endDate != null ? endDate : (report.endDate != null ? report.endDate : '')}"
+                      class="btn btn-sm btn-outline-success" title="Tải bảng Excel doanh thu, chi tiêu và lợi nhuận theo ngày">
                       <i class="fa-solid fa-download me-1"></i> Tải Excel
                     </a>
                   </div>

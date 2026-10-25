@@ -62,6 +62,451 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         }
     }
 
+    @Override
+    public byte[] exportBranchRankingReport(RevenueReportResponse report) {
+        if (report == null) {
+            report = new RevenueReportResponse();
+        }
+
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            ExcelStyles styles = createStyles(workbook);
+            Sheet sheet = workbook.createSheet("Xếp Hạng Chi Nhánh");
+            sheet.setDisplayGridlines(true);
+
+            // 1. Header block
+            Row row0 = sheet.createRow(0);
+            Cell cBrand = row0.createCell(0);
+            cBrand.setCellValue("HỆ THỐNG TRÀ SỮA UTETRA");
+            cBrand.setCellStyle(styles.brandStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 2));
+
+            Cell cFormId = row0.createCell(8);
+            cFormId.setCellValue("BIỂU MẪU: BCTK_CN");
+            cFormId.setCellStyle(styles.formIdStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 8, 10));
+
+            Row row1 = sheet.createRow(1);
+            Cell cSub = row1.createCell(0);
+            cSub.setCellValue("Báo Cáo Thống Kê & Xếp Hạng Hiệu Quả Kinh Doanh Toàn Bộ Chi Nhánh Trong Chuỗi");
+            cSub.setCellStyle(styles.subMetaStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 10));
+
+            // Tiêu đề chính
+            Row row3 = sheet.createRow(3);
+            Cell cTitle = row3.createCell(0);
+            cTitle.setCellValue("BẢNG XẾP HẠNG DOANH THU & HIỆU QUẢ CHI NHÁNH");
+            cTitle.setCellStyle(styles.mainTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 10));
+
+            // Thời gian lọc & Ngày xuất
+            Row row4 = sheet.createRow(4);
+            Cell cSubTitle = row4.createCell(0);
+            String dateRange = (report.getFormattedDateRange() != null) ? report.getFormattedDateRange() : "Toàn bộ thời gian";
+            cSubTitle.setCellValue(String.format("Kỳ Thống Kê: %s  |  Ngày xuất: %s", dateRange, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
+            cSubTitle.setCellStyle(styles.subTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(4, 4, 0, 10));
+
+            // 2. Table Headers
+            Row headerRow = sheet.createRow(6);
+            String[] headers = {
+                "Hạng",
+                "Mã Chi Nhánh",
+                "Tên Chi Nhánh",
+                "Số Đơn Hàng",
+                "Tổng Thu (Gross)",
+                "Chiết Khấu / Voucher",
+                "Thực Thu (Net)",
+                "Chi Tiêu Kho",
+                "Lợi Nhuận",
+                "Tỷ Suất LN (%)",
+                "Tỷ Trọng (%)"
+            };
+
+            for (int i = 0; i < headers.length; i++) {
+                Cell c = headerRow.createCell(i);
+                c.setCellValue(headers[i]);
+                c.setCellStyle(styles.tableHeaderStyle);
+            }
+
+            // 3. Data rows
+            int currentRow = 7;
+            int firstDataRow = currentRow + 1; // 1-based index for Excel formula
+            List<RevenueReportResponse.BranchRevenueDto> branches = report.getBranchRevenues();
+
+            if (branches != null && !branches.isEmpty()) {
+                int rank = 1;
+                for (RevenueReportResponse.BranchRevenueDto b : branches) {
+                    Row row = sheet.createRow(currentRow++);
+
+                    Cell cRank = row.createCell(0);
+                    cRank.setCellValue(rank++);
+                    cRank.setCellStyle(styles.cellCenter);
+
+                    Cell cCode = row.createCell(1);
+                    cCode.setCellValue(b.getBranchCode() != null ? b.getBranchCode() : "");
+                    cCode.setCellStyle(styles.cellCenter);
+
+                    Cell cName = row.createCell(2);
+                    cName.setCellValue(b.getBranchName() != null ? b.getBranchName() : "");
+                    cName.setCellStyle(styles.cellLeft);
+
+                    Cell cOrders = row.createCell(3);
+                    cOrders.setCellValue(b.getOrderCount());
+                    cOrders.setCellStyle(styles.cellNumber);
+
+                    Cell cGross = row.createCell(4);
+                    cGross.setCellValue(b.getGrossAmount() != null ? b.getGrossAmount().doubleValue() : 0.0);
+                    cGross.setCellStyle(styles.cellCurrency);
+
+                    Cell cDisc = row.createCell(5);
+                    cDisc.setCellValue(b.getDiscountAmount() != null ? b.getDiscountAmount().doubleValue() : 0.0);
+                    cDisc.setCellStyle(styles.cellCurrency);
+
+                    Cell cNet = row.createCell(6);
+                    cNet.setCellValue(b.getNetAmount() != null ? b.getNetAmount().doubleValue() : 0.0);
+                    cNet.setCellStyle(styles.cellCurrencyBold);
+
+                    Cell cExp = row.createCell(7);
+                    cExp.setCellValue(b.getExpenseAmount() != null ? b.getExpenseAmount().doubleValue() : 0.0);
+                    cExp.setCellStyle(styles.cellCurrency);
+
+                    Cell cProfit = row.createCell(8);
+                    cProfit.setCellValue(b.getProfitAmount() != null ? b.getProfitAmount().doubleValue() : 0.0);
+                    cProfit.setCellStyle(styles.cellCurrencyBold);
+
+                    Cell cMargin = row.createCell(9);
+                    cMargin.setCellValue(b.getProfitMargin() / 100.0);
+                    cMargin.setCellStyle(styles.cellPercent);
+
+                    Cell cShare = row.createCell(10);
+                    cShare.setCellValue(b.getPercentage() / 100.0);
+                    cShare.setCellStyle(styles.cellPercent);
+                }
+            }
+
+            int lastDataRow = currentRow; // 1-based index
+
+            // 4. Dòng Tổng Cộng
+            Row totalRow = sheet.createRow(currentRow);
+            Cell tLabel = totalRow.createCell(0);
+            tLabel.setCellValue("TỔNG CỘNG TOÀN CHUỖI");
+            tLabel.setCellStyle(styles.totalRowHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(currentRow, currentRow, 0, 2));
+
+            for (int col = 1; col <= 2; col++) {
+                Cell cell = totalRow.createCell(col);
+                cell.setCellStyle(styles.totalRowHeaderStyle);
+            }
+
+            Cell tOrders = totalRow.createCell(3);
+            Cell tGross = totalRow.createCell(4);
+            Cell tDisc = totalRow.createCell(5);
+            Cell tNet = totalRow.createCell(6);
+            Cell tExp = totalRow.createCell(7);
+            Cell tProfit = totalRow.createCell(8);
+            Cell tMargin = totalRow.createCell(9);
+            Cell tShare = totalRow.createCell(10);
+
+            if (branches != null && !branches.isEmpty()) {
+                tOrders.setCellFormula(String.format("SUM(D%d:D%d)", firstDataRow, lastDataRow));
+                tGross.setCellFormula(String.format("SUM(E%d:E%d)", firstDataRow, lastDataRow));
+                tDisc.setCellFormula(String.format("SUM(F%d:F%d)", firstDataRow, lastDataRow));
+                tNet.setCellFormula(String.format("SUM(G%d:G%d)", firstDataRow, lastDataRow));
+                tExp.setCellFormula(String.format("SUM(H%d:H%d)", firstDataRow, lastDataRow));
+                tProfit.setCellFormula(String.format("SUM(I%d:I%d)", firstDataRow, lastDataRow));
+                tMargin.setCellFormula(String.format("IF(G%d>0, I%d/G%d, 0)", currentRow + 1, currentRow + 1, currentRow + 1));
+                tShare.setCellFormula(String.format("SUM(K%d:K%d)", firstDataRow, lastDataRow));
+            } else {
+                tOrders.setCellValue(0);
+                tGross.setCellValue(0);
+                tDisc.setCellValue(0);
+                tNet.setCellValue(0);
+                tExp.setCellValue(0);
+                tProfit.setCellValue(0);
+                tMargin.setCellValue(0);
+                tShare.setCellValue(1.0);
+            }
+
+            tOrders.setCellStyle(styles.totalRowNumberStyle);
+            tGross.setCellStyle(styles.totalRowCurrencyStyle);
+            tDisc.setCellStyle(styles.totalRowCurrencyStyle);
+            tNet.setCellStyle(styles.totalRowHighlightCurrencyStyle);
+            tExp.setCellStyle(styles.totalRowCurrencyStyle);
+            tProfit.setCellStyle(styles.totalRowHighlightCurrencyStyle);
+            tMargin.setCellStyle(styles.totalRowPercentStyle);
+            tShare.setCellStyle(styles.totalRowPercentStyle);
+
+            // 5. Khung chữ ký
+            int signRowStart = currentRow + 3;
+            Row signDateRow = sheet.createRow(signRowStart);
+            Cell cSignDate = signDateRow.createCell(7);
+            cSignDate.setCellValue(String.format("Ngày ..... tháng ..... năm %d", LocalDate.now().getYear()));
+            cSignDate.setCellStyle(styles.signatureSubStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart, signRowStart, 7, 10));
+
+            Row signTitleRow = sheet.createRow(signRowStart + 1);
+            Cell s1 = signTitleRow.createCell(0);
+            s1.setCellValue("NGƯỜI LẬP BÁO CÁO");
+            s1.setCellStyle(styles.signatureTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 1, signRowStart + 1, 0, 2));
+
+            Cell s2 = signTitleRow.createCell(4);
+            s2.setCellValue("KẾ TOÁN TRƯỞNG");
+            s2.setCellStyle(styles.signatureTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 1, signRowStart + 1, 4, 6));
+
+            Cell s3 = signTitleRow.createCell(8);
+            s3.setCellValue("QUẢN LÝ / GIÁM ĐỐC CHUỖI");
+            s3.setCellStyle(styles.signatureTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 1, signRowStart + 1, 8, 10));
+
+            Row signSubRow = sheet.createRow(signRowStart + 2);
+            Cell sb1 = signSubRow.createCell(0);
+            sb1.setCellValue("(Ký & ghi rõ họ tên)");
+            sb1.setCellStyle(styles.signatureSubStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 2, signRowStart + 2, 0, 2));
+
+            Cell sb2 = signSubRow.createCell(4);
+            sb2.setCellValue("(Ký & ghi rõ họ tên)");
+            sb2.setCellStyle(styles.signatureSubStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 2, signRowStart + 2, 4, 6));
+
+            Cell sb3 = signSubRow.createCell(8);
+            sb3.setCellValue("(Ký, đóng dấu & ghi rõ họ tên)");
+            sb3.setCellStyle(styles.signatureSubStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 2, signRowStart + 2, 8, 10));
+
+            for (int i = 0; i <= 10; i++) {
+                sheet.autoSizeColumn(i);
+                int w = sheet.getColumnWidth(i);
+                if (w < 3500) sheet.setColumnWidth(i, 3500);
+            }
+
+            workbook.write(out);
+            log.info(">>> Đã xuất báo cáo xếp hạng chi nhánh thành công.");
+            return out.toByteArray();
+        } catch (IOException e) {
+            log.error("Lỗi khi xuất file Excel xếp hạng chi nhánh: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi khi xuất file Excel xếp hạng chi nhánh: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public byte[] exportDailyRevenueReport(RevenueReportResponse report) {
+        if (report == null) {
+            report = new RevenueReportResponse();
+        }
+
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            ExcelStyles styles = createStyles(workbook);
+            Sheet sheet = workbook.createSheet("Doanh Thu Theo Ngày");
+            sheet.setDisplayGridlines(true);
+
+            // 1. Header block
+            Row row0 = sheet.createRow(0);
+            Cell cBrand = row0.createCell(0);
+            cBrand.setCellValue("HỆ THỐNG TRÀ SỮA UTETRA");
+            cBrand.setCellStyle(styles.brandStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 2));
+
+            Cell cFormId = row0.createCell(6);
+            cFormId.setCellValue("BIỂU MẪU: BCTK_DAILY");
+            cFormId.setCellStyle(styles.formIdStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 6, 8));
+
+            Row row1 = sheet.createRow(1);
+            Cell cSub = row1.createCell(0);
+            cSub.setCellValue("Báo Cáo Phân Tích Doanh Thu, Chi Tiêu Kho & Lợi Nhuận Theo Từng Ngày");
+            cSub.setCellStyle(styles.subMetaStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 8));
+
+            // Tiêu đề chính
+            Row row3 = sheet.createRow(3);
+            Cell cTitle = row3.createCell(0);
+            String scope = (report.getBranchName() != null && !report.getBranchName().isBlank())
+                    ? "CHI NHÁNH: " + report.getBranchName().toUpperCase()
+                    : "TOÀN BỘ HỆ THỐNG CHUỖI";
+            cTitle.setCellValue("BÁO CÁO DOANH THU, CHI TIÊU & LỢI NHUẬN THEO NGÀY");
+            cTitle.setCellStyle(styles.mainTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 8));
+
+            // Thời gian lọc & Ngày xuất
+            Row row4 = sheet.createRow(4);
+            Cell cSubTitle = row4.createCell(0);
+            String dateRange = (report.getFormattedDateRange() != null) ? report.getFormattedDateRange() : "Toàn bộ thời gian";
+            cSubTitle.setCellValue(String.format("Phạm vi: %s  |  Kỳ Thống Kê: %s  |  Ngày xuất: %s", scope, dateRange, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
+            cSubTitle.setCellStyle(styles.subTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(4, 4, 0, 8));
+
+            // 2. Table Headers
+            Row headerRow = sheet.createRow(6);
+            String[] headers = {
+                "STT",
+                "Ngày",
+                "Thứ",
+                "Số Đơn Hàng",
+                "Doanh Thu Gộp",
+                "Chi Giảm Giá / Voucher",
+                "Doanh Thu Thực Thu",
+                "Chi Tiêu Kho",
+                "Lợi Nhuận Trong Ngày"
+            };
+
+            for (int i = 0; i < headers.length; i++) {
+                Cell c = headerRow.createCell(i);
+                c.setCellValue(headers[i]);
+                c.setCellStyle(styles.tableHeaderStyle);
+            }
+
+            // 3. Data rows
+            int currentRow = 7;
+            int firstDataRow = currentRow + 1; // 1-based index
+            List<RevenueReportResponse.DailyRevenueDto> dailyList = report.getDailyRevenues();
+
+            if (dailyList != null && !dailyList.isEmpty()) {
+                int stt = 1;
+                for (RevenueReportResponse.DailyRevenueDto d : dailyList) {
+                    Row row = sheet.createRow(currentRow++);
+
+                    Cell cStt = row.createCell(0);
+                    cStt.setCellValue(stt++);
+                    cStt.setCellStyle(styles.cellCenter);
+
+                    Cell cDate = row.createCell(1);
+                    cDate.setCellValue(d.getDateStr() != null ? d.getDateStr() : d.getFormattedDate());
+                    cDate.setCellStyle(styles.cellCenter);
+
+                    Cell cDay = row.createCell(2);
+                    cDay.setCellValue(d.getDayOfWeek() != null ? d.getDayOfWeek() : "");
+                    cDay.setCellStyle(styles.cellCenter);
+
+                    Cell cCount = row.createCell(3);
+                    cCount.setCellValue(d.getOrderCount());
+                    cCount.setCellStyle(styles.cellNumber);
+
+                    Cell cGross = row.createCell(4);
+                    cGross.setCellValue(d.getGrossAmount() != null ? d.getGrossAmount().doubleValue() : 0.0);
+                    cGross.setCellStyle(styles.cellCurrency);
+
+                    Cell cDisc = row.createCell(5);
+                    cDisc.setCellValue(d.getDiscountAmount() != null ? d.getDiscountAmount().doubleValue() : 0.0);
+                    cDisc.setCellStyle(styles.cellCurrency);
+
+                    Cell cNet = row.createCell(6);
+                    cNet.setCellValue(d.getNetAmount() != null ? d.getNetAmount().doubleValue() : 0.0);
+                    cNet.setCellStyle(styles.cellCurrencyBold);
+
+                    Cell cExp = row.createCell(7);
+                    cExp.setCellValue(d.getExpenseAmount() != null ? d.getExpenseAmount().doubleValue() : 0.0);
+                    cExp.setCellStyle(styles.cellCurrency);
+
+                    Cell cProfit = row.createCell(8);
+                    cProfit.setCellValue(d.getProfitAmount() != null ? d.getProfitAmount().doubleValue() : 0.0);
+                    cProfit.setCellStyle(styles.cellCurrencyBold);
+                }
+            }
+
+            int lastDataRow = currentRow; // 1-based index
+
+            // 4. Dòng Tổng Cộng
+            Row totalRow = sheet.createRow(currentRow);
+            Cell tLabel = totalRow.createCell(0);
+            tLabel.setCellValue("TỔNG CỘNG");
+            tLabel.setCellStyle(styles.totalRowHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(currentRow, currentRow, 0, 2));
+
+            for (int col = 1; col <= 2; col++) {
+                Cell cell = totalRow.createCell(col);
+                cell.setCellStyle(styles.totalRowHeaderStyle);
+            }
+
+            Cell tCount = totalRow.createCell(3);
+            Cell tGross = totalRow.createCell(4);
+            Cell tDisc = totalRow.createCell(5);
+            Cell tNet = totalRow.createCell(6);
+            Cell tExp = totalRow.createCell(7);
+            Cell tProfit = totalRow.createCell(8);
+
+            if (dailyList != null && !dailyList.isEmpty()) {
+                tCount.setCellFormula(String.format("SUM(D%d:D%d)", firstDataRow, lastDataRow));
+                tGross.setCellFormula(String.format("SUM(E%d:E%d)", firstDataRow, lastDataRow));
+                tDisc.setCellFormula(String.format("SUM(F%d:F%d)", firstDataRow, lastDataRow));
+                tNet.setCellFormula(String.format("SUM(G%d:G%d)", firstDataRow, lastDataRow));
+                tExp.setCellFormula(String.format("SUM(H%d:H%d)", firstDataRow, lastDataRow));
+                tProfit.setCellFormula(String.format("SUM(I%d:I%d)", firstDataRow, lastDataRow));
+            } else {
+                tCount.setCellValue(0);
+                tGross.setCellValue(0);
+                tDisc.setCellValue(0);
+                tNet.setCellValue(0);
+                tExp.setCellValue(0);
+                tProfit.setCellValue(0);
+            }
+
+            tCount.setCellStyle(styles.totalRowNumberStyle);
+            tGross.setCellStyle(styles.totalRowCurrencyStyle);
+            tDisc.setCellStyle(styles.totalRowCurrencyStyle);
+            tNet.setCellStyle(styles.totalRowHighlightCurrencyStyle);
+            tExp.setCellStyle(styles.totalRowCurrencyStyle);
+            tProfit.setCellStyle(styles.totalRowHighlightCurrencyStyle);
+
+            // 5. Khung chữ ký
+            int signRowStart = currentRow + 3;
+            Row signDateRow = sheet.createRow(signRowStart);
+            Cell cSignDate = signDateRow.createCell(6);
+            cSignDate.setCellValue(String.format("Ngày ..... tháng ..... năm %d", LocalDate.now().getYear()));
+            cSignDate.setCellStyle(styles.signatureSubStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart, signRowStart, 6, 8));
+
+            Row signTitleRow = sheet.createRow(signRowStart + 1);
+            Cell s1 = signTitleRow.createCell(0);
+            s1.setCellValue("NGƯỜI LẬP BÁO CÁO");
+            s1.setCellStyle(styles.signatureTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 1, signRowStart + 1, 0, 2));
+
+            Cell s2 = signTitleRow.createCell(3);
+            s2.setCellValue("KẾ TOÁN TRƯỞNG");
+            s2.setCellStyle(styles.signatureTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 1, signRowStart + 1, 3, 5));
+
+            Cell s3 = signTitleRow.createCell(6);
+            s3.setCellValue("QUẢN LÝ / GIÁM ĐỐC CHUỖI");
+            s3.setCellStyle(styles.signatureTitleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 1, signRowStart + 1, 6, 8));
+
+            Row signSubRow = sheet.createRow(signRowStart + 2);
+            Cell sb1 = signSubRow.createCell(0);
+            sb1.setCellValue("(Ký & ghi rõ họ tên)");
+            sb1.setCellStyle(styles.signatureSubStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 2, signRowStart + 2, 0, 2));
+
+            Cell sb2 = signSubRow.createCell(3);
+            sb2.setCellValue("(Ký & ghi rõ họ tên)");
+            sb2.setCellStyle(styles.signatureSubStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 2, signRowStart + 2, 3, 5));
+
+            Cell sb3 = signSubRow.createCell(6);
+            sb3.setCellValue("(Ký, đóng dấu & ghi rõ họ tên)");
+            sb3.setCellStyle(styles.signatureSubStyle);
+            sheet.addMergedRegion(new CellRangeAddress(signRowStart + 2, signRowStart + 2, 6, 8));
+
+            for (int i = 0; i <= 8; i++) {
+                sheet.autoSizeColumn(i);
+                int w = sheet.getColumnWidth(i);
+                if (w < 3500) sheet.setColumnWidth(i, 3500);
+            }
+
+            workbook.write(out);
+            log.info(">>> Đã xuất báo cáo doanh thu theo ngày thành công.");
+            return out.toByteArray();
+        } catch (IOException e) {
+            log.error("Lỗi khi xuất file Excel doanh thu theo ngày: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi khi xuất file Excel doanh thu theo ngày: " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Tạo Sheet 1: Báo cáo doanh thu chi tiết theo ngày chuẩn biểu mẫu BM1.
      */
@@ -560,6 +1005,14 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         s.totalRowHighlightCurrencyStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         setTotalBorders(s.totalRowHighlightCurrencyStyle);
 
+        s.totalRowPercentStyle = workbook.createCellStyle();
+        s.totalRowPercentStyle.setFont(totalFont);
+        s.totalRowPercentStyle.setAlignment(HorizontalAlignment.RIGHT);
+        s.totalRowPercentStyle.setDataFormat(format.getFormat("0.0%"));
+        s.totalRowPercentStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        s.totalRowPercentStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        setTotalBorders(s.totalRowPercentStyle);
+
         // 5. KPI Box Styles
         Font kpiLabelFont = workbook.createFont();
         kpiLabelFont.setFontName(FONT_NAME);
@@ -647,6 +1100,7 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         CellStyle totalRowNumberStyle;
         CellStyle totalRowCurrencyStyle;
         CellStyle totalRowHighlightCurrencyStyle;
+        CellStyle totalRowPercentStyle;
         CellStyle kpiLabelStyle;
         CellStyle kpiValueNumberStyle;
         CellStyle kpiValueCurrencyStyle;

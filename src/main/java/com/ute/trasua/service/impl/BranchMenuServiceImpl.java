@@ -80,6 +80,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     @Transactional(readOnly = true)
     public List<BranchMenuResponse> getMenuByBranch(Long branchId) {
         return branchMenuRepository.findByBranchId(branchId).stream()
+                .filter(bm -> bm.getProduct() != null && "ACTIVE".equalsIgnoreCase(bm.getProduct().getStatus()))
                 .map(BranchMenuResponse::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -168,6 +169,14 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     @Transactional
     public boolean updateProductAvailability(Long branchId, Long productId, boolean available) {
         Optional<BranchMenu> optional = branchMenuRepository.findByBranchIdAndProductId(branchId, productId);
+        Product product = optional.map(BranchMenu::getProduct)
+                .orElseGet(() -> productRepository.findById(productId)
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy món nước ID: " + productId)));
+
+        if (product == null || !"ACTIVE".equalsIgnoreCase(product.getStatus())) {
+            throw new IllegalStateException("Món nước này đã bị Quản trị viên (Admin) tạm ngưng kinh doanh trên toàn hệ thống!");
+        }
+
         if (optional.isPresent()) {
             BranchMenu bm = optional.get();
             bm.setAvailable(available);
@@ -175,8 +184,6 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         } else {
             Branch branch = branchRepository.findById(branchId)
                     .orElseThrow(() -> new IllegalArgumentException("Branch not found with ID: " + branchId));
-            Product product = productRepository.findById(productId)
-                    .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + productId));
 
             BranchMenu bm = BranchMenu.builder()
                     .branch(branch)
@@ -189,8 +196,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
         log.info(">>> Updated Product ID {} availability at Branch ID {} to: {}", productId, branchId, available);
 
         try {
-            String prodName = optional.map(b -> b.getProduct().getName())
-                    .orElseGet(() -> productRepository.findById(productId).map(Product::getName).orElse("Món"));
+            String prodName = product.getName() != null ? product.getName() : "Món";
             Map<String, Object> payload = Map.of(
                     "type", "PRODUCT_AVAILABILITY_CHANGED",
                     "branchId", branchId,
@@ -255,13 +261,13 @@ public class BranchMenuServiceImpl implements BranchMenuService {
     @Override
     @Transactional(readOnly = true)
     public long countAvailableAtBranch(Long branchId) {
-        return branchMenuRepository.countByBranchIdAndAvailableTrue(branchId);
+        return branchMenuRepository.countActiveAndAvailableByBranchId(branchId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public long countTotalAtBranch(Long branchId) {
-        return branchMenuRepository.countByBranchId(branchId);
+        return branchMenuRepository.countActiveProductsByBranchId(branchId);
     }
 
     @Override
@@ -297,7 +303,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
 
         List<BranchMenuStatusDto> list = new ArrayList<>();
 
-        List<Product> products = productRepository.findAll();
+        List<Product> products = productRepository.findByStatusOrderByNameAsc("ACTIVE");
         for (Product p : products) {
             boolean isDbAvail = productAvailMap.getOrDefault(p.getId(), true);
             String prodName = p.getName() != null ? p.getName().toLowerCase() : "";
@@ -431,6 +437,10 @@ public class BranchMenuServiceImpl implements BranchMenuService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh ID: " + targetBranchId));
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy món nước ID: " + productId));
+
+        if (!"ACTIVE".equalsIgnoreCase(product.getStatus())) {
+            throw new IllegalStateException("Món nước này đã bị Quản trị viên (Admin) tạm ngưng kinh doanh trên toàn hệ thống!");
+        }
 
         BranchMenu bm = branchMenuRepository.findByBranchIdAndProductId(targetBranchId, productId)
                 .orElse(null);

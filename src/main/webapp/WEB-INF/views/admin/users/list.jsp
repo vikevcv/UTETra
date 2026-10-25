@@ -270,7 +270,7 @@
                       <!-- Đổi quyền nhanh -->
                       <button type="button" class="btn btn-sm btn-zen-light" 
                               title="Phân quyền vai trò"
-                              onclick="openRoleModal('${u.id}', '${u.username}', '${u.fullName}', '${u.primaryRole}', '${u.branchId != null ? u.branchId : ''}')">
+                              onclick="openRoleModal('${u.id}', '${u.username}', '${u.fullName}', '${u.primaryRole}', '${u.branchId}')">
                         <i class="fa-solid fa-user-shield text-primary"></i>
                       </button>
 

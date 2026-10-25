@@ -166,26 +166,7 @@ public class AdminReportController {
             @RequestParam(value = "startDate", required = false) String startDateStr,
             @RequestParam(value = "endDate", required = false) String endDateStr
     ) {
-        LocalDate startDate = null;
-        if (startDateStr != null && !startDateStr.trim().isEmpty()) {
-            try {
-                startDate = LocalDate.parse(startDateStr.trim());
-            } catch (Exception ignored) {}
-        }
-
-        LocalDate endDate = null;
-        if (endDateStr != null && !endDateStr.trim().isEmpty()) {
-            try {
-                endDate = LocalDate.parse(endDateStr.trim());
-            } catch (Exception ignored) {}
-        }
-
-        RevenueReportRequest request = RevenueReportRequest.builder()
-                .branchId(branchId)
-                .period(period)
-                .startDate(startDate)
-                .endDate(endDate)
-                .build();
+        RevenueReportRequest request = buildReportRequest(branchId, period, startDateStr, endDateStr);
 
         byte[] excelData = revenueReportService.exportRevenueExcelBM1(request);
 
@@ -204,6 +185,82 @@ public class AdminReportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(excelData);
+    }
+
+    /**
+     * Xuất bảng xếp hạng và hiệu quả các chi nhánh (thu, chi voucher, chi phí, lợi nhuận) ra tệp Excel (.xlsx).
+     */
+    @GetMapping("/export-branches-excel")
+    public ResponseEntity<byte[]> exportBranchRankingExcel(
+            @RequestParam(value = "branchId", required = false) Long branchId,
+            @RequestParam(value = "period", defaultValue = "THIS_MONTH") String period,
+            @RequestParam(value = "startDate", required = false) String startDateStr,
+            @RequestParam(value = "endDate", required = false) String endDateStr
+    ) {
+        // Bảng xếp hạng chi nhánh luôn xuất toàn bộ tất cả chi nhánh trong chuỗi
+        RevenueReportRequest request = buildReportRequest(null, period, startDateStr, endDateStr);
+        byte[] excelData = revenueReportService.exportBranchRankingExcel(request);
+
+        String dateSuffix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String filename = String.format("BaoCao_XepHang_ChiNhanh_%s.xlsx", dateSuffix);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(excelData);
+    }
+
+    /**
+     * Xuất báo cáo doanh thu, chi tiêu kho và lợi nhuận theo ngày của toàn chuỗi ra tệp Excel (.xlsx).
+     */
+    @GetMapping("/export-daily-excel")
+    public ResponseEntity<byte[]> exportDailyRevenueExcel(
+            @RequestParam(value = "branchId", required = false) Long branchId,
+            @RequestParam(value = "period", defaultValue = "THIS_MONTH") String period,
+            @RequestParam(value = "startDate", required = false) String startDateStr,
+            @RequestParam(value = "endDate", required = false) String endDateStr
+    ) {
+        RevenueReportRequest request = buildReportRequest(branchId, period, startDateStr, endDateStr);
+        byte[] excelData = revenueReportService.exportDailyRevenueExcel(request);
+
+        String branchSuffix = "TOAN_CHUOI";
+        if (branchId != null) {
+            try {
+                BranchResponse b = branchService.getBranchById(branchId);
+                branchSuffix = (b.getBranchCode() != null) ? b.getBranchCode() : "CN" + branchId;
+            } catch (Exception ignored) {}
+        }
+
+        String dateSuffix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String filename = String.format("BaoCao_DoanhThu_TheoNgay_%s_%s.xlsx", branchSuffix, dateSuffix);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(excelData);
+    }
+
+    private RevenueReportRequest buildReportRequest(Long branchId, String period, String startDateStr, String endDateStr) {
+        LocalDate startDate = null;
+        if (startDateStr != null && !startDateStr.trim().isEmpty()) {
+            try {
+                startDate = LocalDate.parse(startDateStr.trim());
+            } catch (Exception ignored) {}
+        }
+
+        LocalDate endDate = null;
+        if (endDateStr != null && !endDateStr.trim().isEmpty()) {
+            try {
+                endDate = LocalDate.parse(endDateStr.trim());
+            } catch (Exception ignored) {}
+        }
+
+        return RevenueReportRequest.builder()
+                .branchId(branchId)
+                .period(period)
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
     }
 
     private String toJsonArray(List<?> list) {

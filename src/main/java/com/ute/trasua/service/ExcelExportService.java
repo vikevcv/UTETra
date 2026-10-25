@@ -25,4 +25,14 @@ public interface ExcelExportService {
      * @param outputStream target output stream
      */
     void exportRevenueReportBM1ToStream(RevenueReportResponse report, OutputStream outputStream);
+
+    /**
+     * Generate branch ranking performance report (.xlsx) showing all branch revenue, discount, expenses, and profits.
+     */
+    byte[] exportBranchRankingReport(RevenueReportResponse report);
+
+    /**
+     * Generate daily timeline revenue report (.xlsx) showing revenue, voucher, expenses, and profits by day.
+     */
+    byte[] exportDailyRevenueReport(RevenueReportResponse report);
 }
