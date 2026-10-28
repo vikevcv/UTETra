@@ -2,6 +2,7 @@ package com.ute.trasua.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.config.SimpleBrokerRegistration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -25,9 +26,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         taskScheduler.setThreadNamePrefix("ws-heartbeat-thread-");
         taskScheduler.initialize();
 
-        config.enableSimpleBroker("/topic")
-                .setHeartbeatValue(new long[]{10000, 10000}) // 10s ping/pong keepalive
-                .setTaskScheduler(taskScheduler);
+        SimpleBrokerRegistration brokerRegistration = config.enableSimpleBroker("/topic");
+        brokerRegistration.setHeartbeatValue(new long[]{10000L, 10000L});
+        brokerRegistration.setTaskScheduler(taskScheduler);
+
         config.setApplicationDestinationPrefixes("/app");
     }
 
