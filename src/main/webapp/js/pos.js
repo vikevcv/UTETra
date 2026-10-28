@@ -29,10 +29,17 @@ document.addEventListener("DOMContentLoaded", () => {
         return new Intl.NumberFormat('vi-VN').format(num) + "₫";
     }
 
-    // Load Menu from API
+    // Load Menu from API (với chống cache trình duyệt & proxy)
     async function loadMenu() {
         try {
-            const res = await fetch(`/api/pos/menu?branchId=${currentBranchId}`);
+            const timestamp = Date.now();
+            const res = await fetch(`/api/pos/menu?branchId=${currentBranchId}&_t=${timestamp}`, {
+                cache: "no-store",
+                headers: {
+                    "Pragma": "no-cache",
+                    "Cache-Control": "no-cache"
+                }
+            });
             if (!res.ok) throw new Error("Không thể tải thực đơn quầy POS");
             menuData = await res.json();
             renderCategories();
@@ -1301,20 +1308,44 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = `/branch/pos?branchId=${currentBranchId}`;
     });
 
-    // Realtime Menu & Cup Stock Synchronization via WebSocket STOMP
+    // Realtime Menu & Cup Stock Synchronization via WebSocket STOMP (Keepalive & Auto-Reconnect)
     let stompClient = null;
+    let posWsReconnectTimer = null;
+    let isWsConnecting = false;
+
+    function schedulePosWsReconnect() {
+        if (posWsReconnectTimer) return;
+        posWsReconnectTimer = setTimeout(() => {
+            posWsReconnectTimer = null;
+            connectPosRealtimeSync();
+        }, 4000);
+    }
+
     function connectPosRealtimeSync() {
         if (typeof SockJS === "undefined" || typeof Stomp === "undefined") {
             console.warn("SockJS or Stomp is not loaded yet for POS Realtime Sync.");
             return;
         }
+        if (isWsConnecting) return;
+        isWsConnecting = true;
+
         try {
+            if (stompClient && stompClient.connected) {
+                try { stompClient.disconnect(); } catch (e) {}
+            }
+
             const socket = new SockJS("/ws-kds");
             stompClient = Stomp.over(socket);
             stompClient.debug = null; // Tắt log rác
+            stompClient.heartbeat.outgoing = 10000; // 10s ping server
+            stompClient.heartbeat.incoming = 10000; // 10s pong from server
 
             stompClient.connect({}, () => {
-                console.log(">>> POS Realtime WebSocket Connected to /ws-kds");
+                isWsConnecting = false;
+                console.log(">>> POS Realtime WebSocket Connected to /ws-kds (Branch: " + currentBranchId + ")");
+                // Khi vừa kết nối (hoặc khôi phục kết nối thành công), tải lại menu để đồng bộ mọi cập nhật
+                loadMenu();
+
                 // Lắng nghe các thay đổi thực đơn / kho ly tại chi nhánh
                 stompClient.subscribe(`/topic/menu/${currentBranchId}`, (message) => {
                     try {
@@ -1323,12 +1354,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         if (event.type === "PRODUCT_AVAILABILITY_CHANGED") {
                             // Cập nhật trạng thái món nước
+                            const targetId = Number(event.productId);
+                            const newAvail = (event.isAvailable === true || event.isAvailable === "true");
+                            let found = false;
                             if (menuData && menuData.products) {
-                                const prod = menuData.products.find(p => p.id === event.productId);
+                                const prod = menuData.products.find(p => Number(p.id) === targetId);
                                 if (prod) {
-                                    prod.isAvailable = event.isAvailable;
+                                    prod.isAvailable = newAvail;
                                     renderProducts();
+                                    found = true;
+                                    showPosZenToast(`Món [${prod.name}] vừa được ${newAvail ? 'mở bán' : 'tạm ngưng bán'}!`, newAvail ? "success" : "warning", 2500);
                                 }
+                            }
+                            if (!found) {
+                                loadMenu();
                             }
                         } else if (event.type === "CUP_STOCK_UPDATED") {
                             // Cập nhật tồn kho ly theo size
@@ -1345,9 +1384,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         } else if (event.type === "TOPPING_AVAILABILITY_CHANGED") {
                             // Cập nhật trạng thái topping
                             if (menuData && menuData.toppings) {
-                                const top = menuData.toppings.find(t => t.id === event.toppingId);
+                                const top = menuData.toppings.find(t => Number(t.id) === Number(event.toppingId));
                                 if (top) {
-                                    top.isAvailable = event.isAvailable;
+                                    top.isAvailable = (event.isAvailable === true || event.isAvailable === "true");
                                 }
                             }
                         } else if (event.type === "PRODUCT_STOCK_UPDATED" || event.type === "TOPPING_STOCK_UPDATED") {
@@ -1379,10 +1418,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 });
             }, (err) => {
-                console.warn("POS WebSocket disconnected, fallback mode:", err);
+                isWsConnecting = false;
+                console.warn("POS WebSocket disconnected, scheduling reconnect in 4s:", err);
+                schedulePosWsReconnect();
             });
+
+            socket.onclose = () => {
+                isWsConnecting = false;
+                schedulePosWsReconnect();
+            };
         } catch (err) {
+            isWsConnecting = false;
             console.warn("POS Realtime sync init error:", err);
+            schedulePosWsReconnect();
         }
     }
 

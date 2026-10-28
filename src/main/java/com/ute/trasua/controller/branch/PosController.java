@@ -14,6 +14,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -301,9 +302,16 @@ public class PosController {
             @RequestParam(value = "branchId", required = false) Long branchId,
             HttpSession session) {
         Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-        Long targetBranchId = (sessionBranchId != null) ? sessionBranchId : (branchId != null ? branchId : 1L);
+        Long targetBranchId = (branchId != null) ? branchId : (sessionBranchId != null ? sessionBranchId : 1L);
+        if (branchId != null) {
+            session.setAttribute("POS_BRANCH_ID", targetBranchId);
+        }
         PosMenuResponse menu = posService.getPosMenu(targetBranchId);
-        return ResponseEntity.ok(menu);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(menu);
     }
 
     /**
