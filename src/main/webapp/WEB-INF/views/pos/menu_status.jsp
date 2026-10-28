@@ -266,18 +266,38 @@
             initWebSocket();
         });
 
-        // WebSocket STOMP kết nối thời gian thực
+        // WebSocket STOMP kết nối thời gian thực (hỗ trợ Reconnect & Heartbeat)
+        let menuWsReconnectTimer = null;
+        let menuStompClient = null;
+
+        function scheduleMenuWsReconnect() {
+            if (menuWsReconnectTimer) return;
+            menuWsReconnectTimer = setTimeout(() => {
+                menuWsReconnectTimer = null;
+                initWebSocket();
+            }, 4000);
+        }
+
         function initWebSocket() {
             try {
-                const socket = new SockJS("<c:url value='/ws'/>");
-                const stompClient = Stomp.over(socket);
-                stompClient.debug = null; // Tắt log debug
-                stompClient.connect({}, () => {
-                    stompClient.subscribe("/topic/menu/" + window.BRANCH_ID, (message) => {
+                if (menuStompClient && menuStompClient.connected) {
+                    try { menuStompClient.disconnect(); } catch (e) {}
+                }
+                const socket = new SockJS("<c:url value='/ws-kds'/>");
+                menuStompClient = Stomp.over(socket);
+                menuStompClient.debug = null; // Tắt log debug
+                menuStompClient.heartbeat.outgoing = 10000;
+                menuStompClient.heartbeat.incoming = 10000;
+
+                menuStompClient.connect({}, () => {
+                    console.log(">>> Menu Status WebSocket connected to /ws-kds");
+                    fetchBranchMenu(); // Đồng bộ lại dữ liệu khi reconnect thành công
+
+                    menuStompClient.subscribe("/topic/menu/" + window.BRANCH_ID, (message) => {
                         try {
                             const data = JSON.parse(message.body);
                             if (data.type === "PRODUCT_STOCK_UPDATED") {
-                                const prod = allItems.find(i => i.id === data.productId && i.itemType === "PRODUCT");
+                                const prod = allItems.find(i => Number(i.id) === Number(data.productId) && i.itemType === "PRODUCT");
                                 if (prod) {
                                     prod.stockEstimate = data.remainingStock;
                                     prod.isAvailable = data.isAvailable;
@@ -293,9 +313,9 @@
                                     updateCounts();
                                 }
                             } else if (data.type === "PRODUCT_AVAILABILITY_CHANGED") {
-                                const prod = allItems.find(i => i.id === data.productId && i.itemType === "PRODUCT");
+                                const prod = allItems.find(i => Number(i.id) === Number(data.productId) && i.itemType === "PRODUCT");
                                 if (prod) {
-                                    prod.isAvailable = data.isAvailable;
+                                    prod.isAvailable = (data.isAvailable === true || data.isAvailable === "true");
                                     renderGrid();
                                     updateCounts();
                                 }
@@ -304,9 +324,17 @@
                             console.error("Lỗi parse WS:", err);
                         }
                     });
+                }, (err) => {
+                    console.warn("Lỗi kết nối WebSocket menu, thử lại sau 4s:", err);
+                    scheduleMenuWsReconnect();
                 });
+
+                socket.onclose = () => {
+                    scheduleMenuWsReconnect();
+                };
             } catch (err) {
-                console.warn("Lỗi kết nối WebSocket menu:", err);
+                console.warn("Lỗi khởi tạo WebSocket menu:", err);
+                scheduleMenuWsReconnect();
             }
         }
 
