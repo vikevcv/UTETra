@@ -35,7 +35,11 @@ public class BranchMenuApiController {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
         List<BranchMenuStatusDto> list = branchMenuService.getBranchMenuStatus(branchId);
-        return ResponseEntity.ok(list);
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noCache().noStore().mustRevalidate())
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(list);
     }
 
     /**

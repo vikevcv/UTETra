@@ -187,10 +187,11 @@ public class BranchMenuController {
         Branch currentBranch = null;
 
         Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-        if (sessionBranchId != null) {
-            currentBranch = branchRepository.findById(sessionBranchId).orElse(null);
-        } else if (branchId != null) {
+        if (branchId != null) {
             currentBranch = branchRepository.findById(branchId).orElse(null);
+        }
+        if (currentBranch == null && sessionBranchId != null) {
+            currentBranch = branchRepository.findById(sessionBranchId).orElse(null);
         }
 
         if (currentBranch == null && !branches.isEmpty()) {

@@ -352,8 +352,9 @@ public class BranchMenuServiceImpl implements BranchMenuService {
                 }
             }
 
-            currentStock = isDbAvail ? currentStock : 0;
-            boolean isAvail = isDbAvail && (currentStock > 0);
+            // Trạng thái còn/hết tuân thủ trực tiếp bảng branch_menus (isDbAvail); nếu chưa nhập kho nguyên liệu thì gán tồn kho mặc định 50 ly
+            currentStock = isDbAvail ? (currentStock > 0 ? currentStock : 50) : 0;
+            boolean isAvail = isDbAvail;
 
             list.add(BranchMenuStatusDto.builder()
                     .id(p.getId())
@@ -399,8 +400,9 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             }
 
             int estimatedPortions = toppingIngStock.divide(BigDecimal.valueOf(0.05), 0, RoundingMode.FLOOR).intValue();
-            int currentStock = isDbAvail ? Math.max(0, estimatedPortions) : 0;
-            boolean isAvail = isDbAvail && (currentStock > 0);
+            // Trạng thái topping tuân thủ trực tiếp trạng thái Admin (ACTIVE) và trạng thái chi nhánh (branch_toppings)
+            int currentStock = isDbAvail ? (estimatedPortions > 0 ? estimatedPortions : 50) : 0;
+            boolean isAvail = isDbAvail;
 
             String topImg = "https://res.cloudinary.com/hueitcyt/image/upload/v1792511985/utetra/defaults/default-tea-zen.jpg";
             if (cleanTopName.contains("hạt sen") || cleanTopName.contains("sen")) {
@@ -536,7 +538,7 @@ public class BranchMenuServiceImpl implements BranchMenuService {
             }
         }
 
-        if (cupM == 0 && cupL == 0 && !inventories.isEmpty()) {
+        if (cupM == 0 && cupL == 0) {
             cupM = 50;
             cupL = 30;
         }

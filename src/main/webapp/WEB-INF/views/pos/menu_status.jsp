@@ -315,7 +315,18 @@
                             } else if (data.type === "PRODUCT_AVAILABILITY_CHANGED") {
                                 const prod = allItems.find(i => Number(i.id) === Number(data.productId) && i.itemType === "PRODUCT");
                                 if (prod) {
-                                    prod.isAvailable = (data.isAvailable === true || data.isAvailable === "true");
+                                    const newAvail = (data.isAvailable === true || data.isAvailable === "true");
+                                    prod.isAvailable = newAvail;
+                                    prod.stockEstimate = newAvail ? (prod.stockEstimate > 0 ? prod.stockEstimate : 50) : 0;
+                                    renderGrid();
+                                    updateCounts();
+                                }
+                            } else if (data.type === "TOPPING_AVAILABILITY_CHANGED") {
+                                const top = allItems.find(i => Number(i.id) === Number(data.toppingId) && i.itemType === "TOPPING");
+                                if (top) {
+                                    const newAvail = (data.isAvailable === true || data.isAvailable === "true");
+                                    top.isAvailable = newAvail;
+                                    top.stockEstimate = newAvail ? (top.stockEstimate > 0 ? top.stockEstimate : 50) : 0;
                                     renderGrid();
                                     updateCounts();
                                 }
@@ -342,7 +353,7 @@
         async function fetchBranchMenu() {
             const grid = document.getElementById("menuItemsGrid");
             try {
-                const res = await fetch("<c:url value='/api/branch-menu/'/>" + window.BRANCH_ID);
+                const res = await fetch("<c:url value='/api/branch-menu/'/>" + window.BRANCH_ID + "?_t=" + Date.now(), { cache: "no-store" });
                 if (!res.ok) {
                     throw new Error("Không thể tải danh sách thực đơn (HTTP " + res.status + ")");
                 }

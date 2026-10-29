@@ -107,13 +107,11 @@ public class PosServiceImpl implements PosService {
                 .collect(Collectors.toList());
 
         java.util.Map<Long, BranchMenu> branchMenuMap = new java.util.HashMap<>();
-        if (branchId != null) {
-            branchMenuRepository.findByBranchId(branchId).forEach(bm -> {
-                if (bm.getProduct() != null) {
-                    branchMenuMap.put(bm.getProduct().getId(), bm);
-                }
-            });
-        }
+        branchMenus.forEach(bm -> {
+            if (bm.getProduct() != null) {
+                branchMenuMap.put(bm.getProduct().getId(), bm);
+            }
+        });
 
         java.util.List<com.ute.trasua.dto.kitchen.BranchMenuStatusDto> menuStatuses = branchMenuService.getBranchMenuStatus(targetBranchId);
         java.util.Map<Long, Integer> productStockMap = menuStatuses.stream()
@@ -132,8 +130,9 @@ public class PosServiceImpl implements PosService {
                             price = bm.getCustomPrice();
                         }
                     }
-                    int stock = isAvail ? productStockMap.getOrDefault(p.getId(), 0) : 0;
-                    boolean finalAvailable = isAvail && stock > 0;
+                    int calcStock = productStockMap.getOrDefault(p.getId(), 50);
+                    int stock = isAvail ? (calcStock > 0 ? calcStock : 50) : 0;
+                    boolean finalAvailable = isAvail;
                     return PosMenuResponse.ProductDto.builder()
                             .id(p.getId())
                             .productCode(p.getProductCode())
