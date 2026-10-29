@@ -54,6 +54,10 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             // Sheet 2: PHÂN TÍCH CHI NHÁNH & TOP MÓN (Nếu có)
             createAnalyticsSheet(workbook, styles, report);
 
+            // Tính toán sẵn giá trị hiển thị (<v>) cho toàn bộ công thức SUM để hiển thị ngay trên mọi trình đọc Excel
+            workbook.setForceFormulaRecalculation(true);
+            workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
+
             workbook.write(outputStream);
             log.info(">>> Đã xuất báo cáo doanh thu chuẩn BM1 thành công vào output stream.");
         } catch (IOException e) {
@@ -277,6 +281,9 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             sb3.setCellStyle(styles.signatureSubStyle);
             sheet.addMergedRegion(new CellRangeAddress(signRowStart + 2, signRowStart + 2, 8, 10));
 
+            workbook.setForceFormulaRecalculation(true);
+            workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
+
             for (int i = 0; i <= 10; i++) {
                 sheet.autoSizeColumn(i);
                 int w = sheet.getColumnWidth(i);
@@ -491,6 +498,9 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             sb3.setCellValue("(Ký, đóng dấu & ghi rõ họ tên)");
             sb3.setCellStyle(styles.signatureSubStyle);
             sheet.addMergedRegion(new CellRangeAddress(signRowStart + 2, signRowStart + 2, 6, 8));
+
+            workbook.setForceFormulaRecalculation(true);
+            workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
 
             for (int i = 0; i <= 8; i++) {
                 sheet.autoSizeColumn(i);
@@ -724,6 +734,9 @@ public class ExcelExportServiceImpl implements ExcelExportService {
         sb3.setCellStyle(styles.signatureSubStyle);
         sheet.addMergedRegion(new CellRangeAddress(signRowStart + 2, signRowStart + 2, 4, 6));
 
+        workbook.setForceFormulaRecalculation(true);
+        workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
+
         // Tự động căn chỉnh độ rộng các cột
         for (int i = 0; i <= 6; i++) {
             sheet.autoSizeColumn(i);
@@ -753,7 +766,8 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             c.setCellStyle(styles.tableHeaderStyle);
         }
 
-        int currRow = 3;
+        int startBranchRow = 3;
+        int currRow = startBranchRow;
         List<RevenueReportResponse.BranchRevenueDto> branchList = report.getBranchRevenues();
         if (branchList != null && !branchList.isEmpty()) {
             for (RevenueReportResponse.BranchRevenueDto b : branchList) {
@@ -780,6 +794,32 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             }
         }
 
+        int firstBranchExcelRow = startBranchRow + 1;
+        int lastBranchExcelRow = currRow;
+        Row branchTotalRow = sheet.createRow(currRow++);
+        Cell btLabel = branchTotalRow.createCell(0);
+        btLabel.setCellValue("TỔNG CỘNG");
+        btLabel.setCellStyle(styles.totalRowHeaderStyle);
+        Cell btEmpty = branchTotalRow.createCell(1);
+        btEmpty.setCellStyle(styles.totalRowHeaderStyle);
+        sheet.addMergedRegion(new CellRangeAddress(currRow - 1, currRow - 1, 0, 1));
+
+        Cell btOrders = branchTotalRow.createCell(2);
+        Cell btNet = branchTotalRow.createCell(3);
+        Cell btPercent = branchTotalRow.createCell(4);
+        if (branchList != null && !branchList.isEmpty()) {
+            btOrders.setCellFormula(String.format("SUM(C%d:C%d)", firstBranchExcelRow, lastBranchExcelRow));
+            btNet.setCellFormula(String.format("SUM(D%d:D%d)", firstBranchExcelRow, lastBranchExcelRow));
+            btPercent.setCellFormula(String.format("SUM(E%d:E%d)", firstBranchExcelRow, lastBranchExcelRow));
+        } else {
+            btOrders.setCellValue(0);
+            btNet.setCellValue(0);
+            btPercent.setCellValue(0);
+        }
+        btOrders.setCellStyle(styles.totalRowNumberStyle);
+        btNet.setCellStyle(styles.totalRowHighlightCurrencyStyle);
+        btPercent.setCellStyle(styles.totalRowPercentStyle);
+
         // BẢNG 2: TOP MÓN BÁN CHẠY
         currRow += 2;
         Row t2Row = sheet.createRow(currRow++);
@@ -795,6 +835,7 @@ public class ExcelExportServiceImpl implements ExcelExportService {
             c.setCellStyle(styles.tableHeaderStyle);
         }
 
+        int startProdRow = currRow;
         List<RevenueReportResponse.TopProductDto> topList = report.getTopProducts();
         int stt = 1;
         if (topList != null && !topList.isEmpty()) {
@@ -821,6 +862,33 @@ public class ExcelExportServiceImpl implements ExcelExportService {
                 c4.setCellStyle(styles.cellCurrency);
             }
         }
+
+        int firstProdExcelRow = startProdRow + 1;
+        int lastProdExcelRow = currRow;
+        Row prodTotalRow = sheet.createRow(currRow++);
+        Cell ptLabel = prodTotalRow.createCell(0);
+        ptLabel.setCellValue("TỔNG CỘNG");
+        ptLabel.setCellStyle(styles.totalRowHeaderStyle);
+        for (int c = 1; c <= 2; c++) {
+            Cell emptyC = prodTotalRow.createCell(c);
+            emptyC.setCellStyle(styles.totalRowHeaderStyle);
+        }
+        sheet.addMergedRegion(new CellRangeAddress(currRow - 1, currRow - 1, 0, 2));
+
+        Cell ptQty = prodTotalRow.createCell(3);
+        Cell ptRev = prodTotalRow.createCell(4);
+        if (topList != null && !topList.isEmpty()) {
+            ptQty.setCellFormula(String.format("SUM(D%d:D%d)", firstProdExcelRow, lastProdExcelRow));
+            ptRev.setCellFormula(String.format("SUM(E%d:E%d)", firstProdExcelRow, lastProdExcelRow));
+        } else {
+            ptQty.setCellValue(0);
+            ptRev.setCellValue(0);
+        }
+        ptQty.setCellStyle(styles.totalRowNumberStyle);
+        ptRev.setCellStyle(styles.totalRowHighlightCurrencyStyle);
+
+        workbook.setForceFormulaRecalculation(true);
+        workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
 
         for (int i = 0; i < 5; i++) {
             sheet.autoSizeColumn(i);
