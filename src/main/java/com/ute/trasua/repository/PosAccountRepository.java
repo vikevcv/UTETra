@@ -21,6 +21,7 @@ public interface PosAccountRepository extends JpaRepository<PosAccount, Long> {
 
     List<PosAccount> findByBranchIdAndActiveTrue(Long branchId);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"branch"})
     Optional<PosAccount> findByUserId(Long userId);
 
     long countByBranchId(Long branchId);

@@ -48,6 +48,16 @@ public interface PosService {
     com.ute.trasua.dto.pos.ShiftAttendanceResponse getShiftStatus(Long branchId, java.util.List<Long> activeEmployeeIds);
 
     /**
+     * Điểm danh nhận ca trực POS và lưu trạng thái ca trực theo chi nhánh.
+     */
+    com.ute.trasua.dto.pos.ShiftAttendanceResponse checkinShift(Long branchId, java.util.List<Long> employeeIds);
+
+    /**
+     * Kết thúc ca trực POS của chi nhánh.
+     */
+    com.ute.trasua.dto.pos.ShiftAttendanceResponse checkoutShift(Long branchId);
+
+    /**
      * Tìm kiếm tài khoản POS theo tên tài khoản.
      */
     java.util.Optional<com.ute.trasua.entity.PosAccount> findPosAccountByUsername(String username);

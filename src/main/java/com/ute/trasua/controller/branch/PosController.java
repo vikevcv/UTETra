@@ -144,6 +144,14 @@ public class PosController {
      */
     @GetMapping("/pos/logout")
     public String posLogout(HttpSession session, HttpServletResponse response) {
+        if (session != null) {
+            try {
+                Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+                if (sessionBranchId != null) {
+                    posService.checkoutShift(sessionBranchId);
+                }
+            } catch (Exception ignored) {}
+        }
         clearPosShiftSession(session);
 
         Cookie cookie = new Cookie("UTETRA_JWT", "");
@@ -182,9 +190,12 @@ public class PosController {
         }
 
         PosAccount posAcc = (PosAccount) session.getAttribute("POS_ACCOUNT");
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
         Long activeBranchId = branchId;
         if (activeBranchId == null) {
-            activeBranchId = (posAcc != null && posAcc.getBranch() != null) ? posAcc.getBranch().getId() : (Long) session.getAttribute("POS_BRANCH_ID");
+            activeBranchId = (sessionBranchId != null)
+                    ? sessionBranchId
+                    : ((posAcc != null && posAcc.getBranch() != null) ? posAcc.getBranch().getId() : null);
         }
         if (activeBranchId == null) {
             Branch def = branchService.getDefaultBranch();
@@ -214,17 +225,38 @@ public class PosController {
             }
         }
 
+        // Đồng bộ trạng thái ca trực ngay từ server (hỗ trợ cả khi chuyển qua lại giữa các trang POS)
+        @SuppressWarnings("unchecked")
+        List<Long> activeShiftIds = (List<Long>) session.getAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS");
+        ShiftAttendanceResponse shiftStatus = posService.getShiftStatus(activeBranchId, activeShiftIds);
+        boolean shiftActive = (shiftStatus != null)
+                ? shiftStatus.isShiftActive()
+                : (activeShiftIds != null && !activeShiftIds.isEmpty());
+        int shiftActiveCount = (shiftStatus != null)
+                ? shiftStatus.getActiveCount()
+                : (activeShiftIds != null ? activeShiftIds.size() : 0);
+
+        if (shiftStatus != null && shiftStatus.isShiftActive()) {
+            if (shiftStatus.getActiveEmployees() != null && (activeShiftIds == null || activeShiftIds.isEmpty())) {
+                List<Long> syncedIds = new ArrayList<>();
+                for (ShiftEmployeeDto emp : shiftStatus.getActiveEmployees()) {
+                    syncedIds.add(emp.getId());
+                }
+                session.setAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS", syncedIds);
+            }
+            if (shiftStatus.getActiveCashiersSummary() != null && !shiftStatus.getActiveCashiersSummary().isBlank()) {
+                activeCashiers = shiftStatus.getActiveCashiersSummary();
+                session.setAttribute("POS_ACTIVE_CASHIERS_NAME", activeCashiers);
+            }
+        }
+
         model.addAttribute("cashierUsername", activeCashiers);
         model.addAttribute("cashierName", activeCashiers);
         model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("branchId", activeBranchId);
         model.addAttribute("branchName", currentBranch.getName());
-
-        // Inject trạng thái ca trực ngay từ server để tránh race condition phía JS
-        @SuppressWarnings("unchecked")
-        List<Long> activeShiftIds = (List<Long>) session.getAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS");
-        boolean shiftActive = (activeShiftIds != null && !activeShiftIds.isEmpty());
         model.addAttribute("shiftActive", shiftActive);
+        model.addAttribute("shiftActiveCount", shiftActiveCount);
 
         return "pos/index";
     }
@@ -323,9 +355,13 @@ public class PosController {
             @RequestParam(value = "branchId", required = false) Long branchId,
             HttpSession session) {
         Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-        Long targetBranchId = (sessionBranchId != null) ? sessionBranchId : (branchId != null ? branchId : 1L);
+        Long targetBranchId = (branchId != null) ? branchId : (sessionBranchId != null ? sessionBranchId : 1L);
         List<ShiftEmployeeDto> list = posService.getBranchEmployees(targetBranchId);
-        return ResponseEntity.ok(list);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(list);
     }
 
     /**
@@ -337,11 +373,23 @@ public class PosController {
             @RequestParam(value = "branchId", required = false) Long branchId,
             HttpSession session) {
         Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
-        Long targetBranchId = (sessionBranchId != null) ? sessionBranchId : (branchId != null ? branchId : 1L);
+        Long targetBranchId = (branchId != null) ? branchId : (sessionBranchId != null ? sessionBranchId : 1L);
         @SuppressWarnings("unchecked")
         List<Long> employeeIds = (List<Long>) session.getAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS");
         ShiftAttendanceResponse response = posService.getShiftStatus(targetBranchId, employeeIds);
-        return ResponseEntity.ok(response);
+        if (response != null && response.isShiftActive() && (employeeIds == null || employeeIds.isEmpty()) && response.getActiveEmployees() != null) {
+            List<Long> syncedIds = new ArrayList<>();
+            for (ShiftEmployeeDto emp : response.getActiveEmployees()) {
+                syncedIds.add(emp.getId());
+            }
+            session.setAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS", syncedIds);
+            session.setAttribute("POS_ACTIVE_CASHIERS_NAME", response.getActiveCashiersSummary());
+        }
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(response);
     }
 
     /**
@@ -352,13 +400,25 @@ public class PosController {
     public ResponseEntity<ShiftAttendanceResponse> checkinShift(
             @RequestBody ShiftAttendanceRequest request,
             HttpSession session) {
-        Long sessionBranchId = getActivePosBranchIdOrThrow(session);
+        Long targetBranchId = request.getBranchId();
+        if (targetBranchId != null) {
+            Branch branch = branchService.findBranchEntityById(targetBranchId).orElse(null);
+            if (branch == null || !branch.isActive()) {
+                clearPosShiftSession(session);
+                throw new IllegalStateException("Chi nhánh hiện đang TẠM NGƯNG hoạt động! Máy POS đã bị khóa.");
+            }
+            session.setAttribute("POS_BRANCH_ID", targetBranchId);
+        } else {
+            targetBranchId = getActivePosBranchIdOrThrow(session);
+        }
         List<Long> employeeIds = request.getEmployeeIds();
-        ShiftAttendanceResponse response = posService.getShiftStatus(sessionBranchId, employeeIds);
+        ShiftAttendanceResponse response = posService.checkinShift(targetBranchId, employeeIds);
         session.setAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS", employeeIds);
-        session.setAttribute("POS_ACTIVE_CASHIERS_NAME", response.getActiveCashiersSummary());
-        log.info(">>> Điểm danh nhận ca POS thành công: {} ({} nhân viên)",
-                response.getActiveCashiersSummary(), response.getActiveCount());
+        if (response != null) {
+            session.setAttribute("POS_ACTIVE_CASHIERS_NAME", response.getActiveCashiersSummary());
+            log.info(">>> Điểm danh nhận ca POS thành công tại chi nhánh {}: {} ({} nhân viên)",
+                    targetBranchId, response.getActiveCashiersSummary(), response.getActiveCount());
+        }
         return ResponseEntity.ok(response);
     }
 
@@ -367,10 +427,15 @@ public class PosController {
      */
     @PostMapping("/api/pos/shift/checkout")
     @ResponseBody
-    public ResponseEntity<ShiftAttendanceResponse> checkoutShift(HttpSession session) {
+    public ResponseEntity<ShiftAttendanceResponse> checkoutShift(
+            @RequestParam(value = "branchId", required = false) Long branchId,
+            HttpSession session) {
+        Long sessionBranchId = (Long) session.getAttribute("POS_BRANCH_ID");
+        Long targetBranchId = (branchId != null) ? branchId : sessionBranchId;
+        posService.checkoutShift(targetBranchId);
         session.removeAttribute("POS_ACTIVE_SHIFT_EMPLOYEE_IDS");
         session.removeAttribute("POS_ACTIVE_CASHIERS_NAME");
-        log.info(">>> Đã kết thúc ca trực quầy POS! Máy POS chuyển sang trạng thái TẠM KHÓA.");
+        log.info(">>> Đã kết thúc ca trực quầy POS (Chi nhánh: {})! Máy POS chuyển sang trạng thái TẠM KHÓA.", targetBranchId);
         ShiftAttendanceResponse response = ShiftAttendanceResponse.builder()
                 .shiftActive(false)
                 .activeCount(0)

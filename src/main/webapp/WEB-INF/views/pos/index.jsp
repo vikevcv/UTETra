@@ -19,6 +19,7 @@
         window.POS_CASHIER_USERNAME = "${cashierUsername != null ? cashierUsername : 'pos_td01'}";
         // Server-side shift state: tránh race condition khi checkShiftStatus() chưa kịp resolve
         window.POS_SHIFT_ACTIVE = ${shiftActive != null ? shiftActive : false};
+        window.POS_SHIFT_COUNT = ${shiftActiveCount != null ? shiftActiveCount : 0};
     </script>
 </head>
 <body>
@@ -40,8 +41,8 @@
                 <span class="fw-bold text-white">${branchName}</span>
             </div>
             <div class="pos-badge" id="btnShiftBadge" style="cursor: pointer;" title="Nhấn để điểm danh hoặc thay đổi nhân viên trực ca">
-                <span id="shiftIndicatorDot" class="badge bg-danger rounded-pill px-2 py-1">OFF</span>
-                <span id="shiftSummaryName" class="fw-bold" style="max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Chưa có người trực</span>
+                <span id="shiftIndicatorDot" class="badge ${shiftActive ? 'bg-success' : 'bg-danger'} rounded-pill px-2 py-1"><c:choose><c:when test="${shiftActive}">ON (${shiftActiveCount})</c:when><c:otherwise>OFF</c:otherwise></c:choose></span>
+                <span id="shiftSummaryName" class="fw-bold" style="max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><c:choose><c:when test="${shiftActive}">${cashierUsername}</c:when><c:otherwise>Chưa có người trực</c:otherwise></c:choose></span>
             </div>
             <div class="pos-clock" id="posClock">00:00:00</div>
             <a href="<c:url value='/pos/logout'/>" class="btn-pos-logout" title="Đăng xuất quầy bán lẻ POS">
