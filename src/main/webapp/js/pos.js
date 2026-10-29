@@ -1361,6 +1361,11 @@ document.addEventListener("DOMContentLoaded", () => {
                                 const prod = menuData.products.find(p => Number(p.id) === targetId);
                                 if (prod) {
                                     prod.isAvailable = newAvail;
+                                    if (newAvail && (!prod.stockEstimate || prod.stockEstimate <= 0)) {
+                                        prod.stockEstimate = 50;
+                                    } else if (!newAvail) {
+                                        prod.stockEstimate = 0;
+                                    }
                                     renderProducts();
                                     found = true;
                                     showPosZenToast(`Món [${prod.name}] vừa được ${newAvail ? 'mở bán' : 'tạm ngưng bán'}!`, newAvail ? "success" : "warning", 2500);
@@ -1386,7 +1391,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             if (menuData && menuData.toppings) {
                                 const top = menuData.toppings.find(t => Number(t.id) === Number(event.toppingId));
                                 if (top) {
-                                    top.isAvailable = (event.isAvailable === true || event.isAvailable === "true");
+                                    const newTopAvail = (event.isAvailable === true || event.isAvailable === "true");
+                                    top.isAvailable = newTopAvail;
+                                    top.stockEstimate = newTopAvail ? 50 : 0;
                                 }
                             }
                         } else if (event.type === "PRODUCT_STOCK_UPDATED" || event.type === "TOPPING_STOCK_UPDATED") {
