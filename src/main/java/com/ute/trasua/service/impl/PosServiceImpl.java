@@ -42,6 +42,7 @@ public class PosServiceImpl implements PosService {
     private final com.ute.trasua.service.BranchMenuService branchMenuService;
     private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
     private final com.ute.trasua.service.PayOSService payosService;
+    private final java.util.Map<Long, List<Long>> activeBranchShifts = new java.util.concurrent.ConcurrentHashMap<>();
 
     public PosServiceImpl(
             BranchRepository branchRepository,
@@ -515,12 +516,20 @@ public class PosServiceImpl implements PosService {
     @Override
     @Transactional(readOnly = true)
     public ShiftAttendanceResponse getShiftStatus(Long branchId, List<Long> activeEmployeeIds) {
-        List<ShiftEmployeeDto> allEmployees = getBranchEmployees(branchId);
+        Long targetBranchId = (branchId != null) ? branchId : 1L;
+        List<ShiftEmployeeDto> allEmployees = getBranchEmployees(targetBranchId);
         List<ShiftEmployeeDto> onShiftList = new ArrayList<>();
 
-        if (activeEmployeeIds != null && !activeEmployeeIds.isEmpty()) {
+        List<Long> effectiveEmployeeIds = activeEmployeeIds;
+        if (effectiveEmployeeIds == null || effectiveEmployeeIds.isEmpty()) {
+            effectiveEmployeeIds = activeBranchShifts.get(targetBranchId);
+        } else {
+            activeBranchShifts.put(targetBranchId, new ArrayList<>(effectiveEmployeeIds));
+        }
+
+        if (effectiveEmployeeIds != null && !effectiveEmployeeIds.isEmpty()) {
             for (ShiftEmployeeDto emp : allEmployees) {
-                if (activeEmployeeIds.contains(emp.getId())) {
+                if (effectiveEmployeeIds.contains(emp.getId())) {
                     emp.setActiveOnShift(true);
                     onShiftList.add(emp);
                 }
@@ -537,6 +546,32 @@ public class PosServiceImpl implements PosService {
                 .activeCount(onShiftList.size())
                 .activeCashiersSummary(isActive ? summary : "Chưa có người trực ca")
                 .activeEmployees(onShiftList)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShiftAttendanceResponse checkinShift(Long branchId, List<Long> employeeIds) {
+        Long targetBranchId = (branchId != null) ? branchId : 1L;
+        if (employeeIds != null && !employeeIds.isEmpty()) {
+            activeBranchShifts.put(targetBranchId, new ArrayList<>(employeeIds));
+        } else {
+            activeBranchShifts.remove(targetBranchId);
+        }
+        return getShiftStatus(targetBranchId, employeeIds);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShiftAttendanceResponse checkoutShift(Long branchId) {
+        if (branchId != null) {
+            activeBranchShifts.remove(branchId);
+        }
+        return ShiftAttendanceResponse.builder()
+                .shiftActive(false)
+                .activeCount(0)
+                .activeCashiersSummary("Chưa có người trực ca")
+                .activeEmployees(new ArrayList<>())
                 .build();
     }
 
@@ -627,14 +662,20 @@ public class PosServiceImpl implements PosService {
         if (user == null) {
             return null;
         }
-        PosAccount existingPos = posAccountRepository.findByUsername(user.getUsername()).orElse(null);
+        PosAccount existingPos = (user.getId() != null ? posAccountRepository.findByUserId(user.getId()) : java.util.Optional.<PosAccount>empty())
+                .or(() -> posAccountRepository.findByUsername(user.getUsername()))
+                .orElse(null);
+        Branch userBranch = null;
+        if (user.getBranch() != null && user.getBranch().getId() != null) {
+            userBranch = branchRepository.findById(user.getBranch().getId()).orElse(defaultBranch);
+        }
         if (existingPos != null) {
-            if (user.getBranch() != null && (existingPos.getBranch() == null || !existingPos.getBranch().getId().equals(user.getBranch().getId()))) {
-                existingPos.setBranch(user.getBranch());
+            if (userBranch != null && (existingPos.getBranch() == null || !existingPos.getBranch().getId().equals(userBranch.getId()))) {
+                existingPos.setBranch(userBranch);
             }
             return existingPos;
         }
-        Branch branchToUse = (user.getBranch() != null) ? user.getBranch() : defaultBranch;
+        Branch branchToUse = (userBranch != null) ? userBranch : defaultBranch;
         return PosAccount.builder()
                 .username(user.getUsername())
                 .counterName(user.getFullName() != null ? user.getFullName() : (user.getUsername() + " (Quầy POS)"))

@@ -1073,27 +1073,83 @@ document.addEventListener("DOMContentLoaded", () => {
     // ========================================================
     // QUẢN LÝ TRỰC CA & ĐIỂM DANH QUẦY POS
     // ========================================================
-    // Khởi tạo từ giá trị server-side render để tránh race condition:
-    // pos.js chạy lại sau mỗi full-page navigation, nếu init active=false và fetch checkShiftStatus()
-    // chưa kịp resolve thì user ấn món sẽ bị bật modal chọn nhân viên dù đã điểm danh rồi.
-    // ponytail: đọc window.POS_SHIFT_ACTIVE từ JSP, upgrade when chuyển sang SPA routing
+    const SHIFT_STORAGE_KEY = `pos_shift_emp_ids_${currentBranchId}`;
+    const SHIFT_WELCOMED_KEY = `pos_shift_welcomed_${currentBranchId}`;
+
+    function getSavedShiftEmployeeIds() {
+        try {
+            const raw = sessionStorage.getItem(SHIFT_STORAGE_KEY);
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed.map(Number).filter(n => !isNaN(n) && n > 0) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveShiftEmployeeIds(ids) {
+        try {
+            if (Array.isArray(ids) && ids.length > 0) {
+                sessionStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(ids));
+            } else {
+                sessionStorage.removeItem(SHIFT_STORAGE_KEY);
+                sessionStorage.removeItem(SHIFT_WELCOMED_KEY);
+            }
+        } catch (e) {}
+    }
+
+    // Khởi tạo từ giá trị server-side render hoặc sessionStorage để giữ nguyên trạng thái ca trực khi chuyển tab POS
+    const initialSavedIds = getSavedShiftEmployeeIds();
     let shiftState = {
-        active: window.POS_SHIFT_ACTIVE === true,
-        count: 0,
-        summary: window.POS_SHIFT_ACTIVE === true ? (window.POS_CASHIER_USERNAME || "Đang trực ca") : "Quầy Sẵn Sàng",
+        active: window.POS_SHIFT_ACTIVE === true || initialSavedIds.length > 0,
+        count: window.POS_SHIFT_COUNT || initialSavedIds.length || 0,
+        summary: (window.POS_SHIFT_ACTIVE === true || initialSavedIds.length > 0) ? (window.POS_CASHIER_USERNAME || "Đang trực ca") : "Quầy Sẵn Sàng",
         employees: []
     };
 
-    // Kiểm tra trạng thái trực ca của quầy POS
+    // Kiểm tra trạng thái trực ca của quầy POS (với chống cache trình duyệt & tự động khôi phục ca trực khi chuyển trang)
     async function checkShiftStatus() {
         try {
-            const res = await fetch(`/api/pos/shift/status?branchId=${currentBranchId}`);
+            const timestamp = Date.now();
+            const res = await fetch(`/api/pos/shift/status?branchId=${currentBranchId}&_t=${timestamp}`, {
+                cache: "no-store",
+                headers: {
+                    "Pragma": "no-cache",
+                    "Cache-Control": "no-cache"
+                }
+            });
             if (!res.ok) throw new Error("Không thể kiểm tra trạng thái ca trực");
-            const data = await res.json();
+            let data = await res.json();
+
+            // Nếu server báo chưa có ca nhưng phiên hiện tại đã điểm danh trước đó, tự động đồng bộ lại không bắt điểm danh lại
+            if (!data.shiftActive) {
+                const savedIds = getSavedShiftEmployeeIds();
+                if (savedIds.length > 0) {
+                    const restoreRes = await fetch("/api/pos/shift/checkin", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            branchId: currentBranchId,
+                            employeeIds: savedIds
+                        })
+                    });
+                    if (restoreRes.ok) {
+                        data = await restoreRes.json();
+                    }
+                }
+            }
+
             updateShiftUI(data);
 
             if (data.shiftActive) {
-                showPosZenToast(`Máy POS Đã Sẵn Sàng Phục Vụ • ${data.activeCashiersSummary}`, "success", 2200);
+                const activeIds = (data.activeEmployees || []).map(e => Number(e.id));
+                if (activeIds.length > 0) {
+                    saveShiftEmployeeIds(activeIds);
+                }
+                if (sessionStorage.getItem(SHIFT_WELCOMED_KEY) !== "1") {
+                    sessionStorage.setItem(SHIFT_WELCOMED_KEY, "1");
+                    showPosZenToast(`Máy POS Đã Sẵn Sàng Phục Vụ • ${data.activeCashiersSummary}`, "success", 2200);
+                }
             } else {
                 showPosZenToast(`Quầy chưa có người đứng ca! Vui lòng chọn nhân viên trực quầy để mở bán.`, "warning", 3200);
             }
@@ -1160,7 +1216,14 @@ document.addEventListener("DOMContentLoaded", () => {
         modal.style.display = "flex";
 
         try {
-            const res = await fetch(`/api/pos/employees?branchId=${currentBranchId}`);
+            const timestamp = Date.now();
+            const res = await fetch(`/api/pos/employees?branchId=${currentBranchId}&_t=${timestamp}`, {
+                cache: "no-store",
+                headers: {
+                    "Pragma": "no-cache",
+                    "Cache-Control": "no-cache"
+                }
+            });
             if (!res.ok) throw new Error("Không thể tải danh sách nhân viên");
             const employees = await res.json();
 
@@ -1175,7 +1238,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Lấy danh sách ID đang trực hiện tại
-            const activeIds = (shiftState.employees || []).map(e => e.id);
+            const stateIds = (shiftState.employees || []).map(e => Number(e.id));
+            const activeIds = stateIds.length > 0 ? stateIds : getSavedShiftEmployeeIds();
 
             listContainer.innerHTML = "";
             employees.forEach(emp => {
@@ -1263,6 +1327,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!res.ok) throw new Error("Lỗi khi lưu danh sách trực ca");
             const data = await res.json();
+            saveShiftEmployeeIds(checked);
+            try { sessionStorage.setItem(SHIFT_WELCOMED_KEY, "1"); } catch (e) {}
             updateShiftUI(data);
 
             document.getElementById("shiftModalBackdrop").style.display = "none";
@@ -1290,9 +1356,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const res = await fetch("/api/pos/shift/checkout", { method: "POST" });
+            const res = await fetch(`/api/pos/shift/checkout?branchId=${currentBranchId}`, { method: "POST" });
             if (!res.ok) throw new Error("Lỗi kết thúc ca trực");
             const data = await res.json();
+            saveShiftEmployeeIds([]);
             updateShiftUI(data);
 
             document.getElementById("shiftModalBackdrop").style.display = "none";
@@ -1300,6 +1367,13 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             showPosZenToast("Lỗi khi rời ca: " + err.message, "error", 2500);
         }
+    });
+
+    // Xóa trạng thái ca trực lưu tạm khi nhấn nút Đăng xuất POS
+    document.querySelectorAll(".btn-pos-logout").forEach(btn => {
+        btn.addEventListener("click", () => {
+            saveShiftEmployeeIds([]);
+        });
     });
 
     // Branch switch handler

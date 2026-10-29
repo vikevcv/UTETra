@@ -144,6 +144,15 @@
     </div>
 
     <script>
+        // Xóa dữ liệu điểm danh ca trực cũ trên trình duyệt khi về màn hình đăng nhập POS
+        try {
+            Object.keys(sessionStorage).forEach(key => {
+                if (key.startsWith('pos_shift_')) {
+                    sessionStorage.removeItem(key);
+                }
+            });
+        } catch (e) {}
+
         const toggleBtn = document.getElementById('btnTogglePassword');
         const passInput = document.getElementById('posPasswordInput');
         const eyeIcon = document.getElementById('eyeIcon');
