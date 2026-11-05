@@ -80,13 +80,32 @@ button, input, select {
   font-weight: 500;
 }
 
-/* Zen Header */
+/* Custom Zen Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: var(--zen-sand);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-hairline);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ceramic-bizen);
+}
+
+/* Zen Header with Glassmorphism */
 .zen-header {
-  background-color: var(--zen-sand);
+  background-color: rgba(247, 245, 240, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-hairline);
   position: sticky;
   top: 0;
   z-index: 100;
+  transition: all 0.25s ease;
 }
 .zen-nav-row {
   display: flex;
@@ -309,22 +328,36 @@ button, input, select {
 .reserve-card {
   background-color: white;
   border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: border-color 0.2s;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(15, 16, 17, 0.03);
 }
 .reserve-card:hover {
   border-color: var(--celadon-green);
+  transform: translateY(-5px);
+  box-shadow: 0 14px 32px rgba(15, 16, 17, 0.08);
 }
 .reserve-media {
-  height: 180px;
+  height: 200px;
   background-color: var(--zen-stone);
   display: flex;
   align-items: center;
   justify-content: center;
   border-bottom: 1px solid var(--border-hairline);
+  overflow: hidden;
+  position: relative;
+}
+.reserve-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reserve-card:hover .reserve-media img {
+  transform: scale(1.06);
 }
 .reserve-body {
   padding: 20px;
