@@ -4,28 +4,28 @@
    ========================================================================== */
 
 :root {
-  --admin-bg: #f8fafc;
+  --admin-bg: #F7F5F0;
   --admin-surface: #ffffff;
-  --admin-sidebar-bg: #0f172a;
-  --admin-sidebar-hover: #1e293b;
-  --admin-sidebar-active: #2563eb;
-  --admin-sidebar-text: #94a3b8;
-  --admin-sidebar-heading: #475569;
-  --admin-text-main: #0f172a;
-  --admin-text-muted: #64748b;
-  --admin-border: #e2e8f0;
-  --admin-border-subtle: #f1f5f9;
+  --admin-sidebar-bg: #121316;
+  --admin-sidebar-hover: #1E2024;
+  --admin-sidebar-active: #5C7667;
+  --admin-sidebar-text: #94A3B8;
+  --admin-sidebar-heading: #64748B;
+  --admin-text-main: #0F1011;
+  --admin-text-muted: #595D62;
+  --admin-border: #DDD8CE;
+  --admin-border-subtle: #EAE6DF;
   
-  /* Brand accents */
-  --primary-zen: #059669; /* Emerald tea master */
-  --primary-zen-hover: #047857;
-  --primary-zen-light: #ecfdf5;
-  --accent-amber: #d97706;
-  --accent-amber-light: #fffbeb;
-  --accent-rose: #e11d48;
-  --accent-rose-light: #fff1f2;
-  --accent-blue: #2563eb;
-  --accent-blue-light: #eff6ff;
+  /* Brand accents — Zen Wabi-Sabi */
+  --primary-zen: #5C7667; /* Men ngọc Celadon */
+  --primary-zen-hover: #4A6153;
+  --primary-zen-light: #EBF2EE;
+  --accent-amber: #8C6D53; /* Gốm thô Bizen */
+  --accent-amber-light: #FAF5F0;
+  --accent-rose: #A85A32; /* Đất nung mùa thu */
+  --accent-rose-light: #FDF3EE;
+  --accent-blue: #3E6077;
+  --accent-blue-light: #EEF4F8;
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
